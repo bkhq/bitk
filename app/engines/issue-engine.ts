@@ -5,8 +5,8 @@ import type {
   ProcessStatus,
   SpawnedProcess,
 } from './types'
-import { mkdir, stat } from 'node:fs/promises'
-import { resolve } from 'node:path'
+import { mkdir, rm, stat } from 'node:fs/promises'
+import { join, resolve } from 'node:path'
 import { asc, eq, max } from 'drizzle-orm'
 import { ulid } from 'ulid'
 import { db } from '../db'
@@ -34,6 +34,7 @@ interface ManagedProcess {
   logicalFailure: boolean
   logicalFailureReason?: string
   cancelledByUser: boolean
+  worktreePath?: string
   pendingInputs: Array<{
     prompt: string
     model?: string
@@ -126,6 +127,58 @@ async function captureBaseCommitHash(workingDir: string): Promise<string | null>
   }
 }
 
+// ---------- Git worktree helpers ----------
+
+async function createWorktree(baseDir: string, issueId: string): Promise<string> {
+  const branchName = `bitk/${issueId}`
+  const worktreeDir = join(baseDir, '.bitk-worktrees', issueId)
+  await mkdir(join(baseDir, '.bitk-worktrees'), { recursive: true })
+
+  // Create worktree with a new branch off HEAD
+  const proc = Bun.spawn(['git', 'worktree', 'add', '-b', branchName, worktreeDir], {
+    cwd: baseDir,
+    stdout: 'pipe',
+    stderr: 'pipe',
+  })
+  const code = await proc.exited
+  if (code !== 0) {
+    const stderr = await new Response(proc.stderr).text()
+    // Branch may already exist from a previous run — try without -b
+    const retry = Bun.spawn(['git', 'worktree', 'add', worktreeDir, branchName], {
+      cwd: baseDir,
+      stdout: 'pipe',
+      stderr: 'pipe',
+    })
+    const retryCode = await retry.exited
+    if (retryCode !== 0) {
+      const retryErr = await new Response(retry.stderr).text()
+      throw new Error(`Failed to create worktree: ${stderr.trim()} / ${retryErr.trim()}`)
+    }
+  }
+  logger.info({ issueId, worktreeDir, branchName }, 'worktree_created')
+  return worktreeDir
+}
+
+export async function removeWorktree(baseDir: string, worktreeDir: string): Promise<void> {
+  try {
+    const proc = Bun.spawn(['git', 'worktree', 'remove', '--force', worktreeDir], {
+      cwd: baseDir,
+      stdout: 'pipe',
+      stderr: 'pipe',
+    })
+    await proc.exited
+    logger.info({ worktreeDir }, 'worktree_removed')
+  } catch (error) {
+    logger.warn({ worktreeDir, error }, 'worktree_remove_failed')
+    // Fallback: just delete the directory
+    try {
+      await rm(worktreeDir, { recursive: true, force: true })
+    } catch {
+      /* best effort */
+    }
+  }
+}
+
 // ---------- IssueEngine ----------
 
 export class IssueEngine {
@@ -205,7 +258,18 @@ export class IssueEngine {
         model,
       })
 
-      const workingDir = opts.workingDir ?? process.cwd()
+      const baseDir = opts.workingDir ?? process.cwd()
+      let workingDir = baseDir
+      let worktreePath: string | undefined
+
+      if (issue.useWorktree) {
+        try {
+          worktreePath = await createWorktree(baseDir, issueId)
+          workingDir = worktreePath
+        } catch (error) {
+          logger.warn({ issueId, error }, 'worktree_creation_failed_fallback_to_base')
+        }
+      }
 
       const baseCommitHash = await captureBaseCommitHash(workingDir)
       if (baseCommitHash) await updateIssueSession(issueId, { baseCommitHash })
@@ -239,11 +303,19 @@ export class IssueEngine {
           pid: this.getPidFromSubprocess(spawned.subprocess),
           engineType: opts.engineType,
           externalSessionId,
+          worktreePath,
         },
         'issue_execute_spawned',
       )
 
-      this.register(executionId, issueId, spawned, (line) => executor.normalizeLog(line), 0)
+      this.register(
+        executionId,
+        issueId,
+        spawned,
+        (line) => executor.normalizeLog(line),
+        0,
+        worktreePath,
+      )
       this.persistUserMessage(issueId, executionId, opts.prompt)
       this.monitorCompletion(executionId, issueId, opts.engineType, false)
 
@@ -385,7 +457,19 @@ export class IssueEngine {
 
       await updateIssueSession(issueId, { sessionStatus: 'running' })
 
-      const workingDir = await resolveWorkingDir(issue.projectId)
+      const baseDir = await resolveWorkingDir(issue.projectId)
+      let workingDir = baseDir
+      let worktreePath: string | undefined
+
+      // Create git worktree if enabled for this issue
+      if (issue.useWorktree) {
+        try {
+          worktreePath = await createWorktree(baseDir, issueId)
+          workingDir = worktreePath
+        } catch (error) {
+          logger.warn({ issueId, error }, 'worktree_creation_failed_fallback_to_base')
+        }
+      }
 
       const baseCommitHash = await captureBaseCommitHash(workingDir)
       if (baseCommitHash) await updateIssueSession(issueId, { baseCommitHash })
@@ -436,7 +520,14 @@ export class IssueEngine {
       }
 
       const turnIndex = this.getNextTurnIndex(issueId)
-      this.register(executionId, issueId, spawned, (line) => executor.normalizeLog(line), turnIndex)
+      this.register(
+        executionId,
+        issueId,
+        spawned,
+        (line) => executor.normalizeLog(line),
+        turnIndex,
+        worktreePath,
+      )
       this.monitorCompletion(executionId, issueId, engineType, false)
 
       return { executionId }
@@ -561,6 +652,7 @@ export class IssueEngine {
     process: SpawnedProcess,
     logParser: (line: string) => NormalizedLogEntry | null,
     turnIndex = 0,
+    worktreePath?: string,
   ): ManagedProcess {
     const managed: ManagedProcess = {
       executionId,
@@ -574,6 +666,7 @@ export class IssueEngine {
       queueCancelRequested: false,
       logicalFailure: false,
       cancelledByUser: false,
+      worktreePath,
       pendingInputs: [],
     }
 
@@ -1340,7 +1433,30 @@ export class IssueEngine {
     await updateIssueSession(issueId, { sessionStatus: 'running' })
 
     const effectiveModel = model ?? issue.sessionFields.model ?? undefined
-    const workingDir = await resolveWorkingDir(issue.projectId)
+    const baseDir = await resolveWorkingDir(issue.projectId)
+
+    // Reuse existing worktree if issue has worktree enabled
+    let workingDir = baseDir
+    let worktreePath: string | undefined
+    if (issue.useWorktree) {
+      const candidatePath = join(baseDir, '.bitk-worktrees', issueId)
+      try {
+        const s = await stat(candidatePath)
+        if (s.isDirectory()) {
+          worktreePath = candidatePath
+          workingDir = candidatePath
+        }
+      } catch {
+        // Worktree dir doesn't exist — create fresh
+        try {
+          worktreePath = await createWorktree(baseDir, issueId)
+          workingDir = worktreePath
+        } catch (wtErr) {
+          logger.warn({ issueId, error: wtErr }, 'worktree_creation_failed_fallback_to_base')
+        }
+      }
+    }
+
     const permOptions = getPermissionOptions(engineType, permissionMode)
     const executionId = crypto.randomUUID()
 
@@ -1394,7 +1510,14 @@ export class IssueEngine {
     }
 
     const turnIndex = this.getNextTurnIndex(issueId)
-    this.register(executionId, issueId, spawned, (line) => executor.normalizeLog(line), turnIndex)
+    this.register(
+      executionId,
+      issueId,
+      spawned,
+      (line) => executor.normalizeLog(line),
+      turnIndex,
+      worktreePath,
+    )
     this.persistUserMessage(issueId, executionId, prompt)
     this.monitorCompletion(executionId, issueId, engineType, false)
     logger.info(
