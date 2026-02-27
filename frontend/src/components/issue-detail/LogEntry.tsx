@@ -308,13 +308,22 @@ export function LogEntry({
       if (entry.metadata?.subtype === 'hook_completed') return null
       if (entry.metadata?.source === 'result') return null
       if (typeof entry.metadata?.duration === 'number') return null
-      // Command output (e.g. /context, /cost): show as a styled block
+      // Command output (e.g. /context, /cost): collapsed by default
       if (entry.metadata?.subtype === 'command_output') {
+        const firstLine =
+          entry.content.split('\n')[0]?.trim() || 'Command output'
         return (
-          <div className="mx-5 my-1.5 rounded-lg bg-muted/40 border border-border/30 px-4 py-3 animate-message-enter">
-            <pre className="text-xs text-foreground/80 whitespace-pre-wrap font-mono leading-relaxed overflow-x-auto">
-              {entry.content}
-            </pre>
+          <div className="mx-5 my-1.5 animate-message-enter">
+            <details className="rounded-lg bg-muted/40 border border-border/30 transition-all duration-200 open:bg-muted/20">
+              <summary className="cursor-pointer list-none px-4 py-2 text-xs text-muted-foreground hover:bg-muted/20 transition-colors">
+                <span className="font-mono">{firstLine}</span>
+              </summary>
+              <div className="px-4 pb-3 pt-1.5 border-t border-border/20">
+                <pre className="text-xs text-foreground/80 whitespace-pre-wrap font-mono leading-relaxed overflow-x-auto">
+                  {entry.content}
+                </pre>
+              </div>
+            </details>
           </div>
         )
       }
