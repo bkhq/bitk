@@ -1,4 +1,5 @@
 import { stat } from 'node:fs/promises'
+import { homedir } from 'node:os'
 import { resolve } from 'node:path'
 import { zValidator } from '@hono/zod-validator'
 import { Hono } from 'hono'
@@ -14,7 +15,7 @@ const WORKSPACE_PATH_KEY = 'workspace:defaultPath'
 // GET /api/settings/workspace-path
 settings.get('/workspace-path', async (c) => {
   const value = await getAppSetting(WORKSPACE_PATH_KEY)
-  return c.json({ success: true, data: { path: value ?? '/' } })
+  return c.json({ success: true, data: { path: value ?? homedir() } })
 })
 
 // PATCH /api/settings/workspace-path
