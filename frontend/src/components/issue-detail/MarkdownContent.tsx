@@ -1,25 +1,26 @@
-import { useMemo } from 'react'
+import { useEffect, useState } from 'react'
 import DOMPurify from 'dompurify'
-import MarkdownIt from 'markdown-it'
 
-// ---------- markdown-it (zero mode: table + fence only, fully sync) ----------
+import type { HighlighterCore } from 'shiki'
 
-const md = new MarkdownIt('zero')
-md.enable([
-  // block
-  'table',
-  'fence',
-  'code',
-  // inline (needed by table cells)
-  'text',
-  'newline',
-  'escape',
-  'backticks',
-  'emphasis',
-  'strikethrough',
-])
+let highlighter: HighlighterCore | null = null
+let highlighterLoading: Promise<HighlighterCore> | null = null
 
-// ---------- Component ----------
+async function getHighlighter(): Promise<HighlighterCore> {
+  if (highlighter) return highlighter
+  if (!highlighterLoading) {
+    highlighterLoading = (async () => {
+      const { createHighlighter } = await import('shiki')
+      const hl = await createHighlighter({
+        themes: ['github-light-default', 'github-dark-default'],
+        langs: ['markdown'],
+      })
+      highlighter = hl
+      return hl
+    })()
+  }
+  return highlighterLoading
+}
 
 export function MarkdownContent({
   content,
@@ -28,19 +29,38 @@ export function MarkdownContent({
   content: string
   className?: string
 }) {
-  const html = useMemo(() => md.render(content), [content])
+  const [html, setHtml] = useState('')
 
-  if (!html.trim()) {
+  useEffect(() => {
+    let cancelled = false
+    getHighlighter().then((hl) => {
+      if (cancelled) return
+      const result = hl.codeToHtml(content, {
+        lang: 'markdown',
+        themes: {
+          light: 'github-light-default',
+          dark: 'github-dark-default',
+        },
+        defaultColor: false,
+      })
+      setHtml(result)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [content])
+
+  if (!html) {
     return (
-      <div className={`markdown-rendered ${containerClassName}`}>
-        <span className="whitespace-pre-wrap break-words">{content}</span>
+      <div className={`markdown-shiki ${containerClassName}`}>
+        <pre className="whitespace-pre-wrap break-words">{content}</pre>
       </div>
     )
   }
 
   return (
     <div
-      className={`markdown-rendered ${containerClassName}`}
+      className={`markdown-shiki ${containerClassName}`}
       dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(html) }}
     />
   )

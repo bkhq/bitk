@@ -277,81 +277,24 @@
   background-color: var(--shiki-dark-bg);
 }
 
-/* Rendered markdown (AI messages) — only table + code blocks */
-.markdown-rendered p {
-  margin: 0;
+/* Shiki markdown source rendering (AI messages) */
+.markdown-shiki .shiki,
+.markdown-shiki .shiki span {
+  background-color: transparent;
+}
+
+.markdown-shiki .shiki {
+  padding: 0;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: inherit;
+  line-height: inherit;
   white-space: pre-wrap;
   word-break: break-word;
 }
 
-.markdown-rendered pre {
-  margin: 0.5rem 0;
-  padding: 0.75rem;
-  border-radius: 0.375rem;
-  overflow-x: auto;
-  font-size: 13px;
-  line-height: 1.5;
-  background: var(--muted);
-}
-
-.markdown-rendered pre code {
-  font-family: var(--font-mono);
-  background: transparent;
-  padding: 0;
-}
-
-.markdown-rendered code {
-  font-family: var(--font-mono);
-  font-size: 0.9em;
-  padding: 0.15em 0.35em;
-  border-radius: 0.25rem;
-  background: var(--muted);
-}
-
-.markdown-rendered pre code {
-  font-size: inherit;
-  padding: 0;
-}
-
-/* Shiki dual-theme inside rendered markdown */
-.markdown-rendered .shiki,
-.markdown-rendered .shiki span {
-  background-color: transparent !important;
-}
-
-.markdown-rendered .shiki {
-  padding: 0;
-}
-
-.markdown-rendered .shiki code {
-  font-family: var(--font-mono);
-}
-
-/* Tables */
-.markdown-rendered table {
-  border-collapse: collapse;
-  margin: 0.5rem 0;
-  font-size: 13px;
-  width: auto;
-  max-width: 100%;
-  overflow-x: auto;
-  display: block;
-}
-
-.markdown-rendered th,
-.markdown-rendered td {
-  border: 1px solid var(--border);
-  padding: 0.35rem 0.65rem;
-  text-align: left;
-}
-
-.markdown-rendered th {
-  background: var(--muted);
-  font-weight: 600;
-}
-
-.markdown-rendered tr:nth-child(even) {
-  background: color-mix(in oklab, var(--muted) 40%, transparent);
+.markdown-shiki .shiki code {
+  font-family: inherit;
 }
 
 /* Tool code surface */
