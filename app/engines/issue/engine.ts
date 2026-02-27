@@ -13,6 +13,7 @@ import type {
   StateChangeCallback,
   UnsubscribeFn,
 } from './types'
+import { applyAutoTitle } from './title'
 import { stat } from 'node:fs/promises'
 import { join } from 'node:path'
 import { eq } from 'drizzle-orm'
@@ -804,19 +805,7 @@ export class IssueEngine {
 
     // Intercept auto-title pattern from AI response in meta turns
     if (managed.metaTurn && entry.entryType === 'assistant-message') {
-      const match = entry.content.match(/<bitk><title>(.*?)<\/title><\/bitk>/)
-      if (match) {
-        const title = match[1]?.trim().slice(0, 200)
-        if (title) {
-          try {
-            db.update(issuesTable).set({ title }).where(eq(issuesTable.id, issueId)).run()
-            emitIssueUpdated(issueId, { title })
-            logger.info({ issueId, title }, 'auto_title_updated')
-          } catch (err) {
-            logger.warn({ issueId, err }, 'auto_title_update_failed')
-          }
-        }
-      }
+      applyAutoTitle(issueId, entry.content)
     }
 
     // Persist first, then emit (DB is source of truth)

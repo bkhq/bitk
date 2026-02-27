@@ -271,22 +271,23 @@ export function useFollowUpIssue(projectId: string) {
   })
 }
 
-const AUTO_TITLE_PROMPT = `你是一个标题生成器。你的唯一任务是为给定内容生成标题。
-
-## 严格规则
-1. 只输出一行，格式为：<bitk><title>标题</title></bitk>
-2. 禁止输出任何其他文字、解释、换行或空格
-3. 标题长度不超过 15 个字
-4. 不要使用引号包裹标题
-
-## 正确示例
-输入：今天天气很好，我和朋友去公园散步，看到了很多花。
-输出：<bitk><title>公园赏花散步记</title></bitk>
-
-## 错误示例（禁止）
-以下是标题：<bitk><title>公园散步</title></bitk>
-<bitk><title>公园散步</title></bitk> 这个标题概括了...
-\`\`\`<bitk><title>公园散步</title></bitk>\`\`\``
+const AUTO_TITLE_PROMPT = [
+  'You are a title generator. Summarize the current conversation into a short title.',
+  '',
+  '## Strict rules',
+  '1. Output exactly one line in this format: <bitk><title>TITLE</title></bitk>',
+  '2. Do NOT output any other text, explanation, newline, or whitespace',
+  '3. Title must be 50 characters or fewer',
+  '4. Do NOT wrap the title in quotes',
+  '',
+  '## Correct example',
+  'Output: <bitk><title>Park walk with friends</title></bitk>',
+  '',
+  '## Wrong examples (forbidden)',
+  'Here is the title: <bitk><title>Park walk</title></bitk>',
+  '<bitk><title>Park walk</title></bitk> This title summarises...',
+  '```<bitk><title>Park walk</title></bitk>```',
+].join('\n')
 
 export function useAutoTitleIssue(projectId: string) {
   const queryClient = useQueryClient()
