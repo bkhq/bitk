@@ -6,7 +6,7 @@ import { db } from '../../db'
 import { findProject, getDefaultEngine, getEngineDefaultModel } from '../../db/helpers'
 import { issues as issuesTable } from '../../db/schema'
 import { engineRegistry } from '../../engines/executors'
-import { issueEngine } from '../../engines/issue-engine'
+import { issueEngine, setIssueDevMode } from '../../engines/issue-engine'
 import { emitIssueUpdated } from '../../events/issue-events'
 import { logger } from '../../logger'
 import {
@@ -391,7 +391,10 @@ crud.patch(
       updates.statusId = body.statusId
     }
     if (body.sortOrder !== undefined) updates.sortOrder = body.sortOrder
-    if (body.devMode !== undefined) updates.devMode = body.devMode
+    if (body.devMode !== undefined) {
+      updates.devMode = body.devMode
+      setIssueDevMode(issueId, body.devMode)
+    }
     if (body.parentIssueId !== undefined) {
       if (body.parentIssueId === null) {
         updates.parentIssueId = null

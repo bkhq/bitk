@@ -74,13 +74,17 @@ const GC_INTERVAL_MS = 10 * 60 * 1000 // 10 minutes
 const MAX_CONCURRENT_EXECUTIONS = Number(process.env.MAX_CONCURRENT_EXECUTIONS) || 5
 
 // ---------- Helpers ----------
-function isFrontendSuppressedEntry(entry: NormalizedLogEntry): boolean {
-  // Hide dispatched pending messages (pending was set to false after engine consumed them)
+function isFrontendSuppressedEntry(entry: NormalizedLogEntry, devMode: boolean): boolean {
+  // Always hidden regardless of mode
   if (entry.metadata?.pending === false) return true
-  // Hide meta entries (auto-title and other internal AI interactions)
   if (entry.metadata?.meta === true) return true
-  // Hide error-message entries from frontend (logs API + SSE)
-  if (entry.entryType === 'error-message') return true
+
+  // Default mode: whitelist only user + assistant messages
+  if (!devMode) {
+    return entry.entryType !== 'user-message' && entry.entryType !== 'assistant-message'
+  }
+
+  // Dev mode: show everything except init/hook noise
   if (entry.entryType !== 'system-message') return false
   const subtype = entry.metadata?.subtype
   if (subtype === 'init') return true
@@ -88,6 +92,16 @@ function isFrontendSuppressedEntry(entry: NormalizedLogEntry): boolean {
     return entry.metadata.hookName.startsWith('SessionStart:')
   }
   return false
+}
+
+const devModeCache = new Map<string, boolean>()
+
+function getIssueDevMode(issueId: string): boolean {
+  return devModeCache.get(issueId) ?? false
+}
+
+export function setIssueDevMode(issueId: string, devMode: boolean): void {
+  devModeCache.set(issueId, devMode)
 }
 
 function isMissingExternalSessionError(error: unknown): boolean {
@@ -253,6 +267,7 @@ export class IssueEngine {
       )
       const issue = await getIssueWithSession(issueId)
       if (!issue) throw new Error(`Issue not found: ${issueId}`)
+      setIssueDevMode(issueId, issue.devMode)
 
       this.ensureNoActiveProcess(issueId)
       this.ensureConcurrencyLimit()
@@ -357,6 +372,7 @@ export class IssueEngine {
       )
       const issue = await getIssueWithSession(issueId)
       if (!issue) throw new Error(`Issue not found: ${issueId}`)
+      setIssueDevMode(issueId, issue.devMode)
 
       if (!issue.sessionFields.externalSessionId)
         throw new Error('No external session ID for follow-up')
@@ -614,10 +630,11 @@ export class IssueEngine {
 
   // ---- Process queries ----
 
-  getLogs(issueId: string): NormalizedLogEntry[] {
+  getLogs(issueId: string, devMode = false): NormalizedLogEntry[] {
+    setIssueDevMode(issueId, devMode)
     // Always use DB as source of truth so history across all turns remains complete.
     const persisted = this.getLogsFromDb(issueId).filter(
-      (entry) => !isFrontendSuppressedEntry(entry),
+      (entry) => !isFrontendSuppressedEntry(entry, devMode),
     )
 
     // While a process is active, merge any in-memory tail not yet persisted.
@@ -636,7 +653,7 @@ export class IssueEngine {
 
     const merged = [...persisted]
     for (const entry of active.logs) {
-      if (isFrontendSuppressedEntry(entry)) continue
+      if (isFrontendSuppressedEntry(entry, devMode)) continue
       const key = entry.messageId
         ? `id:${entry.messageId}`
         : `${entry.turnIndex ?? 0}:${entry.timestamp ?? ''}:${entry.entryType}:${entry.content}`
@@ -710,6 +727,7 @@ export class IssueEngine {
     logParser: (line: string) => NormalizedLogEntry | NormalizedLogEntry[] | null,
     turnIndex = 0,
     worktreePath?: string,
+    devMode = false,
   ): ManagedProcess {
     const managed: ManagedProcess = {
       executionId,
@@ -725,6 +743,7 @@ export class IssueEngine {
       cancelledByUser: false,
       turnSettled: false,
       metaTurn: false,
+      devMode,
       worktreePath,
       pendingInputs: [],
     }
@@ -1779,6 +1798,7 @@ export class IssueEngine {
     )
     const issue = await getIssueWithSession(issueId)
     if (!issue) throw new Error(`Issue not found: ${issueId}`)
+    setIssueDevMode(issueId, issue.devMode)
     if (!issue.sessionFields.externalSessionId)
       throw new Error('No external session ID for follow-up')
     if (!issue.sessionFields.engineType) throw new Error('No engine type set on issue')
@@ -1984,7 +2004,8 @@ export class IssueEngine {
   // ---- Private: event emitters ----
 
   private emitLog(issueId: string, executionId: string, entry: NormalizedLogEntry): void {
-    if (isFrontendSuppressedEntry(entry)) return
+    const devMode = getIssueDevMode(issueId)
+    if (isFrontendSuppressedEntry(entry, devMode)) return
     for (const cb of this.logCallbacks.values()) {
       try {
         cb(issueId, executionId, entry)

@@ -80,6 +80,7 @@ export function useSessionState(
     issueId: streamEnabled ? issueId : null,
     sessionStatus: issue?.sessionStatus ?? null,
     enabled: !!(issueId && streamEnabled),
+    devMode: issue?.devMode ?? false,
   })
 
   const effectiveStatus = issue?.sessionStatus ?? null

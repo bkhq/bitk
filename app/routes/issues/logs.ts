@@ -228,7 +228,7 @@ logs.get('/:id/logs', async (c) => {
     return c.json({ success: false, error: 'Issue not found' }, 404)
   }
 
-  const issueLogs = issueEngine.getLogs(issueId)
+  const issueLogs = issueEngine.getLogs(issueId, issue.devMode)
 
   return c.json({ success: true, data: { issue: serializeIssue(issue), logs: issueLogs } })
 })

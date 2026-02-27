@@ -10,6 +10,7 @@ interface UseIssueStreamOptions {
   issueId: string | null
   sessionStatus?: SessionStatus | null
   enabled?: boolean
+  devMode?: boolean
 }
 
 interface UseIssueStreamReturn {
@@ -52,6 +53,7 @@ export function useIssueStream({
   issueId,
   sessionStatus: externalStatus,
   enabled = true,
+  devMode = false,
 }: UseIssueStreamOptions): UseIssueStreamReturn {
   const [logs, setLogs] = useState<NormalizedLogEntry[]>([])
   const queryClient = useQueryClient()
@@ -123,7 +125,7 @@ export function useIssueStream({
     return () => {
       cancelled = true
     }
-  }, [projectId, issueId, enabled, externalStatus])
+  }, [projectId, issueId, enabled, externalStatus, devMode])
 
   // Subscribe to live SSE events for this issue.
   useEffect(() => {

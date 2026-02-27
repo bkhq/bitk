@@ -362,16 +362,14 @@ export function SessionMessages({
       .map((entry) => String(entry.metadata?.toolCallId)),
   )
 
+  // Backend filters entries by devMode (default: only user + assistant messages).
+  // Frontend only hides TodoWrite tool calls which are always noise.
   const visibleLogs = logs.filter((entry) => {
     if (entry.entryType !== 'tool-use') return true
-    // Hide all tool-use when dev mode is off
-    if (!devMode) return false
     const md = entry.metadata
-    if (!md) return true
-    // Always hide TodoWrite even in dev mode
-    if (md.toolName === 'TodoWrite') return false
+    if (md?.toolName === 'TodoWrite') return false
     if (
-      md.isResult === true &&
+      md?.isResult === true &&
       typeof md.toolCallId === 'string' &&
       todoCallIds.has(md.toolCallId)
     ) {
