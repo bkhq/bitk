@@ -190,14 +190,25 @@ export function AppSidebar({ activeProjectId }: { activeProjectId: string }) {
   )
 }
 
-function ViewModeToggle() {
+function ViewModeToggle({ activeProjectId }: { activeProjectId: string }) {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const { mode, setMode } = useViewModeStore()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   useClickOutside(ref, open, () => setOpen(false))
 
   const Icon = mode === 'kanban' ? LayoutGrid : List
+
+  const switchMode = (newMode: 'kanban' | 'list') => {
+    setMode(newMode)
+    setOpen(false)
+    const path =
+      newMode === 'list'
+        ? `/projects/${activeProjectId}/issues`
+        : `/projects/${activeProjectId}`
+    navigate(path)
+  }
 
   return (
     <div ref={ref} className="relative">
@@ -215,10 +226,7 @@ function ViewModeToggle() {
         <div className="absolute left-full bottom-0 ml-2 z-[100] min-w-[120px] rounded-md border bg-popover py-1 shadow-lg">
           <button
             type="button"
-            onClick={() => {
-              setMode('kanban')
-              setOpen(false)
-            }}
+            onClick={() => switchMode('kanban')}
             className={`flex w-full items-center gap-2 px-3 py-1.5 text-sm transition-colors hover:bg-accent ${
               mode === 'kanban' ? 'bg-accent/50 font-medium' : ''
             }`}
@@ -228,10 +236,7 @@ function ViewModeToggle() {
           </button>
           <button
             type="button"
-            onClick={() => {
-              setMode('list')
-              setOpen(false)
-            }}
+            onClick={() => switchMode('list')}
             className={`flex w-full items-center gap-2 px-3 py-1.5 text-sm transition-colors hover:bg-accent ${
               mode === 'list' ? 'bg-accent/50 font-medium' : ''
             }`}
