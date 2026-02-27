@@ -1,6 +1,6 @@
 # Kanban App — Task List
 
-> Updated: 2026-02-26
+> Updated: 2026-02-27
 > Compressed from 170+ iterative tasks into feature-level tracking.
 
 ## Usage
@@ -19,7 +19,7 @@
 
 - Format: `PREFIX-NNN` — uppercase category prefix + sequential number.
 - IDs are stable once assigned; never reuse or renumber.
-- Next IDs: UI-014, FE-129, BUG-082, SEC-026, ARCH-017, AGENT-012, SSE-004, PERF-005, TEST-009, FEAT-009, OBS-005, AUDIT-006, CLEAN-008, ENG-003, API-006, UX-004, CODEX-007, DB-006
+- Next IDs: UI-014, FE-129, BUG-082, SEC-026, ARCH-017, AGENT-012, SSE-004, PERF-005, TEST-009, FEAT-011, OBS-005, AUDIT-006, CLEAN-008, ENG-003, API-006, UX-004, CODEX-007, DB-006
 
 ### Status Markers
 
@@ -546,6 +546,12 @@
   - description: (1) SSE test expects 400 for missing projectId but gets 200 — SSE endpoint changed to global. (2) Follow-up on done issue test expects 400 but gets 200 — status guard may be missing.
   - activeForm: Fixing failing backend tests
   - createdAt: 2026-02-27 03:00
+
+- [x] **FEAT-010 Support built-in SDK slash commands** `P1`
+  - description: Capture slash_commands from SDK init message, store on ManagedProcess, expose via GET /slash-commands API, add frontend ChatInput autocomplete with arrow-key/Tab/Enter navigation, handle compact_boundary response as visual divider in chat. i18n keys added for both en/zh.
+  - activeForm: Implementing SDK slash commands support
+  - createdAt: 2026-02-27 14:00
+  - owner: claude
 
 ---
 

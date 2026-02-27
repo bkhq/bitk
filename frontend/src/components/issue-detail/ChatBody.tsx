@@ -128,7 +128,7 @@ export function ChatBody({
   const updateIssue = useUpdateIssue(projectId)
   const cancelIssue = useCancelIssue(projectId)
 
-  const hasSession = !!issue?.sessionStatus
+  const hasSession = !!issue.sessionStatus
   const { data: slashCommandsData } = useSlashCommands(
     projectId,
     issueId,
