@@ -566,6 +566,7 @@ export class IssueEngine {
     logParser: (line: string) => NormalizedLogEntry | NormalizedLogEntry[] | null,
     turnIndex = 0,
     worktreePath?: string,
+    metaTurn = false,
   ): ManagedProcess {
     const managed: ManagedProcess = {
       executionId,
@@ -580,7 +581,7 @@ export class IssueEngine {
       logicalFailure: false,
       cancelledByUser: false,
       turnSettled: false,
-      metaTurn: false,
+      metaTurn,
       slashCommands: [],
       worktreePath,
       pendingInputs: [],
@@ -1397,10 +1398,8 @@ export class IssueEngine {
       (line) => normalizer.parse(line),
       turnIndex,
       worktreePath,
+      metadata?.type === 'system',
     )
-    if (metadata?.type === 'system') {
-      managed.metaTurn = true
-    }
     const messageId = this.persistUserMessage(issueId, executionId, prompt, displayPrompt, metadata)
     this.monitorCompletion(executionId, issueId, engineType, false)
     logger.info(
