@@ -19,8 +19,16 @@ export function isVisibleForMode(entry: NormalizedLogEntry, devMode: boolean): b
   // Meta-turn entries (auto-title etc.) are always hidden
   if (entry.metadata?.type === 'system') return false
 
-  // Only user & assistant messages are visible in normal mode
-  return entry.entryType === 'user-message' || entry.entryType === 'assistant-message'
+  // User & assistant messages are always visible
+  if (entry.entryType === 'user-message' || entry.entryType === 'assistant-message') return true
+
+  // System messages — only command output and compact boundary
+  if (entry.entryType === 'system-message') {
+    const subtype = entry.metadata?.subtype
+    return subtype === 'command_output' || subtype === 'compact_boundary'
+  }
+
+  return false
 }
 
 // ---------- Dev mode cache ----------

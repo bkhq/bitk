@@ -149,7 +149,9 @@ export function getLogsFromDb(issueId: string, devMode = false): NormalizedLogEn
   // Non-devMode also pre-filters by entryType for performance (avoids loading tool-use rows).
   const conditions = [eq(logsTable.issueId, issueId), eq(logsTable.visible, 1)]
   if (!devMode) {
-    conditions.push(inArray(logsTable.entryType, ['user-message', 'assistant-message']))
+    conditions.push(
+      inArray(logsTable.entryType, ['user-message', 'assistant-message', 'system-message']),
+    )
   }
   const rows = db
     .select()
