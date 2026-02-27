@@ -40,6 +40,9 @@ data/
 .claude.json
 .claude/
 
+# Superpowers plugin docs
+docs/superpowers/
+
 # npm cache (leaked via ~/ symlink)
 ~/
 

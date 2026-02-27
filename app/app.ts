@@ -7,6 +7,7 @@ import { secureHeaders } from 'hono/secure-headers'
 import { getEngineDiscovery } from './engines/startup-probe'
 import { httpLogger, logger } from './logger'
 import { apiRoutes, engineRoutes, eventRoutes, settingsRoutes } from './routes'
+import terminalRoute from './routes/terminal'
 
 const app = new Hono()
 
@@ -66,6 +67,7 @@ app.route('/api', apiRoutes)
 app.route('/api/engines', engineRoutes)
 app.route('/api/events', eventRoutes)
 app.route('/api/settings', settingsRoutes)
+app.route('/api', terminalRoute)
 
 // --- 404 handler ---
 app.all('/api/*', (c) => {

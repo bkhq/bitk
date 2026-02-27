@@ -4,13 +4,20 @@ import type {
   PermissionPolicy,
   ProcessStatus,
   SpawnedProcess,
+  ToolAction,
+  ToolDetail,
 } from './types'
 import { mkdir, rm, stat } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import { asc, eq, max } from 'drizzle-orm'
 import { ulid } from 'ulid'
 import { db } from '../db'
-import { issueLogs as logsTable, projects as projectsTable } from '../db/schema'
+import { getPendingMessages, markPendingMessagesDispatched } from '../db/pending-messages'
+import {
+  issueLogs as logsTable,
+  projects as projectsTable,
+  issuesLogsToolsCall as toolsTable,
+} from '../db/schema'
 import { logger } from '../logger'
 import { autoMoveToReview, getIssueWithSession, updateIssueSession } from './engine-store'
 import { engineRegistry } from './executors'
@@ -34,6 +41,10 @@ interface ManagedProcess {
   logicalFailure: boolean
   logicalFailureReason?: string
   cancelledByUser: boolean
+  /** True when handleTurnCompleted() has settled the issue (DB updated, events emitted)
+   *  but the subprocess is still alive (conversational engines). Prevents monitorCompletion()
+   *  from re-settling on exit, and is reset when a new turn starts. */
+  turnSettled: boolean
   worktreePath?: string
   pendingInputs: Array<{
     prompt: string
@@ -83,16 +94,11 @@ function getPermissionOptions(
   overridePolicy?: PermissionPolicy,
 ): {
   permissionMode: string
-  dangerouslySkipPermissions: boolean
 } {
   const profile = BUILT_IN_PROFILES[engineType]
   const policy = overridePolicy ?? profile?.permissionPolicy ?? 'supervised'
 
-  if (policy === 'bypass') {
-    return { permissionMode: 'bypass', dangerouslySkipPermissions: true }
-  }
-
-  return { permissionMode: policy, dangerouslySkipPermissions: false }
+  return { permissionMode: policy }
 }
 
 async function resolveWorkingDir(projectId: string): Promise<string> {
@@ -224,7 +230,7 @@ export class IssueEngine {
       model?: string
       permissionMode?: PermissionPolicy
     },
-  ): Promise<{ executionId: string }> {
+  ): Promise<{ executionId: string; messageId?: string | null }> {
     return this.withIssueLock(issueId, async () => {
       logger.debug(
         {
@@ -284,7 +290,7 @@ export class IssueEngine {
           prompt: opts.prompt,
           model,
           permissionMode: permOptions.permissionMode as any,
-          dangerouslySkipPermissions: permOptions.dangerouslySkipPermissions,
+
           externalSessionId,
         },
         {
@@ -295,14 +301,16 @@ export class IssueEngine {
         },
       )
 
-      await updateIssueSession(issueId, { externalSessionId })
+      // Allow executor to override the external session ID (e.g. Codex uses server-generated thread IDs)
+      const finalExternalSessionId = spawned.externalSessionId ?? externalSessionId
+      await updateIssueSession(issueId, { externalSessionId: finalExternalSessionId })
       logger.info(
         {
           issueId,
           executionId,
           pid: this.getPidFromSubprocess(spawned.subprocess),
           engineType: opts.engineType,
-          externalSessionId,
+          externalSessionId: finalExternalSessionId,
           worktreePath,
         },
         'issue_execute_spawned',
@@ -316,10 +324,10 @@ export class IssueEngine {
         0,
         worktreePath,
       )
-      this.persistUserMessage(issueId, executionId, opts.prompt)
+      const messageId = this.persistUserMessage(issueId, executionId, opts.prompt)
       this.monitorCompletion(executionId, issueId, opts.engineType, false)
 
-      return { executionId }
+      return { executionId, messageId }
     })
   }
 
@@ -329,7 +337,9 @@ export class IssueEngine {
     model?: string,
     permissionMode?: PermissionPolicy,
     busyAction: 'queue' | 'cancel' = 'queue',
-  ): Promise<{ executionId: string }> {
+    displayPrompt?: string,
+    metadata?: Record<string, unknown>,
+  ): Promise<{ executionId: string; messageId?: string | null }> {
     return this.withIssueLock(issueId, async () => {
       logger.debug(
         { issueId, model, permissionMode, busyAction, promptChars: prompt.length },
@@ -406,14 +416,20 @@ export class IssueEngine {
               )
             })
           }
-          return { executionId: active.executionId }
+          return { executionId: active.executionId, messageId: null }
         }
 
         // Engine is idle: send immediately on existing process.
         // If this races with process exit, fall back to spawning a follow-up process.
         try {
-          this.sendInputToRunningProcess(issueId, active, prompt)
-          return { executionId: active.executionId }
+          const msgId = this.sendInputToRunningProcess(
+            issueId,
+            active,
+            prompt,
+            displayPrompt,
+            metadata,
+          )
+          return { executionId: active.executionId, messageId: msgId }
         } catch (error) {
           logger.warn(
             {
@@ -424,7 +440,14 @@ export class IssueEngine {
             },
             'issue_followup_active_send_failed_fallback_spawn',
           )
-          return this.spawnFollowUpProcess(issueId, prompt, effectiveModel, permissionMode)
+          return this.spawnFollowUpProcess(
+            issueId,
+            prompt,
+            effectiveModel,
+            permissionMode,
+            displayPrompt,
+            metadata,
+          )
         }
       }
 
@@ -432,7 +455,14 @@ export class IssueEngine {
         { issueId, engineType, model: effectiveModel },
         'issue_followup_spawn_new_process',
       )
-      return this.spawnFollowUpProcess(issueId, prompt, effectiveModel, permissionMode)
+      return this.spawnFollowUpProcess(
+        issueId,
+        prompt,
+        effectiveModel,
+        permissionMode,
+        displayPrompt,
+        metadata,
+      )
     })
   }
 
@@ -488,7 +518,6 @@ export class IssueEngine {
             sessionId: issue.sessionFields.externalSessionId,
             model: issue.sessionFields.model ?? undefined,
             permissionMode: permOptions.permissionMode as any,
-            dangerouslySkipPermissions: permOptions.dangerouslySkipPermissions,
           },
           {
             vars: {},
@@ -506,7 +535,7 @@ export class IssueEngine {
             prompt: issue.sessionFields.prompt,
             model: issue.sessionFields.model ?? undefined,
             permissionMode: permOptions.permissionMode as any,
-            dangerouslySkipPermissions: permOptions.dangerouslySkipPermissions,
+
             externalSessionId,
           },
           {
@@ -516,7 +545,9 @@ export class IssueEngine {
             issueId,
           },
         )
-        await updateIssueSession(issueId, { externalSessionId })
+        await updateIssueSession(issueId, {
+          externalSessionId: spawned.externalSessionId ?? externalSessionId,
+        })
       }
 
       const turnIndex = this.getNextTurnIndex(issueId)
@@ -613,6 +644,16 @@ export class IssueEngine {
     return this.getActiveProcessForIssue(issueId) !== undefined
   }
 
+  /**
+   * Check whether the engine is actively processing a turn for the given issue.
+   * Returns true when an active process exists AND a turn is in-flight.
+   * Used by the follow-up route to decide whether to queue messages as pending.
+   */
+  isTurnInFlight(issueId: string): boolean {
+    const active = this.getActiveProcessForIssue(issueId)
+    return !!active && active.turnInFlight
+  }
+
   async cancelAll(): Promise<void> {
     const active = this.getActiveProcesses()
     await Promise.all(active.map((p) => this.cancel(p.executionId, { hard: true })))
@@ -650,7 +691,7 @@ export class IssueEngine {
     executionId: string,
     issueId: string,
     process: SpawnedProcess,
-    logParser: (line: string) => NormalizedLogEntry | null,
+    logParser: (line: string) => NormalizedLogEntry | NormalizedLogEntry[] | null,
     turnIndex = 0,
     worktreePath?: string,
   ): ManagedProcess {
@@ -666,6 +707,7 @@ export class IssueEngine {
       queueCancelRequested: false,
       logicalFailure: false,
       cancelledByUser: false,
+      turnSettled: false,
       worktreePath,
       pendingInputs: [],
     }
@@ -803,6 +845,41 @@ export class IssueEngine {
     }
   }
 
+  /** Kill any existing subprocess for this issue (regardless of managed state).
+   *  Used as a safety guard before spawning a new follow-up process to prevent
+   *  duplicate CLI processes for the same session. */
+  private async killExistingSubprocessForIssue(issueId: string): Promise<void> {
+    for (const [executionId, managed] of this.processes) {
+      if (managed.issueId !== issueId || managed.finishedAt) continue
+      try {
+        managed.process.subprocess.kill()
+        logger.debug(
+          { issueId, executionId, pid: this.getPidFromManaged(managed) },
+          'issue_killed_existing_subprocess_before_followup_spawn',
+        )
+        // Wait briefly for clean exit, then force kill
+        const killTimeout = setTimeout(() => {
+          try {
+            managed.process.subprocess.kill(9)
+          } catch {
+            /* already dead */
+          }
+        }, 3000)
+        try {
+          await managed.process.subprocess.exited
+        } catch {
+          /* ignore */
+        } finally {
+          clearTimeout(killTimeout)
+        }
+      } catch {
+        /* subprocess already dead — ignore */
+      }
+      managed.finishedAt = new Date()
+      this.scheduleAutoCleanup(executionId)
+    }
+  }
+
   private cleanup(executionId: string): void {
     const managed = this.processes.get(executionId)
     const timer = this.cleanupTimers.get(executionId)
@@ -838,10 +915,13 @@ export class IssueEngine {
 
   // ---- Private: log persistence ----
 
-  private persistLogEntry(issueId: string, executionId: string, entry: NormalizedLogEntry): void {
+  private persistLogEntry(
+    issueId: string,
+    executionId: string,
+    entry: NormalizedLogEntry,
+  ): NormalizedLogEntry | null {
     try {
       const messageId = entry.messageId ?? ulid()
-      entry.messageId = messageId
       const idx = this.entryCounters.get(executionId) ?? 0
       this.entryCounters.set(executionId, idx + 1)
       const turnIdx = this.turnIndexes.get(executionId) ?? 0
@@ -852,7 +932,6 @@ export class IssueEngine {
         const replyTo = this.userMessageIds.get(`${issueId}:${turnIdx}`)
         if (replyTo) {
           replyToMessageId = replyTo
-          entry.replyToMessageId = replyTo
         }
       }
 
@@ -865,13 +944,92 @@ export class IssueEngine {
           entryType: entry.entryType,
           content: entry.content.trim(),
           metadata: entry.metadata ? JSON.stringify(entry.metadata) : null,
-          toolAction: entry.toolAction ? JSON.stringify(entry.toolAction) : null,
           replyToMessageId,
           timestamp: entry.timestamp ?? null,
         })
         .run()
+
+      // Return new object — do NOT mutate the input entry
+      return {
+        ...entry,
+        messageId,
+        replyToMessageId: replyToMessageId ?? undefined,
+      }
     } catch (error) {
       logger.warn({ err: error, issueId }, 'persistLogEntry failed')
+      return null
+    }
+  }
+
+  private persistToolDetail(
+    logId: string,
+    issueId: string,
+    entry: NormalizedLogEntry,
+  ): string | null {
+    try {
+      const toolName =
+        typeof entry.metadata?.toolName === 'string'
+          ? entry.metadata.toolName
+          : (entry.toolAction?.kind ?? 'unknown')
+      const toolCallId =
+        typeof entry.metadata?.toolCallId === 'string' ? entry.metadata.toolCallId : null
+      const isResult = entry.metadata?.isResult === true
+      const action = entry.toolAction
+      const kind = action?.kind ?? 'other'
+
+      // Build raw JSON from all available data
+      const rawData: Record<string, unknown> = {
+        toolName,
+        toolCallId,
+        kind,
+        isResult,
+      }
+      if (action) rawData.toolAction = action
+      if (entry.metadata) rawData.metadata = entry.metadata
+      if (entry.content) {
+        const content = entry.content
+        rawData.content =
+          content.length > 5000 ? `${content.slice(0, 5000)}...[truncated]` : content
+      }
+
+      const toolRecordId = ulid()
+
+      db.insert(toolsTable)
+        .values({
+          id: toolRecordId,
+          logId,
+          issueId,
+          toolName,
+          toolCallId,
+          kind,
+          isResult,
+          raw: JSON.stringify(rawData),
+        })
+        .run()
+
+      return toolRecordId
+    } catch (error) {
+      logger.warn({ err: error, logId, issueId }, 'persistToolDetail failed')
+      return null
+    }
+  }
+
+  private buildToolDetail(entry: NormalizedLogEntry): ToolDetail | null {
+    if (entry.entryType !== 'tool-use') return null
+    const toolName =
+      typeof entry.metadata?.toolName === 'string'
+        ? entry.metadata.toolName
+        : (entry.toolAction?.kind ?? 'unknown')
+    const action = entry.toolAction
+    const kind = action?.kind ?? 'other'
+    const isResult = entry.metadata?.isResult === true
+
+    return {
+      kind,
+      toolName,
+      toolCallId:
+        typeof entry.metadata?.toolCallId === 'string' ? entry.metadata.toolCallId : undefined,
+      isResult,
     }
   }
 
@@ -881,18 +1039,76 @@ export class IssueEngine {
       .from(logsTable)
       .where(eq(logsTable.issueId, issueId))
       .orderBy(asc(logsTable.turnIndex), asc(logsTable.entryIndex))
+      .limit(MAX_LOG_ENTRIES)
       .all()
 
-    return rows.map((row) => ({
-      messageId: row.id,
-      replyToMessageId: row.replyToMessageId ?? undefined,
-      entryType: row.entryType as NormalizedLogEntry['entryType'],
-      content: row.content.trim(),
-      turnIndex: row.turnIndex,
-      timestamp: row.timestamp ?? undefined,
-      metadata: row.metadata ? JSON.parse(row.metadata) : undefined,
-      toolAction: row.toolAction ? JSON.parse(row.toolAction) : undefined,
-    }))
+    // Batch-fetch tool details for this issue (bounded by log count)
+    const toolRows = db
+      .select()
+      .from(toolsTable)
+      .where(eq(toolsTable.issueId, issueId))
+      .limit(MAX_LOG_ENTRIES)
+      .all()
+    const toolByLogId = new Map(toolRows.map((r) => [r.logId, r]))
+
+    return rows.map((row) => {
+      const base: NormalizedLogEntry = {
+        messageId: row.id,
+        replyToMessageId: row.replyToMessageId ?? undefined,
+        entryType: row.entryType as NormalizedLogEntry['entryType'],
+        content: row.content.trim(),
+        turnIndex: row.turnIndex,
+        timestamp: row.timestamp ?? undefined,
+        metadata: row.metadata ? JSON.parse(row.metadata) : undefined,
+      }
+
+      // Attach tool detail and reconstruct toolAction + content/metadata from tools table
+      const tool = toolByLogId.get(row.id)
+      if (tool) {
+        const rawData = tool.raw ? JSON.parse(tool.raw) : {}
+        base.toolDetail = {
+          kind: tool.kind,
+          toolName: tool.toolName,
+          toolCallId: tool.toolCallId ?? undefined,
+          isResult: tool.isResult ?? false,
+          raw: rawData,
+        }
+        base.toolAction = this.rawToToolAction(tool.kind, rawData)
+        // Restore content & metadata from raw (not stored in issues_logs for tool-use)
+        if (!base.content && rawData.content) {
+          base.content = rawData.content as string
+        }
+        if (!base.metadata && rawData.metadata) {
+          base.metadata = rawData.metadata as Record<string, unknown>
+        }
+      }
+
+      return base
+    })
+  }
+
+  /** Reconstruct ToolAction from the raw JSON stored in issue_logs_tools_call */
+  private rawToToolAction(kind: string, rawData: Record<string, unknown>): ToolAction {
+    const action = rawData.toolAction as Record<string, unknown> | undefined
+    switch (kind) {
+      case 'file-read':
+        return { kind: 'file-read', path: (action?.path as string) ?? '' }
+      case 'file-edit':
+        return { kind: 'file-edit', path: (action?.path as string) ?? '' }
+      case 'command-run':
+        return { kind: 'command-run', command: (action?.command as string) ?? '' }
+      case 'search':
+        return { kind: 'search', query: (action?.query as string) ?? '' }
+      case 'web-fetch':
+        return { kind: 'web-fetch', url: (action?.url as string) ?? '' }
+      case 'tool':
+        return {
+          kind: 'tool',
+          toolName: (action?.toolName as string) ?? (rawData.toolName as string) ?? '',
+        }
+      default:
+        return { kind: 'other', description: (rawData.toolName as string) ?? kind }
+    }
   }
 
   private getNextTurnIndex(issueId: string): number {
@@ -904,36 +1120,48 @@ export class IssueEngine {
     return (row?.maxTurn ?? -1) + 1
   }
 
-  private persistUserMessage(issueId: string, executionId: string, prompt: string): void {
+  private persistUserMessage(
+    issueId: string,
+    executionId: string,
+    prompt: string,
+    displayPrompt?: string,
+    metadata?: Record<string, unknown>,
+  ): string | null {
     const turnIdx = this.turnIndexes.get(executionId) ?? 0
     const entry: NormalizedLogEntry = {
       entryType: 'user-message',
-      content: prompt.trim(),
+      content: (displayPrompt ?? prompt).trim(),
       turnIndex: turnIdx,
       timestamp: new Date().toISOString(),
+      ...(metadata ? { metadata } : {}),
     }
 
-    // Push to in-memory logs
-    const managed = this.processes.get(executionId)
-    if (managed) {
-      managed.logs.push(entry)
+    // Persist first, then emit (DB is source of truth)
+    const persisted = this.persistLogEntry(issueId, executionId, entry)
+    if (persisted) {
+      // Push persisted (with messageId) to in-memory logs for dedup
+      const managed = this.processes.get(executionId)
+      if (managed) {
+        managed.logs.push(persisted)
+      }
+      this.emitLog(issueId, executionId, persisted)
     }
-
-    // Persist and emit
-    this.persistLogEntry(issueId, executionId, entry)
-    this.emitLog(issueId, executionId, entry)
 
     // Store user message ID so agent responses in this turn can reference it
-    if (entry.messageId) {
-      this.userMessageIds.set(`${issueId}:${turnIdx}`, entry.messageId)
+    const messageId = persisted?.messageId ?? null
+    if (messageId) {
+      this.userMessageIds.set(`${issueId}:${turnIdx}`, messageId)
     }
+    return messageId
   }
 
   private sendInputToRunningProcess(
     issueId: string,
     managed: ManagedProcess,
     prompt: string,
-  ): void {
+    displayPrompt?: string,
+    metadata?: Record<string, unknown>,
+  ): string | null {
     if (managed.state !== 'running') {
       throw new Error('Cannot send input to a non-running process')
     }
@@ -948,7 +1176,18 @@ export class IssueEngine {
     handler.sendUserMessage(prompt)
     managed.turnInFlight = true
     managed.queueCancelRequested = false
-    this.persistUserMessage(issueId, managed.executionId, prompt)
+    // Reset turn-level flags for the new turn so previous turn's state doesn't leak.
+    managed.turnSettled = false
+    managed.logicalFailure = false
+    managed.logicalFailureReason = undefined
+    managed.cancelledByUser = false
+    const messageId = this.persistUserMessage(
+      issueId,
+      managed.executionId,
+      prompt,
+      displayPrompt,
+      metadata,
+    )
     logger.debug(
       {
         issueId,
@@ -959,6 +1198,7 @@ export class IssueEngine {
       'issue_process_input_sent',
     )
     this.emitStateChange(issueId, managed.executionId, 'running')
+    return messageId
   }
 
   // ---- Private: stream consumers ----
@@ -967,7 +1207,7 @@ export class IssueEngine {
     executionId: string,
     issueId: string,
     stream: ReadableStream<Uint8Array>,
-    parser: (line: string) => NormalizedLogEntry | null,
+    parser: (line: string) => NormalizedLogEntry | NormalizedLogEntry[] | null,
   ): Promise<void> {
     try {
       for await (const rawEntry of normalizeStream(stream, parser)) {
@@ -989,12 +1229,35 @@ export class IssueEngine {
           }
           continue
         }
-        if (managed.logs.length < MAX_LOG_ENTRIES) {
+        // Persist first, then emit (DB is source of truth)
+        // For tool-use entries, content & metadata are stored in the tools table only
+        const isToolUse = entry.entryType === 'tool-use'
+        const dbEntry = isToolUse ? { ...entry, content: '', metadata: undefined } : entry
+        const persisted = this.persistLogEntry(issueId, executionId, dbEntry)
+        if (persisted) {
+          if (isToolUse && persisted.messageId) {
+            const detail = this.buildToolDetail(entry)
+            if (detail) persisted.toolDetail = detail
+            // Restore content/metadata on the in-memory entry for emitting to live clients
+            persisted.content = entry.content
+            persisted.metadata = entry.metadata
+            const toolRecordId = this.persistToolDetail(persisted.messageId, issueId, entry)
+            if (toolRecordId) {
+              db.update(logsTable)
+                .set({ toolCallRefId: toolRecordId })
+                .where(eq(logsTable.id, persisted.messageId))
+                .run()
+            }
+          }
+          // Push persisted entry (with messageId) so getLogs dedup works correctly
+          if (managed.logs.length < MAX_LOG_ENTRIES) {
+            managed.logs.push(persisted)
+          }
+          this.emitLog(issueId, executionId, persisted)
+        } else if (managed.logs.length < MAX_LOG_ENTRIES) {
+          // Persist failed — keep original entry in memory as fallback
           managed.logs.push(entry)
         }
-
-        this.persistLogEntry(issueId, executionId, entry)
-        this.emitLog(issueId, executionId, entry)
 
         const resultSubtype = entry.metadata?.resultSubtype
         const isResultError = typeof resultSubtype === 'string' && resultSubtype !== 'success'
@@ -1019,8 +1282,10 @@ export class IssueEngine {
           timestamp: new Date().toISOString(),
         }
         managed.logs.push(errorEntry)
-        this.persistLogEntry(issueId, executionId, errorEntry)
-        this.emitLog(issueId, executionId, errorEntry)
+        const persisted = this.persistLogEntry(issueId, executionId, errorEntry)
+        if (persisted) {
+          this.emitLog(issueId, executionId, persisted)
+        }
       }
     }
   }
@@ -1067,14 +1332,46 @@ export class IssueEngine {
     // No queued inputs — the AI turn is done and the process is idle.
     // For conversational engines the subprocess stays alive, so monitorCompletion
     // (which awaits subprocess.exited) will not fire yet. Settle the issue now:
-    // mark session completed and auto-move to review.
+    // update DB session status and auto-move to review.
+    //
+    // IMPORTANT: Do NOT change managed.state here. The subprocess is still alive
+    // and can receive follow-up input. Keeping state as 'running' ensures
+    // getActiveProcessForIssue() can find it, preventing duplicate process spawns.
+    // The turnSettled flag tells monitorCompletion() to just clean up on exit.
     const finalStatus = managed.logicalFailure ? 'failed' : 'completed'
-    managed.state = finalStatus as ProcessStatus
+    managed.turnSettled = true
     this.emitStateChange(issueId, executionId, finalStatus as ProcessStatus)
 
     void (async () => {
       try {
         await updateIssueSession(issueId, { sessionStatus: finalStatus })
+
+        // Check for pending DB messages before moving to review.
+        // If the user sent messages while the engine was busy, they were queued
+        // as pending in the DB. Auto-flush them as a follow-up instead of
+        // moving the issue to review, so the AI processes them in a fresh turn.
+        const pendingRows = await getPendingMessages(issueId)
+        if (pendingRows.length > 0) {
+          logger.info(
+            { issueId, executionId, pendingCount: pendingRows.length },
+            'auto_flush_pending_after_turn',
+          )
+          const prompt = pendingRows
+            .map((r) => r.content)
+            .filter(Boolean)
+            .join('\n\n')
+          const pendingIds = pendingRows.map((r) => r.id)
+          try {
+            const issue = await getIssueWithSession(issueId)
+            await this.followUpIssue(issueId, prompt, issue?.model ?? undefined)
+            await markPendingMessagesDispatched(pendingIds)
+            return
+          } catch (flushErr) {
+            logger.error({ issueId, err: flushErr }, 'auto_flush_pending_failed')
+            // Fall through to normal review flow
+          }
+        }
+
         await autoMoveToReview(issueId)
         this.emitIssueSettled(issueId, executionId, finalStatus)
         logger.info({ issueId, executionId, finalStatus }, 'issue_turn_settled')
@@ -1140,8 +1437,10 @@ export class IssueEngine {
           if (managed.logs.length < MAX_LOG_ENTRIES) {
             managed.logs.push(entry)
           }
-          this.persistLogEntry(issueId, executionId, entry)
-          this.emitLog(issueId, executionId, entry)
+          const persisted = this.persistLogEntry(issueId, executionId, entry)
+          if (persisted) {
+            this.emitLog(issueId, executionId, persisted)
+          }
         }
       }
 
@@ -1158,8 +1457,10 @@ export class IssueEngine {
           if (managed.logs.length < MAX_LOG_ENTRIES) {
             managed.logs.push(entry)
           }
-          this.persistLogEntry(issueId, executionId, entry)
-          this.emitLog(issueId, executionId, entry)
+          const persisted = this.persistLogEntry(issueId, executionId, entry)
+          if (persisted) {
+            this.emitLog(issueId, executionId, persisted)
+          }
         }
       }
     } catch {
@@ -1200,7 +1501,11 @@ export class IssueEngine {
 
         // If the issue was already settled by handleTurnCompleted (conversational
         // engines where the process stays alive between turns), just clean up.
-        if (managed.state === 'completed' || managed.state === 'failed') {
+        // We use the turnSettled flag instead of checking managed.state because
+        // the state is now kept as 'running' while the subprocess is alive.
+        if (managed.turnSettled) {
+          managed.state = (managed.logicalFailure ? 'failed' : 'completed') as ProcessStatus
+          managed.finishedAt = new Date()
           this.scheduleAutoCleanup(executionId)
           return
         }
@@ -1339,7 +1644,6 @@ export class IssueEngine {
             sessionId: issue.sessionFields.externalSessionId,
             model: issue.sessionFields.model ?? undefined,
             permissionMode: permOptions.permissionMode as any,
-            dangerouslySkipPermissions: permOptions.dangerouslySkipPermissions,
           },
           {
             vars: {},
@@ -1365,7 +1669,7 @@ export class IssueEngine {
             prompt: issue.sessionFields.prompt ?? '',
             model: issue.sessionFields.model ?? undefined,
             permissionMode: permOptions.permissionMode as any,
-            dangerouslySkipPermissions: permOptions.dangerouslySkipPermissions,
+
             externalSessionId,
           },
           {
@@ -1375,7 +1679,9 @@ export class IssueEngine {
             issueId,
           },
         )
-        await updateIssueSession(issueId, { externalSessionId })
+        await updateIssueSession(issueId, {
+          externalSessionId: spawned.externalSessionId ?? externalSessionId,
+        })
       }
     } else {
       const externalSessionId = crypto.randomUUID()
@@ -1385,7 +1691,7 @@ export class IssueEngine {
           prompt: issue.sessionFields.prompt ?? '',
           model: issue.sessionFields.model ?? undefined,
           permissionMode: permOptions.permissionMode as any,
-          dangerouslySkipPermissions: permOptions.dangerouslySkipPermissions,
+
           externalSessionId,
         },
         {
@@ -1395,7 +1701,9 @@ export class IssueEngine {
           issueId,
         },
       )
-      await updateIssueSession(issueId, { externalSessionId })
+      await updateIssueSession(issueId, {
+        externalSessionId: spawned.externalSessionId ?? externalSessionId,
+      })
     }
 
     const turnIndex = this.getNextTurnIndex(issueId)
@@ -1409,7 +1717,9 @@ export class IssueEngine {
     prompt: string,
     model?: string,
     permissionMode?: PermissionPolicy,
-  ): Promise<{ executionId: string }> {
+    displayPrompt?: string,
+    metadata?: Record<string, unknown>,
+  ): Promise<{ executionId: string; messageId?: string | null }> {
     logger.debug(
       { issueId, model, permissionMode, promptChars: prompt.length },
       'issue_followup_spawn_process_requested',
@@ -1421,6 +1731,12 @@ export class IssueEngine {
     if (!issue.sessionFields.engineType) throw new Error('No engine type set on issue')
 
     this.ensureConcurrencyLimit()
+
+    // Safety guard: kill any existing subprocess for this issue to prevent
+    // duplicate CLI processes talking to the same Claude session.
+    // This can happen if sendInputToRunningProcess() failed (stdin closed)
+    // but the old subprocess is still alive.
+    await this.killExistingSubprocessForIssue(issueId)
 
     const engineType = issue.sessionFields.engineType
     const executor = engineRegistry.get(engineType)
@@ -1469,7 +1785,6 @@ export class IssueEngine {
           sessionId: issue.sessionFields.externalSessionId,
           model: effectiveModel,
           permissionMode: permOptions.permissionMode as any,
-          dangerouslySkipPermissions: permOptions.dangerouslySkipPermissions,
         },
         {
           vars: {},
@@ -1496,7 +1811,7 @@ export class IssueEngine {
           prompt,
           model: effectiveModel,
           permissionMode: permOptions.permissionMode as any,
-          dangerouslySkipPermissions: permOptions.dangerouslySkipPermissions,
+
           externalSessionId,
         },
         {
@@ -1506,7 +1821,9 @@ export class IssueEngine {
           issueId,
         },
       )
-      await updateIssueSession(issueId, { externalSessionId })
+      await updateIssueSession(issueId, {
+        externalSessionId: spawned.externalSessionId ?? externalSessionId,
+      })
     }
 
     const turnIndex = this.getNextTurnIndex(issueId)
@@ -1518,7 +1835,7 @@ export class IssueEngine {
       turnIndex,
       worktreePath,
     )
-    this.persistUserMessage(issueId, executionId, prompt)
+    const messageId = this.persistUserMessage(issueId, executionId, prompt, displayPrompt, metadata)
     this.monitorCompletion(executionId, issueId, engineType, false)
     logger.info(
       {
@@ -1532,7 +1849,7 @@ export class IssueEngine {
       'issue_followup_spawned',
     )
 
-    return { executionId }
+    return { executionId, messageId }
   }
 
   // ---- Private: GC sweep ----
@@ -1569,7 +1886,7 @@ export class IssueEngine {
     // Clean orphaned userMessageIds entries for issues no longer tracked
     const activeIssueIds = new Set(Array.from(this.processes.values()).map((p) => p.issueId))
     for (const key of this.userMessageIds.keys()) {
-      const issueId = key.split(':')[0]
+      const issueId = key.split(':')[0] ?? key
       if (!activeIssueIds.has(issueId)) {
         this.userMessageIds.delete(key)
         cleaned++

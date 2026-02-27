@@ -1,4 +1,12 @@
-import { Globe, Menu, Moon, Plus, Sun, ChevronRight } from 'lucide-react'
+import {
+  Globe,
+  Menu,
+  Moon,
+  Plus,
+  Sun,
+  ChevronRight,
+  TerminalSquare,
+} from 'lucide-react'
 import { useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -138,6 +146,21 @@ export function MobileSidebar({
               >
                 <Plus className="h-4 w-4 text-muted-foreground" />
                 {t('sidebar.createProject')}
+              </button>
+
+              <Separator />
+
+              {/* Terminal */}
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false)
+                  navigate('/terminal')
+                }}
+                className="flex items-center gap-3 w-full px-4 min-h-[44px] text-sm text-foreground/80 hover:bg-accent/50 active:bg-accent transition-colors"
+              >
+                <TerminalSquare className="h-4 w-4 text-muted-foreground" />
+                {t('terminal.title')}
               </button>
 
               <Separator />

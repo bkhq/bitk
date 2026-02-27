@@ -1,13 +1,11 @@
 import { useRef, useState } from 'react'
-import { Bot, Calendar, ChevronDown } from 'lucide-react'
+import { Bug, Calendar, ChevronDown } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import type { Issue, Priority } from '@/types/kanban'
 import type { StatusDefinition, StatusId } from '@/lib/statuses'
 import { STATUSES } from '@/lib/statuses'
 import { tStatus, tPriority } from '@/lib/i18n-utils'
-import { formatModelName } from '@/lib/format'
 import { PriorityIcon } from '@/components/kanban/PriorityIcon'
-import { EngineIcon } from '@/components/EngineIcons'
 import { useClickOutside } from '@/hooks/use-click-outside'
 
 export const PRIORITIES: Priority[] = ['urgent', 'high', 'medium', 'low']
@@ -32,7 +30,9 @@ export function IssueDetail({
 }: {
   issue: Issue
   status?: StatusDefinition
-  onUpdate?: (fields: Partial<Pick<Issue, 'statusId' | 'priority'>>) => void
+  onUpdate?: (
+    fields: Partial<Pick<Issue, 'statusId' | 'priority' | 'devMode'>>,
+  ) => void
 }) {
   const { t, i18n } = useTranslation()
 
@@ -50,25 +50,20 @@ export function IssueDetail({
         onChange={(p) => onUpdate?.({ priority: p })}
       />
 
-      {/* Engine */}
-      {issue.engineType ? (
-        <span
-          className={`${badgeBase} border-violet-200/50 dark:border-violet-800/30 bg-violet-50/50 dark:bg-violet-950/20`}
-        >
-          <EngineIcon engineType={issue.engineType} className="h-3 w-3" />
-          {t(`createIssue.engineLabel.${issue.engineType}`, issue.engineType)}
-        </span>
-      ) : null}
-
-      {/* Model */}
-      {issue.model ? (
-        <span
-          className={`${badgeBase} border-border/50 bg-muted/30 text-muted-foreground`}
-        >
-          <Bot className="h-3 w-3" />
-          {formatModelName(issue.model)}
-        </span>
-      ) : null}
+      {/* Dev mode toggle */}
+      <button
+        type="button"
+        onClick={() => onUpdate?.({ devMode: !issue.devMode })}
+        className={`${badgeBase} cursor-pointer transition-colors ${
+          issue.devMode
+            ? 'border-amber-400/40 bg-amber-500/10 text-amber-600 dark:text-amber-400'
+            : 'border-border/50 bg-muted/20 text-muted-foreground/60 hover:text-muted-foreground'
+        }`}
+        title={t('issue.devMode')}
+      >
+        <Bug className="h-3 w-3" />
+        <span>{t('issue.dev')}</span>
+      </button>
 
       {/* Created */}
       <span

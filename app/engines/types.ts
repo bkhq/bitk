@@ -16,7 +16,7 @@ export type EngineCapability =
   | 'reasoning'
 
 // Permission policies
-export type PermissionPolicy = 'auto' | 'supervised' | 'bypass' | 'plan'
+export type PermissionPolicy = 'auto' | 'supervised' | 'plan'
 
 // Session lifecycle status
 export type SessionStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled'
@@ -96,7 +96,6 @@ export interface SpawnOptions {
   permissionMode?: PermissionPolicy
   env?: Record<string, string>
   agent?: string
-  dangerouslySkipPermissions?: boolean
   externalSessionId?: string
 }
 
@@ -133,6 +132,17 @@ export interface SpawnedProcess {
     close: () => void
     sendUserMessage?: (content: string) => void
   }
+  /** Override the caller-provided externalSessionId (used by engines that generate their own session IDs, e.g. Codex thread IDs). */
+  externalSessionId?: string
+}
+
+// Structured tool detail (persisted in issue_logs_tools_call)
+export interface ToolDetail {
+  kind: string
+  toolName: string
+  toolCallId?: string
+  isResult: boolean
+  raw?: Record<string, unknown> // Full original data for debugging/analysis
 }
 
 // Normalized log entry (unified format for all engines)
@@ -145,6 +155,7 @@ export interface NormalizedLogEntry {
   content: string
   metadata?: Record<string, unknown>
   toolAction?: ToolAction
+  toolDetail?: ToolDetail
 }
 
 // Executor config (for profile-based resolution)
@@ -178,7 +189,7 @@ export interface EngineExecutor {
   cancel: (process: SpawnedProcess) => Promise<void>
   getAvailability: () => Promise<EngineAvailability>
   getModels: () => Promise<EngineModel[]>
-  normalizeLog: (rawLine: string) => NormalizedLogEntry | null
+  normalizeLog: (rawLine: string) => NormalizedLogEntry | NormalizedLogEntry[] | null
 }
 
 // Engine registry (manages all executors)
@@ -224,6 +235,6 @@ export const BUILT_IN_PROFILES: Record<EngineType, EngineProfile> = {
     baseCommand: 'echo',
     protocol: 'stream-json',
     capabilities: ['session-fork'],
-    permissionPolicy: 'bypass',
+    permissionPolicy: 'auto',
   },
 }

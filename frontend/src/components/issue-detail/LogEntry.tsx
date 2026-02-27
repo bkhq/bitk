@@ -1,11 +1,15 @@
 import { useState } from 'react'
 import {
   AlertCircle,
+  CheckCircle2,
+  Circle,
   Clock,
   Code,
   FileEdit,
   FileText,
   Globe,
+  Image,
+  ListTodo,
   Loader2,
   Search,
   Terminal,
@@ -13,8 +17,16 @@ import {
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import type { NormalizedLogEntry, ToolAction } from '@/types/kanban'
+import { formatFileSize } from '@/lib/format'
 import { getCommandPreview } from '@/lib/command-preview'
 import { MarkdownContent } from './MarkdownContent'
+
+interface AttachmentMeta {
+  id: string
+  name: string
+  mimeType: string
+  size: number
+}
 
 function getToolIcon(action?: ToolAction) {
   if (!action) return { Icon: Wrench, color: 'text-muted-foreground' }
@@ -44,7 +56,8 @@ function getToolLabel(
     case 'file-read':
       return `${t('session.tool.fileRead')}: ${action.path}`
     case 'file-edit':
-      if (toolName === 'Write') return `写入文件: ${action.path}`
+      if (toolName === 'Write')
+        return `${t('session.tool.fileWrite')}: ${action.path}`
       return `${t('session.tool.fileEdit')}: ${action.path}`
     case 'command-run': {
       const summary = getCommandPreview(action.command, 90).summary
@@ -88,6 +101,61 @@ function formatDuration(ms: number): string {
   return `${m}m${remainS}s`
 }
 
+function TaskPlanEntry({ entry }: { entry: NormalizedLogEntry }) {
+  const items = (
+    entry.metadata?.input as
+      | {
+          todos?: Array<{
+            content: string
+            status: string
+            activeForm?: string
+          }>
+        }
+      | undefined
+  )?.todos
+  if (!items || items.length === 0) return null
+
+  const completedCount = items.filter((t) => t.status === 'completed').length
+
+  return (
+    <div className="px-5 py-1.5">
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
+        <ListTodo className="h-3 w-3 shrink-0 text-indigo-500" />
+        <span className="font-medium">Task Plan</span>
+        <span className="text-muted-foreground/50">
+          ({completedCount}/{items.length})
+        </span>
+      </div>
+      <div className="ml-4 space-y-0.5">
+        {items.map((item) => (
+          <div key={item.content} className="flex items-start gap-1.5 text-xs">
+            {item.status === 'completed' ? (
+              <CheckCircle2 className="h-3 w-3 shrink-0 text-emerald-500 mt-0.5" />
+            ) : item.status === 'in_progress' ? (
+              <Loader2 className="h-3 w-3 shrink-0 text-blue-500 animate-spin mt-0.5" />
+            ) : (
+              <Circle className="h-3 w-3 shrink-0 text-muted-foreground/40 mt-0.5" />
+            )}
+            <span
+              className={
+                item.status === 'completed'
+                  ? 'text-muted-foreground/60 line-through'
+                  : item.status === 'in_progress'
+                    ? 'text-blue-600 dark:text-blue-400'
+                    : ''
+              }
+            >
+              {item.status === 'in_progress'
+                ? item.activeForm || item.content
+                : item.content}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export function LogEntry({
   entry,
   durationMs,
@@ -103,17 +171,53 @@ export function LogEntry({
     case 'user-message': {
       const isPending = entry.metadata?.pending === true
       const isDone = entry.metadata?.done === true
+      const messageAttachments = (entry.metadata?.attachments ??
+        []) as AttachmentMeta[]
+      // Skip empty user messages (no text, no attachments, not pending/done)
+      if (
+        !entry.content.trim() &&
+        messageAttachments.length === 0 &&
+        !isPending &&
+        !isDone
+      )
+        return null
       const barColor = isPending
-        ? 'border-amber-400 bg-amber-500/[0.04]'
+        ? 'border-amber-400 bg-amber-500/[0.06]'
         : isDone
-          ? 'border-emerald-400 bg-emerald-500/[0.04]'
+          ? 'border-emerald-400 bg-emerald-500/[0.06]'
           : 'border-foreground/70'
       return (
         <div className="group px-5 py-2 animate-message-enter">
-          <div className={`bg-muted/40 px-3 py-2.5 border-l-[3px] ${barColor}`}>
-            <div className="text-sm whitespace-pre-wrap break-words text-foreground leading-relaxed">
-              {entry.content}
-            </div>
+          <div
+            className={`bg-muted/70 px-3 py-2.5 border-l-[3px] max-w-[72ch] ${barColor}`}
+          >
+            {entry.content.trim() ? (
+              <div className="text-[15px] whitespace-pre-wrap break-words text-foreground leading-[1.75]">
+                {entry.content}
+              </div>
+            ) : null}
+            {messageAttachments.length > 0 ? (
+              <div
+                className={`flex flex-wrap gap-1.5${entry.content.trim() ? ' mt-2' : ''}`}
+              >
+                {messageAttachments.map((att) => (
+                  <span
+                    key={att.id}
+                    className="inline-flex items-center gap-1 rounded bg-muted/60 border border-border/40 px-1.5 py-0.5 text-[11px] text-muted-foreground"
+                  >
+                    {att.mimeType.startsWith('image/') ? (
+                      <Image className="h-3 w-3 shrink-0 text-blue-500" />
+                    ) : (
+                      <FileText className="h-3 w-3 shrink-0" />
+                    )}
+                    <span className="truncate max-w-[120px]">{att.name}</span>
+                    <span className="text-muted-foreground/50">
+                      {formatFileSize(att.size)}
+                    </span>
+                  </span>
+                ))}
+              </div>
+            ) : null}
             {isPending || isDone ? (
               <div className="flex items-center gap-2 mt-1">
                 {isPending ? (
@@ -135,6 +239,7 @@ export function LogEntry({
     }
 
     case 'assistant-message':
+      if (!entry.content.trim()) return null
       return (
         <AssistantMessage
           content={entry.content}
@@ -144,6 +249,16 @@ export function LogEntry({
       )
 
     case 'tool-use': {
+      // Render structured task plan for TodoWrite
+      const isTodoWrite =
+        (entry.toolDetail?.toolName === 'TodoWrite' ||
+          entry.metadata?.toolName === 'TodoWrite') &&
+        !entry.toolDetail?.isResult &&
+        !entry.metadata?.isResult
+      if (isTodoWrite) {
+        return <TaskPlanEntry entry={entry} />
+      }
+
       const { Icon, color } = getToolIcon(entry.toolAction)
       const toolName =
         typeof entry.metadata?.toolName === 'string'
@@ -250,15 +365,15 @@ function AssistantMessage({
 
   return (
     <div className="group px-5 py-1.5 animate-message-enter">
-      <div className="min-w-0">
+      <div className="min-w-0 max-w-[72ch]">
         {raw ? (
-          <pre className="text-sm whitespace-pre-wrap break-words font-mono leading-relaxed">
+          <pre className="text-[14px] whitespace-pre-wrap break-words font-mono leading-relaxed">
             {content}
           </pre>
         ) : (
           <MarkdownContent
             content={content}
-            className="text-sm leading-relaxed"
+            className="text-[14px] leading-[1.75]"
           />
         )}
       </div>

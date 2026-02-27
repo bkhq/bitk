@@ -6,7 +6,9 @@ import { db } from '../../db'
 import { findProject, getDefaultEngine, getEngineDefaultModel } from '../../db/helpers'
 import { issues as issuesTable } from '../../db/schema'
 import { engineRegistry } from '../../engines/executors'
+import { issueEngine } from '../../engines/issue-engine'
 import { emitIssueUpdated } from '../../events/issue-events'
+import { logger } from '../../logger'
 import {
   bulkUpdateSchema,
   createIssueSchema,
@@ -88,50 +90,6 @@ crud.post(
 
     const body = c.req.valid('json')
 
-    // Validate parentIssueId if provided
-    if (body.parentIssueId) {
-      const [parent] = await db
-        .select()
-        .from(issuesTable)
-        .where(
-          and(
-            eq(issuesTable.id, body.parentIssueId),
-            eq(issuesTable.projectId, project.id),
-            eq(issuesTable.isDeleted, 0),
-          ),
-        )
-      if (!parent) {
-        return c.json({ success: false, error: 'Parent issue not found in this project' }, 400)
-      }
-      // Depth=1 only: parent must not itself be a sub-issue
-      if (parent.parentIssueId) {
-        return c.json(
-          { success: false, error: 'Cannot create sub-issue of a sub-issue (max depth is 1)' },
-          400,
-        )
-      }
-    }
-
-    // Compute next issueNumber across ALL issues (including soft-deleted) to avoid reuse
-    const [maxNumRow] = await db
-      .select({ maxNum: max(issuesTable.issueNumber) })
-      .from(issuesTable)
-      .where(eq(issuesTable.projectId, project.id))
-    const issueNumber = (maxNumRow?.maxNum ?? 0) + 1
-
-    // Compute max sortOrder within the target status column
-    const [maxOrderRow] = await db
-      .select({ maxOrder: max(issuesTable.sortOrder) })
-      .from(issuesTable)
-      .where(
-        and(
-          eq(issuesTable.projectId, project.id),
-          eq(issuesTable.statusId, body.statusId),
-          eq(issuesTable.isDeleted, 0),
-        ),
-      )
-    const sortOrder = (maxOrderRow?.maxOrder ?? -1) + 1
-
     // Resolve engine/model defaults when not explicitly provided
     // Falls back to 'echo' / 'auto' when no settings exist
     let resolvedEngine = body.engineType ?? null
@@ -154,28 +112,71 @@ crud.post(
       const issuePrompt = body.title
       const shouldExecute = body.statusId === 'working'
 
-      const [row] = await db
-        .insert(issuesTable)
-        .values({
-          projectId: project.id,
-          statusId: body.statusId,
-          issueNumber,
-          title: body.title,
-          priority: body.priority,
-          sortOrder,
-          parentIssueId: body.parentIssueId ?? null,
-          useWorktree: body.useWorktree ?? false,
-          engineType: resolvedEngine,
-          model: resolvedModel,
-          sessionStatus: shouldExecute ? 'pending' : null,
-          prompt: issuePrompt,
-        })
-        .returning()
+      const [newIssue] = await db.transaction(async (tx) => {
+        // Validate parentIssueId if provided
+        if (body.parentIssueId) {
+          const [parent] = await tx
+            .select()
+            .from(issuesTable)
+            .where(
+              and(
+                eq(issuesTable.id, body.parentIssueId),
+                eq(issuesTable.projectId, project.id),
+                eq(issuesTable.isDeleted, 0),
+              ),
+            )
+          if (!parent) {
+            throw new Error('Parent issue not found in this project')
+          }
+          // Depth=1 only: parent must not itself be a sub-issue
+          if (parent.parentIssueId) {
+            throw new Error('Cannot create sub-issue of a sub-issue (max depth is 1)')
+          }
+        }
+
+        // Compute next issueNumber across ALL issues (including soft-deleted) to avoid reuse
+        const [maxNumRow] = await tx
+          .select({ maxNum: max(issuesTable.issueNumber) })
+          .from(issuesTable)
+          .where(eq(issuesTable.projectId, project.id))
+        const issueNumber = (maxNumRow?.maxNum ?? 0) + 1
+
+        // Compute max sortOrder within the target status column
+        const [maxOrderRow] = await tx
+          .select({ maxOrder: max(issuesTable.sortOrder) })
+          .from(issuesTable)
+          .where(
+            and(
+              eq(issuesTable.projectId, project.id),
+              eq(issuesTable.statusId, body.statusId),
+              eq(issuesTable.isDeleted, 0),
+            ),
+          )
+        const sortOrder = (maxOrderRow?.maxOrder ?? -1) + 1
+
+        return tx
+          .insert(issuesTable)
+          .values({
+            projectId: project.id,
+            statusId: body.statusId,
+            issueNumber,
+            title: body.title,
+            priority: body.priority,
+            sortOrder,
+            parentIssueId: body.parentIssueId ?? null,
+            useWorktree: body.useWorktree ?? false,
+            engineType: resolvedEngine,
+            model: resolvedModel,
+            sessionStatus: shouldExecute ? 'pending' : null,
+            prompt: issuePrompt,
+          })
+          .returning()
+      })
 
       // Only auto-execute when created directly in working
       if (shouldExecute) {
         triggerIssueExecution(
-          row!.id,
+          newIssue!.id,
           {
             engineType: resolvedEngine,
             prompt: issuePrompt,
@@ -186,7 +187,7 @@ crud.post(
         )
       }
 
-      return c.json({ success: true, data: serializeIssue(row!) }, 201)
+      return c.json({ success: true, data: serializeIssue(newIssue!) }, 201)
     } catch (error) {
       return c.json(
         {
@@ -235,6 +236,8 @@ crud.patch(
     }> = []
     // Collect issues that already have a session but need pending messages flushed
     const toFlush: Array<{ id: string; model: string | null }> = []
+    // Collect issues transitioning to done that need active processes cancelled
+    const toCancel: string[] = []
 
     await db.transaction(async (tx) => {
       for (const u of body.updates) {
@@ -266,6 +269,14 @@ crud.patch(
           }
         }
 
+        // Check if transitioning to done → cancel active processes
+        if (u.statusId === 'done') {
+          const [existing] = await tx.select().from(issuesTable).where(eq(issuesTable.id, u.id))
+          if (existing && existing.statusId !== 'done') {
+            toCancel.push(u.id)
+          }
+        }
+
         const [row] = await tx
           .update(issuesTable)
           .set(changes)
@@ -285,6 +296,12 @@ crud.patch(
     // Flush pending messages for issues with existing sessions
     for (const issue of toFlush) {
       flushPendingAsFollowUp(issue.id, issue)
+    }
+    // Cancel active processes for issues that transitioned to done
+    for (const issueId of toCancel) {
+      void issueEngine.cancelIssue(issueId).catch((err) => {
+        logger.error({ issueId, err }, 'done_transition_cancel_failed')
+      })
     }
 
     return c.json({ success: true, data: updated })
@@ -374,6 +391,7 @@ crud.patch(
       updates.statusId = body.statusId
     }
     if (body.sortOrder !== undefined) updates.sortOrder = body.sortOrder
+    if (body.devMode !== undefined) updates.devMode = body.devMode
     if (body.parentIssueId !== undefined) {
       if (body.parentIssueId === null) {
         updates.parentIssueId = null
@@ -417,6 +435,9 @@ crud.patch(
       !shouldExecute &&
       ['completed', 'failed', 'cancelled'].includes(existing.sessionStatus ?? '')
 
+    // Check if transitioning to done → cancel active processes
+    const transitioningToDone = body.statusId === 'done' && existing.statusId !== 'done'
+
     if (shouldExecute) {
       updates.sessionStatus = 'pending'
     }
@@ -439,6 +460,13 @@ crud.patch(
       )
     } else if (shouldFlush) {
       flushPendingAsFollowUp(issueId, { model: existing.model })
+    }
+
+    // Fire-and-forget cancel for done transition
+    if (transitioningToDone) {
+      void issueEngine.cancelIssue(issueId).catch((err) => {
+        logger.error({ issueId, err }, 'done_transition_cancel_failed')
+      })
     }
 
     return c.json({ success: true, data: serializeIssue(row) })

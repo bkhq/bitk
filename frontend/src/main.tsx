@@ -4,6 +4,8 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { ErrorBoundary } from './components/ErrorBoundary'
+import { TerminalDrawer } from './components/terminal/TerminalDrawer'
+import { useTerminalStore } from './stores/terminal-store'
 import { eventBus } from './lib/event-bus'
 import './i18n'
 import './index.css'
@@ -17,7 +19,8 @@ const queryClient = new QueryClient({
   },
 })
 
-// SSE connection is now project-scoped — see useEventConnection(projectId)
+// Global SSE connection — connects once at startup, client-side filtering
+eventBus.connect()
 // Invalidate all queries on SSE reconnect so stale statuses get refreshed
 eventBus.onConnectionChange((connected) => {
   if (connected) queryClient.invalidateQueries()
@@ -44,6 +47,25 @@ eventBus.onIssueUpdated(() => {
 const HomePage = lazy(() => import('./pages/HomePage'))
 const KanbanPage = lazy(() => import('./pages/KanbanPage'))
 const IssueDetailPage = lazy(() => import('./pages/IssueDetailPage'))
+const TerminalPage = lazy(() => import('./pages/TerminalPage'))
+
+function AppShell({ children }: { children: React.ReactNode }) {
+  const isOpen = useTerminalStore((s) => s.isOpen)
+  const isFullscreen = useTerminalStore((s) => s.isFullscreen)
+  const height = useTerminalStore((s) => s.height)
+
+  // When terminal is open (not fullscreen), shrink main content to avoid overlap
+  const offset = isOpen && !isFullscreen ? height : 0
+
+  return (
+    <div
+      className="w-full"
+      style={{ height: offset ? `calc(100dvh - ${offset}px)` : '100dvh' }}
+    >
+      {children}
+    </div>
+  )
+}
 
 const rootElement = document.getElementById('app')!
 
@@ -53,27 +75,31 @@ if (!rootElement.innerHTML) {
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <ErrorBoundary>
-          <Suspense
-            fallback={
-              <div className="flex h-screen items-center justify-center">
-                <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-              </div>
-            }
-          >
-            <Routes>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/projects/:projectId" element={<KanbanPage />} />
-              <Route
-                path="/projects/:projectId/issues"
-                element={<IssueDetailPage />}
-              />
-              <Route
-                path="/projects/:projectId/issues/:issueId"
-                element={<IssueDetailPage />}
-              />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </Suspense>
+          <AppShell>
+            <Suspense
+              fallback={
+                <div className="flex h-full items-center justify-center">
+                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+                </div>
+              }
+            >
+              <Routes>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/projects/:projectId" element={<KanbanPage />} />
+                <Route
+                  path="/projects/:projectId/issues"
+                  element={<IssueDetailPage />}
+                />
+                <Route
+                  path="/projects/:projectId/issues/:issueId"
+                  element={<IssueDetailPage />}
+                />
+                <Route path="/terminal" element={<TerminalPage />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </Suspense>
+          </AppShell>
+          <TerminalDrawer />
         </ErrorBoundary>
       </BrowserRouter>
       {import.meta.env.DEV ? (

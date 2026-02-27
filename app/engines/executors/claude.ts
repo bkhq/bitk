@@ -45,26 +45,16 @@ const CLAUDE_MODELS: EngineModel[] = [
 
 function applyPermissionArgs(
   builder: CommandBuilder,
-  options: Pick<SpawnOptions, 'permissionMode' | 'dangerouslySkipPermissions' | 'model'>,
+  options: Pick<SpawnOptions, 'permissionMode' | 'model'>,
 ) {
-  if (options.dangerouslySkipPermissions) {
-    builder.param('--dangerously-skip-permissions')
-    return
-  }
-
   if (options.permissionMode === 'auto') {
-    // Default to bypass since AskUserQuestion is disabled —
+    // Default to skip-permissions since AskUserQuestion is disabled —
     // plan mode would stall waiting for user approval that never comes.
     builder.param('--dangerously-skip-permissions')
     return
   }
 
-  if (options.permissionMode === 'bypass') {
-    // Explicit bypass: uses --dangerously-skip-permissions flag.
-    // This is intentionally different from the old bypassPermissions mode name
-    // because it maps to the actual CLI flag that fully disables permission checks.
-    builder.param('--dangerously-skip-permissions')
-  } else if (options.permissionMode === 'plan') {
+  if (options.permissionMode === 'plan') {
     builder.param('--permission-mode', 'plan')
   }
 }
@@ -336,7 +326,7 @@ export class ClaudeCodeExecutor implements EngineExecutor {
     return CLAUDE_MODELS
   }
 
-  normalizeLog(rawLine: string): NormalizedLogEntry | null {
+  normalizeLog(rawLine: string): NormalizedLogEntry | NormalizedLogEntry[] | null {
     try {
       const data = JSON.parse(rawLine)
 
@@ -344,22 +334,26 @@ export class ClaudeCodeExecutor implements EngineExecutor {
       switch (data.type) {
         case 'assistant': {
           const contentBlocks = Array.isArray(data.message?.content) ? data.message.content : null
+          const entries: NormalizedLogEntry[] = []
+
+          // Extract text content (if any)
           const text = extractTextContent(contentBlocks ?? data.message?.content)
           if (text) {
-            return {
+            entries.push({
               entryType: 'assistant-message',
               content: text,
               timestamp: data.timestamp,
               metadata: { messageId: data.message?.id },
-            }
+            })
           }
 
-          // Claude often emits tool_use as content blocks inside assistant message.
-          const toolBlock = contentBlocks?.find(
+          // Extract ALL tool_use blocks (not just the first one)
+          const toolBlocks = (contentBlocks ?? []).filter(
             (block: { type?: string }) => block?.type === 'tool_use',
-          ) as { id?: string; name?: string; input?: Record<string, unknown> } | undefined
-          if (toolBlock?.name) {
-            return {
+          ) as { id?: string; name?: string; input?: Record<string, unknown> }[]
+          for (const toolBlock of toolBlocks) {
+            if (!toolBlock.name) continue
+            entries.push({
               entryType: 'tool-use',
               content: `Tool: ${toolBlock.name}`,
               timestamp: data.timestamp,
@@ -370,46 +364,43 @@ export class ClaudeCodeExecutor implements EngineExecutor {
                 toolCallId: toolBlock.id,
               },
               toolAction: classifyToolAction(toolBlock.name, toolBlock.input ?? {}),
-            }
+            })
           }
 
-          // Some models include full thinking blocks in assistant payload.
-          const thinkingBlock = contentBlocks?.find(
-            (block: { type?: string }) => block?.type === 'thinking',
-          ) as { thinking?: string; text?: string } | undefined
-          if (thinkingBlock) {
-            return null
-          }
-
-          return null
+          // Non-text, non-tool_use blocks (e.g. 'thinking') are intentionally ignored
+          if (entries.length === 0) return null
+          return entries
         }
 
         case 'user': {
           const contentBlocks = Array.isArray(data.message?.content) ? data.message.content : null
-          const toolResult = contentBlocks?.find(
+          // Extract ALL tool_result blocks (not just the first one)
+          const toolResults = (contentBlocks ?? []).filter(
             (block: { type?: string }) => block?.type === 'tool_result',
-          ) as
-            | { tool_use_id?: string; content?: string | unknown[]; is_error?: boolean }
-            | undefined
-          if (!toolResult) return null
+          ) as { tool_use_id?: string; content?: string | unknown[]; is_error?: boolean }[]
+          if (toolResults.length === 0) return null
 
-          const resultContent = Array.isArray(toolResult.content)
-            ? toolResult.content
-                .map((part) => (typeof part === 'string' ? part : JSON.stringify(part)))
-                .join('\n')
-            : typeof toolResult.content === 'string'
+          return toolResults.map((toolResult) => {
+            const resultContent = Array.isArray(toolResult.content)
               ? toolResult.content
-              : JSON.stringify(toolResult.content ?? '')
+                  .map((part: unknown) => (typeof part === 'string' ? part : JSON.stringify(part)))
+                  .join('\n')
+              : typeof toolResult.content === 'string'
+                ? toolResult.content
+                : JSON.stringify(toolResult.content ?? '')
 
-          return {
-            entryType: toolResult.is_error ? 'error-message' : 'tool-use',
-            content: resultContent,
-            timestamp: data.timestamp,
-            metadata: {
-              toolCallId: toolResult.tool_use_id,
-              isResult: true,
-            },
-          }
+            return {
+              entryType: (toolResult.is_error
+                ? 'error-message'
+                : 'tool-use') as NormalizedLogEntry['entryType'],
+              content: resultContent,
+              timestamp: data.timestamp,
+              metadata: {
+                toolCallId: toolResult.tool_use_id,
+                isResult: true,
+              },
+            }
+          })
         }
 
         case 'content_block_delta': {

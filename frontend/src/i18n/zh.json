@@ -69,7 +69,9 @@
     "emptyStatusDropHint": "可拖拽任务到这里",
     "editTitle": "点击编辑标题",
     "addDescription": "添加描述...",
-    "clickToEdit": "点击编辑"
+    "clickToEdit": "点击编辑",
+    "devMode": "开发模式",
+    "dev": "Dev"
   },
   "createIssue": {
     "model": "模型",
@@ -115,13 +117,20 @@
     "filesChanged": "{{count}} 个文件已更改",
     "placeholder": "继续处理此任务...",
     "placeholderTodo": "输入消息（将在执行开始时发送）",
-    "pendingMessage": "已排队 — 将在执行开始时发送",
-    "doneMessage": "备注 — 任务已完成",
+    "pendingMessage": "已排队",
+    "doneMessage": "已完成",
     "busyAction": {
       "label": "运行中策略",
       "queue": "排队发送",
       "cancel": "取消后发送"
-    }
+    },
+    "attach": "附加文件",
+    "attachDragHint": "拖放文件到此处",
+    "fileTooBig": "文件 \"{{name}}\" 超过 {{limit}}MB 限制",
+    "tooManyFiles": "文件数量过多（最多 {{max}} 个）",
+    "removeFile": "删除文件",
+    "unknownType": "未知类型",
+    "closePreview": "关闭预览"
   },
   "diff": {
     "changes": "更改",
@@ -149,10 +158,13 @@
     },
     "tool": {
       "fileRead": "读取文件",
+      "fileWrite": "写入文件",
       "fileEdit": "编辑文件",
       "commandRun": "执行命令",
       "search": "搜索",
-      "webFetch": "获取 URL"
+      "webFetch": "获取 URL",
+      "taskPlan": "任务计划",
+      "fullCommand": "完整命令"
     },
     "restart": "重启",
     "restarting": "重启中..."
@@ -226,5 +238,14 @@
     "high": "高",
     "medium": "中",
     "low": "低"
+  },
+  "terminal": {
+    "title": "终端",
+    "close": "关闭终端",
+    "minimize": "最小化",
+    "maximize": "最大化",
+    "resizePanel": "调整终端大小",
+    "back": "返回",
+    "kill": "终止终端"
   }
 }

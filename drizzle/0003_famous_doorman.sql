@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX `issues_project_id_issue_number_uniq` ON `issues` (`project_id`,`issue_number`);

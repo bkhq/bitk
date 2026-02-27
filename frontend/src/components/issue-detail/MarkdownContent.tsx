@@ -1,45 +1,25 @@
 import { useEffect, useState } from 'react'
+import DOMPurify from 'dompurify'
 
-import type MarkdownIt from 'markdown-it'
+import type { HighlighterCore } from 'shiki'
 
-let mdInstance: MarkdownIt | null = null
-let mdLoading: Promise<MarkdownIt> | null = null
+let highlighter: HighlighterCore | null = null
+let highlighterLoading: Promise<HighlighterCore> | null = null
 
-async function getMd(): Promise<MarkdownIt> {
-  if (mdInstance) return mdInstance
-  if (!mdLoading) {
-    mdLoading = (async () => {
-      const [{ default: MdIt }, { default: Shiki }] = await Promise.all([
-        import('markdown-it'),
-        import('@shikijs/markdown-it'),
-      ])
-      const md = MdIt({ linkify: true })
-
-      md.use(
-        await Shiki({
-          themes: {
-            light: 'github-light-default',
-            dark: 'github-dark-default',
-          },
-        }),
-      )
-
-      // External links open in new tab
-      const defaultRender =
-        md.renderer.rules.link_open ??
-        ((tokens, idx, options, _env, self) =>
-          self.renderToken(tokens, idx, options))
-      md.renderer.rules.link_open = (tokens, idx, options, env, self) => {
-        tokens[idx].attrPush(['target', '_blank'])
-        tokens[idx].attrPush(['rel', 'noreferrer'])
-        return defaultRender(tokens, idx, options, env, self)
-      }
-
-      mdInstance = md
-      return md
+async function getHighlighter(): Promise<HighlighterCore> {
+  if (highlighter) return highlighter
+  if (!highlighterLoading) {
+    highlighterLoading = (async () => {
+      const { createHighlighter } = await import('shiki')
+      const hl = await createHighlighter({
+        themes: ['github-light-default', 'github-dark-default'],
+        langs: ['markdown'],
+      })
+      highlighter = hl
+      return hl
     })()
   }
-  return mdLoading
+  return highlighterLoading
 }
 
 export function MarkdownContent({
@@ -53,8 +33,17 @@ export function MarkdownContent({
 
   useEffect(() => {
     let cancelled = false
-    getMd().then((md) => {
-      if (!cancelled) setHtml(md.render(content))
+    getHighlighter().then((hl) => {
+      if (cancelled) return
+      const result = hl.codeToHtml(content, {
+        lang: 'markdown',
+        themes: {
+          light: 'github-light-default',
+          dark: 'github-dark-default',
+        },
+        defaultColor: false,
+      })
+      setHtml(result)
     })
     return () => {
       cancelled = true
@@ -63,18 +52,16 @@ export function MarkdownContent({
 
   if (!html) {
     return (
-      <div
-        className={`markdown-content text-sm leading-6 text-foreground ${containerClassName}`}
-      >
-        <p>{content}</p>
+      <div className={`markdown-shiki ${containerClassName}`}>
+        <pre className="whitespace-pre-wrap break-words">{content}</pre>
       </div>
     )
   }
 
   return (
     <div
-      className={`markdown-content text-sm leading-6 text-foreground ${containerClassName}`}
-      dangerouslySetInnerHTML={{ __html: html }}
+      className={`markdown-shiki ${containerClassName}`}
+      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(html) }}
     />
   )
 }

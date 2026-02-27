@@ -248,8 +248,9 @@ export function useFollowUpIssue(projectId: string) {
       issueId: string
       prompt: string
       model?: string
-      permissionMode?: 'auto' | 'supervised' | 'plan' | 'bypass'
+      permissionMode?: 'auto' | 'supervised' | 'plan'
       busyAction?: 'queue' | 'cancel'
+      files?: File[]
     }) =>
       kanbanApi.followUpIssue(
         projectId,
@@ -258,6 +259,7 @@ export function useFollowUpIssue(projectId: string) {
         args.model,
         args.permissionMode,
         args.busyAction,
+        args.files,
       ),
     onSuccess: (_data, args) => {
       queryClient.invalidateQueries({

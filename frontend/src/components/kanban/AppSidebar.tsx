@@ -8,6 +8,7 @@ import {
   Plus,
   Settings,
   Sun,
+  TerminalSquare,
   Wifi,
   WifiOff,
 } from 'lucide-react'
@@ -26,6 +27,7 @@ import { useViewModeStore } from '@/stores/view-mode-store'
 import { useClickOutside } from '@/hooks/use-click-outside'
 import { getProjectInitials } from '@/lib/format'
 import { LANGUAGES } from '@/lib/constants'
+import { useTerminalStore } from '@/stores/terminal-store'
 
 function ProjectButton({
   project,
@@ -91,7 +93,9 @@ export function AppSidebar({ activeProjectId }: { activeProjectId: string }) {
   const [showCreate, setShowCreate] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const projectPath = useViewModeStore((s) => s.projectPath)
-  const connected = useEventConnection(activeProjectId)
+  const connected = useEventConnection()
+  const toggleTerminal = useTerminalStore((s) => s.toggle)
+  const isTerminalMinimized = useTerminalStore((s) => s.isMinimized)
 
   const handleProjectCreated = useCallback(
     (project: Project) => {
@@ -150,6 +154,19 @@ export function AppSidebar({ activeProjectId }: { activeProjectId: string }) {
 
       {/* Bottom section */}
       <div className="mt-auto flex flex-col items-center gap-1">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={toggleTerminal}
+          className="relative h-9 w-9 text-muted-foreground"
+          aria-label={t('terminal.title')}
+          title={t('terminal.title')}
+        >
+          <TerminalSquare className="h-4 w-4" />
+          {isTerminalMinimized && (
+            <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-primary" />
+          )}
+        </Button>
         <ViewModeToggle />
         <Separator className="mx-2 my-0.5 w-8" />
         <LanguageSelector />

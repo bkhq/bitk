@@ -1,12 +1,22 @@
-import { useRef, useState, useCallback, useMemo } from 'react'
-import { ChevronDown, Loader2 } from 'lucide-react'
+import { useRef, useState, useCallback, useEffect, useMemo } from 'react'
+import {
+  ChevronDown,
+  FileText,
+  Image as ImageIcon,
+  Loader2,
+  Paperclip,
+  X,
+} from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { EngineIcon } from '@/components/EngineIcons'
-import { formatModelName } from '@/lib/format'
+import { formatFileSize, formatModelName } from '@/lib/format'
 import { useClickOutside } from '@/hooks/use-click-outside'
 import { useChangesSummary } from '@/hooks/use-changes-summary'
 import { useEngineAvailability, useFollowUpIssue } from '@/hooks/use-kanban'
 import type { BusyAction, EngineModel, SessionStatus } from '@/types/kanban'
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10 MB
+const MAX_FILES = 10
 
 const MODE_OPTIONS = ['auto', 'ask'] as const
 type ModeOption = (typeof MODE_OPTIONS)[number]
@@ -31,8 +41,7 @@ export function ChatInput({
   sessionStatus,
   statusId,
   isThinking = false,
-  onSendStart,
-  onSendError,
+  onMessageSent,
 }: {
   projectId?: string
   issueId?: string
@@ -44,17 +53,24 @@ export function ChatInput({
   sessionStatus?: SessionStatus | null
   statusId?: string
   isThinking?: boolean
-  onSendStart?: (prompt: string) => void
-  onSendError?: () => void
+  onMessageSent?: (
+    messageId: string,
+    prompt: string,
+    metadata?: Record<string, unknown>,
+  ) => void
 }) {
   const { t } = useTranslation()
   const [input, setInput] = useState('')
   const [sendError, setSendError] = useState<string | null>(null)
+  const [attachedFiles, setAttachedFiles] = useState<File[]>([])
+  const [isDragOver, setIsDragOver] = useState(false)
+  const [previewFile, setPreviewFile] = useState<File | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const isSendingRef = useRef(false)
 
   const followUp = useFollowUpIssue(projectId ?? '')
-  const changesSummary = useChangesSummary(issueId ?? undefined)
+  const changesSummary = useChangesSummary(projectId, issueId ?? undefined)
   const changedCount = changesSummary?.fileCount ?? 0
   const additions = changesSummary?.additions ?? 0
   const deletions = changesSummary?.deletions ?? 0
@@ -65,7 +81,11 @@ export function ChatInput({
     () => (engineType ? (discovery?.models[engineType] ?? []) : []),
     [engineType, discovery],
   )
-  const [selectedModel, setSelectedModel] = useState('')
+  const [selectedModel, setSelectedModel] = useState(model || '')
+  // Sync selectedModel when issue changes (model prop changes)
+  useEffect(() => {
+    setSelectedModel(model || '')
+  }, [model])
   const [mode, setMode] = useState<ModeOption>('auto')
   const [busyAction, setBusyAction] = useState<BusyAction>('queue')
   const activeModel = selectedModel || model || ''
@@ -78,31 +98,113 @@ export function ChatInput({
     : undefined
 
   const normalizedPrompt = normalizePrompt(input)
-  const canSend = normalizedPrompt.length > 0 && !!issueId && !!projectId
+  const canSend =
+    (normalizedPrompt.length > 0 || attachedFiles.length > 0) &&
+    !!issueId &&
+    !!projectId
+
+  const addFiles = useCallback(
+    (incoming: File[]) => {
+      setAttachedFiles((prev) => {
+        const combined = [...prev]
+        for (const file of incoming) {
+          if (file.size > MAX_FILE_SIZE) {
+            setSendError(
+              t('chat.fileTooBig', {
+                name: file.name,
+                limit: MAX_FILE_SIZE / 1024 / 1024,
+              }),
+            )
+            setTimeout(() => setSendError(null), 5000)
+            continue
+          }
+          if (combined.length >= MAX_FILES) {
+            setSendError(t('chat.tooManyFiles', { max: MAX_FILES }))
+            setTimeout(() => setSendError(null), 5000)
+            break
+          }
+          // Deduplicate by name+size
+          if (
+            !combined.some((f) => f.name === file.name && f.size === file.size)
+          ) {
+            combined.push(file)
+          }
+        }
+        return combined
+      })
+    },
+    [t],
+  )
+
+  const removeFile = useCallback((index: number) => {
+    setAttachedFiles((prev) => {
+      const removed = prev[index]
+      // Clear preview if the removed file is currently being previewed
+      setPreviewFile((current) =>
+        current &&
+        current.name === removed.name &&
+        current.size === removed.size
+          ? null
+          : current,
+      )
+      return prev.filter((_, i) => i !== index)
+    })
+  }, [])
 
   const handleSend = async () => {
     if (!canSend || !issueId || isSendingRef.current) return
     isSendingRef.current = true
     const prompt = normalizedPrompt
-    onSendStart?.(prompt)
+    const filesToSend = [...attachedFiles]
     setInput('')
+    setAttachedFiles([])
     // Reset textarea height
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto'
     }
     setSendError(null)
     try {
-      await followUp.mutateAsync({
+      const isTodo = statusId === 'todo'
+      const isDone = statusId === 'done'
+      const isWorking = statusId === 'working'
+      const result = await followUp.mutateAsync({
         issueId,
         prompt,
         model: activeModel || undefined,
         permissionMode: toPermissionMode(mode),
         busyAction: effectiveBusyAction,
+        files: filesToSend.length > 0 ? filesToSend : undefined,
       })
+      // Append message with server-assigned messageId
+      if (result.messageId) {
+        const filesMeta =
+          filesToSend.length > 0
+            ? filesToSend.map((f) => ({
+                id: '',
+                name: f.name,
+                mimeType: f.type,
+                size: f.size,
+              }))
+            : undefined
+        const metadata: Record<string, unknown> | undefined = isTodo
+          ? { pending: true, ...(filesMeta ? { attachments: filesMeta } : {}) }
+          : isDone
+            ? { done: true, ...(filesMeta ? { attachments: filesMeta } : {}) }
+            : isWorking && isThinking
+              ? {
+                  pending: true,
+                  ...(filesMeta ? { attachments: filesMeta } : {}),
+                }
+              : filesMeta
+                ? { attachments: filesMeta }
+                : undefined
+        onMessageSent?.(result.messageId, prompt, metadata)
+      }
     } catch (err) {
-      onSendError?.()
       const msg = err instanceof Error ? err.message : String(err)
       setSendError(msg)
+      // Restore files on failure
+      setAttachedFiles(filesToSend)
       setTimeout(() => setSendError(null), 5000)
     } finally {
       isSendingRef.current = false
@@ -126,9 +228,73 @@ export function ChatInput({
     [],
   )
 
+  const handlePaste = useCallback(
+    (e: React.ClipboardEvent) => {
+      const items = e.clipboardData.items
+      const files: File[] = []
+      for (const item of items) {
+        if (item.kind === 'file') {
+          const file = item.getAsFile()
+          if (file) files.push(file)
+        }
+      }
+      if (files.length > 0) {
+        e.preventDefault()
+        addFiles(files)
+      }
+    },
+    [addFiles],
+  )
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragOver(true)
+  }, [])
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragOver(false)
+  }, [])
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault()
+      setIsDragOver(false)
+      const files = Array.from(e.dataTransfer.files)
+      if (files.length > 0) addFiles(files)
+    },
+    [addFiles],
+  )
+
+  const handleFileSelect = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = Array.from(e.target.files ?? [])
+      if (files.length > 0) addFiles(files)
+      // Reset input so same file can be re-selected
+      e.target.value = ''
+    },
+    [addFiles],
+  )
+
   return (
     <div className="shrink-0 w-full min-w-0 px-4 pb-4">
-      <div className="rounded-xl border border-border/60 bg-card/80 backdrop-blur-sm shadow-sm transition-all duration-200 focus-within:border-border focus-within:shadow-md">
+      <div
+        className={`rounded-xl border bg-card/80 backdrop-blur-sm shadow-sm transition-all duration-200 focus-within:border-border focus-within:shadow-md ${
+          isDragOver
+            ? 'border-primary/50 bg-primary/[0.03] ring-2 ring-primary/20'
+            : 'border-border/60'
+        }`}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
+        {/* Drag overlay hint */}
+        {isDragOver ? (
+          <div className="flex items-center justify-center py-4 text-xs text-primary font-medium">
+            {t('chat.attachDragHint')}
+          </div>
+        ) : null}
+
         {/* Status bar */}
         <div className="flex items-center gap-2 px-3 py-1.5 border-b border-border/30">
           <button
@@ -180,6 +346,7 @@ export function ChatInput({
             value={input}
             onChange={handleInput}
             onKeyDown={handleKeyDown}
+            onPaste={handlePaste}
             onFocus={() => {
               // Scroll chat to bottom when keyboard opens on mobile
               setTimeout(() => {
@@ -199,10 +366,61 @@ export function ChatInput({
           />
         </div>
 
+        {/* File preview bar — below textarea */}
+        {attachedFiles.length > 0 ? (
+          <div className="flex flex-wrap gap-1.5 px-3 pb-1.5">
+            {attachedFiles.map((file, idx) => (
+              <div
+                key={`${file.name}-${file.size}`}
+                className="group/file flex items-center gap-1.5 rounded-lg bg-muted/50 border border-border/40 px-2 py-1 text-xs cursor-pointer hover:bg-muted/70 transition-colors"
+                onClick={() => setPreviewFile(file)}
+              >
+                {file.type.startsWith('image/') ? (
+                  <ImageIcon className="h-3 w-3 shrink-0 text-blue-500" />
+                ) : (
+                  <FileText className="h-3 w-3 shrink-0 text-muted-foreground" />
+                )}
+                <span className="truncate max-w-[120px]">{file.name}</span>
+                <span className="text-muted-foreground/60">
+                  {formatFileSize(file.size)}
+                </span>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    removeFile(idx)
+                  }}
+                  className="ml-0.5 rounded p-0.5 text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10 transition-colors"
+                  title={t('chat.removeFile')}
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : null}
+
+        {/* Hidden file input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          className="hidden"
+          onChange={handleFileSelect}
+        />
+
         {/* Toolbar */}
         <div className="flex items-center justify-between px-2.5 pb-2.5 pt-0.5">
           <div className="flex items-center gap-0.5">
             {engineType ? <EngineInfo engineType={engineType} /> : null}
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+              title={t('chat.attach')}
+            >
+              <Paperclip className="h-3.5 w-3.5" />
+            </button>
           </div>
 
           <button
@@ -220,6 +438,98 @@ export function ChatInput({
               t('chat.send')
             )}
           </button>
+        </div>
+      </div>
+
+      {/* File preview modal */}
+      {previewFile ? (
+        <FilePreviewModal
+          file={previewFile}
+          onClose={() => setPreviewFile(null)}
+        />
+      ) : null}
+    </div>
+  )
+}
+
+function FilePreviewModal({
+  file,
+  onClose,
+}: {
+  file: File
+  onClose: () => void
+}) {
+  const { t } = useTranslation()
+  const [imageUrl, setImageUrl] = useState<string | null>(null)
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [onClose])
+
+  useEffect(() => {
+    if (file.type.startsWith('image/')) {
+      const url = URL.createObjectURL(file)
+      setImageUrl(url)
+      return () => URL.revokeObjectURL(url)
+    }
+    setImageUrl(null)
+  }, [file])
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="relative mx-4 max-h-[80vh] max-w-[90vw] md:max-w-[600px] rounded-xl border border-border/60 bg-card shadow-2xl overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border/30">
+          <div className="flex items-center gap-2 min-w-0">
+            {file.type.startsWith('image/') ? (
+              <ImageIcon className="h-4 w-4 shrink-0 text-blue-500" />
+            ) : (
+              <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+            )}
+            <span className="text-sm font-medium truncate">{file.name}</span>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-md p-1 text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+            aria-label={t('chat.closePreview')}
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="p-4 overflow-auto max-h-[calc(80vh-56px)]">
+          {imageUrl ? (
+            <img
+              src={imageUrl}
+              alt={file.name}
+              className="max-w-full max-h-[60vh] rounded-lg object-contain mx-auto"
+            />
+          ) : (
+            <div className="space-y-3">
+              <div className="flex items-center justify-center w-16 h-16 rounded-xl bg-muted/60 mx-auto">
+                <FileText className="h-8 w-8 text-muted-foreground/60" />
+              </div>
+              <div className="text-center space-y-1">
+                <p className="text-sm font-medium truncate">{file.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  {file.type || t('chat.unknownType')} &middot;{' '}
+                  {formatFileSize(file.size)}
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

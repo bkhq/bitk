@@ -1,12 +1,13 @@
 import type { EngineType } from '../../engines/types'
 import { mkdir, stat } from 'node:fs/promises'
 import { resolve } from 'node:path'
-import { and, asc, eq, inArray, isNotNull } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { STATUS_IDS } from '../../config'
 import { db } from '../../db'
 import { getAppSetting } from '../../db/helpers'
-import { issueLogs, issues as issuesTable } from '../../db/schema'
+import { getPendingMessages, markPendingMessagesDispatched } from '../../db/pending-messages'
+import { issues as issuesTable } from '../../db/schema'
 import { issueEngine } from '../../engines/issue-engine'
 import { emitIssueUpdated } from '../../events/issue-events'
 import { logger } from '../../logger'
@@ -24,7 +25,7 @@ export const createIssueSchema = z.object({
     .string()
     .regex(/^[\w.-]{1,100}$/)
     .optional(),
-  permissionMode: z.enum(['auto', 'supervised', 'bypass', 'plan']).optional(),
+  permissionMode: z.enum(['auto', 'supervised', 'plan']).optional(),
 })
 
 export const bulkUpdateSchema = z.object({
@@ -46,6 +47,7 @@ export const updateIssueSchema = z.object({
   statusId: z.enum(STATUS_IDS).optional(),
   sortOrder: z.number().optional(),
   parentIssueId: z.string().nullable().optional(),
+  devMode: z.boolean().optional(),
 })
 
 export const executeIssueSchema = z.object({
@@ -55,7 +57,7 @@ export const executeIssueSchema = z.object({
     .string()
     .regex(/^[\w.-]{1,100}$/)
     .optional(),
-  permissionMode: z.enum(['auto', 'supervised', 'bypass', 'plan']).optional(),
+  permissionMode: z.enum(['auto', 'supervised', 'plan']).optional(),
 })
 
 export const followUpSchema = z.object({
@@ -64,7 +66,7 @@ export const followUpSchema = z.object({
     .string()
     .regex(/^[\w.\-[\]]{1,100}$/)
     .optional(),
-  permissionMode: z.enum(['auto', 'supervised', 'bypass', 'plan']).optional(),
+  permissionMode: z.enum(['auto', 'supervised', 'plan']).optional(),
   busyAction: z.enum(['queue', 'cancel']).optional(),
 })
 
@@ -93,6 +95,7 @@ export function serializeIssue(row: IssueRow, childCount?: number) {
     prompt: row.prompt ?? null,
     externalSessionId: row.externalSessionId ?? null,
     model: row.model ?? null,
+    devMode: row.devMode,
     baseCommitHash: row.baseCommitHash ?? null,
     createdAt: toISO(row.createdAt),
     updatedAt: toISO(row.updatedAt),
@@ -113,47 +116,7 @@ export async function getProjectOwnedIssue(projectId: string, issueId: string) {
   return issue ?? null
 }
 
-export async function getPendingMessages(issueId: string) {
-  const rows = await db
-    .select()
-    .from(issueLogs)
-    .where(
-      and(
-        eq(issueLogs.issueId, issueId),
-        eq(issueLogs.entryType, 'user-message'),
-        isNotNull(issueLogs.metadata),
-      ),
-    )
-    .orderBy(asc(issueLogs.turnIndex), asc(issueLogs.entryIndex))
-  return rows.filter((row) => {
-    try {
-      return JSON.parse(row.metadata!).pending === true
-    } catch {
-      return false
-    }
-  })
-}
-
-export async function markPendingMessagesDispatched(ids: string[]) {
-  if (ids.length === 0) return
-  const rows = await db
-    .select({ id: issueLogs.id, metadata: issueLogs.metadata })
-    .from(issueLogs)
-    .where(inArray(issueLogs.id, ids))
-  for (const row of rows) {
-    let parsed: Record<string, unknown> = {}
-    try {
-      parsed = row.metadata ? JSON.parse(row.metadata) : {}
-    } catch {
-      // If metadata is malformed, start fresh
-    }
-    parsed.pending = false
-    await db
-      .update(issueLogs)
-      .set({ metadata: JSON.stringify(parsed) })
-      .where(eq(issueLogs.id, row.id))
-  }
-}
+export { getPendingMessages, markPendingMessagesDispatched } from '../../db/pending-messages'
 
 /**
  * Fire-and-forget: flush pending queued messages as a follow-up to an

@@ -1,15 +1,17 @@
+import type { SavedFile } from '../../uploads'
 import type { IssueRow } from './_shared'
 import { mkdir, stat } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { zValidator } from '@hono/zod-validator'
-import { eq, max } from 'drizzle-orm'
+import { and, eq, max } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { db } from '../../db'
 import { findProject, getAppSetting } from '../../db/helpers'
-import { issueLogs, issues as issuesTable } from '../../db/schema'
+import { attachments, issueLogs, issues as issuesTable } from '../../db/schema'
 import { issueEngine } from '../../engines/issue-engine'
 import { emitIssueUpdated } from '../../events/issue-events'
 import { logger } from '../../logger'
+import { saveUploadedFile, UPLOAD_DIR, validateFiles } from '../../uploads'
 import {
   executeIssueSchema,
   followUpSchema,
@@ -26,7 +28,9 @@ async function persistPendingMessage(
   issueId: string,
   prompt: string,
   meta: Record<string, unknown> = { pending: true },
-): Promise<void> {
+): Promise<string> {
+  const { ulid } = await import('ulid')
+  const messageId = ulid()
   await db.transaction(async (tx) => {
     const [maxEntryRow] = await tx
       .select({ val: max(issueLogs.entryIndex) })
@@ -41,6 +45,7 @@ async function persistPendingMessage(
     const turnIndex = (maxTurnRow?.val ?? -1) + 1
 
     await tx.insert(issueLogs).values({
+      id: messageId,
       issueId,
       turnIndex,
       entryIndex,
@@ -50,6 +55,7 @@ async function persistPendingMessage(
       timestamp: new Date().toISOString(),
     })
   })
+  return messageId
 }
 
 /**
@@ -187,7 +193,7 @@ session.post(
       await markPendingMessagesDispatched(pendingIds)
       return c.json({
         success: true,
-        data: { executionId: result.executionId, issueId },
+        data: { executionId: result.executionId, issueId, messageId: result.messageId },
       })
     } catch (error) {
       logger.warn(
@@ -212,74 +218,268 @@ session.post(
   },
 )
 
+/**
+ * Build a prompt supplement describing uploaded files.
+ * Text files: inline content. Images/binary: file path reference.
+ */
+function buildFileContext(savedFiles: SavedFile[]): string {
+  if (savedFiles.length === 0) return ''
+  const parts = savedFiles.map((f) => {
+    if (f.mimeType.startsWith('image/')) {
+      return `[Attached image: ${f.originalName} (${f.mimeType}, ${f.size} bytes) at ${f.absolutePath}]`
+    }
+    if (
+      f.mimeType.startsWith('text/') ||
+      f.mimeType === 'application/json' ||
+      f.mimeType === 'application/xml'
+    ) {
+      return `[Attached file: ${f.originalName}] at ${f.absolutePath}`
+    }
+    return `[Attached file: ${f.originalName} (${f.mimeType}, ${f.size} bytes) at ${f.absolutePath}]`
+  })
+  return `\n\n--- Attached files ---\n${parts.join('\n')}`
+}
+
+/**
+ * Parse follow-up body from either JSON or multipart/form-data.
+ */
+async function parseFollowUpBody(c: {
+  req: {
+    header: (name: string) => string | undefined
+    json: () => Promise<unknown>
+    formData: () => Promise<FormData>
+  }
+}): Promise<
+  | {
+      ok: true
+      prompt: string
+      model?: string
+      permissionMode?: string
+      busyAction?: string
+      files: File[]
+    }
+  | { ok: false; error: string }
+> {
+  const contentType = c.req.header('content-type') ?? ''
+  if (contentType.includes('multipart/form-data')) {
+    const fd = await c.req.formData()
+    const prompt = fd.get('prompt')
+    if (typeof prompt !== 'string') {
+      return { ok: false, error: 'Prompt is required' }
+    }
+    const model = fd.get('model')
+    const permissionMode = fd.get('permissionMode')
+    const busyAction = fd.get('busyAction')
+    const files: File[] = []
+    for (const entry of fd.getAll('files')) {
+      if (entry instanceof File) files.push(entry)
+    }
+    return {
+      ok: true,
+      prompt,
+      model: typeof model === 'string' ? model : undefined,
+      permissionMode: typeof permissionMode === 'string' ? permissionMode : undefined,
+      busyAction: typeof busyAction === 'string' ? busyAction : undefined,
+      files,
+    }
+  }
+
+  // JSON path with Zod validation
+  const raw = await c.req.json()
+  const parsed = followUpSchema.safeParse(raw)
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues.map((i) => i.message).join(', ') }
+  }
+  return { ok: true, ...parsed.data, files: [] }
+}
+
 // POST /api/projects/:projectId/issues/:id/follow-up — Follow-up
-session.post(
-  '/:id/follow-up',
-  zValidator('json', followUpSchema, (result, c) => {
-    if (!result.success) {
-      return c.json(
-        { success: false, error: result.error.issues.map((i) => i.message).join(', ') },
-        400,
-      )
+session.post('/:id/follow-up', async (c) => {
+  const projectId = c.req.param('projectId')!
+  const project = await findProject(projectId)
+  if (!project) {
+    return c.json({ success: false, error: 'Project not found' }, 404)
+  }
+
+  const issueId = c.req.param('id')!
+  const parsed = await parseFollowUpBody(c)
+  if (!parsed.ok) {
+    return c.json({ success: false, error: parsed.error }, 400)
+  }
+
+  const { files } = parsed
+  const prompt = normalizePrompt(parsed.prompt)
+  if (!prompt && files.length === 0) {
+    return c.json({ success: false, error: 'Prompt is required' }, 400)
+  }
+
+  // Validate files
+  if (files.length > 0) {
+    const validation = validateFiles(files)
+    if (!validation.ok) {
+      return c.json({ success: false, error: validation.error }, 400)
     }
-  }),
-  async (c) => {
-    const projectId = c.req.param('projectId')!
-    const project = await findProject(projectId)
-    if (!project) {
-      return c.json({ success: false, error: 'Project not found' }, 404)
+  }
+
+  const issue = await getProjectOwnedIssue(project.id, issueId)
+  if (!issue) {
+    return c.json({ success: false, error: 'Issue not found' }, 404)
+  }
+
+  // Save uploaded files and insert attachment records
+  let savedFiles: SavedFile[] = []
+  if (files.length > 0) {
+    savedFiles = await Promise.all(files.map(saveUploadedFile))
+  }
+
+  // Build file context for AI engine only
+  const fileContext = buildFileContext(savedFiles)
+  const fullPrompt = prompt + fileContext
+  const attachmentsMeta =
+    savedFiles.length > 0 ? { attachments: savedFiles.map(savedFileToMeta) } : {}
+
+  // Queue message for todo/done issues instead of rejecting
+  if (issue.statusId === 'todo') {
+    const messageId = await persistPendingMessage(issueId, prompt, {
+      pending: true,
+      ...attachmentsMeta,
+    })
+    if (savedFiles.length > 0) await insertAttachmentRecords(issueId, messageId, savedFiles)
+    return c.json({ success: true, data: { issueId, messageId, queued: true } })
+  }
+  if (issue.statusId === 'done') {
+    const messageId = await persistPendingMessage(issueId, prompt, {
+      done: true,
+      ...attachmentsMeta,
+    })
+    if (savedFiles.length > 0) await insertAttachmentRecords(issueId, messageId, savedFiles)
+    return c.json({ success: true, data: { issueId, messageId, queued: true } })
+  }
+
+  // When the engine is actively processing a turn, queue message as pending
+  // so it won't be ignored mid-turn. It will be auto-flushed after the turn settles.
+  if (issue.statusId === 'working' && issueEngine.isTurnInFlight(issueId)) {
+    const messageId = await persistPendingMessage(issueId, prompt, {
+      pending: true,
+      ...attachmentsMeta,
+    })
+    if (savedFiles.length > 0) await insertAttachmentRecords(issueId, messageId, savedFiles)
+    logger.debug(
+      { issueId, promptChars: prompt.length, fileCount: files.length },
+      'followup_queued_during_active_turn',
+    )
+    return c.json({ success: true, data: { issueId, messageId, queued: true } })
+  }
+
+  try {
+    const guard = await ensureWorking(issue)
+    if (!guard.ok) {
+      return c.json({ success: false, error: guard.reason! }, 400)
+    }
+    const { prompt: effectivePrompt, pendingIds } = await collectPendingMessages(
+      issueId,
+      fullPrompt,
+    )
+    const result = await issueEngine.followUpIssue(
+      issueId,
+      effectivePrompt,
+      parsed.model,
+      parsed.permissionMode as 'auto' | 'supervised' | 'plan' | undefined,
+      parsed.busyAction as 'queue' | 'cancel' | undefined,
+      savedFiles.length > 0 ? prompt || undefined : undefined,
+      savedFiles.length > 0 ? { ...attachmentsMeta } : undefined,
+    )
+    await markPendingMessagesDispatched(pendingIds)
+
+    // Link attachments to the server-assigned message log
+    if (savedFiles.length > 0 && result.messageId) {
+      await insertAttachmentRecords(issueId, result.messageId, savedFiles)
     }
 
-    const issueId = c.req.param('id')!
-    const body = c.req.valid('json')
-    const prompt = normalizePrompt(body.prompt)
-    if (!prompt) {
-      return c.json({ success: false, error: 'Prompt is required' }, 400)
-    }
-    const issue = await getProjectOwnedIssue(project.id, issueId)
-    if (!issue) {
-      return c.json({ success: false, error: 'Issue not found' }, 404)
-    }
+    return c.json({
+      success: true,
+      data: { executionId: result.executionId, issueId, messageId: result.messageId },
+    })
+  } catch (error) {
+    return c.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Follow-up failed',
+      },
+      400,
+    )
+  }
+})
 
-    // Queue message for todo/done issues instead of rejecting
-    if (issue.statusId === 'todo') {
-      await persistPendingMessage(issueId, prompt)
-      return c.json({ success: true, data: { issueId, queued: true } })
-    }
-    if (issue.statusId === 'done') {
-      await persistPendingMessage(issueId, prompt, { done: true })
-      return c.json({ success: true, data: { issueId, queued: true } })
-    }
+function savedFileToMeta(f: SavedFile) {
+  return { id: f.id, name: f.originalName, mimeType: f.mimeType, size: f.size }
+}
 
-    try {
-      const guard = await ensureWorking(issue)
-      if (!guard.ok) {
-        return c.json({ success: false, error: guard.reason! }, 400)
-      }
-      const { prompt: effectivePrompt, pendingIds } = await collectPendingMessages(issueId, prompt)
-      const result = await issueEngine.followUpIssue(
-        issueId,
-        effectivePrompt,
-        body.model,
-        body.permissionMode,
-        body.busyAction,
-      )
-      await markPendingMessagesDispatched(pendingIds)
-      return c.json({
-        success: true,
-        data: { executionId: result.executionId, issueId },
-      })
-    } catch (error) {
-      return c.json(
-        {
-          success: false,
-          error: error instanceof Error ? error.message : 'Follow-up failed',
-        },
-        400,
-      )
-    }
-  },
-)
+async function insertAttachmentRecords(
+  issueId: string,
+  logId: string,
+  savedFiles: SavedFile[],
+): Promise<void> {
+  if (savedFiles.length === 0) return
+  await db.insert(attachments).values(
+    savedFiles.map((f) => ({
+      id: f.id,
+      issueId,
+      logId,
+      originalName: f.originalName,
+      storedName: f.storedName,
+      mimeType: f.mimeType,
+      size: f.size,
+      storagePath: f.storagePath,
+    })),
+  )
+}
+
+// GET /api/projects/:projectId/issues/:id/attachments/:attachmentId — Serve attachment file
+session.get('/:id/attachments/:attachmentId', async (c) => {
+  const projectId = c.req.param('projectId')!
+  const project = await findProject(projectId)
+  if (!project) {
+    return c.json({ success: false, error: 'Project not found' }, 404)
+  }
+
+  const issueId = c.req.param('id')!
+  const issue = await getProjectOwnedIssue(project.id, issueId)
+  if (!issue) {
+    return c.json({ success: false, error: 'Issue not found' }, 404)
+  }
+
+  const attachmentId = c.req.param('attachmentId')!
+  const [attachment] = await db
+    .select()
+    .from(attachments)
+    .where(and(eq(attachments.id, attachmentId), eq(attachments.issueId, issueId)))
+  if (!attachment) {
+    return c.json({ success: false, error: 'Attachment not found' }, 404)
+  }
+
+  const filePath = resolve(process.cwd(), attachment.storagePath)
+
+  // SEC-025: Prevent path traversal — resolved path must be inside the uploads directory
+  if (!filePath.startsWith(UPLOAD_DIR)) {
+    return c.json({ success: false, error: 'Invalid attachment path' }, 400)
+  }
+
+  const file = Bun.file(filePath)
+  if (!(await file.exists())) {
+    return c.json({ success: false, error: 'Attachment file missing' }, 404)
+  }
+
+  return new Response(file.stream(), {
+    headers: {
+      'Content-Type': attachment.mimeType,
+      // SEC-024: Force download to prevent content-sniffing and XSS via served files
+      'Content-Disposition': `attachment; filename="${encodeURIComponent(attachment.originalName)}"`,
+      'X-Content-Type-Options': 'nosniff',
+      'Cache-Control': 'private, max-age=86400',
+    },
+  })
+})
 
 // POST /api/projects/:projectId/issues/:id/restart — Restart a failed issue session
 session.post('/:id/restart', async (c) => {

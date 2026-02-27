@@ -46,7 +46,7 @@ export default function KanbanPage() {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-background text-foreground">
+      <div className="flex h-full items-center justify-center bg-background text-foreground">
         <p className="text-sm text-muted-foreground">
           {t('kanban.loadingProject')}
         </p>
@@ -59,7 +59,7 @@ export default function KanbanPage() {
   }
 
   return (
-    <div className="flex h-dvh text-foreground animate-page-enter">
+    <div className="flex h-full text-foreground animate-page-enter">
       {/* Left Sidebar — hidden on mobile */}
       {!isMobile ? <AppSidebar activeProjectId={projectId} /> : null}
 

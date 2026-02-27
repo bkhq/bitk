@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import DOMPurify from 'dompurify'
 import { FileEdit, FileText } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { MultiFileDiff } from '@pierre/diffs/react'
@@ -90,19 +91,6 @@ function parseFileToolInput(input: unknown): ParsedFileToolInput {
   }
 }
 
-function normalizeFileReadOutput(text: string): string {
-  const trimmed = text.trim()
-  if (!trimmed) return trimmed
-  // Convert `12→line content` style output into plain code lines.
-  const lines = trimmed.split('\n')
-  const hasArrowLines = lines.some((line) => /^\s*\d+→/.test(line))
-  if (!hasArrowLines) return trimmed
-  return lines
-    .map((line) => line.replace(/^\s*\d+→/, ''))
-    .join('\n')
-    .trim()
-}
-
 function detectCodeLanguage(filePath?: string): string {
   if (!filePath) return 'text'
   const p = filePath.toLowerCase()
@@ -161,7 +149,7 @@ function ShikiCodeBlock({
   return (
     <div
       className={`code-surface shiki-block ${maxHeightClass} overflow-auto rounded-md`}
-      dangerouslySetInnerHTML={{ __html: html }}
+      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(html) }}
     />
   )
 }
@@ -274,80 +262,73 @@ function FileToolGroup({
   const hasContent = parsed.content !== undefined
   const hasOldString = parsed.oldString !== undefined
   const hasNewString = parsed.newString !== undefined
-  const rawResult = resultEntry.content.trim()
-  const resultText = normalizeFileReadOutput(rawResult)
+
+  // File-read: show only the file path, no content
+  if (!isEdit) {
+    return (
+      <div className="flex items-center gap-2 py-0.5 text-xs text-muted-foreground">
+        <FileText className="h-3 w-3 shrink-0 text-blue-500" />
+        <span className="font-mono truncate">File Read: {filePath}</span>
+      </div>
+    )
+  }
 
   return (
     <ToolPanel
       collapsible
       summary={
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          {isEdit ? (
-            <FileEdit className="h-3.5 w-3.5 shrink-0 text-amber-500" />
-          ) : (
-            <FileText className="h-3.5 w-3.5 shrink-0 text-blue-500" />
-          )}
+          <FileEdit className="h-3.5 w-3.5 shrink-0 text-amber-500" />
           <span className="font-mono truncate">
-            {isEdit ? (isWrite ? 'File Write' : 'File Edit') : 'File Read'}:{' '}
-            {filePath}
+            {isWrite ? 'File Write' : 'File Edit'}: {filePath}
           </span>
         </div>
       }
     >
-      {isEdit ? (
-        <div className="space-y-2">
-          {hasContent ? (
-            <CodeBlock
-              content={parsed.content!}
-              language={codeLanguage}
-              collapsible={false}
-            />
-          ) : null}
-
-          {hasOldString ? (
-            hasNewString ? (
-              <ShikiUnifiedDiff
-                original={parsed.oldString || ''}
-                modified={parsed.newString || ''}
-                filePath={filePath}
-              />
-            ) : (
-              <CodeBlock
-                content={parsed.oldString || ''}
-                language={codeLanguage}
-                collapsible={false}
-              />
-            )
-          ) : null}
-
-          {!hasOldString && hasNewString ? (
-            <CodeBlock
-              content={parsed.newString || ''}
-              language={codeLanguage}
-              collapsible={false}
-            />
-          ) : null}
-
-          {!hasContent &&
-          !hasOldString &&
-          !hasNewString &&
-          !parsed.hasOnlyFilePath ? (
-            <CodeBlock
-              content={parsed.raw || '(empty)'}
-              language="json"
-              collapsible={false}
-            />
-          ) : null}
-        </div>
-      ) : (
-        <div>
+      <div className="space-y-2">
+        {hasContent ? (
           <CodeBlock
-            content={resultText || '(empty)'}
+            content={parsed.content!}
             language={codeLanguage}
             collapsible={false}
           />
-        </div>
-      )}
+        ) : null}
+
+        {hasOldString ? (
+          hasNewString ? (
+            <ShikiUnifiedDiff
+              original={parsed.oldString || ''}
+              modified={parsed.newString || ''}
+              filePath={filePath}
+            />
+          ) : (
+            <CodeBlock
+              content={parsed.oldString || ''}
+              language={codeLanguage}
+              collapsible={false}
+            />
+          )
+        ) : null}
+
+        {!hasOldString && hasNewString ? (
+          <CodeBlock
+            content={parsed.newString || ''}
+            language={codeLanguage}
+            collapsible={false}
+          />
+        ) : null}
+
+        {!hasContent &&
+        !hasOldString &&
+        !hasNewString &&
+        !parsed.hasOnlyFilePath ? (
+          <CodeBlock
+            content={parsed.raw || '(empty)'}
+            language="json"
+            collapsible={false}
+          />
+        ) : null}
+      </div>
     </ToolPanel>
   )
 }
@@ -359,6 +340,7 @@ export function SessionMessages({
   workingStep,
   onCancel,
   isCancelling = false,
+  devMode = false,
 }: {
   logs: NormalizedLogEntry[]
   scrollRef?: React.RefObject<HTMLDivElement | null>
@@ -366,6 +348,7 @@ export function SessionMessages({
   workingStep?: string | null
   onCancel?: () => void
   isCancelling?: boolean
+  devMode?: boolean
 }) {
   const { t } = useTranslation()
 
@@ -381,8 +364,11 @@ export function SessionMessages({
 
   const visibleLogs = logs.filter((entry) => {
     if (entry.entryType !== 'tool-use') return true
+    // Hide all tool-use when dev mode is off
+    if (!devMode) return false
     const md = entry.metadata
     if (!md) return true
+    // Always hide TodoWrite even in dev mode
     if (md.toolName === 'TodoWrite') return false
     if (
       md.isResult === true &&
@@ -409,23 +395,49 @@ export function SessionMessages({
   if (visibleLogs.length === 0 && !isRunning) return null
 
   const durationMap = buildDurationMap(visibleLogs)
+
+  // Build a map from toolCallId → index for all tool-result entries,
+  // so tool-call entries can find their matching result regardless of position.
+  // Iterate in reverse so the first result per callId wins (Map.set overwrites).
+  const resultByCallId = new Map<string, number>()
+  for (let i = visibleLogs.length - 1; i >= 0; i--) {
+    const e = visibleLogs[i]
+    if (
+      e.entryType === 'tool-use' &&
+      e.metadata?.isResult === true &&
+      typeof e.metadata.toolCallId === 'string'
+    ) {
+      resultByCallId.set(e.metadata.toolCallId, i)
+    }
+  }
+
+  // Track which result indices have been consumed by a tool-call pairing
+  const consumedResults = new Set<number>()
   const rows: React.ReactNode[] = []
 
   for (let i = 0; i < visibleLogs.length; i++) {
     const entry = visibleLogs[i]
-    const hasNext = i + 1 < visibleLogs.length
-    const next = hasNext ? visibleLogs[i + 1] : null
+
+    // Skip result entries that were already rendered as part of a tool-call group
+    if (consumedResults.has(i)) continue
+
     const callId = entry.metadata?.toolCallId
     const isToolCall =
       entry.entryType === 'tool-use' && entry.metadata?.isResult !== true
-    const isMatchingNextResult =
-      !!next &&
-      next.entryType === 'tool-use' &&
-      next.metadata?.isResult === true &&
-      typeof callId === 'string' &&
-      next.metadata.toolCallId === callId
 
-    if (isToolCall && isMatchingNextResult) {
+    // Find matching result by toolCallId (not just consecutive position)
+    let matchedResult: NormalizedLogEntry | null = null
+    let matchedResultIdx = -1
+    if (isToolCall && typeof callId === 'string') {
+      const rIdx = resultByCallId.get(callId)
+      if (rIdx !== undefined) {
+        matchedResult = visibleLogs[rIdx]
+        matchedResultIdx = rIdx
+      }
+    }
+
+    if (isToolCall && matchedResult) {
+      consumedResults.add(matchedResultIdx)
       const actionKind = entry.toolAction?.kind
       if (actionKind === 'file-edit' || actionKind === 'file-read') {
         rows.push(
@@ -433,10 +445,9 @@ export function SessionMessages({
             key={`file-tool-group-${entry.messageId ?? `${entry.turnIndex ?? 0}-${i}`}`}
             className="px-5 py-0.5 animate-message-enter"
           >
-            <FileToolGroup actionEntry={entry} resultEntry={next} />
+            <FileToolGroup actionEntry={entry} resultEntry={matchedResult} />
           </div>,
         )
-        i++
         continue
       }
 
@@ -463,7 +474,7 @@ export function SessionMessages({
                 {showFullCommand ? (
                   <div className="rounded-md border border-border/30 bg-muted/10 p-2 space-y-1">
                     <div className="px-0.5 text-[11px] text-muted-foreground">
-                      完整命令
+                      {t('session.tool.fullCommand')}
                     </div>
                     <CodeBlock
                       content={fullCommand}
@@ -473,14 +484,13 @@ export function SessionMessages({
                   </div>
                 ) : null}
                 <CodeBlock
-                  content={next.content || '(empty)'}
+                  content={matchedResult.content || '(empty)'}
                   collapsible={false}
                 />
               </div>
             </ToolPanel>
           </div>,
         )
-        i++
         continue
       }
 
@@ -494,13 +504,12 @@ export function SessionMessages({
             summary={<LogEntry entry={entry} inToolGroup />}
           >
             <CodeBlock
-              content={next.content || '(empty)'}
+              content={matchedResult.content || '(empty)'}
               collapsible={false}
             />
           </ToolPanel>
         </div>,
       )
-      i++
       continue
     }
 

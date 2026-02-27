@@ -14,7 +14,7 @@ export function classifyCommand(command: string): CommandCategory {
 // Async generator: normalize a ReadableStream into NormalizedLogEntry stream
 export async function* normalizeStream(
   stream: ReadableStream<Uint8Array>,
-  parser: (line: string) => NormalizedLogEntry | null,
+  parser: (line: string) => NormalizedLogEntry | NormalizedLogEntry[] | null,
 ): AsyncGenerator<NormalizedLogEntry> {
   const reader = stream.getReader()
   const decoder = new TextDecoder()
@@ -31,15 +31,27 @@ export async function* normalizeStream(
 
       for (const line of lines) {
         if (!line.trim()) continue
-        const entry = parser(line)
-        if (entry) yield entry
+        const result = parser(line)
+        if (result) {
+          if (Array.isArray(result)) {
+            for (const entry of result) yield entry
+          } else {
+            yield result
+          }
+        }
       }
     }
 
     // Process remaining buffer
     if (buffer.trim()) {
-      const entry = parser(buffer)
-      if (entry) yield entry
+      const result = parser(buffer)
+      if (result) {
+        if (Array.isArray(result)) {
+          for (const entry of result) yield entry
+        } else {
+          yield result
+        }
+      }
     }
   } finally {
     reader.releaseLock()

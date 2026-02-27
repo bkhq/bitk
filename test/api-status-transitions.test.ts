@@ -142,13 +142,18 @@ describe('Follow-up status guards', () => {
     }
   })
 
-  test('rejects follow-up on done issue with 400', async () => {
+  test('queues follow-up on done issue instead of rejecting', async () => {
+    // The follow-up route queues messages for done issues (same as todo) rather than rejecting them
     const issue = await createIssueInStatus('done')
-    const result = await post<unknown>(`/api/projects/${projectId}/issues/${issue.id}/follow-up`, {
-      prompt: 'hello',
-    })
-    expect(result.status).toBe(400)
-    expect(result.json.success).toBe(false)
+    const result = await post<{ issueId: string; queued: boolean }>(
+      `/api/projects/${projectId}/issues/${issue.id}/follow-up`,
+      { prompt: 'hello' },
+    )
+    expect(result.status).toBe(200)
+    expect(result.json.success).toBe(true)
+    if (result.json.success) {
+      expect(result.json.data.queued).toBe(true)
+    }
   })
 
   test('allows follow-up on review issue', async () => {

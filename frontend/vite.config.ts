@@ -75,6 +75,7 @@ const config = defineConfig({
           )
             return 'vendor-style'
           if (pkg === 'zustand') return 'vendor-state'
+          if (pkg.startsWith('@xterm/')) return 'vendor-xterm'
         },
       },
     },
@@ -92,7 +93,6 @@ const config = defineConfig({
       '/api': {
         target: 'http://localhost:3010',
         changeOrigin: true,
-        ws: true,
       },
     },
   },

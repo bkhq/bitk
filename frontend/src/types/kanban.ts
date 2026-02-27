@@ -12,7 +12,7 @@ export type Project = {
 }
 
 export type EngineType = 'claude-code' | 'codex' | 'gemini' | 'echo'
-export type PermissionMode = 'auto' | 'supervised' | 'plan' | 'bypass'
+export type PermissionMode = 'auto' | 'supervised' | 'plan'
 export type BusyAction = 'queue' | 'cancel'
 export type SessionStatus =
   | 'pending'
@@ -39,6 +39,7 @@ export type Issue = {
   prompt: string | null
   externalSessionId: string | null
   model: string | null
+  devMode: boolean
   baseCommitHash: string | null
   createdAt: string
   updatedAt: string
@@ -80,6 +81,14 @@ export type ToolAction =
   | { kind: 'tool'; toolName: string; arguments?: unknown; result?: unknown }
   | { kind: 'other'; description: string }
 
+export interface ToolDetail {
+  kind: string
+  toolName: string
+  toolCallId?: string
+  isResult: boolean
+  raw?: Record<string, unknown>
+}
+
 export interface NormalizedLogEntry {
   messageId?: string
   replyToMessageId?: string
@@ -89,6 +98,7 @@ export interface NormalizedLogEntry {
   content: string
   metadata?: Record<string, unknown>
   toolAction?: ToolAction
+  toolDetail?: ToolDetail
 }
 
 export interface ExecuteIssueRequest {
@@ -101,6 +111,7 @@ export interface ExecuteIssueRequest {
 export interface ExecuteIssueResponse {
   executionId?: string
   issueId: string
+  messageId?: string
   queued?: boolean
 }
 

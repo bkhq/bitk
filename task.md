@@ -1,6 +1,6 @@
 # Kanban App — Task List
 
-> Updated: 2026-02-25
+> Updated: 2026-02-26
 > Compressed from 170+ iterative tasks into feature-level tracking.
 
 ## Usage
@@ -19,7 +19,7 @@
 
 - Format: `PREFIX-NNN` — uppercase category prefix + sequential number.
 - IDs are stable once assigned; never reuse or renumber.
-- Next IDs: UI-014, FE-125, BUG-078, SEC-023, ARCH-015, AGENT-012, SSE-004, PERF-004, TEST-008, FEAT-005, OBS-005, AUDIT-006, CLEAN-007, ENG-003, API-006, UX-004
+- Next IDs: UI-014, FE-129, BUG-082, SEC-026, ARCH-017, AGENT-012, SSE-004, PERF-005, TEST-009, FEAT-009, OBS-005, AUDIT-006, CLEAN-008, ENG-003, API-006, UX-004, CODEX-007, DB-006
 
 ### Status Markers
 
@@ -378,6 +378,169 @@
   - description: `app/routes/events.ts` `issueProjectCache` Map grows unbounded. Add TTL-based eviction (e.g. 5min) or use the existing `unstorage` cache layer. Also invalidate entries when issues are deleted. Audit ref: PERF-SSE-001.
   - activeForm: Adding cache eviction to issueProjectCache
   - createdAt: 2026-02-26 14:30
+
+- [x] **CODEX-001 Create CodexProtocolHandler for JSON-RPC lifecycle** `P1`
+  - description: Create `app/engines/codex-protocol.ts` analogous to `claude-protocol.ts`. Manages the full JSON-RPC lifecycle: initialize handshake, thread/start, turn/start, auto-approve command/file-change approval requests, handle streaming notifications, and send turn/interrupt for cancellation. Translates Codex JSONL notifications into a filtered stdout stream consumable by `normalizeStream`.
+  - activeForm: Creating CodexProtocolHandler
+  - createdAt: 2026-02-26 17:00
+  - blocks: CODEX-002, CODEX-003
+
+- [x] **CODEX-002 Implement CodexExecutor.spawn()** `P1`
+  - description: Implement `spawn()` in `app/engines/executors/codex.ts`. Start `codex app-server` process, use CodexProtocolHandler to perform initialize→thread/start→turn/start handshake, wrap stdout through protocol handler's notification translator, return SpawnedProcess with cancel/protocolHandler. Support model, workingDir, and approvalPolicy options.
+  - activeForm: Implementing CodexExecutor.spawn()
+  - createdAt: 2026-02-26 17:00
+  - blocked by: CODEX-001
+  - blocks: CODEX-005
+
+- [x] **CODEX-003 Implement CodexExecutor.spawnFollowUp()** `P1`
+  - description: Implement `spawnFollowUp()` in codex.ts. Reuse existing app-server process or start new one, call thread/resume with stored threadId, then turn/start with follow-up prompt. Handle session continuation via CodexProtocolHandler.
+  - activeForm: Implementing CodexExecutor.spawnFollowUp()
+  - createdAt: 2026-02-26 17:00
+  - blocked by: CODEX-001
+  - blocks: CODEX-005
+
+- [x] **CODEX-004 Implement CodexExecutor.normalizeLog() for notification mapping** `P1`
+  - description: Rewrite `normalizeLog()` to map Codex JSON-RPC notifications to NormalizedLogEntry types: item/agentMessage/delta→assistant-message, item/commandExecution→tool-use(command-run), item/fileChange→tool-use(file-edit), turn/completed→system-message(token-usage), error→error-message. Handle all 15 ThreadItem types.
+  - activeForm: Implementing Codex log normalization
+  - createdAt: 2026-02-26 17:00
+  - blocks: CODEX-005
+
+- [x] **CODEX-005 Enable Codex executor in UI** `P1`
+  - description: Set `executable: true` in getAvailability() when spawn is implemented. Remove stub throw errors. Update cancel() to use protocol handler interrupt. Verify CreateIssueDialog shows Codex as selectable engine.
+  - activeForm: Enabling Codex executor in UI
+  - createdAt: 2026-02-26 17:00
+  - blocked by: CODEX-002, CODEX-003, CODEX-004
+
+- [x] **CODEX-006 Integration test for Codex executor** `P2`
+  - description: Added 48 tests across 2 files: (1) `codex-protocol.test.ts` — 15 tests covering CodexProtocolHandler: initialize handshake, thread/turn lifecycle, auto-approval of command/file-change requests, unknown request rejection, notification passthrough, turn/completed tracking, close rejection, RPC error handling, non-JSON passthrough, resumeThread, sendUserMessage. (2) `codex-normalize-log.test.ts` — 33 tests covering normalizeLog: all 11 notification method types, edge cases (empty/whitespace/non-JSON/unknown methods), token formatting, command classification, timestamp validation.
+  - activeForm: Testing Codex executor integration
+  - createdAt: 2026-02-26 17:00
+  - blocked by: CODEX-005
+
+- [x] **BUG-078 Fix tool-use message toolCallId association for parallel tool calls** `P1`
+  - description: normalizeLog in claude.ts only captured the first tool_use/tool_result block per message (using `.find()`), dropping all subsequent blocks when Claude sends parallel tool calls (common with Grep/Glob searches). Frontend SessionMessages.tsx only paired consecutive tool-call/result entries, failing for non-adjacent pairs. Fixed: (1) Backend extracts ALL tool_use/tool_result blocks from assistant/user messages, returning arrays when multiple exist. (2) normalizeStream and issue-engine parser types updated to accept arrays. (3) Frontend uses a pre-built `resultByCallId` Map for O(1) lookup instead of consecutive-only pairing.
+  - activeForm: Fixing toolCallId association for parallel tool calls
+  - createdAt: 2026-02-26 22:30
+
+- [x] **BUG-079 Fix git changes badge stuck at "0 个文件已更改"** `P1`
+  - description: ChatInput's file changes badge always showed 0 because `useChangesSummary` was purely SSE-driven with no initial REST fetch. Three issues: (1) No initial load — if session already completed before page opened, badge stayed at 0 forever. (2) Updates only fire on `onIssueSettled` — no data during or after execution. (3) SSE connection missing on mobile — `useEventConnection` only called in `AppSidebar` which isn't rendered on mobile. Fixed: (1) Rewrote `useChangesSummary` to fetch initial data via React Query from existing `/changes` REST endpoint, with SSE overlay for real-time updates. (2) Added `useEventConnection` at page level for mobile in both `IssueDetailPage` and `KanbanPage`. (3) SSE updates also invalidate the React Query cache so DiffPanel stays in sync.
+  - activeForm: Fixing git changes badge state update
+  - createdAt: 2026-02-26 23:00
+
+- [x] **PERF-004 Strip file-read content from DB and simplify frontend display** `P2`
+  - description: File-read tool-use results were storing full file content in the `issueLogs` table (bloating DB) and rendering it in the frontend chat. Backend now strips content from file-read tool-result entries before DB persistence (in-memory SSE stream unchanged). Frontend `FileToolGroup` renders file-read as a compact inline path label instead of an expandable code block. Removed unused `normalizeFileReadOutput` function.
+  - activeForm: Stripping file-read content from DB and UI
+  - createdAt: 2026-02-26 18:30
+
+- [x] **ARCH-015 Use readable nanoid (no special chars) for project and issue IDs** `P1`
+  - description: Replace default `nanoid(8)` (alphabet `A-Za-z0-9_-`) in `shortId()` with `customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 8)` so project and issue IDs contain only lowercase alphanumeric characters, improving URL readability and consistency with the existing project alias format.
+  - activeForm: Switching to readable nanoid for IDs
+  - createdAt: 2026-02-26 23:30
+
+- [-] **FEAT-005 Add global web terminal (xterm.js + Bun native PTY)** `P1`
+  - description: Global web terminal accessible from sidebar. Desktop: bottom drawer (like VS Code). Mobile: full-page `/terminal` route. Backend: Bun native PTY via `Bun.spawn({ terminal })` with binary WebSocket protocol. Frontend: xterm.js singleton with auto-reconnect, Zustand store for drawer state.
+  - activeForm: Adding web terminal feature
+  - createdAt: 2026-02-26 21:28
+  - owner: claude
+
+- [x] **FEAT-006 Queue follow-up messages as pending during active AI turn** `P1`
+  - description: When an issue is in "working" status and the AI engine has an active turn in-flight, follow-up messages are persisted as pending (`metadata.pending=true`) instead of being sent to the engine mid-turn. After the turn completes, pending messages are auto-detected and flushed as a new follow-up turn before moving the issue to review. Frontend shows pending indicator for messages sent during active turns.
+  - activeForm: Queueing follow-up messages during active turns
+  - createdAt: 2026-02-26 23:50
+
+- [x] **FEAT-007 Cancel active processes when issue transitions to done** `P1`
+  - description: When an issue's status changes to `done` (via single PATCH or bulk PATCH), fire-and-forget cancel any active background processes for that issue using `issueEngine.cancelIssue()`. Prevents orphaned AI processes from continuing after the user marks work as complete.
+  - activeForm: Cancelling processes on done transition
+  - createdAt: 2026-02-26 23:55
+
+- [x] **ARCH-016 Redesign issue_log_tools → issue_logs_tools_call** `P1`
+  - description: Renamed table to issue_logs_tools_call, simplified schema by removing 12 granular columns (file_path, command, search_query, etc.) in favor of a single raw JSON field, added tool_call_ref_id forward reference in issues_logs. toolAction reconstructed from raw JSON via rawToToolAction(). Fresh migration regenerated.
+  - activeForm: Redesigning tools call table
+  - createdAt: 2026-02-26 23:17
+
+- [x] **FEAT-008 Add file upload to ChatInput** `P1`
+  - description: Full file attachment support for chat: database attachments table, backend FormData parsing on follow-up route, file storage with ULID naming, file serving endpoint, frontend file picker/drag-drop/paste UI with preview bar, attachment display in message history. Supports up to 10 files, 10MB each.
+  - activeForm: Adding file upload to ChatInput
+  - createdAt: 2026-02-27 01:00
+
+- [x] **BUG-081 Fix terminal: SSE transport, default shell, encoding, session persistence** `P1`
+  - description: Replaced WebSocket with SSE+POST transport (WS didn't work through Vite proxy). (1) Detect user's default shell from /etc/passwd via getent. (2) Set TERM=xterm-256color and LANG=C.UTF-8 for proper encoding. (3) Session persistence: server-side session map with PTY per session ID, frontend keeps session across drawer open/close, reattaches xterm.js DOM element. (4) Separate "hide" (X) from "kill" (trash icon) in UI. API: POST /terminal → create, GET /terminal/:id → SSE output, POST /terminal/:id/input → input, POST /terminal/:id/resize → resize, DELETE /terminal/:id → kill.
+  - activeForm: Fixing terminal bugs
+  - createdAt: 2026-02-27 01:30
+  - owner: claude
+
+- [-] **BUG-080 Fix duplicate Claude process spawning for same session** `P0`
+  - description: `handleTurnCompleted()` sets `managed.state = 'completed'` while the subprocess is still alive (conversational engines keep process running between turns). `getActiveProcessForIssue()` only finds `running`/`spawning` states, so follow-up calls spawn a new `--resume` process, creating duplicate processes for the same session. Fix: keep `managed.state = 'running'` after turn completes (subprocess IS alive), add `turnSettled` flag for DB/event handling, and add safety guard in `spawnFollowUpProcess()` to kill old processes.
+  - activeForm: Fixing duplicate Claude process spawning
+  - createdAt: 2026-02-26 21:10
+  - owner: claude
+
+---
+
+## Review Findings (2026-02-27 Audit)
+
+### Security
+
+- [x] **SEC-023 Filter terminal PTY environment** `P0`
+  - description: Terminal spawns shell with full `process.env` including API_SECRET, DB keys. Use filtered env like `safeEnv()` pattern. Strip server-internal secrets.
+  - activeForm: Filtering terminal PTY environment
+  - createdAt: 2026-02-27 03:00
+
+- [x] **SEC-024 Add file upload MIME/extension validation** `P1`
+  - description: `uploads.ts` only validates count and size. Add MIME allowlist (images, text, JSON, docs), extension validation, serve with `Content-Disposition: attachment` and `X-Content-Type-Options: nosniff`.
+  - activeForm: Adding file upload validation
+  - createdAt: 2026-02-27 03:00
+
+- [x] **SEC-025 Add path traversal check on attachment serving** `P1`
+  - description: `session.ts:460` resolves storagePath from DB without validating it stays inside `data/uploads/`. Add isInsideRoot check.
+  - activeForm: Adding attachment path check
+  - createdAt: 2026-02-27 03:00
+
+### Database
+
+- [x] **DB-004 Wrap issue creation in transaction + unique index** `P0`
+  - description: Issue creation (crud.ts:94-191) runs 4+ queries outside transaction. Race condition on issueNumber (TOCTOU). Add transaction wrapper and unique composite index on (project_id, issue_number).
+  - activeForm: Adding issue creation transaction
+  - createdAt: 2026-02-27 03:00
+
+- [x] **DB-005 Fix N+1 in markPendingMessagesDispatched** `P1`
+  - description: Function updates rows one-at-a-time in a loop. Wrap in transaction and batch updates.
+  - activeForm: Fixing pending messages N+1
+  - createdAt: 2026-02-27 03:00
+
+### Frontend
+
+- [x] **FE-125 Stabilize useClickOutside callback** `P1`
+  - description: `onClose` in useEffect deps causes listener churn on every render (12+ call sites). Use useRef to stabilize callback identity.
+  - activeForm: Stabilizing useClickOutside
+  - createdAt: 2026-02-27 03:00
+
+- [x] **FE-126 Add DOMPurify sanitization on dangerouslySetInnerHTML** `P1`
+  - description: MarkdownContent.tsx:64 and SessionMessages.tsx:151 render Shiki HTML without sanitization. Add DOMPurify before dangerouslySetInnerHTML.
+  - activeForm: Adding DOMPurify sanitization
+  - createdAt: 2026-02-27 03:00
+
+- [x] **FE-127 Fix silenced .catch on API errors** `P1`
+  - description: use-issue-stream.ts:110 swallows getIssueLogs errors with empty catch. Add error state or console.warn.
+  - activeForm: Fixing silenced catch errors
+  - createdAt: 2026-02-27 03:00
+
+- [x] **FE-128 Deduplicate formatFileSize utility** `P2`
+  - description: formatFileSize defined identically in ChatInput.tsx:21-25 and LogEntry.tsx:30-34. Move to lib/format.ts.
+  - activeForm: Deduplicating formatFileSize
+  - createdAt: 2026-02-27 03:00
+
+### Code Quality
+
+- [x] **CLEAN-007 Fix all lint errors** `P1`
+  - description: 4 backend errors (import order, type imports, method signatures) + 6 frontend errors (unnecessary conditionals/optional chains). Auto-fix backend, manually fix frontend.
+  - activeForm: Fixing lint errors
+  - createdAt: 2026-02-27 03:00
+
+- [x] **TEST-008 Fix 2 failing backend tests** `P1`
+  - description: (1) SSE test expects 400 for missing projectId but gets 200 — SSE endpoint changed to global. (2) Follow-up on done issue test expects 400 but gets 200 — status guard may be missing.
+  - activeForm: Fixing failing backend tests
+  - createdAt: 2026-02-27 03:00
 
 ---
 

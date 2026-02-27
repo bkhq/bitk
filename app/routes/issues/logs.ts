@@ -1,10 +1,10 @@
 import { stat } from 'node:fs/promises'
 import { resolve, sep } from 'node:path'
-import { and, eq, isNotNull } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { db } from '../../db'
 import { findProject } from '../../db/helpers'
-import { issueLogs as issueLogsTable } from '../../db/schema'
+import { issuesLogsToolsCall as issuesLogsToolsTable } from '../../db/schema'
 import { issueEngine } from '../../engines/issue-engine'
 import { getProjectOwnedIssue, serializeIssue } from './_shared'
 
@@ -91,24 +91,22 @@ function parsePorcelainLine(line: string): GitChangedFile | null {
 
 async function getIssueEditedFiles(issueId: string, workingDir: string): Promise<Set<string>> {
   const rows = await db
-    .select({ toolAction: issueLogsTable.toolAction })
-    .from(issueLogsTable)
+    .select({ raw: issuesLogsToolsTable.raw })
+    .from(issuesLogsToolsTable)
     .where(
-      and(
-        eq(issueLogsTable.issueId, issueId),
-        eq(issueLogsTable.entryType, 'tool-use'),
-        isNotNull(issueLogsTable.toolAction),
-      ),
+      and(eq(issuesLogsToolsTable.issueId, issueId), eq(issuesLogsToolsTable.kind, 'file-edit')),
     )
 
   const paths = new Set<string>()
   const prefix = workingDir.endsWith(sep) ? workingDir : `${workingDir}${sep}`
 
   for (const row of rows) {
+    if (!row.raw) continue
     try {
-      const action = JSON.parse(row.toolAction!)
-      if (action.kind !== 'file-edit') continue
-      let p: string = action.path
+      const rawData = JSON.parse(row.raw)
+      const filePath = rawData.toolAction?.path as string | undefined
+      if (!filePath) continue
+      let p = filePath
       // Convert absolute paths to git-relative
       if (p.startsWith(prefix)) {
         p = p.slice(prefix.length)

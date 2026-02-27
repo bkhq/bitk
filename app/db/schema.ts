@@ -1,12 +1,14 @@
 import { sql } from 'drizzle-orm'
-import { check, index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
-import { nanoid } from 'nanoid'
+import { check, index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
+import { customAlphabet } from 'nanoid'
 import { ulid } from 'ulid'
+
+const readableId = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 8)
 
 export function shortId() {
   return text('id')
     .primaryKey()
-    .$defaultFn(() => nanoid(8))
+    .$defaultFn(() => readableId())
 }
 
 export function id() {
@@ -57,6 +59,7 @@ export const issues = sqliteTable(
     externalSessionId: text('external_session_id'),
 
     model: text('model'),
+    devMode: integer('dev_mode', { mode: 'boolean' }).notNull().default(false),
     baseCommitHash: text('base_commit_hash'),
     ...commonFields,
   },
@@ -65,6 +68,7 @@ export const issues = sqliteTable(
     index('issues_status_id_idx').on(table.statusId),
     index('issues_parent_issue_id_idx').on(table.parentIssueId),
     check('issues_status_id_check', sql`${table.statusId} IN ('todo','working','review','done')`),
+    uniqueIndex('issues_project_id_issue_number_uniq').on(table.projectId, table.issueNumber),
   ],
 )
 
@@ -75,7 +79,7 @@ export const appSettings = sqliteTable('app_settings', {
 })
 
 export const issueLogs = sqliteTable(
-  'issue_logs',
+  'issues_logs',
   {
     id: id(),
     issueId: text('issue_id')
@@ -86,17 +90,64 @@ export const issueLogs = sqliteTable(
     entryType: text('entry_type').notNull(),
     content: text('content').notNull(),
     metadata: text('metadata'),
-    toolAction: text('tool_action'),
     replyToMessageId: text('reply_to_message_id'),
     timestamp: text('timestamp'),
+    toolCallRefId: text('tool_call_ref_id'), // FK to issue_logs_tools_call.id (app-level, no DB FK to avoid circular ref)
     ...commonFields,
   },
   (table) => [
-    index('issue_logs_issue_id_idx').on(table.issueId),
-    index('issue_logs_issue_id_turn_entry_idx').on(
+    index('issues_logs_issue_id_idx').on(table.issueId),
+    index('issues_logs_issue_id_turn_entry_idx').on(
       table.issueId,
       table.turnIndex,
       table.entryIndex,
     ),
+  ],
+)
+
+export const attachments = sqliteTable(
+  'attachments',
+  {
+    id: id(),
+    issueId: text('issue_id')
+      .notNull()
+      .references(() => issues.id),
+    logId: text('log_id').references(() => issueLogs.id),
+    originalName: text('original_name').notNull(),
+    storedName: text('stored_name').notNull(),
+    mimeType: text('mime_type').notNull(),
+    size: integer('size').notNull(),
+    storagePath: text('storage_path').notNull(),
+    ...commonFields,
+  },
+  (table) => [
+    index('attachments_issue_id_idx').on(table.issueId),
+    index('attachments_log_id_idx').on(table.logId),
+  ],
+)
+
+export const issuesLogsToolsCall = sqliteTable(
+  'issues_logs_tools_call',
+  {
+    id: id(),
+    logId: text('log_id')
+      .notNull()
+      .references(() => issueLogs.id),
+    issueId: text('issue_id')
+      .notNull()
+      .references(() => issues.id),
+    toolName: text('tool_name').notNull(),
+    toolCallId: text('tool_call_id'),
+    kind: text('kind').notNull(), // file-read | file-edit | command-run | search | web-fetch | task | tool | other
+    isResult: integer('is_result', { mode: 'boolean' }).notNull().default(false),
+    raw: text('raw'), // Full original JSON (entry metadata + input + result, for future analysis)
+    ...commonFields,
+  },
+  (table) => [
+    index('issues_logs_tools_call_log_id_idx').on(table.logId),
+    index('issues_logs_tools_call_issue_id_idx').on(table.issueId),
+    index('issues_logs_tools_call_kind_idx').on(table.kind),
+    index('issues_logs_tools_call_tool_name_idx').on(table.toolName),
+    index('issues_logs_tools_call_issue_id_kind_idx').on(table.issueId, table.kind),
   ],
 )

@@ -2,22 +2,12 @@ import { useEffect, useState } from 'react'
 import { eventBus } from '@/lib/event-bus'
 
 /**
- * Project-scoped SSE connection hook.
- * Connects the EventBus to /api/events?projectId=... for the given project.
- * Reconnects when projectId changes.
+ * Global SSE connection status hook.
+ * The EventBus connects once at app startup (see main.tsx).
+ * This hook just tracks the connection state for UI indicators.
  */
-export function useEventConnection(projectId?: string) {
+export function useEventConnection() {
   const [connected, setConnected] = useState(eventBus.isConnected())
-
-  useEffect(() => {
-    if (projectId) {
-      eventBus.connect(projectId)
-    }
-    return () => {
-      // Disconnect when leaving project pages to avoid leaking SSE connections
-      eventBus.disconnect()
-    }
-  }, [projectId])
 
   useEffect(() => {
     return eventBus.onConnectionChange(setConnected)

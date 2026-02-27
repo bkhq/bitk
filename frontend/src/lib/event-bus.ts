@@ -23,6 +23,8 @@ type ConnectionListener = (connected: boolean) => void
 
 const MAX_RECONNECT_DELAY = 30_000
 const BASE_RECONNECT_DELAY = 1_000
+// Fast fixed-interval retry until first successful connection
+const INITIAL_RETRY_DELAY = 1_500
 // Watchdog fires if no heartbeat received within 2x server interval + buffer
 const HEARTBEAT_WATCHDOG_MS = 35_000
 
@@ -37,25 +39,17 @@ class EventBus {
   private heartbeatWatchdog: ReturnType<typeof setTimeout> | null = null
   private reconnectDelay = BASE_RECONNECT_DELAY
   private connected = false
-  private currentProjectId: string | null = null
+  private hasConnectedOnce = false
 
-  connect(projectId?: string): void {
-    // If projectId changed, disconnect and reconnect
-    const newProjectId = projectId ?? null
-    if (this.es && this.currentProjectId !== newProjectId) {
-      this.disconnect()
-    }
+  connect(): void {
     if (this.es) return
 
-    this.currentProjectId = newProjectId
-    const url = newProjectId
-      ? `/api/events?projectId=${encodeURIComponent(newProjectId)}`
-      : '/api/events'
-    const es = new EventSource(url)
+    const es = new EventSource('/api/events')
     this.es = es
 
     es.onopen = () => {
       this.connected = true
+      this.hasConnectedOnce = true
       this.reconnectDelay = BASE_RECONNECT_DELAY
       this.notifyConnectionChange(true)
       this.resetHeartbeatWatchdog(es)
@@ -151,12 +145,17 @@ class EventBus {
       this.connected = false
       this.notifyConnectionChange(false)
 
-      // Exponential backoff reconnect
-      const delay = this.reconnectDelay
-      this.reconnectDelay = Math.min(delay * 2, MAX_RECONNECT_DELAY)
+      // Before first successful connection: fast fixed-interval retry
+      // After first connection: exponential backoff for reconnections
+      const delay = this.hasConnectedOnce
+        ? this.reconnectDelay
+        : INITIAL_RETRY_DELAY
+      if (this.hasConnectedOnce) {
+        this.reconnectDelay = Math.min(delay * 2, MAX_RECONNECT_DELAY)
+      }
       this.reconnectTimer = setTimeout(() => {
         this.reconnectTimer = null
-        this.connect(this.currentProjectId ?? undefined)
+        this.connect()
       }, delay)
     }
   }
@@ -172,6 +171,8 @@ class EventBus {
       this.es = null
     }
     this.connected = false
+    this.hasConnectedOnce = false
+    this.reconnectDelay = BASE_RECONNECT_DELAY
     this.notifyConnectionChange(false)
   }
 
@@ -250,7 +251,7 @@ class EventBus {
       this.connected = false
       this.notifyConnectionChange(false)
       this.reconnectDelay = BASE_RECONNECT_DELAY
-      this.connect(this.currentProjectId ?? undefined)
+      this.connect()
     }, HEARTBEAT_WATCHDOG_MS)
   }
 

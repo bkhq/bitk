@@ -12,16 +12,14 @@ interface UseIssueStreamOptions {
   enabled?: boolean
 }
 
-interface AppendOptions {
-  pending?: boolean
-  done?: boolean
-}
-
 interface UseIssueStreamReturn {
   logs: NormalizedLogEntry[]
   clearLogs: () => void
-  appendOptimisticUserMessage: (content: string, opts?: AppendOptions) => void
-  revertOptimisticSend: () => void
+  appendServerMessage: (
+    messageId: string,
+    content: string,
+    metadata?: Record<string, unknown>,
+  ) => void
 }
 
 const TERMINAL: Set<string> = new Set(['completed', 'failed', 'cancelled'])
@@ -30,13 +28,13 @@ function appendLogWithDedup(
   prev: NormalizedLogEntry[],
   incoming: NormalizedLogEntry,
 ): NormalizedLogEntry[] {
-  // Prefer server messageId for identity/dedup.
+  // Dedup by messageId (guaranteed unique from server)
   if (incoming.messageId) {
-    const byId = prev.some((entry) => entry.messageId === incoming.messageId)
-    if (byId) return prev
+    if (prev.some((entry) => entry.messageId === incoming.messageId))
+      return prev
   }
 
-  // Exact duplicate guard (DB refresh + SSE replay).
+  // Exact duplicate guard (DB refresh + SSE replay)
   const duplicate = prev.some(
     (entry) =>
       entry.entryType === incoming.entryType &&
@@ -45,19 +43,6 @@ function appendLogWithDedup(
       entry.content === incoming.content,
   )
   if (duplicate) return prev
-
-  // Reconcile optimistic user echo with persisted server user-message.
-  if (incoming.entryType === 'user-message') {
-    const last = prev[prev.length - 1]
-    if (
-      last.entryType === 'user-message' &&
-      (!last.messageId || last.messageId.startsWith('tmp:')) &&
-      last.content === incoming.content &&
-      !!incoming.messageId
-    ) {
-      return [...prev.slice(0, -1), incoming]
-    }
-  }
 
   return [...prev, incoming]
 }
@@ -79,42 +64,30 @@ export function useIssueStream({
     doneReceivedRef.current = false
   }, [])
 
-  const appendOptimisticUserMessage = useCallback(
-    (content: string, opts?: AppendOptions) => {
+  /** Append a user message with a server-assigned messageId */
+  const appendServerMessage = useCallback(
+    (
+      messageId: string,
+      content: string,
+      metadata?: Record<string, unknown>,
+    ) => {
       const trimmed = content.trim()
       if (!trimmed) return
-      if (!opts?.pending) {
+      if (!metadata?.pending) {
         doneReceivedRef.current = false
       }
-      const optimisticId =
-        typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
-          ? `tmp:${crypto.randomUUID()}`
-          : `tmp:${Date.now()}-${Math.random().toString(16).slice(2)}`
-      setLogs((prev) => [
-        ...prev,
-        {
-          messageId: optimisticId,
+      setLogs((prev) =>
+        appendLogWithDedup(prev, {
+          messageId,
           entryType: 'user-message',
           content: trimmed,
           timestamp: new Date().toISOString(),
-          ...(opts?.pending ? { metadata: { pending: true } } : {}),
-        },
-      ])
+          metadata,
+        }),
+      )
     },
     [],
   )
-
-  /** Undo the optimistic send — removes the temp user message */
-  const revertOptimisticSend = useCallback(() => {
-    setLogs((prev) => {
-      if (prev.length === 0) return prev
-      const last = prev[prev.length - 1]
-      if (last.messageId?.startsWith('tmp:')) {
-        return prev.slice(0, -1)
-      }
-      return prev
-    })
-  }, [])
 
   useEffect(() => {
     if (!issueId || !enabled) {
@@ -141,32 +114,11 @@ export function useIssueStream({
       .getIssueLogs(projectId, issueId)
       .then((data) => {
         if (cancelled || streamScopeRef.current !== scope) return
-        setLogs((prev) => {
-          // Preserve unreconciled optimistic entries (tmp: prefix),
-          // but drop pending/done entries — the server already consumed them.
-          const optimistic = prev.filter(
-            (e) =>
-              e.messageId?.startsWith('tmp:') &&
-              e.entryType === 'user-message' &&
-              !e.metadata?.pending &&
-              !e.metadata?.done,
-          )
-          if (optimistic.length === 0) return data.logs
-          // Check which optimistic entries already appear in server data
-          const serverUserContents = new Set(
-            data.logs
-              .filter((e) => e.entryType === 'user-message')
-              .map((e) => e.content),
-          )
-          const unreconciled = optimistic.filter(
-            (e) => !serverUserContents.has(e.content),
-          )
-          return unreconciled.length > 0
-            ? [...data.logs, ...unreconciled]
-            : data.logs
-        })
+        setLogs(data.logs)
       })
-      .catch(() => {})
+      .catch((err) => {
+        console.warn('Failed to fetch issue logs:', err)
+      })
 
     return () => {
       cancelled = true
@@ -218,7 +170,6 @@ export function useIssueStream({
   return {
     logs,
     clearLogs,
-    appendOptimisticUserMessage,
-    revertOptimisticSend,
+    appendServerMessage,
   }
 }

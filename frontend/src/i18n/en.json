@@ -69,7 +69,9 @@
     "emptyStatusDropHint": "Drop issues here",
     "editTitle": "Click to edit title",
     "addDescription": "Add a description...",
-    "clickToEdit": "Click to edit"
+    "clickToEdit": "Click to edit",
+    "devMode": "Dev Mode",
+    "dev": "Dev"
   },
   "createIssue": {
     "model": "Model",
@@ -115,13 +117,20 @@
     "filesChanged": "{{count}} files changed",
     "placeholder": "Continue working on this task...",
     "placeholderTodo": "Type a message (queued until execution starts)",
-    "pendingMessage": "Queued — will be sent when execution starts",
-    "doneMessage": "Note — task is completed",
+    "pendingMessage": "Queued",
+    "doneMessage": "Completed",
     "busyAction": {
       "label": "Busy strategy",
       "queue": "Queue",
       "cancel": "Cancel then send"
-    }
+    },
+    "attach": "Attach files",
+    "attachDragHint": "Drop files here",
+    "fileTooBig": "File \"{{name}}\" exceeds {{limit}}MB limit",
+    "tooManyFiles": "Too many files (max {{max}})",
+    "removeFile": "Remove file",
+    "unknownType": "Unknown type",
+    "closePreview": "Close preview"
   },
   "diff": {
     "changes": "Changes",
@@ -149,10 +158,13 @@
     },
     "tool": {
       "fileRead": "Read file",
+      "fileWrite": "Write file",
       "fileEdit": "Edit file",
       "commandRun": "Run command",
       "search": "Search",
-      "webFetch": "Fetch URL"
+      "webFetch": "Fetch URL",
+      "taskPlan": "Task Plan",
+      "fullCommand": "Full Command"
     },
     "restart": "Restart",
     "restarting": "Restarting..."
@@ -226,5 +238,14 @@
     "high": "High",
     "medium": "Medium",
     "low": "Low"
+  },
+  "terminal": {
+    "title": "Terminal",
+    "close": "Close terminal",
+    "minimize": "Minimize",
+    "maximize": "Maximize",
+    "resizePanel": "Resize terminal",
+    "back": "Back",
+    "kill": "Kill terminal"
   }
 }

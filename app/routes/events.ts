@@ -1,9 +1,5 @@
-import { eq } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { streamSSE } from 'hono/streaming'
-import { db } from '../db'
-import { findProject } from '../db/helpers'
-import { issues as issuesTable } from '../db/schema'
 import { issueEngine } from '../engines/issue-engine'
 import { onChangesSummary } from '../events/changes-summary'
 import { onIssueUpdated } from '../events/issue-events'
@@ -11,52 +7,12 @@ import { logger } from '../logger'
 
 const TERMINAL = new Set(['completed', 'failed', 'cancelled'])
 
-// In-memory cache: issueId → { projectId, expiresAt }
-// TTL-based eviction prevents unbounded memory growth.
-const ISSUE_CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
-const issueProjectCache = new Map<string, { projectId: string; expiresAt: number }>()
-
-async function getIssueProjectId(issueId: string): Promise<string | null> {
-  const cached = issueProjectCache.get(issueId)
-  if (cached) {
-    if (Date.now() < cached.expiresAt) return cached.projectId
-    issueProjectCache.delete(issueId) // expired
-  }
-
-  const [row] = await db
-    .select({ projectId: issuesTable.projectId })
-    .from(issuesTable)
-    .where(eq(issuesTable.id, issueId))
-
-  if (row) {
-    issueProjectCache.set(issueId, {
-      projectId: row.projectId,
-      expiresAt: Date.now() + ISSUE_CACHE_TTL_MS,
-    })
-    return row.projectId
-  }
-  return null
-}
-
 const events = new Hono()
 
-// GET /api/events?projectId=... — Project-scoped SSE stream
-// Broadcasts only events for issues belonging to the specified project.
-// The projectId param can be a ULID or an alias — we resolve to the actual ULID.
+// GET /api/events — Global SSE stream
+// Broadcasts all issue events. Client-side filtering by project/issue.
 events.get('/', async (c) => {
-  const projectIdParam = c.req.query('projectId')?.trim()
-  if (!projectIdParam) {
-    return c.json({ success: false, error: 'Missing required query parameter: projectId' }, 400)
-  }
-
-  // Resolve alias or ULID to actual project ULID
-  const project = await findProject(projectIdParam)
-  if (!project) {
-    return c.json({ success: false, error: 'Project not found' }, 404)
-  }
-  const projectId = project.id
-
-  logger.debug({ projectId, param: projectIdParam }, 'project_sse_open')
+  logger.debug('global_sse_open')
 
   try {
     return streamSSE(c, async (stream) => {
@@ -78,61 +34,31 @@ events.get('/', async (c) => {
         stream.writeSSE({ event, data: JSON.stringify(data) }).catch(stop)
       }
 
-      // Helper: check if an issue belongs to the subscribed project
-      const isProjectScoped = async (issueId: string): Promise<boolean> => {
-        const issueProjectId = await getIssueProjectId(issueId)
-        return issueProjectId === projectId
-      }
-
-      // Subscribe to log events — filter by project
-      // Note: callbacks are async but the emitter expects sync signatures.
-      // We wrap each in a void IIFE to prevent unhandled promise rejections.
+      // Subscribe to log events
       const unsubLog = issueEngine.onLog((issueId, executionId, entry) => {
-        void isProjectScoped(issueId)
-          .then((scoped) => {
-            if (scoped) writeEvent('log', { issueId, entry })
-          })
-          .catch((err) => logger.error({ err }, 'sse_log_filter_error'))
+        writeEvent('log', { issueId, entry })
       })
 
-      // Non-terminal state changes — filter by project
+      // Non-terminal state changes
       const unsubState = issueEngine.onStateChange((issueId, executionId, state) => {
         if (TERMINAL.has(state)) return // handled by onIssueSettled below
-        void isProjectScoped(issueId)
-          .then((scoped) => {
-            if (scoped) writeEvent('state', { issueId, executionId, state })
-          })
-          .catch((err) => logger.error({ err }, 'sse_state_filter_error'))
+        writeEvent('state', { issueId, executionId, state })
       })
 
-      // Terminal state changes come AFTER DB is updated — filter by project
+      // Terminal state changes come AFTER DB is updated
       const unsubSettled = issueEngine.onIssueSettled((issueId, executionId, state) => {
-        void isProjectScoped(issueId)
-          .then((scoped) => {
-            if (scoped) {
-              writeEvent('state', { issueId, executionId, state })
-              writeEvent('done', { issueId, finalStatus: state })
-            }
-          })
-          .catch((err) => logger.error({ err }, 'sse_settled_filter_error'))
+        writeEvent('state', { issueId, executionId, state })
+        writeEvent('done', { issueId, finalStatus: state })
       })
 
-      // Issue data mutations (status changes, etc.) — filter by project
+      // Issue data mutations (status changes, etc.)
       const unsubIssueUpdated = onIssueUpdated((data) => {
-        void isProjectScoped(data.issueId)
-          .then((scoped) => {
-            if (scoped) writeEvent('issue-updated', data)
-          })
-          .catch((err) => logger.error({ err }, 'sse_issue_updated_filter_error'))
+        writeEvent('issue-updated', data)
       })
 
-      // Changes summary (file count + line stats) — filter by project
+      // Changes summary (file count + line stats)
       const unsubChangesSummary = onChangesSummary((summary) => {
-        void isProjectScoped(summary.issueId)
-          .then((scoped) => {
-            if (scoped) writeEvent('changes-summary', summary)
-          })
-          .catch((err) => logger.error({ err }, 'sse_changes_summary_filter_error'))
+        writeEvent('changes-summary', summary)
       })
 
       // Heartbeat every 15s — keeps connection alive and detects client disconnect
@@ -151,13 +77,13 @@ events.get('/', async (c) => {
         unsubSettled()
         unsubIssueUpdated()
         unsubChangesSummary()
-        logger.debug({ projectId }, 'project_sse_closed')
+        logger.debug('global_sse_closed')
       }
     })
   } catch (err) {
     logger.error(
       { err: err instanceof Error ? { message: err.message, stack: err.stack } : err },
-      'project_sse_error',
+      'global_sse_error',
     )
     return c.json({ success: false, error: 'Stream error' }, 500)
   }

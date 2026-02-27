@@ -6,7 +6,7 @@ CREATE TABLE `app_settings` (
 	`is_deleted` integer DEFAULT 0 NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE `issue_logs` (
+CREATE TABLE `issues_logs` (
 	`id` text PRIMARY KEY NOT NULL,
 	`issue_id` text NOT NULL,
 	`turn_index` integer DEFAULT 0 NOT NULL,
@@ -14,17 +14,17 @@ CREATE TABLE `issue_logs` (
 	`entry_type` text NOT NULL,
 	`content` text NOT NULL,
 	`metadata` text,
-	`tool_action` text,
 	`reply_to_message_id` text,
 	`timestamp` text,
+	`tool_call_ref_id` text,
 	`created_at` integer NOT NULL,
 	`updated_at` integer NOT NULL,
 	`is_deleted` integer DEFAULT 0 NOT NULL,
 	FOREIGN KEY (`issue_id`) REFERENCES `issues`(`id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
-CREATE INDEX `issue_logs_issue_id_idx` ON `issue_logs` (`issue_id`);--> statement-breakpoint
-CREATE INDEX `issue_logs_issue_id_turn_entry_idx` ON `issue_logs` (`issue_id`,`turn_index`,`entry_index`);--> statement-breakpoint
+CREATE INDEX `issues_logs_issue_id_idx` ON `issues_logs` (`issue_id`);--> statement-breakpoint
+CREATE INDEX `issues_logs_issue_id_turn_entry_idx` ON `issues_logs` (`issue_id`,`turn_index`,`entry_index`);--> statement-breakpoint
 CREATE TABLE `issues` (
 	`id` text PRIMARY KEY NOT NULL,
 	`project_id` text NOT NULL,
@@ -52,6 +52,27 @@ CREATE TABLE `issues` (
 CREATE INDEX `issues_project_id_idx` ON `issues` (`project_id`);--> statement-breakpoint
 CREATE INDEX `issues_status_id_idx` ON `issues` (`status_id`);--> statement-breakpoint
 CREATE INDEX `issues_parent_issue_id_idx` ON `issues` (`parent_issue_id`);--> statement-breakpoint
+CREATE TABLE `issues_logs_tools_call` (
+	`id` text PRIMARY KEY NOT NULL,
+	`log_id` text NOT NULL,
+	`issue_id` text NOT NULL,
+	`tool_name` text NOT NULL,
+	`tool_call_id` text,
+	`kind` text NOT NULL,
+	`is_result` integer DEFAULT false NOT NULL,
+	`raw` text,
+	`created_at` integer NOT NULL,
+	`updated_at` integer NOT NULL,
+	`is_deleted` integer DEFAULT 0 NOT NULL,
+	FOREIGN KEY (`log_id`) REFERENCES `issues_logs`(`id`) ON UPDATE no action ON DELETE no action,
+	FOREIGN KEY (`issue_id`) REFERENCES `issues`(`id`) ON UPDATE no action ON DELETE no action
+);
+--> statement-breakpoint
+CREATE INDEX `issues_logs_tools_call_log_id_idx` ON `issues_logs_tools_call` (`log_id`);--> statement-breakpoint
+CREATE INDEX `issues_logs_tools_call_issue_id_idx` ON `issues_logs_tools_call` (`issue_id`);--> statement-breakpoint
+CREATE INDEX `issues_logs_tools_call_kind_idx` ON `issues_logs_tools_call` (`kind`);--> statement-breakpoint
+CREATE INDEX `issues_logs_tools_call_tool_name_idx` ON `issues_logs_tools_call` (`tool_name`);--> statement-breakpoint
+CREATE INDEX `issues_logs_tools_call_issue_id_kind_idx` ON `issues_logs_tools_call` (`issue_id`,`kind`);--> statement-breakpoint
 CREATE TABLE `projects` (
 	`id` text PRIMARY KEY NOT NULL,
 	`name` text NOT NULL,

@@ -1,9 +1,9 @@
 import { stat } from 'node:fs/promises'
 import { resolve, sep } from 'node:path'
-import { and, eq, isNotNull } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { db } from '../db'
 import { findProject } from '../db/helpers'
-import { issueLogs as issueLogsTable, issues as issuesTable } from '../db/schema'
+import { issuesLogsToolsCall as issuesLogsToolsTable, issues as issuesTable } from '../db/schema'
 import { issueEngine } from '../engines/issue-engine'
 import { logger } from '../logger'
 
@@ -37,10 +37,7 @@ function emit(summary: ChangesSummary): void {
 
 // --- Git helpers ---
 
-async function runGit(
-  args: string[],
-  cwd: string,
-): Promise<{ code: number; stdout: string }> {
+async function runGit(args: string[], cwd: string): Promise<{ code: number; stdout: string }> {
   const proc = Bun.spawn(['git', ...args], {
     cwd,
     stdout: 'pipe',
@@ -90,8 +87,11 @@ async function computeAndEmit(issueId: string): Promise<void> {
     if (baseRef === 'HEAD') {
       const { code, stdout } = await runGit(['status', '--porcelain=v1'], root)
       if (code === 0) {
-        const lines = stdout.split('\n').map(l => l.trimEnd()).filter(Boolean)
-        filePaths = lines.map(line => line.slice(3).trim().split(' -> ').at(-1)?.trim() ?? '')
+        const lines = stdout
+          .split('\n')
+          .map((l) => l.trimEnd())
+          .filter(Boolean)
+        filePaths = lines.map((line) => line.slice(3).trim().split(' -> ').at(-1)?.trim() ?? '')
       }
     } else {
       const { code, stdout } = await runGit(['diff', '--name-only', baseRef], root)
@@ -100,12 +100,17 @@ async function computeAndEmit(issueId: string): Promise<void> {
       }
       const ls = await runGit(['ls-files', '--others', '--exclude-standard'], root)
       if (ls.code === 0) {
-        filePaths.push(...ls.stdout.split('\n').filter(Boolean).map(l => l.trim()))
+        filePaths.push(
+          ...ls.stdout
+            .split('\n')
+            .filter(Boolean)
+            .map((l) => l.trim()),
+        )
       }
     }
 
     if (editedFiles.size > 0) {
-      filePaths = filePaths.filter(p => editedFiles.has(p))
+      filePaths = filePaths.filter((p) => editedFiles.has(p))
     }
     const fileCount = filePaths.length
 
@@ -114,9 +119,8 @@ async function computeAndEmit(issueId: string): Promise<void> {
     let deletions = 0
 
     if (fileCount > 0) {
-      const numstatArgs = baseRef === 'HEAD'
-        ? ['diff', '--numstat']
-        : ['diff', '--numstat', baseRef]
+      const numstatArgs =
+        baseRef === 'HEAD' ? ['diff', '--numstat'] : ['diff', '--numstat', baseRef]
       const { code, stdout } = await runGit(numstatArgs, root)
       if (code === 0) {
         for (const line of stdout.split('\n').filter(Boolean)) {
@@ -138,24 +142,22 @@ async function computeAndEmit(issueId: string): Promise<void> {
 
 async function getIssueEditedFiles(issueId: string, workingDir: string): Promise<Set<string>> {
   const rows = await db
-    .select({ toolAction: issueLogsTable.toolAction })
-    .from(issueLogsTable)
+    .select({ raw: issuesLogsToolsTable.raw })
+    .from(issuesLogsToolsTable)
     .where(
-      and(
-        eq(issueLogsTable.issueId, issueId),
-        eq(issueLogsTable.entryType, 'tool-use'),
-        isNotNull(issueLogsTable.toolAction),
-      ),
+      and(eq(issuesLogsToolsTable.issueId, issueId), eq(issuesLogsToolsTable.kind, 'file-edit')),
     )
 
   const paths = new Set<string>()
   const prefix = workingDir.endsWith(sep) ? workingDir : `${workingDir}${sep}`
 
   for (const row of rows) {
+    if (!row.raw) continue
     try {
-      const action = JSON.parse(row.toolAction!)
-      if (action.kind !== 'file-edit') continue
-      let p: string = action.path
+      const rawData = JSON.parse(row.raw)
+      const filePath = rawData.toolAction?.path as string | undefined
+      if (!filePath) continue
+      let p = filePath
       if (p.startsWith(prefix)) {
         p = p.slice(prefix.length)
       } else if (p.startsWith(workingDir)) {
@@ -163,7 +165,7 @@ async function getIssueEditedFiles(issueId: string, workingDir: string): Promise
       }
       if (p) paths.add(p)
     } catch {
-      // skip
+      // skip unparseable rows
     }
   }
   return paths

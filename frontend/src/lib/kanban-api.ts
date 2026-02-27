@@ -39,6 +39,15 @@ function patch<T>(url: string, body: unknown) {
   return request<T>(url, { method: 'PATCH', body: JSON.stringify(body) })
 }
 
+async function postFormData<T>(url: string, formData: FormData): Promise<T> {
+  const res = await fetch(url, { method: 'POST', body: formData })
+  const json = (await res.json()) as ApiResponse<T>
+  if (!json.success) {
+    throw new Error(json.error)
+  }
+  return json.data
+}
+
 export const kanbanApi = {
   // Filesystem
   listDirs: (path?: string) =>
@@ -120,8 +129,21 @@ export const kanbanApi = {
     model?: string,
     permissionMode?: PermissionMode,
     busyAction?: BusyAction,
-  ) =>
-    post<ExecuteIssueResponse>(
+    files?: File[],
+  ) => {
+    if (files && files.length > 0) {
+      const fd = new FormData()
+      fd.append('prompt', prompt)
+      if (model) fd.append('model', model)
+      if (permissionMode) fd.append('permissionMode', permissionMode)
+      if (busyAction) fd.append('busyAction', busyAction)
+      for (const file of files) fd.append('files', file)
+      return postFormData<ExecuteIssueResponse>(
+        `/api/projects/${projectId}/issues/${issueId}/follow-up`,
+        fd,
+      )
+    }
+    return post<ExecuteIssueResponse>(
       `/api/projects/${projectId}/issues/${issueId}/follow-up`,
       {
         prompt,
@@ -129,7 +151,8 @@ export const kanbanApi = {
         ...(permissionMode ? { permissionMode } : {}),
         ...(busyAction ? { busyAction } : {}),
       },
-    ),
+    )
+  },
 
   cancelIssue: (projectId: string, issueId: string) =>
     post<{ issueId: string; status: string }>(

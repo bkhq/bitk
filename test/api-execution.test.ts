@@ -322,10 +322,12 @@ describe('GET /api/events (SSE)', () => {
     expect(res.headers.get('content-type')).toContain('text/event-stream')
   })
 
-  test('SSE stream returns 400 without projectId', async () => {
+  test('SSE stream returns 200 without projectId (global stream)', async () => {
+    // The SSE endpoint is now a global broadcast stream — projectId is no longer required
     const { default: app } = await import('../app/app')
     const res = await app.request('http://localhost/api/events')
-    expect(res.status).toBe(400)
+    expect(res.status).toBe(200)
+    expect(res.headers.get('content-type')).toContain('text/event-stream')
   })
 })
 

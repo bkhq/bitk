@@ -1,33 +1,69 @@
 import { useEffect, useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { eventBus } from '@/lib/event-bus'
 import type { ChangesSummaryData } from '@/lib/event-bus'
+import { kanbanApi } from '@/lib/kanban-api'
+import { queryKeys } from './use-kanban'
 
 /**
- * Subscribe to SSE-pushed changes summary for an issue.
- * Returns `{ fileCount, additions, deletions }` pushed by the server
- * whenever file-modifying tool actions occur or execution settles.
- * No polling — purely event-driven.
+ * Returns `{ fileCount, additions, deletions }` for an issue's git changes.
+ *
+ * Two data sources, layered:
+ * 1. Initial fetch via REST `/changes` endpoint (React Query, staleTime 30s)
+ * 2. SSE `changes-summary` events override the REST data in real-time
  */
-export function useChangesSummary(issueId: string | undefined) {
-  const [summary, setSummary] = useState<ChangesSummaryData | null>(null)
+export function useChangesSummary(
+  projectId: string | undefined,
+  issueId: string | undefined,
+) {
+  const queryClient = useQueryClient()
+
+  // Initial fetch from REST endpoint — derive summary from full response
+  const { data: restData } = useQuery({
+    queryKey: queryKeys.issueChanges(projectId ?? '', issueId ?? ''),
+    queryFn: () => kanbanApi.getIssueChanges(projectId!, issueId!),
+    enabled: !!projectId && !!issueId,
+  })
+
+  // SSE overlay — real-time updates override REST data
+  const [sseSummary, setSseSummary] = useState<ChangesSummaryData | null>(null)
 
   useEffect(() => {
     if (!issueId) {
-      setSummary(null)
+      setSseSummary(null)
       return
     }
 
-    // Reset on issue change
-    setSummary(null)
+    // Reset SSE overlay on issue change
+    setSseSummary(null)
 
     const unsub = eventBus.onChangesSummary((data) => {
       if (data.issueId === issueId) {
-        setSummary(data)
+        setSseSummary(data)
+        // Also invalidate the REST query so DiffPanel picks up new data
+        if (projectId) {
+          queryClient.invalidateQueries({
+            queryKey: queryKeys.issueChanges(projectId, issueId),
+          })
+        }
       }
     })
 
     return unsub
-  }, [issueId])
+  }, [issueId, projectId, queryClient])
 
-  return summary
+  // SSE data takes priority over REST data
+  if (sseSummary) return sseSummary
+
+  // Derive summary from REST response
+  if (restData) {
+    return {
+      issueId: issueId ?? '',
+      fileCount: restData.files.length,
+      additions: restData.additions,
+      deletions: restData.deletions,
+    } satisfies ChangesSummaryData
+  }
+
+  return null
 }

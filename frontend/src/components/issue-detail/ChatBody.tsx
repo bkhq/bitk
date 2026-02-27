@@ -2,8 +2,7 @@ import { useRef } from 'react'
 import { useCancelIssue, useUpdateIssue } from '@/hooks/use-kanban'
 import { useIssueStream } from '@/hooks/use-issue-stream'
 import { STATUS_MAP } from '@/lib/statuses'
-import type { Issue } from '@/types/kanban'
-import type { NormalizedLogEntry } from '@/types/kanban'
+import type { Issue, NormalizedLogEntry } from '@/types/kanban'
 import { IssueDetail } from './IssueDetail'
 import { ChatInput } from './ChatInput'
 import { SessionMessages } from './SessionMessages'
@@ -54,8 +53,7 @@ function deriveWorkingStep(logs: NormalizedLogEntry[]): string | null {
     const current = inProgress ?? pending ?? completed ?? todos[0]
     const activeForm =
       typeof current.activeForm === 'string' ? current.activeForm : null
-    const content =
-      typeof current.content === 'string' ? current.content : null
+    const content = typeof current.content === 'string' ? current.content : null
     return activeForm ?? content ?? null
   }
   return null
@@ -73,13 +71,12 @@ export function useSessionState(
   const isDone = issue?.statusId === 'done'
   const streamEnabled = hasSession || isTodo || isDone
 
-  const { logs, appendOptimisticUserMessage, revertOptimisticSend } =
-    useIssueStream({
-      projectId,
-      issueId: streamEnabled ? issueId : null,
-      sessionStatus: issue?.sessionStatus ?? null,
-      enabled: !!(issueId && streamEnabled),
-    })
+  const { logs, appendServerMessage } = useIssueStream({
+    projectId,
+    issueId: streamEnabled ? issueId : null,
+    sessionStatus: issue?.sessionStatus ?? null,
+    enabled: !!(issueId && streamEnabled),
+  })
 
   const effectiveStatus = issue?.sessionStatus ?? null
   const isSessionActive =
@@ -99,8 +96,7 @@ export function useSessionState(
     workingStep,
     isTodo,
     isDone,
-    appendOptimisticUserMessage,
-    revertOptimisticSend,
+    appendServerMessage,
   }
 }
 
@@ -127,20 +123,13 @@ export function ChatBody({
   const updateIssue = useUpdateIssue(projectId)
   const cancelIssue = useCancelIssue(projectId)
 
-  const {
-    logs,
-    isThinking,
-    workingStep,
-    isTodo,
-    isDone,
-    appendOptimisticUserMessage,
-    revertOptimisticSend,
-  } = useSessionState(projectId, issueId, issue)
+  const { logs, isThinking, workingStep, isTodo, isDone, appendServerMessage } =
+    useSessionState(projectId, issueId, issue)
 
   return (
     <>
       {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto overflow-x-hidden">
         <div className="flex flex-col min-h-full justify-end py-2">
           <SessionMessages
             logs={logs}
@@ -149,6 +138,7 @@ export function ChatBody({
             workingStep={workingStep}
             onCancel={() => cancelIssue.mutate(issueId)}
             isCancelling={cancelIssue.isPending}
+            devMode={issue.devMode}
           />
         </div>
       </div>
@@ -172,13 +162,9 @@ export function ChatBody({
         sessionStatus={issue.sessionStatus}
         statusId={issue.statusId}
         isThinking={isThinking}
-        onSendStart={(prompt) =>
-          appendOptimisticUserMessage(
-            prompt,
-            isTodo ? { pending: true } : isDone ? { done: true } : undefined,
-          )
-        }
-        onSendError={revertOptimisticSend}
+        onMessageSent={(messageId, prompt, metadata) => {
+          appendServerMessage(messageId, prompt, metadata)
+        }}
       />
     </>
   )
