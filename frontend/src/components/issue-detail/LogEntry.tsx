@@ -308,6 +308,16 @@ export function LogEntry({
       if (entry.metadata?.subtype === 'hook_completed') return null
       if (entry.metadata?.source === 'result') return null
       if (typeof entry.metadata?.duration === 'number') return null
+      // Command output (e.g. /context, /cost): show as a styled block
+      if (entry.metadata?.subtype === 'command_output') {
+        return (
+          <div className="mx-5 my-1.5 rounded-lg bg-muted/40 border border-border/30 px-4 py-3 animate-message-enter">
+            <pre className="text-xs text-foreground/80 whitespace-pre-wrap font-mono leading-relaxed overflow-x-auto">
+              {entry.content}
+            </pre>
+          </div>
+        )
+      }
       // Compact boundary: show a visual divider
       if (entry.metadata?.subtype === 'compact_boundary') {
         return (

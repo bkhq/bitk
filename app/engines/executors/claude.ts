@@ -367,8 +367,7 @@ export class ClaudeCodeExecutor implements EngineExecutor {
             })
           }
 
-          // Non-text, non-tool_use blocks (e.g. 'thinking') are intentionally ignored
-          if (entries.length === 0) return null
+          if (entries.length === 0) return null // thinking-only blocks (streaming noise)
           return entries
         }
 
@@ -378,29 +377,53 @@ export class ClaudeCodeExecutor implements EngineExecutor {
           const toolResults = (contentBlocks ?? []).filter(
             (block: { type?: string }) => block?.type === 'tool_result',
           ) as { tool_use_id?: string; content?: string | unknown[]; is_error?: boolean }[]
-          if (toolResults.length === 0) return null
 
-          return toolResults.map((toolResult) => {
-            const resultContent = Array.isArray(toolResult.content)
-              ? toolResult.content
-                  .map((part: unknown) => (typeof part === 'string' ? part : JSON.stringify(part)))
-                  .join('\n')
-              : typeof toolResult.content === 'string'
+          if (toolResults.length > 0) {
+            return toolResults.map((toolResult) => {
+              const resultContent = Array.isArray(toolResult.content)
                 ? toolResult.content
-                : JSON.stringify(toolResult.content ?? '')
+                    .map((part: unknown) =>
+                      typeof part === 'string' ? part : JSON.stringify(part),
+                    )
+                    .join('\n')
+                : typeof toolResult.content === 'string'
+                  ? toolResult.content
+                  : JSON.stringify(toolResult.content ?? '')
 
-            return {
-              entryType: (toolResult.is_error
-                ? 'error-message'
-                : 'tool-use') as NormalizedLogEntry['entryType'],
-              content: resultContent,
-              timestamp: data.timestamp,
-              metadata: {
-                toolCallId: toolResult.tool_use_id,
-                isResult: true,
-              },
+              return {
+                entryType: (toolResult.is_error
+                  ? 'error-message'
+                  : 'tool-use') as NormalizedLogEntry['entryType'],
+                content: resultContent,
+                timestamp: data.timestamp,
+                metadata: {
+                  toolCallId: toolResult.tool_use_id,
+                  isResult: true,
+                },
+              }
+            })
+          }
+
+          // Slash command output (e.g. /context, /cost) — SDK sends as
+          // user message with string content wrapped in <local-command-stdout>
+          const rawContent = typeof data.message?.content === 'string' ? data.message.content : null
+          if (rawContent) {
+            // Strip <local-command-stdout>...</local-command-stdout> wrapper if present
+            const stripped = rawContent
+              .replace(/^<local-command-stdout>\s*/, '')
+              .replace(/\s*<\/local-command-stdout>\s*$/, '')
+              .trim()
+            if (stripped) {
+              return {
+                entryType: 'system-message' as NormalizedLogEntry['entryType'],
+                content: stripped,
+                timestamp: data.timestamp,
+                metadata: { subtype: 'command_output' },
+              }
             }
-          })
+          }
+
+          return null
         }
 
         case 'content_block_delta': {
@@ -482,13 +505,8 @@ export class ClaudeCodeExecutor implements EngineExecutor {
               metadata: { subtype: data.subtype, hookName: data.hook_name },
             }
           }
-          // Skip noisy lifecycle events
-          if (data.subtype === 'hook_started' || data.subtype === 'hook_completed') {
-            return null
-          }
-          // Other system events: use message/content/subtype
+          // All other system events — always produce an entry (DB decides visibility)
           const msg = data.message ?? data.content ?? data.subtype ?? ''
-          if (!msg) return null
           return {
             entryType: 'system-message',
             content: msg,
@@ -539,8 +557,19 @@ export class ClaudeCodeExecutor implements EngineExecutor {
           }
         }
 
-        default:
-          return null
+        default: {
+          // Unknown types — store as system-message so nothing is lost
+          const fallbackContent = data.message ?? data.content ?? ''
+          const fallbackStr =
+            typeof fallbackContent === 'string' ? fallbackContent : JSON.stringify(fallbackContent)
+          if (!fallbackStr.trim()) return null // Don't store empty noise
+          return {
+            entryType: 'system-message' as NormalizedLogEntry['entryType'],
+            content: fallbackStr,
+            timestamp: data.timestamp,
+            metadata: { subtype: data.type ?? 'unknown' },
+          }
+        }
       }
     } catch {
       // Not JSON or parse error - treat as plain text

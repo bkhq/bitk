@@ -48,7 +48,7 @@ interface ManagedProcess {
    *  from re-settling on exit, and is reset when a new turn starts. */
   turnSettled: boolean
   /** True when the current turn was initiated by a meta follow-up (e.g. auto-title).
-   *  All log entries in this turn will be tagged with `type: 'system'` and set visible=0. */
+   *  All log entries in this turn will be tagged with `type: 'system'` and hidden by isVisibleForMode(). */
   metaTurn: boolean
   slashCommands: string[]
   worktreePath?: string
@@ -77,31 +77,33 @@ const MAX_CONCURRENT_EXECUTIONS = Number(process.env.MAX_CONCURRENT_EXECUTIONS) 
 
 // ---------- Helpers ----------
 
-/** Entries that are permanently hidden in ALL modes — maps to visible=0 in DB */
-function isAlwaysHidden(entry: NormalizedLogEntry): boolean {
-  if (entry.metadata?.type === 'system') return true
+/**
+ * Single visibility filter — everything is stored in DB, this controls display.
+ * devMode=true shows all entries; devMode=false shows only user-facing entries.
+ */
+function isVisibleForMode(entry: NormalizedLogEntry, devMode: boolean): boolean {
+  if (devMode) return true
+
+  // Meta-turn entries (auto-title etc.) are always hidden
+  if (entry.metadata?.type === 'system') return false
+
+  // User & assistant messages are always visible
+  if (entry.entryType === 'user-message' || entry.entryType === 'assistant-message') return true
+
+  // Error messages are always visible
+  if (entry.entryType === 'error-message') return true
+
+  // System messages — whitelist specific subtypes
   if (entry.entryType === 'system-message') {
     const subtype = entry.metadata?.subtype
-    if (subtype === 'init') return true
-    if (subtype === 'hook_response' && typeof entry.metadata?.hookName === 'string') {
-      return entry.metadata.hookName.startsWith('SessionStart:')
-    }
-  }
-  return false
-}
-
-/** Check if entry is visible given current devMode (used for in-memory logs & SSE) */
-function isVisibleForMode(entry: NormalizedLogEntry, devMode: boolean): boolean {
-  if (isAlwaysHidden(entry)) return false
-  if (!devMode) {
-    if (entry.entryType === 'user-message' || entry.entryType === 'assistant-message') return true
-    // compact_boundary dividers are always visible
-    if (entry.entryType === 'system-message' && entry.metadata?.subtype === 'compact_boundary') {
-      return true
-    }
+    if (subtype === 'compact_boundary') return true
+    if (subtype === 'command_output') return true
+    // result entries with duration (turn completion markers) — let frontend decide rendering
+    if (entry.metadata?.source === 'result' && entry.metadata?.turnCompleted) return true
     return false
   }
-  return true
+
+  return false
 }
 
 const devModeCache = new Map<string, boolean>()
@@ -643,7 +645,7 @@ export class IssueEngine {
 
   getLogs(issueId: string, devMode = false): NormalizedLogEntry[] {
     setIssueDevMode(issueId, devMode)
-    // DB query already filters by visible=1 and entryType (when !devMode).
+    // DB pre-filters by visible + entryType; isVisibleForMode() handles subtype rules.
     const persisted = this.getLogsFromDb(issueId, devMode)
 
     // While a process is active, merge any in-memory tail not yet persisted.
@@ -997,7 +999,7 @@ export class IssueEngine {
           metadata: entry.metadata ? JSON.stringify(entry.metadata) : null,
           replyToMessageId,
           timestamp: entry.timestamp ?? null,
-          visible: isAlwaysHidden(entry) ? 0 : 1,
+          visible: 1,
         })
         .run()
 
@@ -1086,9 +1088,18 @@ export class IssueEngine {
   }
 
   private getLogsFromDb(issueId: string, devMode = false): NormalizedLogEntry[] {
+    // visible=1 filter preserves pending-message dedup (dispatched entries set visible=0).
+    // Non-devMode also pre-filters by entryType for performance (avoids loading tool-use rows).
     const conditions = [eq(logsTable.issueId, issueId), eq(logsTable.visible, 1)]
     if (!devMode) {
-      conditions.push(inArray(logsTable.entryType, ['user-message', 'assistant-message']))
+      conditions.push(
+        inArray(logsTable.entryType, [
+          'user-message',
+          'assistant-message',
+          'error-message',
+          'system-message',
+        ]),
+      )
     }
     const rows = db
       .select()
@@ -1107,40 +1118,42 @@ export class IssueEngine {
       .all()
     const toolByLogId = new Map(toolRows.map((r) => [r.logId, r]))
 
-    return rows.map((row) => {
-      const base: NormalizedLogEntry = {
-        messageId: row.id,
-        replyToMessageId: row.replyToMessageId ?? undefined,
-        entryType: row.entryType as NormalizedLogEntry['entryType'],
-        content: row.content.trim(),
-        turnIndex: row.turnIndex,
-        timestamp: row.timestamp ?? undefined,
-        metadata: row.metadata ? JSON.parse(row.metadata) : undefined,
-      }
+    return rows
+      .map((row) => {
+        const base: NormalizedLogEntry = {
+          messageId: row.id,
+          replyToMessageId: row.replyToMessageId ?? undefined,
+          entryType: row.entryType as NormalizedLogEntry['entryType'],
+          content: row.content.trim(),
+          turnIndex: row.turnIndex,
+          timestamp: row.timestamp ?? undefined,
+          metadata: row.metadata ? JSON.parse(row.metadata) : undefined,
+        }
 
-      // Attach tool detail and reconstruct toolAction + content/metadata from tools table
-      const tool = toolByLogId.get(row.id)
-      if (tool) {
-        const rawData = tool.raw ? JSON.parse(tool.raw) : {}
-        base.toolDetail = {
-          kind: tool.kind,
-          toolName: tool.toolName,
-          toolCallId: tool.toolCallId ?? undefined,
-          isResult: tool.isResult ?? false,
-          raw: rawData,
+        // Attach tool detail and reconstruct toolAction + content/metadata from tools table
+        const tool = toolByLogId.get(row.id)
+        if (tool) {
+          const rawData = tool.raw ? JSON.parse(tool.raw) : {}
+          base.toolDetail = {
+            kind: tool.kind,
+            toolName: tool.toolName,
+            toolCallId: tool.toolCallId ?? undefined,
+            isResult: tool.isResult ?? false,
+            raw: rawData,
+          }
+          base.toolAction = this.rawToToolAction(tool.kind, rawData)
+          // Restore content & metadata from raw (not stored in issues_logs for tool-use)
+          if (!base.content && rawData.content) {
+            base.content = rawData.content as string
+          }
+          if (!base.metadata && rawData.metadata) {
+            base.metadata = rawData.metadata as Record<string, unknown>
+          }
         }
-        base.toolAction = this.rawToToolAction(tool.kind, rawData)
-        // Restore content & metadata from raw (not stored in issues_logs for tool-use)
-        if (!base.content && rawData.content) {
-          base.content = rawData.content as string
-        }
-        if (!base.metadata && rawData.metadata) {
-          base.metadata = rawData.metadata as Record<string, unknown>
-        }
-      }
 
-      return base
-    })
+        return base
+      })
+      .filter((entry) => isVisibleForMode(entry, devMode))
   }
 
   /** Reconstruct ToolAction from the raw JSON stored in issue_logs_tools_call */
@@ -1185,7 +1198,7 @@ export class IssueEngine {
   ): string | null {
     const turnIdx = this.turnIndexes.get(executionId) ?? 0
     // When displayPrompt is provided on a meta turn, the user wants this message visible.
-    // Strip type:'system' so isAlwaysHidden() won't hide it.
+    // Strip type:'system' so isVisibleForMode() won't hide it.
     let entryMeta = metadata
     if (displayPrompt && metadata?.type === 'system') {
       const { type: _type, ...rest } = metadata
