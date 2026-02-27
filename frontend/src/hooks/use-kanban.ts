@@ -271,19 +271,8 @@ export function useFollowUpIssue(projectId: string) {
   })
 }
 
-const AUTO_TITLE_PROMPT = [
-  '[SYSTEM TASK] Generate a short title for this conversation.',
-  'Reply with ONLY the title wrapped in the exact format below — nothing else.',
-  '',
-  'Format: <bitk><title>TITLE</title></bitk>',
-  '',
-  'Rules:',
-  '- 50 characters max',
-  '- No quotes around the title',
-  '- No extra text, explanation, or markdown',
-  '',
-  'Example: <bitk><title>Fix login page crash</title></bitk>',
-].join('\n')
+const AUTO_TITLE_PROMPT =
+  '请总结一下当前会话以<bitk>简短信息</bitk>格式返回，不超过15个字'
 
 export function useAutoTitleIssue(projectId: string) {
   const queryClient = useQueryClient()
