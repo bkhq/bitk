@@ -8,7 +8,7 @@ import type {
   NormalizedLogEntry,
   SpawnedProcess,
   SpawnOptions,
-} from '../types'
+} from '../../types'
 
 /**
  * Echo — a mock engine that is always available.

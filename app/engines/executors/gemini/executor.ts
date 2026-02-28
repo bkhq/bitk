@@ -8,8 +8,8 @@ import type {
   NormalizedLogEntry,
   SpawnedProcess,
   SpawnOptions,
-} from '../types'
-import { safeEnv } from '../safe-env'
+} from '../../types'
+import { safeEnv } from '../../safe-env'
 
 /**
  * Gemini CLI executor — uses ACP (Agent Communication Protocol).

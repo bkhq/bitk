@@ -1,6 +1,6 @@
-import type { NormalizedLogEntry, ToolAction } from '../types'
-import type { WriteFilterRule } from '../write-filter'
-import { classifyCommand } from '../logs'
+import type { NormalizedLogEntry, ToolAction } from '../../types'
+import type { WriteFilterRule } from '../../write-filter'
+import { classifyCommand } from '../../logs'
 
 export class ClaudeLogNormalizer {
   private readonly rules: WriteFilterRule[]
@@ -299,7 +299,7 @@ export class ClaudeLogNormalizer {
   }
 }
 
-// --- Module-level helpers (moved from claude.ts) ---
+// --- Module-level helpers ---
 
 function normalizeExecutionError(raw: string): { kind?: string; summary: string } {
   const lower = raw.toLowerCase()

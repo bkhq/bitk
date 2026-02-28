@@ -8,15 +8,15 @@ import type {
   NormalizedLogEntry,
   SpawnedProcess,
   SpawnOptions,
-} from '../types'
-import type { WriteFilterRule } from '../write-filter'
+} from '../../types'
+import type { WriteFilterRule } from '../../write-filter'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
-import { logger } from '../../logger'
-import { ClaudeProtocolHandler } from '../claude-protocol'
-import { CommandBuilder } from '../command'
-import { safeEnv } from '../safe-env'
-import { ClaudeLogNormalizer } from './claude-normalizer'
+import { logger } from '../../../logger'
+import { CommandBuilder } from '../../command'
+import { safeEnv } from '../../safe-env'
+import { ClaudeLogNormalizer } from './normalizer'
+import { ClaudeProtocolHandler } from './protocol'
 
 function findClaude(): string | null {
   const fromPath = Bun.which('claude')

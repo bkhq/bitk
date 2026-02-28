@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { ClaudeLogNormalizer } from '../app/engines/executors/claude-normalizer'
+import { ClaudeLogNormalizer } from '../app/engines/executors/claude'
 import type { WriteFilterRule } from '../app/engines/write-filter'
 import type { NormalizedLogEntry } from '../app/engines/types'
 
@@ -175,9 +175,7 @@ describe('ClaudeLogNormalizer', () => {
           type: 'assistant',
           message: {
             id: 'msg4',
-            content: [
-              { type: 'tool_use', id: 'tu_r2', name: 'Read', input: { file_path: '/y' } },
-            ],
+            content: [{ type: 'tool_use', id: 'tu_r2', name: 'Read', input: { file_path: '/y' } }],
           },
         }),
       )
@@ -413,14 +411,10 @@ describe('ClaudeLogNormalizer', () => {
       const normalizer = new ClaudeLogNormalizer([READ_RULE])
 
       // Filter the tool_use
-      normalizer.parse(
-        line({ type: 'tool_use', name: 'Read', id: 'tu_clean1', input: {} }),
-      )
+      normalizer.parse(line({ type: 'tool_use', name: 'Read', id: 'tu_clean1', input: {} }))
 
       // First result is filtered and cleans up the id
-      normalizer.parse(
-        line({ type: 'tool_result', tool_use_id: 'tu_clean1', content: 'data' }),
-      )
+      normalizer.parse(line({ type: 'tool_result', tool_use_id: 'tu_clean1', content: 'data' }))
 
       // Second result with same id should NOT be filtered (id was cleaned up)
       const entries = parseAll(

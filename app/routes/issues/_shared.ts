@@ -151,6 +151,50 @@ export function flushPendingAsFollowUp(issueId: string, issue: { model: string |
  * Used by POST create, PATCH single, and PATCH bulk when an issue
  * transitions to working.
  */
+// ---------- Shared helpers (used by command.ts & message.ts) ----------
+
+export function normalizePrompt(input: string): string {
+  return input.replace(/^(?:\\n|\s)+/g, '').replace(/(?:\\n|\s)+$/g, '')
+}
+
+/**
+ * Collect any queued pending messages, merge them into the prompt.
+ * Returns the effective prompt and pending IDs for deferred deletion.
+ * Callers MUST delete pending messages only AFTER the engine call succeeds
+ * to prevent message loss on failure.
+ */
+export async function collectPendingMessages(
+  issueId: string,
+  basePrompt: string,
+): Promise<{ prompt: string; pendingIds: string[] }> {
+  const pending = await getPendingMessages(issueId)
+  if (pending.length === 0) return { prompt: basePrompt, pendingIds: [] }
+  const prompt = [basePrompt, ...pending.map((m) => m.content)].filter(Boolean).join('\n\n')
+  return { prompt, pendingIds: pending.map((m) => m.id) }
+}
+
+/**
+ * Ensure an issue is in working status before AI execution begins.
+ * - todo / done → reject (no execution allowed)
+ * - review → move to working, then execute
+ * - working → proceed as-is
+ */
+export async function ensureWorking(issue: IssueRow): Promise<{ ok: boolean; reason?: string }> {
+  if (issue.statusId === 'todo') {
+    return { ok: false, reason: 'Cannot execute a todo issue — move to working first' }
+  }
+  if (issue.statusId === 'done') {
+    return { ok: false, reason: 'Cannot execute a done issue' }
+  }
+  if (issue.statusId !== 'working') {
+    // review → working
+    await db.update(issuesTable).set({ statusId: 'working' }).where(eq(issuesTable.id, issue.id))
+    emitIssueUpdated(issue.id, { statusId: 'working' })
+    logger.info({ issueId: issue.id, from: issue.statusId }, 'moved_to_working')
+  }
+  return { ok: true }
+}
+
 export function triggerIssueExecution(
   issueId: string,
   issue: {

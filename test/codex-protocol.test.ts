@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { CodexProtocolHandler } from '../app/engines/codex-protocol'
+import { CodexProtocolHandler } from '../app/engines/executors/codex'
 
 /** Create a mock stdin (FileSink-like) that captures written data. */
 function createMockStdin() {

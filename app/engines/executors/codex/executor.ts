@@ -9,11 +9,11 @@ import type {
   SpawnedProcess,
   SpawnOptions,
   ToolAction,
-} from '../types'
-import { logger } from '../../logger'
-import { CodexProtocolHandler } from '../codex-protocol'
-import { classifyCommand } from '../logs'
-import { safeEnv } from '../safe-env'
+} from '../../types'
+import { logger } from '../../../logger'
+import { classifyCommand } from '../../logs'
+import { safeEnv } from '../../safe-env'
+import { CodexProtocolHandler } from './protocol'
 
 const CODEX_CMD = ['npx', '-y', '@openai/codex@latest']
 const JSONRPC_TIMEOUT = 15000

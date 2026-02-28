@@ -1,6 +1,6 @@
 import type { FileSink } from 'bun'
 import { ulid } from 'ulid'
-import { logger } from '../logger'
+import { logger } from '../../../logger'
 
 const MAX_IO_LOG_CHARS = 1200
 const IO_LOG_ENABLED = (process.env.LOG_EXECUTOR_IO ?? '1') !== '0'
