@@ -51,7 +51,9 @@ create.post(
 
     try {
       const issuePrompt = body.title
-      const shouldExecute = body.statusId === 'working'
+      const shouldExecute = body.statusId === 'working' || body.statusId === 'review'
+      // review → working: auto-downgrade so the execution engine picks it up
+      const effectiveStatusId = body.statusId === 'review' ? 'working' : body.statusId
 
       const [newIssue] = await db.transaction(async (tx) => {
         // Validate parentIssueId if provided
@@ -89,7 +91,7 @@ create.post(
           .where(
             and(
               eq(issuesTable.projectId, project.id),
-              eq(issuesTable.statusId, body.statusId),
+              eq(issuesTable.statusId, effectiveStatusId),
               eq(issuesTable.isDeleted, 0),
             ),
           )
@@ -99,7 +101,7 @@ create.post(
           .insert(issuesTable)
           .values({
             projectId: project.id,
-            statusId: body.statusId,
+            statusId: effectiveStatusId,
             issueNumber,
             title: body.title,
             priority: body.priority,
