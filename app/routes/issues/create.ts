@@ -2,6 +2,7 @@ import type { EngineType } from '../../engines/types'
 import { zValidator } from '@hono/zod-validator'
 import { and, eq, max } from 'drizzle-orm'
 import { Hono } from 'hono'
+import { cacheDel, cacheDelByPrefix } from '../../cache'
 import { db } from '../../db'
 import { findProject, getDefaultEngine, getEngineDefaultModel } from '../../db/helpers'
 import { issues as issuesTable } from '../../db/schema'
@@ -112,6 +113,10 @@ create.post(
           })
           .returning()
       })
+
+      // After successful creation, invalidate relevant caches
+      await cacheDelByPrefix(`childCounts:${project.id}`)
+      await cacheDel(`projectIssueIds:${project.id}`)
 
       // Only auto-execute when created directly in working
       if (shouldExecute) {

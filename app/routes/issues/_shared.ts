@@ -3,6 +3,7 @@ import { mkdir, stat } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { and, eq } from 'drizzle-orm'
 import { z } from 'zod'
+import { cacheDel, cacheGetOrSet } from '../../cache'
 import { STATUS_IDS } from '../../config'
 import { db } from '../../db'
 import { getAppSetting } from '../../db/helpers'
@@ -102,17 +103,23 @@ export function serializeIssue(row: IssueRow, childCount?: number) {
 }
 
 export async function getProjectOwnedIssue(projectId: string, issueId: string) {
-  const [issue] = await db
-    .select()
-    .from(issuesTable)
-    .where(
-      and(
-        eq(issuesTable.id, issueId),
-        eq(issuesTable.projectId, projectId),
-        eq(issuesTable.isDeleted, 0),
-      ),
-    )
-  return issue ?? null
+  return cacheGetOrSet(`issue:${projectId}:${issueId}`, 30, async () => {
+    const [issue] = await db
+      .select()
+      .from(issuesTable)
+      .where(
+        and(
+          eq(issuesTable.id, issueId),
+          eq(issuesTable.projectId, projectId),
+          eq(issuesTable.isDeleted, 0),
+        ),
+      )
+    return issue ?? null
+  })
+}
+
+export async function invalidateIssueCache(projectId: string, issueId: string): Promise<void> {
+  await cacheDel(`issue:${projectId}:${issueId}`)
 }
 
 export { toISO } from '../../utils/date'

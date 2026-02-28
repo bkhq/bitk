@@ -1,6 +1,7 @@
 import { zValidator } from '@hono/zod-validator'
 import { and, eq } from 'drizzle-orm'
 import { Hono } from 'hono'
+import { cacheDel, cacheDelByPrefix, cacheGetOrSet } from '../../cache'
 import { db } from '../../db'
 import { findProject } from '../../db/helpers'
 import { issues as issuesTable } from '../../db/schema'
@@ -38,11 +39,18 @@ update.patch(
     const body = c.req.valid('json')
 
     // Get all project issue IDs for ownership validation
-    const projectIssues = await db
-      .select({ id: issuesTable.id })
-      .from(issuesTable)
-      .where(and(eq(issuesTable.projectId, project.id), eq(issuesTable.isDeleted, 0)))
-    const projectIssueIds = new Set(projectIssues.map((i) => i.id))
+    const projectIssueIds = await cacheGetOrSet<string[]>(
+      `projectIssueIds:${project.id}`,
+      60,
+      async () => {
+        const rows = await db
+          .select({ id: issuesTable.id })
+          .from(issuesTable)
+          .where(and(eq(issuesTable.projectId, project.id), eq(issuesTable.isDeleted, 0)))
+        return rows.map((i) => i.id)
+      },
+    )
+    const projectIssueIdSet = new Set(projectIssueIds)
 
     const updated: ReturnType<typeof serializeIssue>[] = []
     // Collect issues that need execution after transaction commits
@@ -59,7 +67,7 @@ update.patch(
 
     await db.transaction(async (tx) => {
       for (const u of body.updates) {
-        if (!projectIssueIds.has(u.id)) continue
+        if (!projectIssueIdSet.has(u.id)) continue
 
         const changes: Record<string, unknown> = {}
         if (u.statusId !== undefined) changes.statusId = u.statusId
@@ -120,6 +128,11 @@ update.patch(
       void issueEngine.cancelIssue(issueId).catch((err) => {
         logger.error({ issueId, err }, 'done_transition_cancel_failed')
       })
+    }
+
+    // Invalidate issue caches after bulk update
+    for (const u of body.updates) {
+      await cacheDel(`issue:${project.id}:${u.id}`)
     }
 
     return c.json({ success: true, data: updated })
@@ -228,6 +241,12 @@ update.patch(
       .returning()
     if (!row) {
       return c.json({ success: false, error: 'Issue not found' }, 404)
+    }
+
+    // Invalidate issue cache after update
+    await cacheDel(`issue:${project.id}:${issueId}`)
+    if (body.parentIssueId !== undefined) {
+      await cacheDelByPrefix(`childCounts:${project.id}`)
     }
 
     if (shouldExecute) {

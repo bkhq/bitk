@@ -1,9 +1,9 @@
 import { stat } from 'node:fs/promises'
-import { resolve, sep } from 'node:path'
-import { and, eq } from 'drizzle-orm'
+import { resolve } from 'node:path'
+import { eq } from 'drizzle-orm'
 import { db } from '../db'
 import { findProject } from '../db/helpers'
-import { issuesLogsToolsCall as issuesLogsToolsTable, issues as issuesTable } from '../db/schema'
+import { issues as issuesTable } from '../db/schema'
 import { issueEngine } from '../engines/issue'
 import { logger } from '../logger'
 
@@ -79,7 +79,6 @@ async function computeAndEmit(issueId: string): Promise<void> {
     }
 
     const baseRef = issue.baseCommitHash ?? 'HEAD'
-    const editedFiles = await getIssueEditedFiles(issueId, root)
 
     // Count changed files
     let filePaths: string[] = []
@@ -109,9 +108,6 @@ async function computeAndEmit(issueId: string): Promise<void> {
       }
     }
 
-    if (editedFiles.size > 0) {
-      filePaths = filePaths.filter((p) => editedFiles.has(p))
-    }
     const fileCount = filePaths.length
 
     // Additions/deletions via numstat
@@ -124,8 +120,7 @@ async function computeAndEmit(issueId: string): Promise<void> {
       const { code, stdout } = await runGit(numstatArgs, root)
       if (code === 0) {
         for (const line of stdout.split('\n').filter(Boolean)) {
-          const [a, d, path] = line.split('\t')
-          if (editedFiles.size > 0 && path && !editedFiles.has(path)) continue
+          const [a, d] = line.split('\t')
           const add = Number(a)
           const del = Number(d)
           if (!Number.isNaN(add)) additions += add
@@ -138,37 +133,6 @@ async function computeAndEmit(issueId: string): Promise<void> {
   } catch (err) {
     logger.error({ err, issueId }, 'changes_summary_compute_error')
   }
-}
-
-async function getIssueEditedFiles(issueId: string, workingDir: string): Promise<Set<string>> {
-  const rows = await db
-    .select({ raw: issuesLogsToolsTable.raw })
-    .from(issuesLogsToolsTable)
-    .where(
-      and(eq(issuesLogsToolsTable.issueId, issueId), eq(issuesLogsToolsTable.kind, 'file-edit')),
-    )
-
-  const paths = new Set<string>()
-  const prefix = workingDir.endsWith(sep) ? workingDir : `${workingDir}${sep}`
-
-  for (const row of rows) {
-    if (!row.raw) continue
-    try {
-      const rawData = JSON.parse(row.raw)
-      const filePath = rawData.toolAction?.path as string | undefined
-      if (!filePath) continue
-      let p = filePath
-      if (p.startsWith(prefix)) {
-        p = p.slice(prefix.length)
-      } else if (p.startsWith(workingDir)) {
-        p = p.slice(workingDir.length + 1)
-      }
-      if (p) paths.add(p)
-    } catch {
-      // skip unparseable rows
-    }
-  }
-  return paths
 }
 
 // --- Subscribe to engine events ---

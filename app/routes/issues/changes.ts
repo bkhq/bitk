@@ -1,10 +1,8 @@
 import { stat } from 'node:fs/promises'
 import { resolve, sep } from 'node:path'
-import { and, eq } from 'drizzle-orm'
 import { Hono } from 'hono'
-import { db } from '../../db'
+import { cacheGetOrSet } from '../../cache'
 import { findProject } from '../../db/helpers'
-import { issuesLogsToolsCall as issuesLogsToolsTable } from '../../db/schema'
 import { getProjectOwnedIssue } from './_shared'
 
 // ---------- Types ----------
@@ -63,8 +61,10 @@ async function runGit(
 }
 
 async function isGitRepo(cwd: string): Promise<boolean> {
-  const { code, stdout } = await runGit(['rev-parse', '--is-inside-work-tree'], cwd)
-  return code === 0 && stdout.trim() === 'true'
+  return cacheGetOrSet(`gitRepo:${cwd}`, 120, async () => {
+    const { code, stdout } = await runGit(['rev-parse', '--is-inside-work-tree'], cwd)
+    return code === 0 && stdout.trim() === 'true'
+  })
 }
 
 function parsePorcelainLine(line: string): GitChangedFile | null {
@@ -150,38 +150,6 @@ async function listChangedFiles(cwd: string, baseRef = 'HEAD'): Promise<GitChang
   return files.sort((a, b) => a.path.localeCompare(b.path))
 }
 
-async function getIssueEditedFiles(issueId: string, workingDir: string): Promise<Set<string>> {
-  const rows = await db
-    .select({ raw: issuesLogsToolsTable.raw })
-    .from(issuesLogsToolsTable)
-    .where(
-      and(eq(issuesLogsToolsTable.issueId, issueId), eq(issuesLogsToolsTable.kind, 'file-edit')),
-    )
-
-  const paths = new Set<string>()
-  const prefix = workingDir.endsWith(sep) ? workingDir : `${workingDir}${sep}`
-
-  for (const row of rows) {
-    if (!row.raw) continue
-    try {
-      const rawData = JSON.parse(row.raw)
-      const filePath = rawData.toolAction?.path as string | undefined
-      if (!filePath) continue
-      let p = filePath
-      // Convert absolute paths to git-relative
-      if (p.startsWith(prefix)) {
-        p = p.slice(prefix.length)
-      } else if (p.startsWith(workingDir)) {
-        p = p.slice(workingDir.length + 1)
-      }
-      if (p) paths.add(p)
-    } catch {
-      // skip unparseable rows
-    }
-  }
-  return paths
-}
-
 async function summarizeFileLines(
   cwd: string,
   file: GitChangedFile,
@@ -239,12 +207,7 @@ changes.get('/:id/changes', async (c) => {
   }
 
   const baseRef = issue.baseCommitHash ?? 'HEAD'
-  const editedFiles = await getIssueEditedFiles(issueId, root)
-
-  let files = await listChangedFiles(root, baseRef)
-  if (editedFiles.size > 0) {
-    files = files.filter((f) => editedFiles.has(f.path))
-  }
+  const files = await listChangedFiles(root, baseRef)
 
   const filesWithStats = await Promise.all(
     files.map(async (file) => ({

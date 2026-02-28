@@ -1,5 +1,6 @@
 import { and, count, eq, isNull } from 'drizzle-orm'
 import { Hono } from 'hono'
+import { cacheGetOrSet } from '../../cache'
 import { db } from '../../db'
 import { findProject } from '../../db/helpers'
 import { issues as issuesTable } from '../../db/schema'
@@ -33,27 +34,29 @@ query.get('/', async (c) => {
     .where(and(...conditions))
 
   // Compute child counts for returned issues
-  const issueIds = rows.map((r) => r.id)
-  const childCountMap = new Map<string, number>()
-  if (issueIds.length > 0) {
-    const childRows = await db
-      .select({
-        parentIssueId: issuesTable.parentIssueId,
-        cnt: count(),
-      })
-      .from(issuesTable)
-      .where(and(eq(issuesTable.projectId, project.id), eq(issuesTable.isDeleted, 0)))
-      .groupBy(issuesTable.parentIssueId)
-    for (const cr of childRows) {
-      if (cr.parentIssueId) {
-        childCountMap.set(cr.parentIssueId, cr.cnt)
+  const childCounts = await cacheGetOrSet<Record<string, number>>(
+    `childCounts:${project.id}`,
+    30,
+    async () => {
+      const childRows = await db
+        .select({
+          parentIssueId: issuesTable.parentIssueId,
+          cnt: count(),
+        })
+        .from(issuesTable)
+        .where(and(eq(issuesTable.projectId, project.id), eq(issuesTable.isDeleted, 0)))
+        .groupBy(issuesTable.parentIssueId)
+      const map: Record<string, number> = {}
+      for (const cr of childRows) {
+        if (cr.parentIssueId) map[cr.parentIssueId] = cr.cnt
       }
-    }
-  }
+      return map
+    },
+  )
 
   return c.json({
     success: true,
-    data: rows.map((r) => serializeIssue(r, childCountMap.get(r.id))),
+    data: rows.map((r) => serializeIssue(r, childCounts[r.id])),
   })
 })
 

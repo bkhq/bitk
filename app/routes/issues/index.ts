@@ -3,6 +3,7 @@ import attachments from './attachments'
 import changes from './changes'
 import command from './command'
 import create from './create'
+import del from './delete'
 import logs from './logs'
 import message from './message'
 import query from './query'
@@ -13,6 +14,7 @@ const issues = new Hono()
 issues.route('/', query)
 issues.route('/', create)
 issues.route('/', update)
+issues.route('/', del)
 issues.route('/', title)
 issues.route('/', command)
 issues.route('/', message)

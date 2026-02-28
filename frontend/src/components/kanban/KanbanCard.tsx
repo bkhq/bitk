@@ -1,6 +1,7 @@
 import { memo } from 'react'
 import { useSortable } from '@dnd-kit/react/sortable'
-import { GitBranchPlus } from 'lucide-react'
+import { GitBranchPlus, Trash2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import type { Issue } from '@/types/kanban'
 import { PriorityIcon } from './PriorityIcon'
 
@@ -10,13 +11,16 @@ export const KanbanCard = memo(function KanbanCard({
   columnStatusId,
   isSelected,
   onCardClick,
+  onDelete,
 }: {
   issue: Issue
   index: number
   columnStatusId: string
   isSelected?: boolean
   onCardClick?: (issue: Issue) => void
+  onDelete?: (issue: Issue) => void
 }) {
+  const { t } = useTranslation()
   const { ref, isDragging } = useSortable({
     id: issue.id,
     index,
@@ -40,12 +44,27 @@ export const KanbanCard = memo(function KanbanCard({
       }`}
       style={{ animationDelay: `${index * 40}ms` }}
     >
-      {/* Top row: ID + Priority */}
+      {/* Top row: ID + Priority + Delete */}
       <div className="flex items-center justify-between mb-1">
         <span className="text-[11px] font-medium text-muted-foreground font-mono">
           #{issue.issueNumber}
         </span>
-        <PriorityIcon priority={issue.priority} />
+        <div className="flex items-center gap-1">
+          {onDelete ? (
+            <button
+              type="button"
+              className="hidden group-hover:flex h-5 w-5 items-center justify-center rounded text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 transition-colors"
+              title={t('issue.delete')}
+              onClick={(e) => {
+                e.stopPropagation()
+                onDelete(issue)
+              }}
+            >
+              <Trash2 className="h-3 w-3" />
+            </button>
+          ) : null}
+          <PriorityIcon priority={issue.priority} />
+        </div>
       </div>
 
       {/* Title */}

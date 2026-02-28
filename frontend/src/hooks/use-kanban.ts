@@ -228,6 +228,16 @@ export function useBulkUpdateIssues(projectId: string) {
   })
 }
 
+export function useDeleteIssue(projectId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (issueId: string) => kanbanApi.deleteIssue(projectId, issueId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.issues(projectId) })
+    },
+  })
+}
+
 // --- Issue session hooks ---
 
 export function useExecuteIssue(projectId: string) {

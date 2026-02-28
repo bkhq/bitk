@@ -64,3 +64,25 @@ export async function cacheDel(key: string): Promise<void> {
   expiryMap.delete(key)
   accessOrder.delete(key)
 }
+
+export async function cacheGetOrSet<T>(
+  key: string,
+  ttlSeconds: number,
+  fetcher: () => Promise<T>,
+): Promise<T> {
+  const cached = await cacheGet<T>(key)
+  if (cached !== null) return cached
+  const value = await fetcher()
+  await cacheSet(key, value, ttlSeconds)
+  return value
+}
+
+export async function cacheDelByPrefix(prefix: string): Promise<void> {
+  for (const key of [...store.keys()]) {
+    if (key.startsWith(prefix)) {
+      store.delete(key)
+      expiryMap.delete(key)
+      accessOrder.delete(key)
+    }
+  }
+}

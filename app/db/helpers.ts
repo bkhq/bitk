@@ -1,6 +1,6 @@
 import { and, eq, inArray } from 'drizzle-orm'
 import { db } from '.'
-import { cacheDel, cacheGet, cacheSet } from '../cache'
+import { cacheDel, cacheGet, cacheGetOrSet, cacheSet } from '../cache'
 import {
   appSettings as appSettingsTable,
   issues as issuesTable,
@@ -79,16 +79,10 @@ export async function cleanupStaleSessions(): Promise<number> {
 const SETTINGS_CACHE_TTL = 300 // seconds
 
 export async function getAppSetting(key: string): Promise<string | null> {
-  const cacheKey = `app_setting:${key}`
-  const cached = await cacheGet<string>(cacheKey)
-  if (cached !== null && cached !== undefined) return cached
-
-  const [row] = await db.select().from(appSettingsTable).where(eq(appSettingsTable.key, key))
-
-  if (!row) return null
-
-  await cacheSet(cacheKey, row.value, SETTINGS_CACHE_TTL)
-  return row.value
+  return cacheGetOrSet(`app_setting:${key}`, SETTINGS_CACHE_TTL, async () => {
+    const [row] = await db.select().from(appSettingsTable).where(eq(appSettingsTable.key, key))
+    return row?.value ?? null
+  })
 }
 
 export async function setAppSetting(key: string, value: string): Promise<void> {
@@ -105,7 +99,8 @@ export async function getEngineDefaultModel(engineType: string): Promise<string 
 }
 
 export async function setEngineDefaultModel(engineType: string, modelId: string): Promise<void> {
-  return setAppSetting(`engine:${engineType}:defaultModel`, modelId)
+  await setAppSetting(`engine:${engineType}:defaultModel`, modelId)
+  await cacheDel('engineDefaultModels:all')
 }
 
 export async function getDefaultEngine(): Promise<string | null> {
@@ -117,19 +112,19 @@ export async function setDefaultEngine(engineType: string): Promise<void> {
 }
 
 export async function getAllEngineDefaultModels(): Promise<Record<string, string>> {
-  const rows = await db.select().from(appSettingsTable).where(eq(appSettingsTable.isDeleted, 0))
-
-  const result: Record<string, string> = {}
-  const prefix = 'engine:'
-  const suffix = ':defaultModel'
-
-  for (const row of rows) {
-    if (row.key.startsWith(prefix) && row.key.endsWith(suffix)) {
-      const engineType = row.key.slice(prefix.length, -suffix.length)
-      result[engineType] = row.value
+  return cacheGetOrSet('engineDefaultModels:all', SETTINGS_CACHE_TTL, async () => {
+    const rows = await db.select().from(appSettingsTable).where(eq(appSettingsTable.isDeleted, 0))
+    const result: Record<string, string> = {}
+    const prefix = 'engine:'
+    const suffix = ':defaultModel'
+    for (const row of rows) {
+      if (row.key.startsWith(prefix) && row.key.endsWith(suffix)) {
+        const engineType = row.key.slice(prefix.length, -suffix.length)
+        result[engineType] = row.value
+      }
     }
-  }
-  return result
+    return result
+  })
 }
 
 // --- Probe Results persistence ---

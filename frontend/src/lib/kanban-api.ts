@@ -39,6 +39,10 @@ function patch<T>(url: string, body: unknown) {
   return request<T>(url, { method: 'PATCH', body: JSON.stringify(body) })
 }
 
+function del<T>(url: string) {
+  return request<T>(url, { method: 'DELETE' })
+}
+
 async function postFormData<T>(url: string, formData: FormData): Promise<T> {
   const res = await fetch(url, { method: 'POST', body: formData })
   const json = (await res.json()) as ApiResponse<T>
@@ -110,6 +114,8 @@ export const kanbanApi = {
 
   getIssue: (projectId: string, issueId: string) =>
     get<Issue>(`/api/projects/${projectId}/issues/${issueId}`),
+  deleteIssue: (projectId: string, issueId: string) =>
+    del<{ id: string }>(`/api/projects/${projectId}/issues/${issueId}`),
 
   // Issue session operations (merged from sessions)
   executeIssue: (
