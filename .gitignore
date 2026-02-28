@@ -39,6 +39,7 @@ data/
 # Claude Code
 .claude.json
 .claude/
+.bitk/
 
 # Superpowers plugin docs
 docs/superpowers/
