@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { serveStatic } from 'hono/bun'
+import { serveStatic, websocket  } from 'hono/bun'
 import app from './app'
 import { embeddedStatic } from './embedded-static'
 import { issueEngine } from './engines/issue'
@@ -14,7 +14,6 @@ import { startChangesSummaryWatcher } from './events/changes-summary'
 import { logger } from './logger'
 import { staticAssets } from './static-assets'
 import { COMMIT, VERSION } from './version'
-import { websocket } from './ws'
 
 // Run startup reconciliation: mark stale sessions as failed and move
 // orphaned working issues to review.

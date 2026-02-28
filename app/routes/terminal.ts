@@ -1,9 +1,9 @@
 import { zValidator } from '@hono/zod-validator'
 import { Hono } from 'hono'
+import { upgradeWebSocket } from 'hono/bun'
 import { z } from 'zod'
 import { ProcessManager } from '../engines/process-manager'
 import { logger } from '../logger'
-import { upgradeWebSocket } from '../ws'
 
 // Server-internal secrets that must never be forwarded to terminal PTY processes
 const TERMINAL_STRIP_KEYS = new Set([
