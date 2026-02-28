@@ -87,70 +87,21 @@ function parsePorcelainLine(line: string): GitChangedFile | null {
   return { path, status, type, staged, unstaged, previousPath }
 }
 
-function parseNameStatusLine(line: string): GitChangedFile | null {
-  if (!line) return null
-  const parts = line.split('\t')
-  if (parts.length < 2) return null
-  const statusCode = parts[0]![0]!
-  const path = parts.length >= 3 ? parts[2]! : parts[1]!
-  const previousPath = parts.length >= 3 ? parts[1] : undefined
-
-  let type: ChangeType = 'unknown'
-  if (statusCode === 'A') type = 'added'
-  else if (statusCode === 'M') type = 'modified'
-  else if (statusCode === 'D') type = 'deleted'
-  else if (statusCode === 'R') type = 'renamed'
-
-  return { path, status: statusCode, type, staged: false, unstaged: false, previousPath }
-}
-
-async function listChangedFiles(cwd: string, baseRef = 'HEAD'): Promise<GitChangedFile[]> {
-  if (baseRef === 'HEAD') {
-    // Original behavior: use porcelain status for uncommitted changes
-    const { code, stdout } = await runGit(['status', '--porcelain=v1'], cwd)
-    if (code !== 0) return []
-    return stdout
-      .split('\n')
-      .map((line) => line.trimEnd())
-      .filter(Boolean)
-      .map(parsePorcelainLine)
-      .filter((f): f is GitChangedFile => !!f)
-      .sort((a, b) => a.path.localeCompare(b.path))
-  }
-
-  // Non-HEAD: diff against a specific commit
-  const files: GitChangedFile[] = []
-
-  // Committed changes since baseRef
-  const { code: diffCode, stdout: diffOut } = await runGit(['diff', '--name-status', baseRef], cwd)
-  if (diffCode === 0) {
-    for (const line of diffOut.split('\n').filter(Boolean)) {
-      const f = parseNameStatusLine(line)
-      if (f) files.push(f)
-    }
-  }
-
-  // Untracked files (new files not yet committed)
-  const { code: lsCode, stdout: lsOut } = await runGit(
-    ['ls-files', '--others', '--exclude-standard'],
-    cwd,
-  )
-  if (lsCode === 0) {
-    for (const line of lsOut.split('\n').filter(Boolean)) {
-      const path = line.trim()
-      if (path) {
-        files.push({ path, status: '??', type: 'untracked', staged: false, unstaged: false })
-      }
-    }
-  }
-
-  return files.sort((a, b) => a.path.localeCompare(b.path))
+async function listChangedFiles(cwd: string): Promise<GitChangedFile[]> {
+  const { code, stdout } = await runGit(['status', '--porcelain=v1'], cwd)
+  if (code !== 0) return []
+  return stdout
+    .split('\n')
+    .map((line) => line.trimEnd())
+    .filter(Boolean)
+    .map(parsePorcelainLine)
+    .filter((f): f is GitChangedFile => !!f)
+    .sort((a, b) => a.path.localeCompare(b.path))
 }
 
 async function summarizeFileLines(
   cwd: string,
   file: GitChangedFile,
-  baseRef = 'HEAD',
 ): Promise<{ additions: number; deletions: number }> {
   if (file.type === 'untracked') {
     if (!isPathInsideRoot(cwd, file.path)) return { additions: 0, deletions: 0 }
@@ -164,7 +115,7 @@ async function summarizeFileLines(
 
   try {
     const { code, stdout } = await runGit(
-      ['diff', '--numstat', '--no-color', '--no-ext-diff', baseRef, '--', file.path],
+      ['diff', '--numstat', '--no-color', '--no-ext-diff', '--', file.path],
       cwd,
     )
     if (code !== 0) return { additions: 0, deletions: 0 }
@@ -207,13 +158,12 @@ changes.get('/:id/changes', async (c) => {
     })
   }
 
-  const baseRef = issue.baseCommitHash ?? 'HEAD'
-  const files = await listChangedFiles(root, baseRef)
+  const files = await listChangedFiles(root)
 
   const filesWithStats = await Promise.all(
     files.map(async (file) => ({
       ...file,
-      ...(await summarizeFileLines(root, file, baseRef)),
+      ...(await summarizeFileLines(root, file)),
     })),
   )
   const additions = filesWithStats.reduce((sum, file) => sum + (file.additions ?? 0), 0)
@@ -255,8 +205,7 @@ changes.get('/:id/changes/file', async (c) => {
   const gitRepo = await isGitRepo(root)
   if (!gitRepo) return c.json({ success: true, data: { path, patch: '', truncated: false } })
 
-  const baseRef = issue.baseCommitHash ?? 'HEAD'
-  const changedFiles = await listChangedFiles(root, baseRef)
+  const changedFiles = await listChangedFiles(root)
   const file = changedFiles.find((f) => f.path === path)
   if (!file) {
     return c.json({ success: true, data: { path, patch: '', truncated: false } })
@@ -280,10 +229,7 @@ changes.get('/:id/changes/file', async (c) => {
     oldText = ''
     newText = content
   } else {
-    const { stdout } = await runGit(
-      ['diff', '--no-color', '--no-ext-diff', baseRef, '--', path],
-      root,
-    )
+    const { stdout } = await runGit(['diff', '--no-color', '--no-ext-diff', '--', path], root)
     patch = stdout
 
     const oldPath = file.previousPath ?? path
@@ -294,7 +240,7 @@ changes.get('/:id/changes/file', async (c) => {
     if (!isPathInsideRoot(root, oldPath)) {
       return c.json({ success: false, error: 'Invalid path' }, 400)
     }
-    const oldShow = await runGit(['show', `${baseRef}:${oldPath}`], root)
+    const oldShow = await runGit(['show', `HEAD:${oldPath}`], root)
     if (oldShow.code === 0) {
       oldText = oldShow.stdout
     }

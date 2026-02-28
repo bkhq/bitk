@@ -53,7 +53,6 @@ async function computeAndEmit(issueId: string): Promise<void> {
     const [issue] = await db
       .select({
         projectId: issuesTable.projectId,
-        baseCommitHash: issuesTable.baseCommitHash,
       })
       .from(issuesTable)
       .where(eq(issuesTable.id, issueId))
@@ -78,34 +77,16 @@ async function computeAndEmit(issueId: string): Promise<void> {
       return
     }
 
-    const baseRef = issue.baseCommitHash ?? 'HEAD'
-
-    // Count changed files
+    // Count changed files (working tree only)
     let filePaths: string[] = []
 
-    if (baseRef === 'HEAD') {
-      const { code, stdout } = await runGit(['status', '--porcelain=v1'], root)
-      if (code === 0) {
-        const lines = stdout
-          .split('\n')
-          .map((l) => l.trimEnd())
-          .filter(Boolean)
-        filePaths = lines.map((line) => line.slice(3).trim().split(' -> ').at(-1)?.trim() ?? '')
-      }
-    } else {
-      const { code, stdout } = await runGit(['diff', '--name-only', baseRef], root)
-      if (code === 0) {
-        filePaths = stdout.split('\n').filter(Boolean)
-      }
-      const ls = await runGit(['ls-files', '--others', '--exclude-standard'], root)
-      if (ls.code === 0) {
-        filePaths.push(
-          ...ls.stdout
-            .split('\n')
-            .filter(Boolean)
-            .map((l) => l.trim()),
-        )
-      }
+    const { code: statusCode, stdout: statusOut } = await runGit(['status', '--porcelain=v1'], root)
+    if (statusCode === 0) {
+      const lines = statusOut
+        .split('\n')
+        .map((l) => l.trimEnd())
+        .filter(Boolean)
+      filePaths = lines.map((line) => line.slice(3).trim().split(' -> ').at(-1)?.trim() ?? '')
     }
 
     const fileCount = filePaths.length
@@ -115,9 +96,7 @@ async function computeAndEmit(issueId: string): Promise<void> {
     let deletions = 0
 
     if (fileCount > 0) {
-      const numstatArgs =
-        baseRef === 'HEAD' ? ['diff', '--numstat'] : ['diff', '--numstat', baseRef]
-      const { code, stdout } = await runGit(numstatArgs, root)
+      const { code, stdout } = await runGit(['diff', '--numstat'], root)
       if (code === 0) {
         for (const line of stdout.split('\n').filter(Boolean)) {
           const [a, d] = line.split('\t')

@@ -97,7 +97,6 @@ export function serializeIssue(row: IssueRow, childCount?: number) {
     externalSessionId: row.externalSessionId ?? null,
     model: row.model ?? null,
     devMode: row.devMode,
-    baseCommitHash: row.baseCommitHash ?? null,
     createdAt: toISO(row.createdAt),
     updatedAt: toISO(row.updatedAt),
   }

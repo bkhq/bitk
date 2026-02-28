@@ -1,0 +1,1 @@
+ALTER TABLE `issues` DROP COLUMN `base_commit_hash`;

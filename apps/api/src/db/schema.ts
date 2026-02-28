@@ -60,7 +60,6 @@ export const issues = sqliteTable(
 
     model: text('model'),
     devMode: integer('dev_mode', { mode: 'boolean' }).notNull().default(false),
-    baseCommitHash: text('base_commit_hash'),
     ...commonFields,
   },
   (table) => [

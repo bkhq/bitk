@@ -48,7 +48,6 @@ export async function updateIssueSession(
     prompt: string
     externalSessionId: string | null
     model: string
-    baseCommitHash: string
   }>,
 ): Promise<IssueRow | undefined> {
   const updates: Record<string, unknown> = {}
@@ -57,7 +56,6 @@ export async function updateIssueSession(
   if (changes.prompt !== undefined) updates.prompt = changes.prompt
   if (changes.externalSessionId !== undefined) updates.externalSessionId = changes.externalSessionId
   if (changes.model !== undefined) updates.model = changes.model
-  if (changes.baseCommitHash !== undefined) updates.baseCommitHash = changes.baseCommitHash
 
   if (Object.keys(updates).length === 0) {
     const [row] = await db.select().from(issuesTable).where(eq(issuesTable.id, issueId))

@@ -11,7 +11,7 @@ import { withIssueLock } from '@/engines/issue/process/lock'
 import { register } from '@/engines/issue/process/register'
 import { getPermissionOptions, resolveWorkingDir } from '@/engines/issue/utils/helpers'
 import { createLogNormalizer } from '@/engines/issue/utils/normalizer'
-import { captureBaseCommitHash, createWorktree } from '@/engines/issue/utils/worktree'
+import { createWorktree } from '@/engines/issue/utils/worktree'
 import { logger } from '@/logger'
 
 export async function restartIssue(
@@ -50,9 +50,6 @@ export async function restartIssue(
         logger.warn({ issueId, error }, 'worktree_creation_failed_fallback_to_base')
       }
     }
-
-    const baseCommitHash = await captureBaseCommitHash(workingDir)
-    if (baseCommitHash) await updateIssueSession(issueId, { baseCommitHash })
 
     const permOptions = getPermissionOptions(engineType)
     const executionId = crypto.randomUUID()

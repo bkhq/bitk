@@ -42,7 +42,6 @@ export type Issue = {
   externalSessionId: string | null;
   model: string | null;
   devMode: boolean;
-  baseCommitHash: string | null;
   createdAt: string;
   updatedAt: string;
 };

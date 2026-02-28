@@ -3,26 +3,6 @@ import { join } from 'node:path'
 import { WORKTREE_DIR } from '@/engines/issue/constants'
 import { logger } from '@/logger'
 
-// ---------- Git commit hash ----------
-
-export async function captureBaseCommitHash(workingDir: string): Promise<string | null> {
-  try {
-    const proc = Bun.spawn(['git', 'rev-parse', 'HEAD'], {
-      cwd: workingDir,
-      stdout: 'pipe',
-      stderr: 'pipe',
-    })
-    const stdout = await new Response(proc.stdout).text()
-    const code = await proc.exited
-    if (code !== 0) return null
-    const hash = stdout.trim()
-    if (!/^[0-9a-f]{40}$/i.test(hash)) return null
-    return hash
-  } catch {
-    return null
-  }
-}
-
 // ---------- Git worktree helpers ----------
 
 export async function createWorktree(baseDir: string, issueId: string): Promise<string> {
