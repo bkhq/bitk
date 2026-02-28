@@ -58,7 +58,6 @@ curl -fsSL https://bun.sh/install | bash
 # 2. Clone and install
 git clone <repo-url> bitk && cd bitk
 bun install
-bun install --cwd frontend
 
 # 3. Configure environment (optional)
 cp .env.example .env
@@ -82,15 +81,19 @@ The dev server starts the API on port 3010 and the Vite frontend on port 3000. O
 
 ```bash
 # Development
-bun run dev              # API + frontend (concurrent)
+bun run dev              # API + frontend (parallel via --filter)
 bun run dev:api          # API only (port 3010)
-bun run dev:web          # Frontend only (port 3000)
+bun run dev:frontend     # Frontend only (port 3000)
 
 # Code Quality
-bun run lint             # ESLint (backend)
-bun run lint:fix
-bun run format           # Prettier
+bun run lint             # ESLint (all workspaces)
+bun run format           # Prettier (all workspaces)
 bun run format:check
+
+# Testing
+bun run test             # All tests (parallel)
+bun run test:api         # Backend tests only
+bun run test:frontend    # Frontend tests only
 
 # Database
 bun run db:generate      # Generate migration SQL

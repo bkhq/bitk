@@ -26,5 +26,5 @@
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false
   },
-  "exclude": ["node_modules", "frontend/node_modules", "vibe/**"]
+  "exclude": ["node_modules", "apps/frontend/**", "vibe/**"]
 }

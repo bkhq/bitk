@@ -1,0 +1,11 @@
+{
+  "name": "@bitk/shared",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "devDependencies": {
+    "typescript": "catalog:"
+  }
+}

@@ -1,45 +1,33 @@
 {
   "name": "bitk",
-  "module": "app/index.ts",
-  "type": "module",
   "private": true,
+  "type": "module",
+  "workspaces": {
+    "packages": ["apps/*", "packages/*"],
+    "catalog": {
+      "typescript": "^5.7.2",
+      "prettier": "^3.8.1",
+      "zod": "^4.3.6"
+    }
+  },
   "scripts": {
-    "dev": "concurrently -n api,web -c blue,green \"bun run dev:api\" \"bun run dev:web\"",
-    "dev:api": "API_PORT=3010 bun --watch app/index.ts",
-    "dev:web": "bun run --cwd frontend dev",
-    "test": "bun test --preload ./test/preload.ts test/",
-    "test:watch": "bun test --preload ./test/preload.ts --watch test/",
-    "build": "bun run --cwd frontend build",
-    "start": "NODE_ENV=production bun app/index.ts",
-    "preview": "bun run --cwd frontend preview",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
-    "format": "prettier . --write",
-    "format:check": "prettier . --check",
-    "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
-    "db:reset": "bun app/db/reset.ts",
+    "dev": "bun --filter '*' dev",
+    "dev:api": "bun --filter @bitk/api dev",
+    "dev:frontend": "bun --filter @bitk/frontend dev",
+    "build": "bun --filter @bitk/frontend build",
+    "start": "bun --filter @bitk/api start",
+    "test": "bun --parallel --filter '*' test",
+    "test:api": "bun --filter @bitk/api test",
+    "test:frontend": "bun --filter @bitk/frontend test",
+    "lint": "bun --filter '*' lint",
+    "format": "bun --filter '*' format",
+    "format:check": "bun --filter '*' format:check",
+    "db:generate": "bunx drizzle-kit generate",
+    "db:migrate": "bunx drizzle-kit migrate",
+    "db:reset": "bun apps/api/src/db/reset.ts",
     "compile": "bun scripts/compile.ts"
   },
   "devDependencies": {
-    "@antfu/eslint-config": "^7.4.3",
-    "@libsql/client": "^0.17.0",
-    "@types/bun": "latest",
-    "concurrently": "^9.2.1",
-    "drizzle-kit": "^0.31.9",
-    "eslint": "^10.0.1",
-    "prettier": "^3.8.1"
-  },
-  "peerDependencies": {
-    "typescript": "^5"
-  },
-  "dependencies": {
-    "@hono/zod-validator": "^0.7.6",
-    "drizzle-orm": "^0.45.1",
-    "hono": "^4.12.1",
-    "nanoid": "^5.1.6",
-    "pino": "^10.3.1",
-    "ulid": "^3.0.2",
-    "zod": "^4.3.6"
+    "drizzle-kit": "^0.31.9"
   }
 }

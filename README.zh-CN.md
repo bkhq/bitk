@@ -58,7 +58,6 @@ curl -fsSL https://bun.sh/install | bash
 # 2. 克隆并安装依赖
 git clone <repo-url> bitk && cd bitk
 bun install
-bun install --cwd frontend
 
 # 3. 配置环境变量（可选）
 cp .env.example .env
@@ -82,15 +81,19 @@ bun run dev
 
 ```bash
 # 开发
-bun run dev              # API + 前端（并行启动）
+bun run dev              # API + 前端（通过 --filter 并行启动）
 bun run dev:api          # 仅 API（端口 3010）
-bun run dev:web          # 仅前端（端口 3000）
+bun run dev:frontend     # 仅前端（端口 3000）
 
 # 代码质量
-bun run lint             # ESLint（后端）
-bun run lint:fix
-bun run format           # Prettier
+bun run lint             # ESLint（所有工作区）
+bun run format           # Prettier（所有工作区）
 bun run format:check
+
+# 测试
+bun run test             # 所有测试（并行）
+bun run test:api         # 仅后端测试
+bun run test:frontend    # 仅前端测试
 
 # 数据库
 bun run db:generate      # 生成迁移 SQL

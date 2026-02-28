@@ -28,13 +28,13 @@ const { values: args } = parseArgs({
 })
 
 const ROOT = resolve(import.meta.dir, '..')
-const DIST = resolve(ROOT, 'frontend/dist')
+const DIST = resolve(ROOT, 'apps/frontend/dist')
 const DRIZZLE = resolve(ROOT, 'drizzle')
 
-const STATIC_FILE = resolve(ROOT, 'app/static-assets.ts')
-const STATIC_BACKUP = resolve(ROOT, 'app/static-assets.ts.bak')
-const MIGRATIONS_FILE = resolve(ROOT, 'app/db/embedded-migrations.ts')
-const MIGRATIONS_BACKUP = resolve(ROOT, 'app/db/embedded-migrations.ts.bak')
+const STATIC_FILE = resolve(ROOT, 'apps/api/src/static-assets.ts')
+const STATIC_BACKUP = resolve(ROOT, 'apps/api/src/static-assets.ts.bak')
+const MIGRATIONS_FILE = resolve(ROOT, 'apps/api/src/db/embedded-migrations.ts')
+const MIGRATIONS_BACKUP = resolve(ROOT, 'apps/api/src/db/embedded-migrations.ts.bak')
 
 // ---------- 1. Build frontend ----------
 if (args['skip-frontend']) {
@@ -53,7 +53,7 @@ if (args['skip-frontend']) {
 }
 
 // ---------- 2. Scan dist files ----------
-console.log('[compile] Scanning frontend/dist...')
+console.log('[compile] Scanning apps/frontend/dist...')
 const glob = new Glob('**/*')
 const files: string[] = []
 
@@ -71,7 +71,7 @@ const entries: string[] = []
 
 for (let i = 0; i < files.length; i++) {
   const file = files[i]
-  const relPath = `../frontend/dist/${file}`
+  const relPath = `../../frontend/dist/${file}`
   const urlPath = `/${file}`
   imports.push(`import f${i} from ${JSON.stringify(relPath)} with { type: "file" }`)
   entries.push(`  [${JSON.stringify(urlPath)}, f${i}],`)
@@ -125,7 +125,7 @@ console.log(`[compile] Version: ${version} (${commit})`)
 const compileArgs = [
   'bun',
   'build',
-  'app/index.ts',
+  'apps/api/src/index.ts',
   '--compile',
   '--define',
   `__BITK_VERSION__="${version}"`,

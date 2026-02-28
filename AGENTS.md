@@ -4,29 +4,34 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Kanban app with a Bun/Hono API backend and a React/Vite frontend. The two halves live in separate dependency trees (root `package.json` for the backend, `frontend/package.json` for the frontend).
+Kanban app with a Bun/Hono API backend and a React/Vite frontend, structured as a **Bun Workspaces monorepo**.
+
+Workspaces:
+- `apps/api` (`@bitk/api`) — Backend API server
+- `apps/frontend` (`@bitk/frontend`) — React frontend
+- `packages/shared` (`@bitk/shared`) — Shared TypeScript types
 
 ## Commands
 
 ```bash
-# Dev (starts both API + Vite concurrently)
-bun run dev                  # API on 3010 + Vite on 3000 via concurrently
+# Dev (starts both API + Vite in parallel via Bun --filter)
+bun run dev                  # API on 3010 + Vite on 3000
 bun run dev:api              # API server only (port 3010)
-bun run dev:web              # Vite dev server only (port 3000)
+bun run dev:frontend         # Vite dev server only (port 3000)
 
-# Backend
-bun install                  # install backend deps
-bun run lint                 # eslint (backend only, @antfu/eslint-config)
-bun run lint:fix             # eslint --fix
-bun run format               # prettier --write
-bun run format:check         # prettier --check
+# All workspaces
+bun install                  # single install for all workspaces
+bun run test                 # run tests in all workspaces (parallel)
+bun run lint                 # lint all workspaces
 
-# Frontend (runs inside frontend/)
-bun install --cwd frontend   # install frontend deps
-bun run build                # vite build -> frontend/dist/
-bun run --cwd frontend test  # vitest (all frontend tests)
-bun run --cwd frontend test -- path/to/file  # run a single test file
-bun run --cwd frontend lint  # eslint (frontend, @tanstack/eslint-config)
+# Backend (@bitk/api)
+bun run test:api             # backend tests only
+bun --filter @bitk/api lint  # backend lint
+
+# Frontend (@bitk/frontend)
+bun run test:frontend        # frontend tests only
+bun run build                # vite build -> apps/frontend/dist/
+bun --filter @bitk/frontend lint  # frontend lint
 
 # Database
 bun run db:generate          # drizzle-kit generate (creates migration SQL)
@@ -36,19 +41,54 @@ bun run db:reset             # deletes SQLite DB files (data/bitk.db)
 
 ## Architecture
 
-### Backend (`app/`)
+### Monorepo Structure
+
+```
+bitk/
+├── apps/
+│   ├── api/                    ← @bitk/api
+│   │   ├── package.json
+│   │   ├── tsconfig.json
+│   │   ├── eslint.config.mjs
+│   │   ├── src/                ← Backend source
+│   │   │   ├── index.ts        ← Server entry point
+│   │   │   ├── app.ts          ← Hono router
+│   │   │   ├── db/             ← Database layer
+│   │   │   ├── engines/        ← AI engine executors
+│   │   │   ├── routes/         ← API routes
+│   │   │   ├── events/         ← SSE event system
+│   │   │   └── jobs/           ← Background jobs
+│   │   └── test/               ← Backend tests (bun:test)
+│   └── frontend/               ← @bitk/frontend
+│       ├── package.json
+│       ├── tsconfig.json
+│       ├── vite.config.ts
+│       └── src/
+├── packages/
+│   └── shared/                 ← @bitk/shared (shared types)
+│       ├── package.json
+│       └── src/index.ts
+├── drizzle/                    ← Database migrations
+├── scripts/                    ← Build scripts (compile.ts)
+├── data/                       ← SQLite database (gitignored)
+├── package.json                ← Monorepo root + Catalogs
+├── drizzle.config.ts
+└── bun.lock                    ← Single lock file
+```
+
+### Backend (`apps/api/src/`)
 
 - **Runtime**: Bun with `Bun.serve()` as the HTTP server
-- **Router**: Hono — mounted at `/api` via `app/app.ts`
-- **Database**: SQLite via `bun:sqlite` + Drizzle ORM (`app/db/`)
-  - Schema defined in `app/db/schema.ts` using Drizzle's `sqliteTable`
+- **Router**: Hono — mounted at `/api` via `apps/api/src/app.ts`
+- **Database**: SQLite via `bun:sqlite` + Drizzle ORM (`apps/api/src/db/`)
+  - Schema defined in `apps/api/src/db/schema.ts` using Drizzle's `sqliteTable`
   - All tables share `commonFields` (ULID `id`, `createdAt`, `updatedAt`, `isDeleted`)
   - Migrations live in `drizzle/` and run automatically on startup
   - Config: `drizzle.config.ts`
-- **Logging**: pino (`app/logger.ts`)
-- **Static serving**: In production, `app/index.ts` serves `frontend/dist/` with SPA fallback
+- **Logging**: pino (`apps/api/src/logger.ts`)
+- **Static serving**: In production, `apps/api/src/index.ts` serves `apps/frontend/dist/` with SPA fallback
 
-#### Security & Middleware (`app/app.ts`)
+#### Security & Middleware (`apps/api/src/app.ts`)
 
 - **Auth**: Handled by external reverse proxy (no built-in auth middleware)
 - **Security headers**: `hono/secure-headers` (X-Frame-Options, X-Content-Type-Options, etc.)
@@ -57,8 +97,8 @@ bun run db:reset             # deletes SQLite DB files (data/bitk.db)
 
 #### Data Layer
 
-- `app/db/index.ts` + `app/db/schema.ts` — SQLite/Drizzle ORM. Tables: `projects`, `issues`, `sessionTurns`, `executionProcesses`, `executionLogs`, `appSettings`. All route handlers use Drizzle queries directly.
-- `app/config.ts` — Hardcoded status constants (`STATUSES`, `STATUS_MAP`, `STATUS_IDS`, `DEFAULT_STATUS_ID`). Statuses are fixed (todo, working, review, done) — no DB table.
+- `apps/api/src/db/index.ts` + `apps/api/src/db/schema.ts` — SQLite/Drizzle ORM. Tables: `projects`, `issues`, `sessionTurns`, `executionProcesses`, `executionLogs`, `appSettings`. All route handlers use Drizzle queries directly.
+- `apps/api/src/config.ts` — Hardcoded status constants (`STATUSES`, `STATUS_MAP`, `STATUS_IDS`, `DEFAULT_STATUS_ID`). Statuses are fixed (todo, working, review, done) — no DB table.
 - Migrations in `drizzle/`, auto-applied on startup.
 
 #### API Routes
@@ -80,7 +120,7 @@ GET            /api/projects/:projectId/issues/:id/logs
 
 All API responses use the envelope `{ success: true, data: T } | { success: false, error: string }`. All routes validate that the project exists and enforce cross-project ownership (issues scoped to their project).
 
-### Frontend (`frontend/`)
+### Frontend (`apps/frontend/`)
 
 - **Framework**: React 19 + Vite 7 + TypeScript
 - **Styling**: Tailwind CSS v4 via `@tailwindcss/vite` plugin
@@ -89,15 +129,15 @@ All API responses use the envelope `{ success: true, data: T } | { success: fals
 - **Drag & drop**: @dnd-kit/react for kanban board
 - **Dialogs**: Radix UI (`@radix-ui/react-dialog`)
 - **Icons**: lucide-react
-- **i18n**: i18next + react-i18next, Chinese (zh, default) and English (en). Translations in `frontend/src/i18n/{en,zh}.json`. Language persisted to localStorage (`i18n-lang`).
-- **Path alias**: `@/*` maps to `frontend/src/*`
+- **i18n**: i18next + react-i18next, Chinese (zh, default) and English (en). Translations in `apps/frontend/src/i18n/{en,zh}.json`. Language persisted to localStorage (`i18n-lang`).
+- **Path alias**: `@/*` maps to `apps/frontend/src/*`
 - **Dev proxy**: Vite's built-in `server.proxy` forwards `/api/*` requests to the Bun API server (`localhost:3010`) during development
 
 #### State Management
 
 Two state systems, each with a distinct role:
 
-- **TanStack React Query** — Server state (projects, issues). All hooks in `frontend/src/hooks/use-kanban.ts`. Query keys use a `queryKeys` factory with hierarchical keys (e.g. `['projects', projectId, 'issues']`). All hooks have `enabled` guards. `useBulkUpdateIssues` uses optimistic updates. QueryClient defaults: `staleTime: 30s`, `retry: 1`. Statuses are hardcoded constants in `frontend/src/lib/statuses.ts` — not fetched from server.
+- **TanStack React Query** — Server state (projects, issues). All hooks in `apps/frontend/src/hooks/use-kanban.ts`. Query keys use a `queryKeys` factory with hierarchical keys (e.g. `['projects', projectId, 'issues']`). All hooks have `enabled` guards. `useBulkUpdateIssues` uses optimistic updates. QueryClient defaults: `staleTime: 30s`, `retry: 1`. Statuses are hardcoded constants in `apps/frontend/src/lib/statuses.ts` — not fetched from server.
 - **Zustand stores** — Local UI state only:
   - `board-store.ts` — Drag-and-drop state (`groupedItems`, `isDragging`). Syncs from server data but pauses sync while dragging. Uses explicit `resetDragging()` tied to mutation `onSettled`.
   - `panel-store.ts` — Side panel and create dialog open/close state.
@@ -111,11 +151,11 @@ Two state systems, each with a distinct role:
 
 #### Component Styling
 
-Components use the shadcn/ui pattern: `cn()` utility (`frontend/src/lib/utils.ts`) combining `clsx` + `tailwind-merge`, with `class-variance-authority` for component variants.
+Components use the shadcn/ui pattern: `cn()` utility (`apps/frontend/src/lib/utils.ts`) combining `clsx` + `tailwind-merge`, with `class-variance-authority` for component variants.
 
 #### Theme
 
-`useTheme()` hook (`frontend/src/hooks/use-theme.ts`) — supports `light`, `dark`, `system` modes, persisted to localStorage (`kanban-theme`).
+`useTheme()` hook (`apps/frontend/src/hooks/use-theme.ts`) — supports `light`, `dark`, `system` modes, persisted to localStorage (`kanban-theme`).
 
 #### Error Handling
 
@@ -124,9 +164,9 @@ Components use the shadcn/ui pattern: `cn()` utility (`frontend/src/lib/utils.ts
 
 #### Shared Utilities
 
-- `frontend/src/hooks/use-click-outside.ts` — Shared click-outside hook (used by 5+ components)
-- `frontend/src/lib/format.ts` — `formatSize()`, `getProjectInitials()`
-- `frontend/src/lib/constants.ts` — `LANGUAGES` constant
+- `apps/frontend/src/hooks/use-click-outside.ts` — Shared click-outside hook (used by 5+ components)
+- `apps/frontend/src/lib/format.ts` — `formatSize()`, `getProjectInitials()`
+- `apps/frontend/src/lib/constants.ts` — `LANGUAGES` constant
 
 #### Frontend Routes
 
@@ -137,10 +177,14 @@ Components use the shadcn/ui pattern: `cn()` utility (`frontend/src/lib/utils.ts
 /projects/:projectId/issues/:issueId → IssueDetailPage (specific issue)
 ```
 
+### Shared Types (`packages/shared/`)
+
+`@bitk/shared` contains TypeScript types used by both backend and frontend. The frontend's `types/kanban.ts` re-exports from `@bitk/shared` for backwards compatibility.
+
 ### Dev Workflow
 
-- `bun run dev` starts both API (port 3010) and Vite (port 3000) via `concurrently`. Vite proxies `/api/*` to the API server.
-- `bun run dev:api` / `bun run dev:web` can be run individually in separate terminals if needed
+- `bun run dev` starts both API (port 3010) and Vite (port 3000) via `bun --filter '*' dev`. Vite proxies `/api/*` to the API server.
+- `bun run dev:api` / `bun run dev:frontend` can be run individually in separate terminals if needed
 - Production: `bun run build` then `bun run start` — the Bun server handles both API and static file serving on port 3000
 
 ## Conventions
@@ -148,15 +192,16 @@ Components use the shadcn/ui pattern: `cn()` utility (`frontend/src/lib/utils.ts
 - Use Bun APIs over Node.js equivalents (`Bun.file()`, `Bun.serve()`, `bun:sqlite`, `bun:test`)
 - Backend eslint: `@antfu/eslint-config` — no semicolons, single quotes
 - Frontend eslint: `@tanstack/eslint-config`
-- Frontend tests use vitest + @testing-library/react (`bun run --cwd frontend test`)
-- Backend tests use `bun test` with `bun:test`
+- Frontend tests use vitest + @testing-library/react (`bun run test:frontend`)
+- Backend tests use `bun test` with `bun:test` (`bun run test:api`)
 - Bun auto-loads `.env` — do not use dotenv
 - IDs use ULID (via `ulid` package), not UUID
-- Frontend types mirror backend types in `frontend/src/types/kanban.ts`
-- API client in `frontend/src/lib/kanban-api.ts` — add new endpoints here, then wrap in React Query hooks in `use-kanban.ts`
+- Shared types live in `packages/shared/src/index.ts` — frontend re-exports via `apps/frontend/src/types/kanban.ts`
+- API client in `apps/frontend/src/lib/kanban-api.ts` — add new endpoints here, then wrap in React Query hooks in `use-kanban.ts`
 - All user-facing strings must have i18n keys in both `en.json` and `zh.json`
 - All API routes must have Zod schemas via `@hono/zod-validator` — no `c.req.json<T>()` with compile-time-only types
 - All route handlers must verify project existence and cross-project ownership before operating on scoped entities
+- Dependency versions shared across workspaces are managed via Catalogs in root `package.json`
 
 ## Project Development
 

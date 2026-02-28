@@ -11,6 +11,6 @@
 - [ ] `ci:` CI/CD changes
 
 ## Checklist
-- [ ] `bun run lint` passes (backend)
-- [ ] `bun run --cwd frontend lint` passes (frontend)
+- [ ] `bun run lint` passes (all workspaces)
+- [ ] `bun run test` passes
 - [ ] Follows conventional commits format

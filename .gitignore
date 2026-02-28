@@ -48,8 +48,8 @@ docs/tmp/
 ~/
 
 # build analysis
-frontend/stats.html
+apps/frontend/stats.html
 
 # compiled binary & generated assets
 bitk
-app/_static-assets.generated.ts
+apps/api/src/_static-assets.generated.ts

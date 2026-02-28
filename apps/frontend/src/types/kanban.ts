@@ -1,0 +1,31 @@
+// Re-export all shared types from @bitk/shared
+// This file exists for backwards compatibility — imports from '@/types/kanban'
+// continue to work while new code can import directly from '@bitk/shared'.
+export type {
+  ApiResponse,
+  BusyAction,
+  CommandCategory,
+  EngineAvailability,
+  EngineDiscoveryResult,
+  EngineModel,
+  EngineProfile,
+  EngineSettings,
+  EngineType,
+  ExecuteIssueRequest,
+  ExecuteIssueResponse,
+  FileChange,
+  Issue,
+  IssueChangedFile,
+  IssueChangesResponse,
+  IssueFilePatchResponse,
+  IssueLogsResponse,
+  LogEntryType,
+  NormalizedLogEntry,
+  PermissionMode,
+  Priority,
+  ProbeResult,
+  Project,
+  SessionStatus,
+  ToolAction,
+  ToolDetail,
+} from '@bitk/shared'

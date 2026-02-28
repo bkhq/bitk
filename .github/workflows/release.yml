@@ -39,10 +39,10 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: ~/.bun/install/cache
-          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lockb', 'frontend/bun.lockb') }}
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
           restore-keys: ${{ runner.os }}-bun-
 
-      - run: bun install && bun install --cwd frontend
+      - run: bun install
       - run: bun scripts/compile.ts --target ${{ matrix.target }} --outfile ${{ matrix.artifact }} --version ${{ env.VERSION }}
       - run: ls -lh ${{ matrix.artifact }} && file ${{ matrix.artifact }}
 
