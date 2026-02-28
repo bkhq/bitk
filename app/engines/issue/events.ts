@@ -6,7 +6,7 @@ import type {
   StateChangeCallback,
   UnsubscribeFn,
 } from './types'
-import { getIssueDevMode, isVisibleForMode } from './helpers'
+import { getIssueDevMode, isVisibleForMode } from './utils/visibility'
 
 // ---------- Event subscriptions ----------
 

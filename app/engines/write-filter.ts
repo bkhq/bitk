@@ -1,4 +1,4 @@
-import { getAppSetting, setAppSetting } from '../db/helpers'
+import { getAppSetting } from '../db/helpers'
 
 export interface WriteFilterRule {
   id: string

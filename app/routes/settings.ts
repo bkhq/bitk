@@ -1,3 +1,4 @@
+import type { WriteFilterRule } from '../engines/write-filter'
 import { stat } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { resolve } from 'node:path'
@@ -5,8 +6,7 @@ import { zValidator } from '@hono/zod-validator'
 import { Hono } from 'hono'
 import { z } from 'zod'
 import { getAppSetting, setAppSetting } from '../db/helpers'
-import type { WriteFilterRule } from '../engines/write-filter'
-import { WRITE_FILTER_RULES_KEY, DEFAULT_FILTER_RULES } from '../engines/write-filter'
+import { DEFAULT_FILTER_RULES, WRITE_FILTER_RULES_KEY } from '../engines/write-filter'
 
 const settings = new Hono()
 

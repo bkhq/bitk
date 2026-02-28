@@ -1,13 +1,13 @@
-import type { NormalizedLogEntry } from '../types'
-import type { EngineContext } from './context'
+import type { NormalizedLogEntry } from '../../types'
+import type { EngineContext } from '../context'
 import { eq } from 'drizzle-orm'
-import { db } from '../../db'
-import { issueLogs as logsTable } from '../../db/schema'
-import { emitLog } from './events'
-import { persistEntry } from './persist-entry'
-import { buildToolDetail, persistToolDetail } from './persistence'
-import { applyAutoTitle } from './title'
-import { MAX_LOG_ENTRIES } from './types'
+import { db } from '../../../db'
+import { issueLogs as logsTable } from '../../../db/schema'
+import { MAX_LOG_ENTRIES } from '../constants'
+import { emitLog } from '../events'
+import { persistEntry } from '../persistence/entry'
+import { buildToolDetail, persistToolDetail } from '../persistence/tool-detail'
+import { applyAutoTitle } from '../title'
 
 // ---------- Stdout stream entry handler ----------
 
@@ -59,8 +59,8 @@ export function handleStreamEntry(
   const isResultError = typeof resultSubtype === 'string' && resultSubtype !== 'success'
   if (!managed.cancelledByUser && (isResultError || entry.metadata?.isError === true)) {
     managed.logicalFailure = true
-    managed.logicalFailureReason =
-      (entry.metadata?.error as string | undefined) ?? String(resultSubtype ?? 'unknown')
+    managed.logicalFailureReason
+      = (entry.metadata?.error as string | undefined) ?? String(resultSubtype ?? 'unknown')
   }
 }
 

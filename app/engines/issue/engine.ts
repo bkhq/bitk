@@ -9,6 +9,7 @@ import type {
 } from './types'
 import { logger } from '../../logger'
 import { ProcessManager } from '../process-manager'
+import { AUTO_CLEANUP_DELAY_MS, GC_INTERVAL_MS, MAX_CONCURRENT_EXECUTIONS } from './constants'
 import { onIssueSettled, onLog, onStateChange } from './events'
 import { gcSweep } from './gc'
 import {
@@ -26,7 +27,6 @@ import {
   hasActiveProcessForIssue,
   isTurnInFlight,
 } from './queries'
-import { AUTO_CLEANUP_DELAY_MS, GC_INTERVAL_MS, MAX_CONCURRENT_EXECUTIONS } from './types'
 
 // ---------- IssueEngine ----------
 

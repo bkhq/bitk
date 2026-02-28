@@ -1,17 +1,12 @@
-import type { NormalizedLogEntry, SpawnedProcess } from '../types'
-import type { EngineContext } from './context'
-import type { StreamCallbacks } from './streams'
-import type { ManagedProcess } from './types'
-import { logger } from '../../logger'
-import { getPidFromManaged } from './context'
-import { emitStateChange } from './events'
-import { handleStderrEntry, handleStreamEntry, handleStreamError } from './stream-handlers'
-import { consumeStderr, consumeStream } from './streams'
-
-// Re-export split modules so existing consumers keep working
-export { persistEntry } from './persist-entry'
-export { handleStderrEntry, handleStreamEntry, handleStreamError } from './stream-handlers'
-export { persistUserMessage, sendInputToRunningProcess } from './user-message'
+import type { NormalizedLogEntry, SpawnedProcess } from '../../types'
+import type { EngineContext } from '../context'
+import type { StreamCallbacks } from '../streams/consumer'
+import type { ManagedProcess } from '../types'
+import { logger } from '../../../logger'
+import { emitStateChange } from '../events'
+import { consumeStderr, consumeStream } from '../streams/consumer'
+import { handleStderrEntry, handleStreamEntry, handleStreamError } from '../streams/handlers'
+import { getPidFromManaged } from '../utils/pid'
 
 // ---------- Process registration ----------
 

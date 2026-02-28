@@ -1,2 +1,3 @@
 export { IssueEngine, issueEngine } from './engine'
-export { removeWorktree, setIssueDevMode } from './helpers'
+export { setIssueDevMode } from './utils/visibility'
+export { removeWorktree } from './utils/worktree'

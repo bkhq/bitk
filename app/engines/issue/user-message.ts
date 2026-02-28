@@ -2,9 +2,9 @@ import type { NormalizedLogEntry } from '../types'
 import type { EngineContext } from './context'
 import type { ManagedProcess } from './types'
 import { logger } from '../../logger'
-import { getPidFromManaged } from './context'
 import { emitLog, emitStateChange } from './events'
-import { persistEntry } from './persist-entry'
+import { persistEntry } from './persistence/entry'
+import { getPidFromManaged } from './utils/pid'
 
 // ---------- User message persistence ----------
 

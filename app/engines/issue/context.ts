@@ -1,5 +1,5 @@
 import type { ProcessManager } from '../process-manager'
-import type { PermissionPolicy, SpawnedProcess } from '../types'
+import type { PermissionPolicy } from '../types'
 import type {
   IssueSettledCallback,
   LogCallback,
@@ -29,15 +29,4 @@ export interface EngineContext {
     displayPrompt?: string,
     metadata?: Record<string, unknown>,
   ) => Promise<{ executionId: string; messageId?: string | null }>
-}
-
-// ---------- PID helpers ----------
-
-export function getPidFromManaged(managed: ManagedProcess): number | undefined {
-  return getPidFromSubprocess(managed.process.subprocess)
-}
-
-export function getPidFromSubprocess(subprocess: SpawnedProcess['subprocess']): number | undefined {
-  const maybePid = (subprocess as { pid?: number }).pid
-  return typeof maybePid === 'number' ? maybePid : undefined
 }

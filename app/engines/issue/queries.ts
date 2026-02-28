@@ -1,9 +1,10 @@
 import type { NormalizedLogEntry } from '../types'
 import type { EngineContext } from './context'
 import type { ManagedProcess } from './types'
-import { isVisibleForMode, setIssueDevMode } from './helpers'
-import { getLogsFromDb } from './persistence'
-import { cancel, getActiveProcesses, getActiveProcessForIssue } from './process-ctrl'
+import { getLogsFromDb } from './persistence/queries'
+import { cancel } from './process/cancel'
+import { getActiveProcesses, getActiveProcessForIssue } from './process/state'
+import { isVisibleForMode, setIssueDevMode } from './utils/visibility'
 
 // ---------- Public read-only queries ----------
 

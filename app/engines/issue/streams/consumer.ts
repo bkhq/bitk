@@ -1,8 +1,9 @@
-import type { NormalizedLogEntry } from '../types'
-import type { ManagedProcess } from './types'
-import { setAppSetting } from '../../db/helpers'
-import { normalizeStream } from '../logs'
-import { MAX_LOG_ENTRIES } from './types'
+import type { NormalizedLogEntry } from '../../types'
+import type { ManagedProcess } from '../types'
+import { setAppSetting } from '../../../db/helpers'
+import { normalizeStream } from '../../logs'
+import { MAX_LOG_ENTRIES } from '../constants'
+import { isCancelledNoiseEntry, isTurnCompletionEntry } from './classification'
 
 const SLASH_COMMANDS_KEY = 'engine:slashCommands'
 
@@ -17,32 +18,6 @@ export interface StreamCallbacks {
   onEntry: (entry: NormalizedLogEntry) => void
   onTurnCompleted: () => void
   onStreamError: (error: unknown) => void
-}
-
-// ---------- Pure classification functions ----------
-
-export function isTurnCompletionEntry(entry: NormalizedLogEntry): boolean {
-  if (entry.metadata?.turnCompleted === true) return true
-  if (entry.metadata && Object.prototype.hasOwnProperty.call(entry.metadata, 'resultSubtype')) {
-    return true
-  }
-  return (
-    entry.entryType === 'system-message' &&
-    !!entry.metadata &&
-    Object.prototype.hasOwnProperty.call(entry.metadata, 'duration')
-  )
-}
-
-export function isCancelledNoiseEntry(entry: NormalizedLogEntry): boolean {
-  const subtype = entry.metadata?.resultSubtype
-  if (typeof subtype !== 'string' || subtype !== 'error_during_execution') return false
-  const raw = `${entry.content ?? ''} ${String(entry.metadata?.error ?? '')}`.toLowerCase()
-  return (
-    raw.includes('request was aborted') ||
-    raw.includes('request interrupted by user') ||
-    raw.includes('rust analyzer lsp crashed') ||
-    raw.includes('rust-analyzer-lsp')
-  )
 }
 
 // ---------- Helpers ----------
@@ -88,9 +63,9 @@ export async function consumeStream(
 
       // Extract slash commands from SDK init message
       if (
-        entry.entryType === 'system-message' &&
-        entry.metadata?.subtype === 'init' &&
-        Array.isArray(entry.metadata.slashCommands)
+        entry.entryType === 'system-message'
+        && entry.metadata?.subtype === 'init'
+        && Array.isArray(entry.metadata.slashCommands)
       ) {
         managed.slashCommands = entry.metadata.slashCommands as string[]
         void saveSlashCommandsToSettings(managed.slashCommands)

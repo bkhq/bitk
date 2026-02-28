@@ -1,7 +1,7 @@
+import type { NormalizedLogEntry } from '../app/engines/types'
+import type { WriteFilterRule } from '../app/engines/write-filter'
 import { describe, expect, test } from 'bun:test'
 import { ClaudeLogNormalizer } from '../app/engines/executors/claude'
-import type { WriteFilterRule } from '../app/engines/write-filter'
-import type { NormalizedLogEntry } from '../app/engines/types'
 
 const READ_RULE: WriteFilterRule = { id: 'read', type: 'tool-name', match: 'Read', enabled: true }
 const GLOB_RULE: WriteFilterRule = { id: 'glob', type: 'tool-name', match: 'Glob', enabled: true }

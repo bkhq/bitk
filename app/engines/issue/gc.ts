@@ -1,6 +1,6 @@
 import type { EngineContext } from './context'
 import { logger } from '../../logger'
-import { cleanupDomainData } from './process-ctrl'
+import { cleanupDomainData } from './process/state'
 
 // ---------- Domain GC sweep ----------
 
