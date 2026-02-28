@@ -1,5 +1,6 @@
 import type { EngineType, SessionStatus } from './types'
 import { and, eq } from 'drizzle-orm'
+import { cacheDel } from '../cache'
 import { db } from '../db'
 import { issues as issuesTable } from '../db/schema'
 import { emitIssueUpdated } from '../events/issue-events'
@@ -69,6 +70,12 @@ export async function updateIssueSession(
     .where(eq(issuesTable.id, issueId))
     .returning()
 
+  // Invalidate the issue cache so subsequent API reads return fresh data
+  // (getProjectOwnedIssue uses cacheGetOrSet with a 30s TTL)
+  if (row) {
+    await cacheDel(`issue:${row.projectId}:${issueId}`)
+  }
+
   return row
 }
 
@@ -85,7 +92,15 @@ export async function autoMoveToReview(issueId: string): Promise<void> {
 
   if (!row || row.statusId === 'done' || row.statusId === 'review') return
 
-  await db.update(issuesTable).set({ statusId: 'review' }).where(eq(issuesTable.id, issueId))
+  const [updated] = await db
+    .update(issuesTable)
+    .set({ statusId: 'review' })
+    .where(eq(issuesTable.id, issueId))
+    .returning()
+
+  if (updated) {
+    await cacheDel(`issue:${updated.projectId}:${issueId}`)
+  }
 
   emitIssueUpdated(issueId, { statusId: 'review' })
   logger.info({ issueId, from: row.statusId }, 'auto_moved_to_review')

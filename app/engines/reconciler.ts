@@ -1,4 +1,5 @@
 import { and, eq, inArray } from 'drizzle-orm'
+import { cacheDel } from '../cache'
 import { db } from '../db'
 import { ensureDefaultFilterRules } from '../db/helpers'
 import { issues as issuesTable } from '../db/schema'
@@ -24,6 +25,7 @@ export async function reconcileStaleWorkingIssues(): Promise<number> {
   const staleIssues = await db
     .select({
       id: issuesTable.id,
+      projectId: issuesTable.projectId,
       sessionStatus: issuesTable.sessionStatus,
     })
     .from(issuesTable)
@@ -56,6 +58,7 @@ export async function reconcileStaleWorkingIssues(): Promise<number> {
       await db.update(issuesTable).set({ statusId: 'review' }).where(eq(issuesTable.id, issue.id))
     }
 
+    await cacheDel(`issue:${issue.projectId}:${issue.id}`)
     emitIssueUpdated(issue.id, { statusId: 'review' })
     logger.info(
       { issueId: issue.id, previousSessionStatus: sessionStatus },

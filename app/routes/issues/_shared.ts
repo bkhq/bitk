@@ -194,6 +194,7 @@ export async function ensureWorking(issue: IssueRow): Promise<{ ok: boolean; rea
   if (issue.statusId !== 'working') {
     // review → working
     await db.update(issuesTable).set({ statusId: 'working' }).where(eq(issuesTable.id, issue.id))
+    await cacheDel(`issue:${issue.projectId}:${issue.id}`)
     emitIssueUpdated(issue.id, { statusId: 'working' })
     logger.info({ issueId: issue.id, from: issue.statusId }, 'moved_to_working')
   }
