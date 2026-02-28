@@ -227,14 +227,29 @@ export async function spawnFollowUpProcess(
 
   const permOptions = getPermissionOptions(engineType, permissionMode)
 
-  const spawned = await spawnWithSessionFallback(executor, issueId, {
-    workingDir,
-    prompt,
-    sessionId: issue.sessionFields.externalSessionId,
-    model: effectiveModel,
-    permissionMode: permOptions.permissionMode,
-    projectId: issue.projectId,
-  })
+  let spawned: SpawnedProcess
+  try {
+    spawned = await spawnWithSessionFallback(executor, issueId, {
+      workingDir,
+      prompt,
+      sessionId: issue.sessionFields.externalSessionId,
+      model: effectiveModel,
+      permissionMode: permOptions.permissionMode,
+      projectId: issue.projectId,
+    })
+  } catch (spawnError) {
+    // Spawn failed after we already emitted 'running' and persisted the user
+    // message.  Revert the session status so the issue doesn't get stuck in
+    // 'running' forever with no process to settle it.
+    logger.error({ issueId, executionId, error: spawnError }, 'spawn_failed_reverting_session')
+    await updateIssueSession(issueId, { sessionStatus: 'failed' }).catch((e) =>
+      logger.error({ issueId, error: e }, 'spawn_failed_revert_session_error'),
+    )
+    emitStateChange(ctx, issueId, executionId, 'failed')
+    ctx.entryCounters.delete(executionId)
+    ctx.turnIndexes.delete(executionId)
+    throw spawnError
+  }
 
   const normalizer = await createLogNormalizer(executor)
 
