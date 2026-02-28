@@ -156,6 +156,9 @@
     "sending": "Sending...",
     "starting": "Starting...",
     "thinking": "AI is thinking...",
+    "loadMore": "Load earlier messages",
+    "scrollToTop": "Scroll to top",
+    "scrollToBottom": "Scroll to bottom",
     "executionFailed": "Execution failed",
     "duration": "Completed in {{time}}",
     "status": {

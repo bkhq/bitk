@@ -5,6 +5,18 @@ import { getProjectOwnedIssue, serializeIssue } from './_shared'
 
 const logs = new Hono()
 
+function parseCursor(
+  param: string | undefined,
+): { turnIndex: number; entryIndex: number } | undefined {
+  if (!param) return undefined
+  const parts = param.split(':')
+  if (parts.length !== 2) return undefined
+  const turnIndex = Number(parts[0])
+  const entryIndex = Number(parts[1])
+  if (Number.isNaN(turnIndex) || Number.isNaN(entryIndex)) return undefined
+  return { turnIndex, entryIndex }
+}
+
 // GET /api/projects/:projectId/issues/:id/logs — Get logs
 logs.get('/:id/logs', async (c) => {
   const projectId = c.req.param('projectId')!
@@ -19,34 +31,45 @@ logs.get('/:id/logs', async (c) => {
     return c.json({ success: false, error: 'Issue not found' }, 404)
   }
 
-  // Parse optional cursor and limit query params for pagination
   const cursorParam = c.req.query('cursor')
+  const beforeParam = c.req.query('before')
   const limitParam = c.req.query('limit')
-  let cursor: { turnIndex: number; entryIndex: number } | undefined
-  if (cursorParam) {
-    const parts = cursorParam.split(':')
-    if (parts.length === 2) {
-      const turnIndex = Number(parts[0])
-      const entryIndex = Number(parts[1])
-      if (!Number.isNaN(turnIndex) && !Number.isNaN(entryIndex)) {
-        cursor = { turnIndex, entryIndex }
-      }
-    }
-  }
-  const limit = limitParam ? Math.min(Math.max(Number(limitParam) || 100, 1), 1000) : undefined
-  const effectiveLimit = limit ?? 100
+
+  const cursor = parseCursor(cursorParam)
+  const before = parseCursor(beforeParam)
+
+  const limit = limitParam ? Math.min(Math.max(Number(limitParam) || 30, 1), 1000) : undefined
+  const effectiveLimit = limit ?? 30
+
+  // Overfetch to compensate for JS isVisibleForMode filter removing entries
+  // after the SQL limit is applied (e.g. system-messages without the right subtype).
+  const overfetchFactor = issue.devMode ? 1 : 2
+  const fetchLimit = effectiveLimit * overfetchFactor + 1
 
   const issueLogs = issueEngine.getLogs(issueId, issue.devMode, {
     cursor,
-    limit: effectiveLimit + 1, // fetch one extra to detect hasMore
+    before,
+    limit: fetchLimit,
   })
 
+  const isReverse = !cursor
   const hasMore = issueLogs.length > effectiveLimit
-  const logs = hasMore ? issueLogs.slice(0, effectiveLimit) : issueLogs
-  const lastEntry = logs[logs.length - 1]
+
+  // For reverse: keep the newest entries (tail of ascending array).
+  // For forward: keep the oldest entries (head of ascending array).
+  const logs = hasMore
+    ? isReverse
+      ? issueLogs.slice(-effectiveLimit)
+      : issueLogs.slice(0, effectiveLimit)
+    : issueLogs
+
+  // nextCursor: for reverse → points to the oldest entry in the batch (first)
+  //   so the client can pass it as `before` for the next older page.
+  // For forward → points to the newest entry (last) for the next newer page.
+  const cursorEntry = isReverse ? logs[0] : logs[logs.length - 1]
   const nextCursor =
-    hasMore && lastEntry
-      ? `${lastEntry.turnIndex ?? 0}:${(lastEntry.metadata as Record<string, unknown> | undefined)?._cursorEntryIndex ?? 0}`
+    hasMore && cursorEntry
+      ? `${cursorEntry.turnIndex ?? 0}:${(cursorEntry.metadata as Record<string, unknown> | undefined)?._cursorEntryIndex ?? 0}`
       : null
 
   return c.json({

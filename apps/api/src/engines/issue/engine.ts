@@ -147,7 +147,11 @@ export class IssueEngine {
   getLogs(
     issueId: string,
     devMode = false,
-    opts?: { cursor?: { turnIndex: number; entryIndex: number }; limit?: number },
+    opts?: {
+      cursor?: { turnIndex: number; entryIndex: number }
+      before?: { turnIndex: number; entryIndex: number }
+      limit?: number
+    },
   ): NormalizedLogEntry[] {
     return getLogs(this.ctx, issueId, devMode, opts)
   }

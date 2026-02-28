@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { ArrowDownToLine, ArrowUpToLine } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import {
@@ -64,7 +65,13 @@ export function useSessionState(
   const isDone = issue?.statusId === 'done'
   const streamEnabled = hasSession || isTodo || isDone
 
-  const { logs, appendServerMessage } = useIssueStream({
+  const {
+    logs,
+    hasOlderLogs,
+    isLoadingOlder,
+    loadOlderLogs,
+    appendServerMessage,
+  } = useIssueStream({
     projectId,
     issueId: streamEnabled ? issueId : null,
     sessionStatus: issue?.sessionStatus ?? null,
@@ -94,6 +101,9 @@ export function useSessionState(
     workingStep,
     isTodo,
     isDone,
+    hasOlderLogs,
+    isLoadingOlder,
+    loadOlderLogs,
     appendServerMessage,
   }
 }
@@ -145,8 +155,17 @@ export function ChatBody({
   const slashCommands =
     (liveCmds?.commands.length ? liveCmds.commands : globalCmds?.commands) ?? []
 
-  const { logs, isThinking, workingStep, isTodo, isDone, appendServerMessage } =
-    useSessionState(projectId, issueId, issue)
+  const {
+    logs,
+    isThinking,
+    workingStep,
+    isTodo,
+    isDone,
+    hasOlderLogs,
+    isLoadingOlder,
+    loadOlderLogs,
+    appendServerMessage,
+  } = useSessionState(projectId, issueId, issue)
 
   // Show toast when execution transitions to failed
   const prevStatusRef = useRef(issue.sessionStatus)
@@ -158,20 +177,80 @@ export function ChatBody({
     }
   }, [issue.sessionStatus, t])
 
+  // Track scroll position for scroll-to-top / scroll-to-bottom buttons
+  const [showScrollTop, setShowScrollTop] = useState(false)
+  const [showScrollBottom, setShowScrollBottom] = useState(false)
+
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = el
+      setShowScrollTop(scrollTop > 200)
+      setShowScrollBottom(scrollHeight - scrollTop - clientHeight > 200)
+    }
+
+    handleScroll()
+    el.addEventListener('scroll', handleScroll, { passive: true })
+    return () => el.removeEventListener('scroll', handleScroll)
+  }, [scrollRef, logs.length])
+
+  const scrollToTop = useCallback(() => {
+    scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [scrollRef])
+
+  const scrollToBottom = useCallback(() => {
+    const el = scrollRef.current
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
+  }, [scrollRef])
+
   return (
     <>
       {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto overflow-x-hidden">
-        <div className="flex flex-col min-h-full justify-end py-2">
-          <SessionMessages
-            logs={logs}
-            scrollRef={scrollRef}
-            isRunning={isThinking}
-            workingStep={workingStep}
-            onCancel={() => cancelIssue.mutate(issueId)}
-            isCancelling={cancelIssue.isPending}
-            devMode={issue.devMode}
-          />
+      <div className="relative flex-1 overflow-hidden">
+        <div
+          ref={scrollRef}
+          className="h-full overflow-y-auto overflow-x-hidden"
+        >
+          <div className="flex flex-col min-h-full justify-end py-2">
+            <SessionMessages
+              logs={logs}
+              scrollRef={scrollRef}
+              isRunning={isThinking}
+              workingStep={workingStep}
+              onCancel={() => cancelIssue.mutate(issueId)}
+              isCancelling={cancelIssue.isPending}
+              devMode={issue.devMode}
+              hasOlderLogs={hasOlderLogs}
+              isLoadingOlder={isLoadingOlder}
+              onLoadOlder={loadOlderLogs}
+            />
+          </div>
+        </div>
+
+        {/* Scroll-to-top / scroll-to-bottom floating buttons */}
+        <div className="absolute right-3 bottom-3 flex flex-col gap-1.5">
+          {showScrollTop ? (
+            <button
+              type="button"
+              onClick={scrollToTop}
+              className="rounded-full border border-border/50 bg-background/90 p-1.5 text-muted-foreground shadow-sm backdrop-blur-sm transition-colors hover:bg-accent hover:text-foreground"
+              title={t('session.scrollToTop')}
+            >
+              <ArrowUpToLine className="h-3.5 w-3.5" />
+            </button>
+          ) : null}
+          {showScrollBottom ? (
+            <button
+              type="button"
+              onClick={scrollToBottom}
+              className="rounded-full border border-border/50 bg-background/90 p-1.5 text-muted-foreground shadow-sm backdrop-blur-sm transition-colors hover:bg-accent hover:text-foreground"
+              title={t('session.scrollToBottom')}
+            >
+              <ArrowDownToLine className="h-3.5 w-3.5" />
+            </button>
+          ) : null}
         </div>
       </div>
 

@@ -156,6 +156,9 @@
     "sending": "发送中...",
     "starting": "启动中...",
     "thinking": "AI 思考中...",
+    "loadMore": "查看更多记录",
+    "scrollToTop": "滚动到顶部",
+    "scrollToBottom": "滚动到底部",
     "executionFailed": "执行失败",
     "duration": "耗时 {{time}}",
     "status": {

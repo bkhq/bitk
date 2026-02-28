@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import type { NormalizedLogEntry, SessionStatus } from '@/types/kanban'
 import { eventBus } from '@/lib/event-bus'
@@ -16,6 +16,9 @@ interface UseIssueStreamOptions {
 interface UseIssueStreamReturn {
   logs: NormalizedLogEntry[]
   sessionStatus: SessionStatus | null
+  hasOlderLogs: boolean
+  isLoadingOlder: boolean
+  loadOlderLogs: () => void
   clearLogs: () => void
   appendServerMessage: (
     messageId: string,
@@ -25,6 +28,9 @@ interface UseIssueStreamReturn {
 }
 
 const TERMINAL: Set<string> = new Set(['completed', 'failed', 'cancelled'])
+
+/** Max entries in the live logs array. Older entries are trimmed when SSE pushes beyond this. */
+const MAX_LIVE_LOGS = 500
 
 function appendLogWithDedup(
   prev: NormalizedLogEntry[],
@@ -49,6 +55,18 @@ function appendLogWithDedup(
   return [...prev, incoming]
 }
 
+/** Append and trim oldest entries if the list exceeds MAX_LIVE_LOGS. */
+function appendAndTrim(
+  prev: NormalizedLogEntry[],
+  incoming: NormalizedLogEntry,
+): NormalizedLogEntry[] {
+  const next = appendLogWithDedup(prev, incoming)
+  if (next.length > MAX_LIVE_LOGS) {
+    return next.slice(next.length - MAX_LIVE_LOGS)
+  }
+  return next
+}
+
 export function useIssueStream({
   projectId,
   issueId,
@@ -56,20 +74,48 @@ export function useIssueStream({
   enabled = true,
   devMode = false,
 }: UseIssueStreamOptions): UseIssueStreamReturn {
-  const [logs, setLogs] = useState<NormalizedLogEntry[]>([])
+  // Live logs: initial load + SSE entries, capped at MAX_LIVE_LOGS
+  const [liveLogs, setLiveLogs] = useState<NormalizedLogEntry[]>([])
+  // Older logs: loaded via "Load More", no cap (user-initiated)
+  const [olderLogs, setOlderLogs] = useState<NormalizedLogEntry[]>([])
+
   const [sessionStatus, setSessionStatus] = useState<SessionStatus | null>(
     externalStatus ?? null,
   )
+  const [hasOlderLogs, setHasOlderLogs] = useState(false)
+  const [isLoadingOlder, setIsLoadingOlder] = useState(false)
   const queryClient = useQueryClient()
 
   const doneReceivedRef = useRef(false)
   const activeExecutionRef = useRef<string | null>(null)
   const streamScopeRef = useRef<string | null>(null)
+  const olderCursorRef = useRef<string | null>(null)
+
+  // Combined logs for rendering: olderLogs (history) + liveLogs (current window)
+  const logs = useMemo(
+    () => (olderLogs.length > 0 ? [...olderLogs, ...liveLogs] : liveLogs),
+    [olderLogs, liveLogs],
+  )
 
   const clearLogs = useCallback(() => {
-    setLogs([])
+    setLiveLogs([])
+    setOlderLogs([])
+    setHasOlderLogs(false)
+    olderCursorRef.current = null
     doneReceivedRef.current = false
     activeExecutionRef.current = null
+  }, [])
+
+  /** Append an entry to live logs, auto-trim oldest when exceeding MAX_LIVE_LOGS. */
+  const appendEntry = useCallback((incoming: NormalizedLogEntry) => {
+    setLiveLogs((prev) => {
+      const next = appendAndTrim(prev, incoming)
+      if (next.length < prev.length + 1 && next !== prev) {
+        // Entries were trimmed from the front — older history exists in DB
+        setHasOlderLogs(true)
+      }
+      return next
+    })
   }, [])
 
   /** Append a user message with a server-assigned messageId */
@@ -84,18 +130,50 @@ export function useIssueStream({
       if (metadata?.type !== 'pending') {
         doneReceivedRef.current = false
       }
-      setLogs((prev) =>
-        appendLogWithDedup(prev, {
-          messageId,
-          entryType: 'user-message',
-          content: trimmed,
-          timestamp: new Date().toISOString(),
-          metadata,
-        }),
-      )
+      appendEntry({
+        messageId,
+        entryType: 'user-message',
+        content: trimmed,
+        timestamp: new Date().toISOString(),
+        metadata,
+      })
     },
-    [],
+    [appendEntry],
   )
+
+  /** Load older logs into the separate olderLogs array (no cap) */
+  const loadOlderLogs = useCallback(() => {
+    if (!issueId || !olderCursorRef.current || isLoadingOlder) return
+    setIsLoadingOlder(true)
+
+    kanbanApi
+      .getIssueLogs(projectId, issueId, { before: olderCursorRef.current })
+      .then((data) => {
+        if (!data.logs.length) {
+          setHasOlderLogs(false)
+          olderCursorRef.current = null
+          return
+        }
+        olderCursorRef.current = data.nextCursor
+        setHasOlderLogs(data.hasMore)
+        setOlderLogs((prev) => {
+          // Dedup against existing older logs
+          const existingIds = new Set(
+            prev.map((e) => e.messageId).filter(Boolean),
+          )
+          const newEntries = data.logs.filter(
+            (e) => !e.messageId || !existingIds.has(e.messageId),
+          )
+          return [...newEntries, ...prev]
+        })
+      })
+      .catch((err) => {
+        console.warn('Failed to load older logs:', err)
+      })
+      .finally(() => {
+        setIsLoadingOlder(false)
+      })
+  }, [projectId, issueId, isLoadingOlder])
 
   useEffect(() => {
     if (!issueId || !enabled) {
@@ -123,7 +201,7 @@ export function useIssueStream({
     }
   }, [issueId, enabled, externalStatus])
 
-  // Always fetch historical logs from DB (survives server restart)
+  // Fetch latest historical logs from DB (reverse mode — newest first)
   useEffect(() => {
     if (!issueId || !enabled) return
 
@@ -134,7 +212,10 @@ export function useIssueStream({
       .getIssueLogs(projectId, issueId)
       .then((data) => {
         if (cancelled || streamScopeRef.current !== scope) return
-        setLogs(data.logs)
+        setLiveLogs(data.logs)
+        setOlderLogs([])
+        setHasOlderLogs(data.hasMore)
+        olderCursorRef.current = data.nextCursor
       })
       .catch((err) => {
         console.warn('Failed to fetch issue logs:', err)
@@ -156,7 +237,7 @@ export function useIssueStream({
     cleanup.unsub = eventBus.subscribe(issueId, {
       onLog: (entry) => {
         if (doneReceivedRef.current) return
-        setLogs((prev) => appendLogWithDedup(prev, entry))
+        appendEntry(entry)
       },
       onState: (data) => {
         if (data.state === 'running' || data.state === 'pending') {
@@ -202,6 +283,9 @@ export function useIssueStream({
   return {
     logs,
     sessionStatus,
+    hasOlderLogs,
+    isLoadingOlder,
+    loadOlderLogs,
     clearLogs,
     appendServerMessage,
   }

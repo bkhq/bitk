@@ -12,11 +12,19 @@ export function getLogs(
   ctx: EngineContext,
   issueId: string,
   devMode = false,
-  opts?: { cursor?: { turnIndex: number; entryIndex: number }; limit?: number },
+  opts?: {
+    cursor?: { turnIndex: number; entryIndex: number }
+    before?: { turnIndex: number; entryIndex: number }
+    limit?: number
+  },
 ): NormalizedLogEntry[] {
   setIssueDevMode(issueId, devMode)
   // DB pre-filters by visible + entryType; isVisibleForMode() handles subtype rules.
   const persisted = getLogsFromDb(issueId, devMode, opts)
+
+  // When loading older entries (before cursor), skip in-memory merge —
+  // in-memory logs are always the newest and irrelevant for historical pages.
+  if (opts?.before) return persisted
 
   // While a process is active, merge any in-memory tail not yet persisted.
   const active = getActiveProcessForIssue(ctx, issueId)

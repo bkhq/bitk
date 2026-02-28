@@ -10,7 +10,11 @@ import { rawToToolAction } from './tool-detail'
 export function getLogsFromDb(
   issueId: string,
   devMode = false,
-  opts?: { cursor?: { turnIndex: number; entryIndex: number }; limit?: number },
+  opts?: {
+    cursor?: { turnIndex: number; entryIndex: number }
+    before?: { turnIndex: number; entryIndex: number }
+    limit?: number
+  },
 ): NormalizedLogEntry[] {
   // visible=1 filter preserves pending-message dedup (dispatched entries set visible=0).
   // Non-devMode also pre-filters by entryType for performance (avoids loading tool-use rows).
@@ -20,8 +24,13 @@ export function getLogsFromDb(
       inArray(logsTable.entryType, ['user-message', 'assistant-message', 'system-message']),
     )
   }
+
+  // Reverse mode: fetch from end (latest) or before a cursor point.
+  // Forward mode (cursor): fetch after a cursor point (existing behaviour).
+  const isReverse = !opts?.cursor
+
   if (opts?.cursor) {
-    // Cursor-based pagination: fetch rows strictly after (turnIndex, entryIndex)
+    // Forward: rows strictly after (turnIndex, entryIndex)
     conditions.push(
       or(
         gt(logsTable.turnIndex, opts.cursor.turnIndex),
@@ -31,15 +40,34 @@ export function getLogsFromDb(
         ),
       )!,
     )
+  } else if (opts?.before) {
+    // Reverse: rows strictly before (turnIndex, entryIndex)
+    conditions.push(
+      or(
+        lt(logsTable.turnIndex, opts.before.turnIndex),
+        and(
+          eq(logsTable.turnIndex, opts.before.turnIndex),
+          lt(logsTable.entryIndex, opts.before.entryIndex),
+        ),
+      )!,
+    )
   }
+  // else: no cursor → fetch from end (latest)
+
   const effectiveLimit = opts?.limit ?? MAX_LOG_ENTRIES
   const rows = db
     .select()
     .from(logsTable)
     .where(and(...conditions))
-    .orderBy(asc(logsTable.turnIndex), asc(logsTable.entryIndex))
+    .orderBy(
+      isReverse ? desc(logsTable.turnIndex) : asc(logsTable.turnIndex),
+      isReverse ? desc(logsTable.entryIndex) : asc(logsTable.entryIndex),
+    )
     .limit(effectiveLimit)
     .all()
+
+  // Reverse results so output is always in ascending (chronological) order
+  if (isReverse) rows.reverse()
 
   // Batch-fetch tool details for this issue (bounded by log count)
   const toolRows = db

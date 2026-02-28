@@ -341,6 +341,9 @@ export function SessionMessages({
   onCancel,
   isCancelling = false,
   devMode = false,
+  hasOlderLogs = false,
+  isLoadingOlder = false,
+  onLoadOlder,
 }: {
   logs: NormalizedLogEntry[]
   scrollRef?: React.RefObject<HTMLDivElement | null>
@@ -349,6 +352,9 @@ export function SessionMessages({
   onCancel?: () => void
   isCancelling?: boolean
   devMode?: boolean
+  hasOlderLogs?: boolean
+  isLoadingOlder?: boolean
+  onLoadOlder?: () => void
 }) {
   const { t } = useTranslation()
 
@@ -378,16 +384,28 @@ export function SessionMessages({
     return true
   })
 
-  // Auto-scroll to bottom on new logs
+  // Auto-scroll to bottom on new logs appended at the end.
+  // Skip auto-scroll when older logs are prepended (first entry changes).
   const prevLenRef = useRef(visibleLogs.length)
+  const prevFirstIdRef = useRef(visibleLogs[0]?.messageId)
   useEffect(() => {
-    if (visibleLogs.length !== prevLenRef.current || isRunning) {
+    const firstId = visibleLogs[0]?.messageId
+    const wasOlderPrepend =
+      visibleLogs.length > prevLenRef.current &&
+      prevFirstIdRef.current &&
+      firstId !== prevFirstIdRef.current
+
+    if (
+      !wasOlderPrepend &&
+      (visibleLogs.length !== prevLenRef.current || isRunning)
+    ) {
       scrollRef?.current?.scrollTo({
         top: scrollRef.current.scrollHeight,
         behavior: 'smooth',
       })
     }
     prevLenRef.current = visibleLogs.length
+    prevFirstIdRef.current = firstId
   }, [visibleLogs.length, isRunning, scrollRef])
 
   if (visibleLogs.length === 0 && !isRunning) return null
@@ -581,6 +599,18 @@ export function SessionMessages({
 
   return (
     <div className="flex flex-col py-2">
+      {hasOlderLogs && onLoadOlder ? (
+        <div className="flex justify-center py-2">
+          <button
+            type="button"
+            onClick={onLoadOlder}
+            disabled={isLoadingOlder}
+            className="rounded-md border border-border/40 bg-muted/30 px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isLoadingOlder ? t('common.loading') : t('session.loadMore')}
+          </button>
+        </div>
+      ) : null}
       {rows}
       {isRunning ? (
         <div className="flex items-center gap-2.5 mx-5 my-2 px-3 py-2 text-xs text-muted-foreground animate-message-enter">
