@@ -29,6 +29,9 @@ events.get('/', async (c) => {
         }
       }
 
+      // Detect client disconnect immediately via AbortSignal
+      c.req.raw.signal.addEventListener('abort', stop)
+
       const writeEvent = (event: string, data: unknown) => {
         if (done) return
         stream.writeSSE({ event, data: JSON.stringify(data) }).catch(stop)

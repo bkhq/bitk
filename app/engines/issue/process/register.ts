@@ -3,10 +3,12 @@ import type { EngineContext } from '../context'
 import type { StreamCallbacks } from '../streams/consumer'
 import type { ManagedProcess } from '../types'
 import { logger } from '../../../logger'
+import { MAX_LOG_ENTRIES } from '../constants'
 import { emitStateChange } from '../events'
 import { consumeStderr, consumeStream } from '../streams/consumer'
 import { handleStderrEntry, handleStreamEntry, handleStreamError } from '../streams/handlers'
 import { getPidFromManaged } from '../utils/pid'
+import { RingBuffer } from '../utils/ring-buffer'
 
 // ---------- Process registration ----------
 
@@ -27,7 +29,7 @@ export function register(
     process,
     state: 'running',
     startedAt: new Date(),
-    logs: [],
+    logs: new RingBuffer<NormalizedLogEntry>(MAX_LOG_ENTRIES),
     retryCount: 0,
     turnInFlight: true,
     queueCancelRequested: false,

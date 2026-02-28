@@ -266,7 +266,7 @@ export class ClaudeCodeExecutor implements EngineExecutor {
 
       if (exitCode !== 0) {
         // Fall back to npx
-        const proc = Bun.spawn(['npx', '-y', '@anthropic-ai/claude-code@latest', '--version'], {
+        const proc = Bun.spawn(['npx', '-y', '@anthropic-ai/claude-code', '--version'], {
           stdout: 'pipe',
           stderr: 'pipe',
           env: safeEnv({ NPM_CONFIG_LOGLEVEL: 'error' }),

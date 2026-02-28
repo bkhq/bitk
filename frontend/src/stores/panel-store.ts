@@ -1,7 +1,6 @@
 import { create } from 'zustand'
-import type { Issue } from '@/types/kanban'
 
-type PanelState = { kind: 'closed' } | { kind: 'view'; issue: Issue }
+type PanelState = { kind: 'closed' } | { kind: 'view'; issueId: string }
 
 const MIN_WIDTH = 360
 const DEFAULT_WIDTH_RATIO = 0.4
@@ -19,15 +18,13 @@ function clampWidth(w: number): number {
 interface PanelStore {
   panel: PanelState
 
-  selectedIssueId: string | null
-  isPanelOpen: boolean
   width: number
 
   // Create dialog (centered modal)
   createDialogOpen: boolean
   createDialogStatusId: string | undefined
 
-  openView: (issue: Issue) => void
+  openView: (issueId: string) => void
   close: () => void
   setWidth: (w: number) => void
   openCreateDialog: (statusId?: string) => void
@@ -39,25 +36,19 @@ export const PANEL_MAX_WIDTH_RATIO = MAX_WIDTH_RATIO
 
 export const usePanelStore = create<PanelStore>((set) => ({
   panel: { kind: 'closed' },
-  selectedIssueId: null,
-  isPanelOpen: false,
   width: Math.round(getViewportWidth() * DEFAULT_WIDTH_RATIO),
 
   createDialogOpen: false,
   createDialogStatusId: undefined,
 
-  openView: (issue) =>
+  openView: (issueId) =>
     set({
-      panel: { kind: 'view', issue },
-      selectedIssueId: issue.id,
-      isPanelOpen: true,
+      panel: { kind: 'view', issueId },
     }),
 
   close: () =>
     set({
       panel: { kind: 'closed' },
-      selectedIssueId: null,
-      isPanelOpen: false,
     }),
 
   setWidth: (w) => set({ width: clampWidth(w) }),
@@ -68,6 +59,14 @@ export const usePanelStore = create<PanelStore>((set) => ({
   closeCreateDialog: () =>
     set({ createDialogOpen: false, createDialogStatusId: undefined }),
 }))
+
+// Derived selectors
+export const useSelectedIssueId = () =>
+  usePanelStore((s) =>
+    s.panel.kind === 'view' ? s.panel.issueId : null,
+  )
+export const useIsPanelOpen = () =>
+  usePanelStore((s) => s.panel.kind !== 'closed')
 
 // Re-clamp width on window resize (guarded to prevent duplicate listeners during HMR)
 if (typeof window !== 'undefined') {

@@ -4,6 +4,7 @@ import type { ManagedProcess } from './types'
 import { logger } from '../../logger'
 import { emitLog, emitStateChange } from './events'
 import { persistEntry } from './persistence/entry'
+import { dispatch } from './state'
 import { getPidFromManaged } from './utils/pid'
 
 // ---------- User message persistence ----------
@@ -73,14 +74,7 @@ export function sendInputToRunningProcess(
   // If send throws (e.g. stdin closed in a race), caller may fallback to spawn
   // a new process. Persisting before send would duplicate this message across turns.
   handler.sendUserMessage(prompt)
-  managed.turnInFlight = true
-  managed.queueCancelRequested = false
-  // Reset turn-level flags for the new turn so previous turn's state doesn't leak.
-  managed.turnSettled = false
-  managed.logicalFailure = false
-  managed.logicalFailureReason = undefined
-  managed.cancelledByUser = false
-  managed.metaTurn = metadata?.type === 'system'
+  dispatch(managed, { type: 'START_TURN', metaTurn: metadata?.type === 'system' })
   // Emit running state BEFORE user message so the frontend resets doneReceivedRef
   // and accepts the subsequent user message SSE event.
   emitStateChange(ctx, issueId, managed.executionId, 'running')

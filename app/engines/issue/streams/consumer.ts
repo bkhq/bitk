@@ -2,7 +2,6 @@ import type { NormalizedLogEntry } from '../../types'
 import type { ManagedProcess } from '../types'
 import { setAppSetting } from '../../../db/helpers'
 import { normalizeStream } from '../../logs'
-import { MAX_LOG_ENTRIES } from '../constants'
 import { isCancelledNoiseEntry, isTurnCompletionEntry } from './classification'
 
 const SLASH_COMMANDS_KEY = 'engine:slashCommands'
@@ -34,9 +33,7 @@ function pushStderrEntry(
     turnIndex,
     timestamp: new Date().toISOString(),
   }
-  if (managed.logs.length < MAX_LOG_ENTRIES) {
-    managed.logs.push(entry)
-  }
+  managed.logs.push(entry)
   onEntry(entry)
 }
 
@@ -63,9 +60,9 @@ export async function consumeStream(
 
       // Extract slash commands from SDK init message
       if (
-        entry.entryType === 'system-message'
-        && entry.metadata?.subtype === 'init'
-        && Array.isArray(entry.metadata.slashCommands)
+        entry.entryType === 'system-message' &&
+        entry.metadata?.subtype === 'init' &&
+        Array.isArray(entry.metadata.slashCommands)
       ) {
         managed.slashCommands = entry.metadata.slashCommands as string[]
         void saveSlashCommandsToSettings(managed.slashCommands)

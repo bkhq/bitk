@@ -1,4 +1,5 @@
 import type { NormalizedLogEntry, PermissionPolicy, ProcessStatus, SpawnedProcess } from '../types'
+import type { RingBuffer } from './utils/ring-buffer'
 
 export interface ManagedProcess {
   executionId: string
@@ -8,7 +9,7 @@ export interface ManagedProcess {
   startedAt: Date
   finishedAt?: Date
   exitCode?: number
-  logs: NormalizedLogEntry[]
+  logs: RingBuffer<NormalizedLogEntry>
   retryCount: number
   turnInFlight: boolean
   queueCancelRequested: boolean
@@ -35,6 +36,10 @@ export interface ManagedProcess {
 }
 
 export type LogCallback = (issueId: string, executionId: string, entry: NormalizedLogEntry) => void
-export type StateChangeCallback = (issueId: string, executionId: string, state: ProcessStatus) => void
+export type StateChangeCallback = (
+  issueId: string,
+  executionId: string,
+  state: ProcessStatus,
+) => void
 export type IssueSettledCallback = (issueId: string, executionId: string, state: string) => void
 export type UnsubscribeFn = () => void

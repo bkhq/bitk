@@ -4,6 +4,7 @@ import { logger } from '../../../logger'
 import { MAX_AUTO_RETRIES } from '../constants'
 import { emitStateChange } from '../events'
 import { cleanupDomainData, syncPmState } from '../process/state'
+import { dispatch } from '../state'
 import { getPidFromManaged } from '../utils/pid'
 import { settleIssue } from './settle'
 import { spawnFollowUpProcess, spawnRetry } from './spawn'
@@ -23,8 +24,7 @@ export function monitorCompletion(
   void (async () => {
     try {
       const exitCode = await managed.process.subprocess.exited
-      managed.exitCode = exitCode
-      managed.finishedAt = new Date()
+      dispatch(managed, { type: 'SET_EXIT_CODE', exitCode })
       logger.info(
         {
           issueId,
@@ -41,8 +41,8 @@ export function monitorCompletion(
       // engines where the process stays alive between turns), just clean up.
       if (managed.turnSettled) {
         const finalState = (managed.logicalFailure ? 'failed' : 'completed') as ProcessStatus
-        managed.state = finalState
-        managed.finishedAt = new Date()
+        if (finalState === 'completed') dispatch(managed, { type: 'MARK_COMPLETED' })
+        else dispatch(managed, { type: 'MARK_FAILED' })
         syncPmState(ctx, executionId, finalState)
         cleanupDomainData(ctx, executionId)
         return
@@ -52,7 +52,7 @@ export function monitorCompletion(
       // using a fresh follow-up process after this one exits.
       if (managed.pendingInputs.length > 0) {
         const queued = [...managed.pendingInputs]
-        managed.pendingInputs = []
+        dispatch(managed, { type: 'CLEAR_PENDING_INPUTS' })
         cleanupDomainData(ctx, executionId)
         try {
           const first = queued.shift()
@@ -93,12 +93,12 @@ export function monitorCompletion(
 
       const logicalFailure = managed.logicalFailure
       if (exitCode === 0 && !logicalFailure) {
-        managed.state = 'completed'
+        dispatch(managed, { type: 'MARK_COMPLETED' })
         syncPmState(ctx, executionId, 'completed')
         emitStateChange(ctx, issueId, executionId, 'completed')
         await settleIssue(ctx, issueId, executionId, 'completed')
       } else {
-        managed.state = 'failed'
+        dispatch(managed, { type: 'MARK_FAILED' })
         syncPmState(ctx, executionId, 'failed')
         emitStateChange(ctx, issueId, executionId, 'failed')
         logger.warn(
@@ -129,8 +129,7 @@ export function monitorCompletion(
         }
       }
     } catch {
-      managed.state = 'failed'
-      managed.finishedAt = new Date()
+      dispatch(managed, { type: 'MARK_FAILED' })
       syncPmState(ctx, executionId, 'failed')
       emitStateChange(ctx, issueId, executionId, 'failed')
       await settleIssue(ctx, issueId, executionId, 'failed')

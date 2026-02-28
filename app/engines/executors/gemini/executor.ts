@@ -14,7 +14,7 @@ import { safeEnv } from '../../safe-env'
 /**
  * Gemini CLI executor — uses ACP (Agent Communication Protocol).
  *
- * Launch: `npx -y @google/gemini-cli@latest`
+ * Launch: `npx -y @google/gemini-cli`
  * Communication: ACP over stdin/stdout
  *
  * TODO: Implement spawn/follow-up when Gemini CLI protocol stabilizes.
@@ -26,7 +26,7 @@ export class GeminiExecutor implements EngineExecutor {
 
   async spawn(_options: SpawnOptions, _env: ExecutionEnv): Promise<SpawnedProcess> {
     // TODO: Implement Gemini CLI spawn
-    // 1. Start `npx -y @google/gemini-cli@latest` with appropriate flags
+    // 1. Start `npx -y @google/gemini-cli` with appropriate flags
     // 2. Send initial prompt via ACP protocol
     // 3. Stream stdout for responses
     throw new Error('Gemini executor not yet implemented')
@@ -56,7 +56,7 @@ export class GeminiExecutor implements EngineExecutor {
 
   async getAvailability(): Promise<EngineAvailability> {
     try {
-      const proc = Bun.spawn(['npx', '-y', '@google/gemini-cli@latest', '--version'], {
+      const proc = Bun.spawn(['npx', '-y', '@google/gemini-cli', '--version'], {
         stdout: 'pipe',
         stderr: 'pipe',
         env: safeEnv({ NPM_CONFIG_LOGLEVEL: 'error' }),
@@ -110,7 +110,7 @@ export class GeminiExecutor implements EngineExecutor {
     try {
       // Gemini CLI — query via `gemini --list-models` or Google API
       // TODO: Implement proper model discovery when Gemini CLI supports it
-      const proc = Bun.spawn(['npx', '-y', '@google/gemini-cli@latest', '--list-models'], {
+      const proc = Bun.spawn(['npx', '-y', '@google/gemini-cli', '--list-models'], {
         stdout: 'pipe',
         stderr: 'pipe',
         env: safeEnv({ NPM_CONFIG_LOGLEVEL: 'error' }),

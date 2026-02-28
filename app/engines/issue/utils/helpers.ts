@@ -12,8 +12,8 @@ export function isMissingExternalSessionError(error: unknown): boolean {
   if (!(error instanceof Error)) return false
   const msg = error.message.toLowerCase()
   return (
-    msg.includes('no conversation found with session id')
-    || (msg.includes('no conversation found') && msg.includes('session id'))
+    msg.includes('no conversation found with session id') ||
+    (msg.includes('no conversation found') && msg.includes('session id'))
   )
 }
 
@@ -23,7 +23,7 @@ export function getPermissionOptions(
   engineType: EngineType,
   overridePolicy?: PermissionPolicy,
 ): {
-  permissionMode: string
+  permissionMode: PermissionPolicy
 } {
   const profile = BUILT_IN_PROFILES[engineType]
   const policy = overridePolicy ?? profile?.permissionPolicy ?? 'supervised'

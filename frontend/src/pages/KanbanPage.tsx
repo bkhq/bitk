@@ -5,6 +5,7 @@ import { useProject, useIssues } from '@/hooks/use-kanban'
 import { STATUSES, DEFAULT_STATUS_ID } from '@/lib/statuses'
 import {
   usePanelStore,
+  useIsPanelOpen,
   PANEL_MIN_WIDTH,
   PANEL_MAX_WIDTH_RATIO,
 } from '@/stores/panel-store'
@@ -23,16 +24,20 @@ export default function KanbanPage() {
   const { data: project, isLoading, isError } = useProject(projectId)
   const { data: issues } = useIssues(projectId)
 
-  const { panel, isPanelOpen, width, close, openView } = usePanelStore()
+  const panel = usePanelStore((s) => s.panel)
+  const width = usePanelStore((s) => s.width)
+  const close = usePanelStore((s) => s.close)
+  const openView = usePanelStore((s) => s.openView)
+  const isPanelOpen = useIsPanelOpen()
   const isMobile = useIsMobile()
   const [searchQuery, setSearchQuery] = useState('')
 
   const handleCardClick = useCallback(
-    (issue: Parameters<typeof openView>[0]) => {
+    (issue: { id: string }) => {
       if (isMobile) {
         navigate(`/projects/${projectId}/issues/${issue.id}`)
       } else {
-        openView(issue)
+        openView(issue.id)
       }
     },
     [isMobile, navigate, projectId, openView],
@@ -110,7 +115,7 @@ export default function KanbanPage() {
           <ResizeHandle />
           <IssuePanel
             projectId={projectId}
-            issue={panel.issue}
+            issueId={panel.issueId}
             onClose={close}
           />
         </div>

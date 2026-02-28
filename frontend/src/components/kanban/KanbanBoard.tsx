@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { useBulkUpdateIssues, useIssues } from '@/hooks/use-kanban'
 import type { Issue } from '@/types/kanban'
 import { useBoardStore } from '@/stores/board-store'
-import { usePanelStore } from '@/stores/panel-store'
+import { useSelectedIssueId } from '@/stores/panel-store'
 import { STATUSES } from '@/lib/statuses'
 import { KanbanColumn } from './KanbanColumn'
 
@@ -23,7 +23,7 @@ export function KanbanBoard({
 
   const { groupedItems, syncFromServer, applyDragOver, applyDragEnd } =
     useBoardStore()
-  const selectedIssueId = usePanelStore((s) => s.selectedIssueId)
+  const selectedIssueId = useSelectedIssueId()
 
   useEffect(() => {
     if (!issues) return

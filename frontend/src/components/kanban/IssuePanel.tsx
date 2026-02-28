@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { X, Maximize2, Link, Check, Plus } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import type { Issue } from '@/types/kanban'
 import { Button } from '@/components/ui/button'
 import { ChatBody } from '@/components/issue-detail/ChatBody'
 import { DiffPanel } from '@/components/issue-detail/DiffPanel'
@@ -13,14 +12,14 @@ const DEFAULT_DIFF_WIDTH = 360
 
 interface IssuePanelProps {
   projectId: string
-  issue?: Issue | null
+  issueId?: string | null
   onClose: () => void
   hideHeaderActions?: boolean
 }
 
 export function IssuePanel({
   projectId,
-  issue: issueProp,
+  issueId,
   onClose,
   hideHeaderActions,
 }: IssuePanelProps) {
@@ -36,9 +35,8 @@ export function IssuePanel({
   const [showDiff, setShowDiff] = useState(false)
   const [diffWidth, setDiffWidth] = useState(DEFAULT_DIFF_WIDTH)
 
-  const issueId = issueProp?.id
   const { data: issue } = useIssue(projectId, issueId ?? '')
-  const effectiveIssue = issue ?? issueProp
+  const effectiveIssue = issue
 
   const updateIssue = useUpdateIssue(projectId)
 

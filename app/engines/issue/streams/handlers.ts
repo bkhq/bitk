@@ -3,10 +3,10 @@ import type { EngineContext } from '../context'
 import { eq } from 'drizzle-orm'
 import { db } from '../../../db'
 import { issueLogs as logsTable } from '../../../db/schema'
-import { MAX_LOG_ENTRIES } from '../constants'
 import { emitLog } from '../events'
 import { persistEntry } from '../persistence/entry'
 import { buildToolDetail, persistToolDetail } from '../persistence/tool-detail'
+import { dispatch } from '../state'
 import { applyAutoTitle } from '../title'
 
 // ---------- Stdout stream entry handler ----------
@@ -46,11 +46,9 @@ export function handleStreamEntry(
       }
     }
     // Push persisted entry (with messageId) so getLogs dedup works correctly
-    if (managed.logs.length < MAX_LOG_ENTRIES) {
-      managed.logs.push(persisted)
-    }
+    managed.logs.push(persisted)
     emitLog(ctx, issueId, executionId, persisted)
-  } else if (managed.logs.length < MAX_LOG_ENTRIES) {
+  } else {
     // Persist failed — keep original entry in memory as fallback
     managed.logs.push(entry)
   }
@@ -58,9 +56,10 @@ export function handleStreamEntry(
   const resultSubtype = entry.metadata?.resultSubtype
   const isResultError = typeof resultSubtype === 'string' && resultSubtype !== 'success'
   if (!managed.cancelledByUser && (isResultError || entry.metadata?.isError === true)) {
-    managed.logicalFailure = true
-    managed.logicalFailureReason
-      = (entry.metadata?.error as string | undefined) ?? String(resultSubtype ?? 'unknown')
+    dispatch(managed, {
+      type: 'SET_LOGICAL_FAILURE',
+      reason: (entry.metadata?.error as string | undefined) ?? String(resultSubtype ?? 'unknown'),
+    })
   }
 }
 

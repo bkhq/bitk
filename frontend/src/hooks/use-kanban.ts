@@ -254,15 +254,15 @@ export function useFollowUpIssue(projectId: string) {
       busyAction?: 'queue' | 'cancel'
       files?: File[]
     }) =>
-      kanbanApi.followUpIssue(
+      kanbanApi.followUpIssue({
         projectId,
-        args.issueId,
-        args.prompt,
-        args.model,
-        args.permissionMode,
-        args.busyAction,
-        args.files,
-      ),
+        issueId: args.issueId,
+        prompt: args.prompt,
+        model: args.model,
+        permissionMode: args.permissionMode,
+        busyAction: args.busyAction,
+        files: args.files,
+      }),
     onSuccess: (_data, args) => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.issue(projectId, args.issueId),
@@ -271,28 +271,12 @@ export function useFollowUpIssue(projectId: string) {
   })
 }
 
-const AUTO_TITLE_PROMPT =
-  '请总结一下当前会话以<bitk>简短信息</bitk>格式返回，不超过15个字'
-
 export function useAutoTitleIssue(projectId: string) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (issueId: string) =>
-      kanbanApi.followUpIssue(
-        projectId,
-        issueId,
-        AUTO_TITLE_PROMPT,
-        undefined,
-        undefined,
-        'queue',
-        undefined,
-        true,
-        '使用AI自动更新标题',
-      ),
-    onSuccess: (_data, issueId) => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.issue(projectId, issueId),
-      })
+      kanbanApi.autoTitleIssue(projectId, issueId),
+    onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.issues(projectId),
       })

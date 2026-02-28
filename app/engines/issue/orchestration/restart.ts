@@ -1,4 +1,5 @@
 import type { EngineContext } from '../context'
+import { cleanupStaleSessions } from '../../../db/helpers'
 import { logger } from '../../../logger'
 import { getIssueWithSession, updateIssueSession } from '../../engine-store'
 import { engineRegistry } from '../../executors'
@@ -70,7 +71,7 @@ export async function restartIssue(
             prompt: spawnOpts.prompt,
             sessionId: issue.sessionFields.externalSessionId,
             model: spawnOpts.model,
-            permissionMode: spawnOpts.permissionMode as any,
+            permissionMode: spawnOpts.permissionMode,
           },
           { vars: {}, workingDir, projectId: issue.projectId, issueId },
         )
@@ -97,6 +98,5 @@ export async function restartIssue(
 }
 
 export async function restartStaleSessions(): Promise<number> {
-  const { cleanupStaleSessions } = await import('../../../db/helpers')
   return cleanupStaleSessions()
 }

@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { serveStatic, websocket  } from 'hono/bun'
+import { serveStatic, websocket } from 'hono/bun'
 import app from './app'
 import { embeddedStatic } from './embedded-static'
 import { issueEngine } from './engines/issue'
@@ -11,6 +11,7 @@ import {
   stopPeriodicReconciliation,
 } from './engines/reconciler'
 import { startChangesSummaryWatcher } from './events/changes-summary'
+import { startUploadCleanup } from './jobs/upload-cleanup'
 import { logger } from './logger'
 import { staticAssets } from './static-assets'
 import { COMMIT, VERSION } from './version'
@@ -95,6 +96,9 @@ logger.info(
   'server_started',
 )
 
+// Start periodic upload cleanup (removes files older than 7 days)
+const stopUploadCleanup = startUploadCleanup()
+
 let isShuttingDown = false
 
 async function shutdown(signal: string) {
@@ -105,8 +109,9 @@ async function shutdown(signal: string) {
 
   logger.warn({ signal }, 'server_shutdown')
 
-  // Stop periodic reconciliation before cancelling processes
+  // Stop periodic jobs before cancelling processes
   stopPeriodicReconciliation()
+  stopUploadCleanup()
 
   // Cancel all active engine processes before shutting down
   await issueEngine.cancelAll()

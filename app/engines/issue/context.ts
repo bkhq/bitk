@@ -19,14 +19,17 @@ export interface EngineContext {
   readonly stateChangeCallbacks: Map<number, StateChangeCallback>
   readonly issueSettledCallbacks: Map<number, IssueSettledCallback>
   nextCallbackId: number
+  readonly lastErrors: Map<string, string>
   /** Injected function reference — breaks lifecycle → orchestration cycle. */
-  followUpIssue: (
-    issueId: string,
-    prompt: string,
-    model?: string,
-    permissionMode?: PermissionPolicy,
-    busyAction?: 'queue' | 'cancel',
-    displayPrompt?: string,
-    metadata?: Record<string, unknown>,
-  ) => Promise<{ executionId: string; messageId?: string | null }>
+  followUpIssue:
+    | ((
+        issueId: string,
+        prompt: string,
+        model?: string,
+        permissionMode?: PermissionPolicy,
+        busyAction?: 'queue' | 'cancel',
+        displayPrompt?: string,
+        metadata?: Record<string, unknown>,
+      ) => Promise<{ executionId: string; messageId?: string | null }>)
+    | null
 }

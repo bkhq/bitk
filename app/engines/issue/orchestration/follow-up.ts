@@ -7,6 +7,7 @@ import { spawnFollowUpProcess } from '../lifecycle/spawn'
 import { cancel } from '../process/cancel'
 import { withIssueLock } from '../process/lock'
 import { getActiveProcessForIssue } from '../process/state'
+import { dispatch } from '../state'
 import { sendInputToRunningProcess } from '../user-message'
 import { getPidFromManaged } from '../utils/pid'
 import { setIssueDevMode } from '../utils/visibility'
@@ -62,13 +63,16 @@ export async function followUpIssue(
       // If process is canceling/spawning or a turn is in progress, queue user input
       // and process it only after the current turn/process boundary is reached.
       if (active.state !== 'running' || active.turnInFlight) {
-        active.pendingInputs.push({
-          prompt,
-          model: effectiveModel,
-          permissionMode,
-          busyAction,
-          displayPrompt,
-          metadata,
+        dispatch(active, {
+          type: 'QUEUE_INPUT',
+          input: {
+            prompt,
+            model: effectiveModel,
+            permissionMode,
+            busyAction,
+            displayPrompt,
+            metadata,
+          },
         })
         logger.debug(
           {
@@ -84,7 +88,7 @@ export async function followUpIssue(
         )
 
         if (busyAction === 'cancel' && active.state === 'running' && !active.queueCancelRequested) {
-          active.queueCancelRequested = true
+          dispatch(active, { type: 'REQUEST_QUEUE_CANCEL' })
           logger.debug(
             {
               issueId,

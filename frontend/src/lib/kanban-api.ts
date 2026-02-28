@@ -122,40 +122,40 @@ export const kanbanApi = {
       data,
     ),
 
-  followUpIssue: (
-    projectId: string,
-    issueId: string,
-    prompt: string,
-    model?: string,
-    permissionMode?: PermissionMode,
-    busyAction?: BusyAction,
-    files?: File[],
-    meta?: boolean,
-    displayPrompt?: string,
-  ) => {
-    if (files && files.length > 0) {
+  followUpIssue: (opts: {
+    projectId: string
+    issueId: string
+    prompt: string
+    model?: string
+    permissionMode?: PermissionMode
+    busyAction?: BusyAction
+    files?: File[]
+    meta?: boolean
+    displayPrompt?: string
+  }) => {
+    if (opts.files && opts.files.length > 0) {
       const fd = new FormData()
-      fd.append('prompt', prompt)
-      if (model) fd.append('model', model)
-      if (permissionMode) fd.append('permissionMode', permissionMode)
-      if (busyAction) fd.append('busyAction', busyAction)
-      if (meta) fd.append('meta', 'true')
-      if (displayPrompt) fd.append('displayPrompt', displayPrompt)
-      for (const file of files) fd.append('files', file)
+      fd.append('prompt', opts.prompt)
+      if (opts.model) fd.append('model', opts.model)
+      if (opts.permissionMode) fd.append('permissionMode', opts.permissionMode)
+      if (opts.busyAction) fd.append('busyAction', opts.busyAction)
+      if (opts.meta) fd.append('meta', 'true')
+      if (opts.displayPrompt) fd.append('displayPrompt', opts.displayPrompt)
+      for (const file of opts.files) fd.append('files', file)
       return postFormData<ExecuteIssueResponse>(
-        `/api/projects/${projectId}/issues/${issueId}/follow-up`,
+        `/api/projects/${opts.projectId}/issues/${opts.issueId}/follow-up`,
         fd,
       )
     }
     return post<ExecuteIssueResponse>(
-      `/api/projects/${projectId}/issues/${issueId}/follow-up`,
+      `/api/projects/${opts.projectId}/issues/${opts.issueId}/follow-up`,
       {
-        prompt,
-        ...(model ? { model } : {}),
-        ...(permissionMode ? { permissionMode } : {}),
-        ...(busyAction ? { busyAction } : {}),
-        ...(meta ? { meta: true } : {}),
-        ...(displayPrompt ? { displayPrompt } : {}),
+        prompt: opts.prompt,
+        ...(opts.model ? { model: opts.model } : {}),
+        ...(opts.permissionMode ? { permissionMode: opts.permissionMode } : {}),
+        ...(opts.busyAction ? { busyAction: opts.busyAction } : {}),
+        ...(opts.meta ? { meta: true } : {}),
+        ...(opts.displayPrompt ? { displayPrompt: opts.displayPrompt } : {}),
       },
     )
   },
@@ -171,6 +171,15 @@ export const kanbanApi = {
       `/api/projects/${projectId}/issues/${issueId}/restart`,
       {},
     ),
+
+  autoTitleIssue: async (projectId: string, issueId: string) => {
+    const res = await fetch(
+      `/api/projects/${projectId}/issues/${issueId}/auto-title`,
+      { method: 'POST' },
+    )
+    if (!res.ok) throw new Error(`Auto-title failed: ${res.status}`)
+    return res.json()
+  },
 
   getIssueLogs: (projectId: string, issueId: string) =>
     get<IssueLogsResponse>(`/api/projects/${projectId}/issues/${issueId}/logs`),

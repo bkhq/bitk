@@ -5,6 +5,7 @@ import { getPendingMessages, markPendingMessagesDispatched } from '../../../db/p
 import { logger } from '../../../logger'
 import { autoMoveToReview, getIssueWithSession, updateIssueSession } from '../../engine-store'
 import { emitIssueSettled, emitStateChange } from '../events'
+import { dispatch } from '../state'
 import { sendInputToRunningProcess } from '../user-message'
 
 // ---------- Turn completion ----------
@@ -16,9 +17,7 @@ export function handleTurnCompleted(
 ): void {
   const managed = ctx.pm.get(executionId)?.meta
   if (!managed || managed.state !== 'running') return
-  managed.turnInFlight = false
-  managed.queueCancelRequested = false
-  managed.metaTurn = false
+  dispatch(managed, { type: 'TURN_COMPLETED' })
   logger.debug(
     { issueId, executionId, queued: managed.pendingInputs.length },
     'issue_turn_completed',
@@ -39,7 +38,6 @@ export function handleTurnCompleted(
   // getActiveProcessForIssue() can find it, preventing duplicate process spawns.
   // The turnSettled flag tells monitorCompletion() to just clean up on exit.
   const finalStatus = managed.logicalFailure ? 'failed' : 'completed'
-  managed.turnSettled = true
   emitStateChange(ctx, issueId, executionId, finalStatus as ProcessStatus)
 
   void (async () => {
@@ -63,7 +61,7 @@ export function handleTurnCompleted(
         const pendingIds = pendingRows.map((r) => r.id)
         try {
           const issue = await getIssueWithSession(issueId)
-          await ctx.followUpIssue(issueId, prompt, issue?.model ?? undefined)
+          await ctx.followUpIssue?.(issueId, prompt, issue?.model ?? undefined)
           await markPendingMessagesDispatched(pendingIds)
           return
         } catch (flushErr) {

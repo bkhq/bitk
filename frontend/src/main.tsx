@@ -84,17 +84,46 @@ if (!rootElement.innerHTML) {
               }
             >
               <Routes>
-                <Route path="/" element={<HomePage />} />
-                <Route path="/projects/:projectId" element={<KanbanPage />} />
+                <Route
+                  path="/"
+                  element={
+                    <ErrorBoundary>
+                      <HomePage />
+                    </ErrorBoundary>
+                  }
+                />
+                <Route
+                  path="/projects/:projectId"
+                  element={
+                    <ErrorBoundary>
+                      <KanbanPage />
+                    </ErrorBoundary>
+                  }
+                />
                 <Route
                   path="/projects/:projectId/issues"
-                  element={<IssueDetailPage />}
+                  element={
+                    <ErrorBoundary>
+                      <IssueDetailPage />
+                    </ErrorBoundary>
+                  }
                 />
                 <Route
                   path="/projects/:projectId/issues/:issueId"
-                  element={<IssueDetailPage />}
+                  element={
+                    <ErrorBoundary>
+                      <IssueDetailPage />
+                    </ErrorBoundary>
+                  }
                 />
-                <Route path="/terminal" element={<TerminalPage />} />
+                <Route
+                  path="/terminal"
+                  element={
+                    <ErrorBoundary>
+                      <TerminalPage />
+                    </ErrorBoundary>
+                  }
+                />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Suspense>

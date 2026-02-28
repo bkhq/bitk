@@ -8,10 +8,15 @@ import { isVisibleForMode, setIssueDevMode } from './utils/visibility'
 
 // ---------- Public read-only queries ----------
 
-export function getLogs(ctx: EngineContext, issueId: string, devMode = false): NormalizedLogEntry[] {
+export function getLogs(
+  ctx: EngineContext,
+  issueId: string,
+  devMode = false,
+  opts?: { cursor?: { turnIndex: number; entryIndex: number }; limit?: number },
+): NormalizedLogEntry[] {
   setIssueDevMode(issueId, devMode)
   // DB pre-filters by visible + entryType; isVisibleForMode() handles subtype rules.
-  const persisted = getLogsFromDb(issueId, devMode)
+  const persisted = getLogsFromDb(issueId, devMode, opts)
 
   // While a process is active, merge any in-memory tail not yet persisted.
   const active = getActiveProcessForIssue(ctx, issueId)
@@ -28,7 +33,7 @@ export function getLogs(ctx: EngineContext, issueId: string, devMode = false): N
   )
 
   const merged = [...persisted]
-  for (const entry of active.logs) {
+  for (const entry of active.logs.toArray()) {
     if (!isVisibleForMode(entry, devMode)) continue
     const key = entry.messageId
       ? `id:${entry.messageId}`

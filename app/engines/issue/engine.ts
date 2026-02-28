@@ -53,8 +53,9 @@ export class IssueEngine {
       stateChangeCallbacks: new Map(),
       issueSettledCallbacks: new Map(),
       nextCallbackId: 0,
+      lastErrors: new Map(),
       // Placeholder — injected below after ctx is created
-      followUpIssue: null as any,
+      followUpIssue: null,
     }
 
     // Inject followUpIssue to break lifecycle → orchestration cycle
@@ -143,8 +144,12 @@ export class IssueEngine {
 
   // ---- Process queries ----
 
-  getLogs(issueId: string, devMode = false): NormalizedLogEntry[] {
-    return getLogs(this.ctx, issueId, devMode)
+  getLogs(
+    issueId: string,
+    devMode = false,
+    opts?: { cursor?: { turnIndex: number; entryIndex: number }; limit?: number },
+  ): NormalizedLogEntry[] {
+    return getLogs(this.ctx, issueId, devMode, opts)
   }
 
   getProcess(executionId: string): ManagedProcess | undefined {
@@ -165,6 +170,16 @@ export class IssueEngine {
 
   async cancelAll(): Promise<void> {
     return cancelAll(this.ctx)
+  }
+
+  // ---- Error tracking ----
+
+  getLastError(issueId: string): string | undefined {
+    return this.ctx.lastErrors.get(issueId)
+  }
+
+  setLastError(issueId: string, message: string): void {
+    this.ctx.lastErrors.set(issueId, message)
   }
 
   // ---- Event subscriptions ----

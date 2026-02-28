@@ -4,6 +4,7 @@ import { updateIssueSession } from '../../engine-store'
 import { cancel } from '../process/cancel'
 import { withIssueLock } from '../process/lock'
 import { getActiveProcesses } from '../process/state'
+import { dispatch } from '../state'
 import { getPidFromManaged } from '../utils/pid'
 
 export async function cancelIssue(
@@ -18,7 +19,7 @@ export async function cancelIssue(
         { issueId, executionId: p.executionId, pid: getPidFromManaged(p) },
         'issue_cancel_active_process',
       )
-      p.pendingInputs = []
+      dispatch(p, { type: 'CLEAR_PENDING_INPUTS' })
       p.queueCancelRequested = false
       await cancel(ctx, p.executionId, { emitCancelledState: false, hard: false })
     }

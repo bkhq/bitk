@@ -1,5 +1,5 @@
 import type { NormalizedLogEntry } from '../../types'
-import { and, asc, eq, inArray, max } from 'drizzle-orm'
+import { and, asc, eq, gt, inArray, max, or } from 'drizzle-orm'
 import { db } from '../../../db'
 import { issueLogs as logsTable, issuesLogsToolsCall as toolsTable } from '../../../db/schema'
 import { MAX_LOG_ENTRIES } from '../constants'
@@ -7,7 +7,11 @@ import { isVisibleForMode } from '../utils/visibility'
 import { rawToToolAction } from './tool-detail'
 
 /** Fetch logs from DB with tool detail join. */
-export function getLogsFromDb(issueId: string, devMode = false): NormalizedLogEntry[] {
+export function getLogsFromDb(
+  issueId: string,
+  devMode = false,
+  opts?: { cursor?: { turnIndex: number; entryIndex: number }; limit?: number },
+): NormalizedLogEntry[] {
   // visible=1 filter preserves pending-message dedup (dispatched entries set visible=0).
   // Non-devMode also pre-filters by entryType for performance (avoids loading tool-use rows).
   const conditions = [eq(logsTable.issueId, issueId), eq(logsTable.visible, 1)]
@@ -16,12 +20,25 @@ export function getLogsFromDb(issueId: string, devMode = false): NormalizedLogEn
       inArray(logsTable.entryType, ['user-message', 'assistant-message', 'system-message']),
     )
   }
+  if (opts?.cursor) {
+    // Cursor-based pagination: fetch rows strictly after (turnIndex, entryIndex)
+    conditions.push(
+      or(
+        gt(logsTable.turnIndex, opts.cursor.turnIndex),
+        and(
+          eq(logsTable.turnIndex, opts.cursor.turnIndex),
+          gt(logsTable.entryIndex, opts.cursor.entryIndex),
+        ),
+      )!,
+    )
+  }
+  const effectiveLimit = opts?.limit ?? MAX_LOG_ENTRIES
   const rows = db
     .select()
     .from(logsTable)
     .where(and(...conditions))
     .orderBy(asc(logsTable.turnIndex), asc(logsTable.entryIndex))
-    .limit(MAX_LOG_ENTRIES)
+    .limit(effectiveLimit)
     .all()
 
   // Batch-fetch tool details for this issue (bounded by log count)
@@ -33,8 +50,10 @@ export function getLogsFromDb(issueId: string, devMode = false): NormalizedLogEn
     .all()
   const toolByLogId = new Map(toolRows.map((r) => [r.logId, r]))
 
+  const includeCursorMeta = !!opts
   return rows
     .map((row) => {
+      const parsedMeta = row.metadata ? JSON.parse(row.metadata) : undefined
       const base: NormalizedLogEntry = {
         messageId: row.id,
         replyToMessageId: row.replyToMessageId ?? undefined,
@@ -42,7 +61,9 @@ export function getLogsFromDb(issueId: string, devMode = false): NormalizedLogEn
         content: row.content.trim(),
         turnIndex: row.turnIndex,
         timestamp: row.timestamp ?? undefined,
-        metadata: row.metadata ? JSON.parse(row.metadata) : undefined,
+        metadata: includeCursorMeta
+          ? { ...parsedMeta, _cursorEntryIndex: row.entryIndex }
+          : parsedMeta,
       }
 
       // Attach tool detail and reconstruct toolAction + content/metadata from tools table

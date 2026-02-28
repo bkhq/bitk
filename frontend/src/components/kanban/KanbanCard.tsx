@@ -1,9 +1,10 @@
+import { memo } from 'react'
 import { useSortable } from '@dnd-kit/react/sortable'
 import { GitBranchPlus } from 'lucide-react'
 import type { Issue } from '@/types/kanban'
 import { PriorityIcon } from './PriorityIcon'
 
-export function KanbanCard({
+export const KanbanCard = memo(function KanbanCard({
   issue,
   index,
   columnStatusId,
@@ -61,4 +62,4 @@ export function KanbanCard({
       ) : null}
     </div>
   )
-}
+})

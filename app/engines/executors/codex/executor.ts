@@ -15,7 +15,7 @@ import { classifyCommand } from '../../logs'
 import { safeEnv } from '../../safe-env'
 import { CodexProtocolHandler } from './protocol'
 
-const CODEX_CMD = ['npx', '-y', '@openai/codex@latest']
+const CODEX_CMD = ['npx', '-y', '@openai/codex']
 const JSONRPC_TIMEOUT = 15000
 
 /**

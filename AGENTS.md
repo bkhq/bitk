@@ -45,16 +45,14 @@ bun run db:reset             # deletes SQLite DB files (data/bitk.db)
   - All tables share `commonFields` (ULID `id`, `createdAt`, `updatedAt`, `isDeleted`)
   - Migrations live in `drizzle/` and run automatically on startup
   - Config: `drizzle.config.ts`
-- **Logging**: winston (`app/logger.ts`)
+- **Logging**: pino (`app/logger.ts`)
 - **Static serving**: In production, `app/index.ts` serves `frontend/dist/` with SPA fallback
 
 #### Security & Middleware (`app/app.ts`)
 
-- **Auth**: `Authorization: Bearer <token>` middleware gated by `API_SECRET` env var. If unset (dev mode), all requests pass. Health endpoint exempt.
+- **Auth**: Handled by external reverse proxy (no built-in auth middleware)
 - **Security headers**: `hono/secure-headers` (X-Frame-Options, X-Content-Type-Options, etc.)
-- **CORS**: `hono/cors` with `ALLOWED_ORIGIN` env var (defaults to `*`)
-- **Rate limiting**: In-memory limiter on session execute endpoint (10 req/min per IP)
-- **Global error handler**: `app.onError()` returns `{success: false, error}` envelope; logs via winston
+- **Global error handler**: `app.onError()` returns `{success: false, error}` envelope; logs via pino
 - **Input validation**: All POST/PATCH routes use `@hono/zod-validator` with Zod schemas for runtime type checking
 
 #### Data Layer

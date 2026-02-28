@@ -2,6 +2,7 @@ import { useEffect, useRef, useCallback } from 'react'
 import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
 import { WebLinksAddon } from '@xterm/addon-web-links'
+import { useTerminalSessionStore } from '@/stores/terminal-session-store'
 import '@xterm/xterm/css/xterm.css'
 
 // --- Binary protocol helpers ---
@@ -46,23 +47,17 @@ function wsUrl(sessionId: string): string {
   return `${proto}//${host}/api/terminal/ws/${sessionId}`
 }
 
-// --- Singleton state (persists across drawer open/close) ---
+// --- Store-backed singleton helpers ---
 
-let globalTerminal: Terminal | null = null
-let globalFitAddon: FitAddon | null = null
-let globalSessionId: string | null = null
-let globalWs: WebSocket | null = null
-let globalReconnectTimer: ReturnType<typeof setTimeout> | null = null
-let globalConnecting: Promise<void> | null = null
-let globalInitialized = false
-let globalDisposed = false
+const store = useTerminalSessionStore
 
 function getOrCreateTerminal(): { terminal: Terminal; fitAddon: FitAddon } {
-  if (globalTerminal && globalFitAddon) {
-    return { terminal: globalTerminal, fitAddon: globalFitAddon }
+  const state = store.getState()
+  if (state.terminal && state.fitAddon) {
+    return { terminal: state.terminal, fitAddon: state.fitAddon }
   }
 
-  globalDisposed = false
+  store.getState().set({ disposed: false })
 
   const fitAddon = new FitAddon()
   const terminal = new Terminal({
@@ -81,8 +76,7 @@ function getOrCreateTerminal(): { terminal: Terminal; fitAddon: FitAddon } {
   terminal.loadAddon(fitAddon)
   terminal.loadAddon(new WebLinksAddon())
 
-  globalTerminal = terminal
-  globalFitAddon = fitAddon
+  store.getState().set({ terminal, fitAddon })
 
   return { terminal, fitAddon }
 }
@@ -92,18 +86,19 @@ function connectWs(
   terminal: Terminal,
   fitAddon: FitAddon,
 ): void {
-  if (globalDisposed) return
+  const state = store.getState()
+  if (state.disposed) return
   if (
-    globalWs &&
-    (globalWs.readyState === WebSocket.OPEN ||
-      globalWs.readyState === WebSocket.CONNECTING)
+    state.ws &&
+    (state.ws.readyState === WebSocket.OPEN ||
+      state.ws.readyState === WebSocket.CONNECTING)
   ) {
     return
   }
 
   const ws = new WebSocket(wsUrl(sessionId))
   ws.binaryType = 'arraybuffer'
-  globalWs = ws
+  store.getState().set({ ws })
 
   ws.addEventListener('open', () => {
     fitAddon.fit()
@@ -118,29 +113,33 @@ function connectWs(
   })
 
   ws.addEventListener('close', (evt) => {
-    globalWs = null
+    store.getState().set({ ws: null })
 
     // PTY exited — session is gone, start fresh on reconnect
     if (evt.reason === 'PTY exited') {
-      globalSessionId = null
-      if (!globalDisposed) {
+      store.getState().set({ sessionId: null })
+      if (!store.getState().disposed) {
         terminal.writeln('\r\n\x1b[90m[session ended, reconnecting...]\x1b[0m')
-        globalReconnectTimer = setTimeout(() => {
-          globalReconnectTimer = null
+        const timer = setTimeout(() => {
+          store.getState().set({ reconnectTimer: null })
           void initConnection(terminal, fitAddon)
         }, 1500)
+        store.getState().set({ reconnectTimer: timer })
       }
       return
     }
 
     // WS disconnected but session may still be alive — reconnect to same session
-    if (!globalDisposed && globalSessionId) {
-      globalReconnectTimer = setTimeout(() => {
-        globalReconnectTimer = null
-        if (globalSessionId) {
-          connectWs(globalSessionId, terminal, fitAddon)
+    const currentState = store.getState()
+    if (!currentState.disposed && currentState.sessionId) {
+      const timer = setTimeout(() => {
+        store.getState().set({ reconnectTimer: null })
+        const s = store.getState()
+        if (s.sessionId) {
+          connectWs(s.sessionId, terminal, fitAddon)
         }
       }, 2000)
+      store.getState().set({ reconnectTimer: timer })
     }
   })
 
@@ -153,43 +152,47 @@ async function initConnection(
   terminal: Terminal,
   fitAddon: FitAddon,
 ): Promise<void> {
-  if (globalDisposed) return
+  const state = store.getState()
+  if (state.disposed) return
 
   // Already have a live session + WS — skip
   if (
-    globalSessionId &&
-    globalWs &&
-    (globalWs.readyState === WebSocket.OPEN ||
-      globalWs.readyState === WebSocket.CONNECTING)
+    state.sessionId &&
+    state.ws &&
+    (state.ws.readyState === WebSocket.OPEN ||
+      state.ws.readyState === WebSocket.CONNECTING)
   ) {
     return
   }
 
   // Deduplicate concurrent calls — wait for in-flight connection
-  if (globalConnecting) {
-    await globalConnecting
+  if (state.connecting) {
+    await state.connecting
     return
   }
 
-  globalConnecting = (async () => {
+  const connectingPromise = (async () => {
     try {
       // Create session via REST (works through Vite proxy)
       const sessionId = await createSession()
-      globalSessionId = sessionId
+      store.getState().set({ sessionId })
 
       // Connect WS for bidirectional I/O
       connectWs(sessionId, terminal, fitAddon)
     } catch {
-      globalReconnectTimer = setTimeout(() => {
-        globalReconnectTimer = null
+      const timer = setTimeout(() => {
+        store.getState().set({ reconnectTimer: null })
         void initConnection(terminal, fitAddon)
       }, 2000)
+      store.getState().set({ reconnectTimer: timer })
     } finally {
-      globalConnecting = null
+      store.getState().set({ connecting: null })
     }
   })()
 
-  await globalConnecting
+  store.getState().set({ connecting: connectingPromise })
+
+  await connectingPromise
 }
 
 export function TerminalView({ className }: { className?: string }) {
@@ -197,12 +200,13 @@ export function TerminalView({ className }: { className?: string }) {
   const mountedRef = useRef(false)
 
   const handleResize = useCallback(() => {
-    if (!globalFitAddon || !globalTerminal) return
+    const state = store.getState()
+    if (!state.fitAddon || !state.terminal) return
     try {
-      globalFitAddon.fit()
-      if (globalWs?.readyState === WebSocket.OPEN) {
-        const { cols, rows } = globalTerminal
-        globalWs.send(encodeResize(cols, rows))
+      state.fitAddon.fit()
+      if (state.ws?.readyState === WebSocket.OPEN) {
+        const { cols, rows } = state.terminal
+        state.ws.send(encodeResize(cols, rows))
       }
     } catch {
       // fit() can throw if not visible
@@ -219,13 +223,14 @@ export function TerminalView({ className }: { className?: string }) {
     mountedRef.current = true
 
     // Re-mount: reattach existing DOM element instead of calling open() again
-    if (globalInitialized && terminal.element) {
+    const state = store.getState()
+    if (state.initialized && terminal.element) {
       if (terminal.element.parentElement !== container) {
         container.appendChild(terminal.element)
       }
     } else {
       terminal.open(container)
-      globalInitialized = true
+      store.getState().set({ initialized: true })
     }
 
     // Delay fit to ensure container is laid out
@@ -234,10 +239,11 @@ export function TerminalView({ className }: { className?: string }) {
       void initConnection(terminal, fitAddon)
     })
 
-    // Terminal input → WS binary
+    // Terminal input -> WS binary
     const inputDisposable = terminal.onData((data) => {
-      if (globalWs?.readyState === WebSocket.OPEN) {
-        globalWs.send(encodeInput(data))
+      const s = store.getState()
+      if (s.ws?.readyState === WebSocket.OPEN) {
+        s.ws.send(encodeInput(data))
       }
     })
 
@@ -264,24 +270,19 @@ export function TerminalView({ className }: { className?: string }) {
 
 /** Explicitly kill the terminal session and clean up all resources */
 export function disposeTerminal(): void {
-  globalDisposed = true
-  globalConnecting = null
-  if (globalReconnectTimer) {
-    clearTimeout(globalReconnectTimer)
-    globalReconnectTimer = null
+  const state = store.getState()
+  store.getState().set({ disposed: true, connecting: null })
+  if (state.reconnectTimer) {
+    clearTimeout(state.reconnectTimer)
   }
-  if (globalWs) {
-    globalWs.close()
-    globalWs = null
+  if (state.ws) {
+    state.ws.close()
   }
-  if (globalSessionId) {
-    deleteSession(globalSessionId)
-    globalSessionId = null
+  if (state.sessionId) {
+    deleteSession(state.sessionId)
   }
-  if (globalTerminal) {
-    globalTerminal.dispose()
-    globalTerminal = null
-    globalFitAddon = null
+  if (state.terminal) {
+    state.terminal.dispose()
   }
-  globalInitialized = false
+  store.getState().reset()
 }

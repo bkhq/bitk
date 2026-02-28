@@ -121,6 +121,23 @@ apiRoutes.get('/health', async (c) => {
   })
 })
 
+apiRoutes.get('/status', async (c) => {
+  const dbHealth = await checkDbHealth()
+  const memUsage = process.memoryUsage()
+  return c.json({
+    success: true,
+    data: {
+      uptime: process.uptime(),
+      memory: {
+        rss: memUsage.rss,
+        heapUsed: memUsage.heapUsed,
+        heapTotal: memUsage.heapTotal,
+      },
+      db: dbHealth,
+    },
+  })
+})
+
 // SEC-017: Gate /api/runtime behind explicit opt-in env var
 apiRoutes.get('/runtime', (c) => {
   if (process.env.ENABLE_RUNTIME_ENDPOINT !== 'true') {

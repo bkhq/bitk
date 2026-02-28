@@ -1,5 +1,6 @@
 import type { EngineType, PermissionPolicy } from '../../types'
 import type { EngineContext } from '../context'
+import { getEngineDefaultModel } from '../../../db/helpers'
 import { logger } from '../../../logger'
 import { getIssueWithSession, updateIssueSession } from '../../engine-store'
 import { engineRegistry } from '../../executors'
@@ -47,7 +48,6 @@ export async function executeIssue(
 
     let model = opts.model
     if (!model) {
-      const { getEngineDefaultModel } = await import('../../../db/helpers')
       const defaultModel = await getEngineDefaultModel(opts.engineType)
       if (defaultModel) model = defaultModel
     }
@@ -84,7 +84,7 @@ export async function executeIssue(
         workingDir,
         prompt: opts.prompt,
         model,
-        permissionMode: permOptions.permissionMode as any,
+        permissionMode: permOptions.permissionMode,
         externalSessionId,
       },
       {

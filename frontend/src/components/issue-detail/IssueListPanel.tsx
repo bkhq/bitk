@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { memo, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ChevronDown, ChevronRight, Search, Settings, Plus } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -269,7 +269,7 @@ function StatusGroup({
   )
 }
 
-function IssueRow({
+const IssueRow = memo(function IssueRow({
   issue,
   isActive,
   hasChildren,
@@ -333,4 +333,4 @@ function IssueRow({
       </span>
     </div>
   )
-}
+})

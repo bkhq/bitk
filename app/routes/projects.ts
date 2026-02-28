@@ -8,6 +8,8 @@ import { db } from '../db'
 import { findProject, invalidateProjectCache } from '../db/helpers'
 import { projects as projectsTable } from '../db/schema'
 
+import { toISO } from '../utils/date'
+
 const aliasId = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 8)
 
 const aliasRegex = /^[a-z0-9]+$/
@@ -29,11 +31,6 @@ const updateProjectSchema = z.object({
 })
 
 type ProjectRow = typeof projectsTable.$inferSelect
-
-function toISO(v: Date | number | string): string {
-  if (v instanceof Date) return v.toISOString()
-  return new Date(typeof v === 'string' ? v : v * 1000).toISOString()
-}
 
 function serializeProject(row: ProjectRow) {
   return {

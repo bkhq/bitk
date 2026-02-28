@@ -74,10 +74,7 @@ export const followUpSchema = z.object({
 
 export type IssueRow = typeof issuesTable.$inferSelect
 
-export function toISO(v: Date | number | string): string {
-  if (v instanceof Date) return v.toISOString()
-  return new Date(typeof v === 'string' ? v : v * 1000).toISOString()
-}
+export { getPendingMessages, markPendingMessagesDispatched } from '../../db/pending-messages'
 
 export function serializeIssue(row: IssueRow, childCount?: number) {
   return {
@@ -118,7 +115,7 @@ export async function getProjectOwnedIssue(projectId: string, issueId: string) {
   return issue ?? null
 }
 
-export { getPendingMessages, markPendingMessagesDispatched } from '../../db/pending-messages'
+export { toISO } from '../../utils/date'
 
 /**
  * Fire-and-forget: flush pending queued messages as a follow-up to an
@@ -260,6 +257,7 @@ export function triggerIssueExecution(
       logger.debug({ issueId, pendingCount: pending.length }, 'auto_execute_started')
     } catch (err) {
       logger.error({ issueId, err }, 'auto_execute_failed')
+      issueEngine.setLastError(issueId, err instanceof Error ? err.message : 'auto_execute_failed')
       try {
         await db
           .update(issuesTable)

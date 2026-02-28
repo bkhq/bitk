@@ -127,7 +127,7 @@ create.post(
         )
       }
 
-      return c.json({ success: true, data: serializeIssue(newIssue!) }, 201)
+      return c.json({ success: true, data: serializeIssue(newIssue!) }, shouldExecute ? 202 : 201)
     } catch (error) {
       return c.json(
         {
