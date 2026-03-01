@@ -295,6 +295,25 @@
   }
 }
 
+/* ─── Shiki line numbers (CSS counter, no data-line needed) ─── */
+.shiki-line-numbers code {
+  counter-reset: line;
+}
+
+.shiki-line-numbers .line::before {
+  counter-increment: line;
+  content: counter(line);
+  display: inline-block;
+  width: 2rem;
+  margin-right: 0.75rem;
+  text-align: right;
+  color: var(--muted-foreground);
+  opacity: 0.35;
+  font-size: inherit;
+  line-height: inherit;
+  user-select: none;
+}
+
 /* ─── Shiki dual-theme (light/dark via CSS vars) ─── */
 .shiki,
 .shiki span {
