@@ -1,4 +1,3 @@
-import { useQueryClient } from '@tanstack/react-query'
 import {
   Check,
   Copy,
@@ -13,7 +12,7 @@ import {
 } from 'lucide-react'
 import { useCallback, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { queryKeys, useProject, useProjectFiles } from '@/hooks/use-kanban'
+import { useProject, useProjectFiles } from '@/hooks/use-kanban'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { kanbanApi } from '@/lib/kanban-api'
 import {
@@ -42,19 +41,15 @@ export function FileBrowserDrawer() {
     toggleHideIgnored,
   } = useFileBrowserStore()
   const isMobile = useIsMobile()
-  const queryClient = useQueryClient()
   const dragRef = useRef<{ startX: number; startWidth: number } | null>(null)
 
   const [copied, setCopied] = useState(false)
 
   const handleToggleIgnored = useCallback(() => {
     toggleHideIgnored()
-    if (projectId) {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.projectFiles(projectId, currentPath),
-      })
-    }
-  }, [toggleHideIgnored, projectId, currentPath, queryClient])
+    // No invalidateQueries needed — hideIgnored is part of the query key,
+    // so the key change on re-render triggers a fresh fetch automatically.
+  }, [toggleHideIgnored])
 
   const handleCopyPath = useCallback(() => {
     navigator.clipboard.writeText(currentPath === '.' ? '/' : currentPath)

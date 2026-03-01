@@ -1,4 +1,3 @@
-import { useQueryClient } from '@tanstack/react-query'
 import { Check, Copy, Download, Eye, EyeOff, FolderOpen } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -7,7 +6,7 @@ import { FileBreadcrumb } from '@/components/files/FileBreadcrumb'
 import { FileList } from '@/components/files/FileList'
 import { FileViewer } from '@/components/files/FileViewer'
 import { AppSidebar } from '@/components/kanban/AppSidebar'
-import { queryKeys, useProject, useProjectFiles } from '@/hooks/use-kanban'
+import { useProject, useProjectFiles } from '@/hooks/use-kanban'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { kanbanApi } from '@/lib/kanban-api'
 import { useFileBrowserStore } from '@/stores/file-browser-store'
@@ -21,7 +20,6 @@ export default function FileBrowserPage() {
   }>()
   const { data: project, isLoading, isError } = useProject(projectId)
   const isMobile = useIsMobile()
-  const queryClient = useQueryClient()
   const { hideIgnored, toggleHideIgnored } = useFileBrowserStore()
 
   const currentPath = splatPath || '.'
@@ -30,10 +28,9 @@ export default function FileBrowserPage() {
 
   const handleToggleIgnored = useCallback(() => {
     toggleHideIgnored()
-    queryClient.invalidateQueries({
-      queryKey: queryKeys.projectFiles(projectId, currentPath),
-    })
-  }, [toggleHideIgnored, projectId, currentPath, queryClient])
+    // No invalidateQueries needed — hideIgnored is part of the query key,
+    // so the key change on re-render triggers a fresh fetch automatically.
+  }, [toggleHideIgnored])
 
   const handleCopyPath = useCallback(() => {
     navigator.clipboard.writeText(currentPath === '.' ? '/' : currentPath)

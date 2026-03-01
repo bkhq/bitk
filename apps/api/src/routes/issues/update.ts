@@ -80,51 +80,54 @@ update.patch(
         const changes: Record<string, unknown> = {}
         if (u.statusId !== undefined) {
           changes.statusId = u.statusId
-          changes.statusUpdatedAt = new Date()
         }
         if (u.sortOrder !== undefined) changes.sortOrder = u.sortOrder
         if (u.priority !== undefined) changes.priority = u.priority
 
         if (Object.keys(changes).length === 0) continue
 
-        // Check if this is a transition to working that should trigger execution
-        if (u.statusId === 'working') {
-          const [existing] = await tx
+        // Fetch existing issue once when statusId changes to check transitions
+        let existing: typeof issuesTable.$inferSelect | undefined
+        if (u.statusId !== undefined) {
+          const [row] = await tx
             .select()
             .from(issuesTable)
             .where(eq(issuesTable.id, u.id))
-          if (existing && existing.statusId !== 'working') {
-            if (
-              !existing.sessionStatus ||
-              existing.sessionStatus === 'pending'
-            ) {
-              changes.sessionStatus = 'pending'
-              toExecute.push({
-                id: u.id,
-                engineType: existing.engineType,
-                prompt: existing.prompt,
-                model: existing.model,
-              })
-            } else if (
-              ['completed', 'failed', 'cancelled'].includes(
-                existing.sessionStatus,
-              )
-            ) {
-              // Session already finished — flush pending messages as follow-up
-              toFlush.push({ id: u.id, model: existing.model })
-            }
+          existing = row
+
+          // Only update statusUpdatedAt on actual status change
+          if (existing && existing.statusId !== u.statusId) {
+            changes.statusUpdatedAt = new Date()
+          }
+        }
+
+        // Check if this is a transition to working that should trigger execution
+        if (
+          u.statusId === 'working' &&
+          existing &&
+          existing.statusId !== 'working'
+        ) {
+          if (!existing.sessionStatus || existing.sessionStatus === 'pending') {
+            changes.sessionStatus = 'pending'
+            toExecute.push({
+              id: u.id,
+              engineType: existing.engineType,
+              prompt: existing.prompt,
+              model: existing.model,
+            })
+          } else if (
+            ['completed', 'failed', 'cancelled'].includes(
+              existing.sessionStatus,
+            )
+          ) {
+            // Session already finished — flush pending messages as follow-up
+            toFlush.push({ id: u.id, model: existing.model })
           }
         }
 
         // Check if transitioning to done → cancel active processes
-        if (u.statusId === 'done') {
-          const [existing] = await tx
-            .select()
-            .from(issuesTable)
-            .where(eq(issuesTable.id, u.id))
-          if (existing && existing.statusId !== 'done') {
-            toCancel.push(u.id)
-          }
+        if (u.statusId === 'done' && existing && existing.statusId !== 'done') {
+          toCancel.push(u.id)
         }
 
         const [row] = await tx
@@ -208,7 +211,10 @@ update.patch(
     if (body.priority !== undefined) updates.priority = body.priority
     if (body.statusId !== undefined) {
       updates.statusId = body.statusId
-      updates.statusUpdatedAt = new Date()
+      // Only update statusUpdatedAt on actual status change
+      if (body.statusId !== existing.statusId) {
+        updates.statusUpdatedAt = new Date()
+      }
     }
     if (body.sortOrder !== undefined) updates.sortOrder = body.sortOrder
     if (body.devMode !== undefined) {
