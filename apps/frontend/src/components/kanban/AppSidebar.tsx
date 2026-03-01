@@ -20,6 +20,7 @@ import { useClickOutside } from '@/hooks/use-click-outside'
 import { useEventConnection } from '@/hooks/use-event-connection'
 import { useProjects } from '@/hooks/use-kanban'
 import { getProjectInitials } from '@/lib/format'
+import { useFileBrowserStore } from '@/stores/file-browser-store'
 import { useTerminalStore } from '@/stores/terminal-store'
 import { useViewModeStore } from '@/stores/view-mode-store'
 import type { Project } from '@/types/kanban'
@@ -91,6 +92,9 @@ export function AppSidebar({ activeProjectId }: { activeProjectId: string }) {
   const connected = useEventConnection()
   const toggleTerminal = useTerminalStore((s) => s.toggle)
   const isTerminalMinimized = useTerminalStore((s) => s.isMinimized)
+  const toggleFileBrowser = useFileBrowserStore((s) => s.toggle)
+  const isFileBrowserMinimized = useFileBrowserStore((s) => s.isMinimized)
+  const isFileBrowserOpen = useFileBrowserStore((s) => s.isOpen)
 
   const handleProjectCreated = useCallback(
     (project: Project) => {
@@ -174,6 +178,19 @@ export function AppSidebar({ activeProjectId }: { activeProjectId: string }) {
             <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-primary" />
           )}
         </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => toggleFileBrowser(activeProjectId)}
+          className={`relative h-9 w-9 ${isFileBrowserOpen ? 'text-primary' : 'text-muted-foreground'}`}
+          aria-label={t('viewMode.files')}
+          title={t('viewMode.files')}
+        >
+          <FolderOpen className="h-4 w-4" />
+          {isFileBrowserMinimized && (
+            <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-primary" />
+          )}
+        </Button>
         <ViewModeToggle activeProjectId={activeProjectId} />
         <Button
           variant="ghost"
@@ -199,16 +216,14 @@ function ViewModeToggle({ activeProjectId }: { activeProjectId: string }) {
   const ref = useRef<HTMLDivElement>(null)
   useClickOutside(ref, open, () => setOpen(false))
 
-  const Icon =
-    mode === 'files' ? FolderOpen : mode === 'list' ? List : LayoutGrid
+  const Icon = mode === 'list' ? List : LayoutGrid
 
-  const switchMode = (newMode: 'kanban' | 'list' | 'files') => {
+  const switchMode = (newMode: 'kanban' | 'list') => {
     setMode(newMode)
     setOpen(false)
     const paths = {
       kanban: `/projects/${activeProjectId}`,
       list: `/projects/${activeProjectId}/issues`,
-      files: `/projects/${activeProjectId}/files`,
     }
     void navigate(paths[newMode])
   }
@@ -220,13 +235,7 @@ function ViewModeToggle({ activeProjectId }: { activeProjectId: string }) {
         size="icon"
         className="h-9 w-9 text-muted-foreground"
         aria-label={t('viewMode.switchView')}
-        title={
-          mode === 'kanban'
-            ? t('viewMode.kanban')
-            : mode === 'files'
-              ? t('viewMode.files')
-              : t('viewMode.list')
-        }
+        title={mode === 'kanban' ? t('viewMode.kanban') : t('viewMode.list')}
         onClick={() => setOpen((v) => !v)}
       >
         <Icon className="h-4 w-4" />
@@ -252,16 +261,6 @@ function ViewModeToggle({ activeProjectId }: { activeProjectId: string }) {
           >
             <List className="h-3.5 w-3.5" />
             {t('viewMode.list')}
-          </button>
-          <button
-            type="button"
-            onClick={() => switchMode('files')}
-            className={`flex w-full items-center gap-2 px-3 py-1.5 text-sm transition-colors hover:bg-accent ${
-              mode === 'files' ? 'bg-accent/50 font-medium' : ''
-            }`}
-          >
-            <FolderOpen className="h-3.5 w-3.5" />
-            {t('viewMode.files')}
           </button>
         </div>
       ) : null}

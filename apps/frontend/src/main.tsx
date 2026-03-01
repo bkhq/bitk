@@ -6,6 +6,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { Toaster } from './components/ui/sonner'
 import { eventBus } from './lib/event-bus'
+import { useFileBrowserStore } from './stores/file-browser-store'
 import { useTerminalStore } from './stores/terminal-store'
 import './i18n'
 import './index.css'
@@ -47,11 +48,15 @@ eventBus.onIssueUpdated(() => {
 const HomePage = lazy(() => import('./pages/HomePage'))
 const KanbanPage = lazy(() => import('./pages/KanbanPage'))
 const IssueDetailPage = lazy(() => import('./pages/IssueDetailPage'))
-const FileBrowserPage = lazy(() => import('./pages/FileBrowserPage'))
 const TerminalPage = lazy(() => import('./pages/TerminalPage'))
 const LazyTerminalDrawer = lazy(() =>
   import('./components/terminal/TerminalDrawer').then((m) => ({
     default: m.TerminalDrawer,
+  })),
+)
+const LazyFileBrowserDrawer = lazy(() =>
+  import('./components/files/FileBrowserDrawer').then((m) => ({
+    default: m.FileBrowserDrawer,
   })),
 )
 
@@ -81,6 +86,18 @@ function TerminalDrawerMount() {
   return (
     <Suspense fallback={null}>
       <LazyTerminalDrawer />
+    </Suspense>
+  )
+}
+
+function FileBrowserDrawerMount() {
+  const isOpen = useFileBrowserStore((s) => s.isOpen)
+
+  if (!isOpen) return null
+
+  return (
+    <Suspense fallback={null}>
+      <LazyFileBrowserDrawer />
     </Suspense>
   )
 }
@@ -135,14 +152,6 @@ if (!rootElement.innerHTML) {
                   }
                 />
                 <Route
-                  path="/projects/:projectId/files/*"
-                  element={
-                    <ErrorBoundary>
-                      <FileBrowserPage />
-                    </ErrorBoundary>
-                  }
-                />
-                <Route
                   path="/terminal"
                   element={
                     <ErrorBoundary>
@@ -155,6 +164,7 @@ if (!rootElement.innerHTML) {
             </Suspense>
           </AppShell>
           <TerminalDrawerMount />
+          <FileBrowserDrawerMount />
           <Toaster position="top-center" />
         </ErrorBoundary>
       </BrowserRouter>
