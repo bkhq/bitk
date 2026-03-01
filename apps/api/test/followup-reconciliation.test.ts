@@ -2,8 +2,8 @@ import { beforeAll, describe, expect, test } from 'bun:test'
 import { eq } from 'drizzle-orm'
 import { db } from '@/db'
 import { issues as issuesTable } from '@/db/schema'
-import { createTestProject, expectSuccess, get, patch, post, waitFor } from './helpers'
 import { invalidateIssueCache } from '@/routes/issues/_shared'
+import { createTestProject, expectSuccess, get, patch, post, waitFor } from './helpers'
 /**
  * Integration/route tests for follow-up and reconciliation flows:
  * 1. Follow-up while engine is busy persists message as pending (returns queued: true)
