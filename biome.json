@@ -81,13 +81,6 @@
   },
   "overrides": [
     {
-      "includes": ["**/*.json"],
-      "formatter": {
-        "indentStyle": "space",
-        "indentWidth": 2
-      }
-    },
-    {
       "includes": ["apps/frontend/**/*"],
       "linter": {
         "domains": {
@@ -106,8 +99,8 @@
       "!**/.wrangler",
       "!**/.turbo",
       "!**/.cache",
-      "!drizzle/**/*.json",
-      "!drizzle/**/*.sql",
+      "!apps/api/drizzle/**/*.json",
+      "!apps/api/drizzle/**/*.sql",
       "!apps/frontend/src/components/ui/**/*.tsx"
     ]
   }

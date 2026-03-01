@@ -4,35 +4,25 @@
     "quickfix.biome": "explicit",
     "source.organizeImports.biome": "explicit",
     "source.fixAll.biome": "explicit"
-    // "source.organizeImports": "explicit",
   },
   "biome.enabled": true,
   "editor.defaultFormatter": "biomejs.biome",
   "[typescript]": {
     "editor.defaultFormatter": "biomejs.biome"
   },
-  "[jsonc]": {
-    "editor.defaultFormatter": "biomejs.biome"
-  },
-  "[svelte]": {
-    "editor.defaultFormatter": "biomejs.biome"
-  },
-  "[vue]": {
+  "[typescriptreact]": {
     "editor.defaultFormatter": "biomejs.biome"
   },
   "[json]": {
     "editor.defaultFormatter": "biomejs.biome"
   },
-  "typescript.tsdk": "node_modules/typescript/lib",
-  "[astro]": {
-    "editor.defaultFormatter": "biomejs.biome"
-  },
-  "[typescriptreact]": {
+  "[jsonc]": {
     "editor.defaultFormatter": "biomejs.biome"
   },
   "[mdx]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
+  "typescript.tsdk": "node_modules/typescript/lib",
   "i18n-ally.localesPaths": ["apps/frontend/src/i18n"],
   "i18n-ally.enabledFrameworks": ["react"]
 }

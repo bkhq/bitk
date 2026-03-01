@@ -184,7 +184,7 @@ export function ChatBody({
   const [showScrollTop, setShowScrollTop] = useState(false)
   const [showScrollBottom, setShowScrollBottom] = useState(false)
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+  // biome-ignore lint/correctness/useExhaustiveDependencies: scroll handler intentionally omits callback deps to avoid re-binding listeners
   useEffect(() => {
     const el = scrollRef.current
     if (!el) return

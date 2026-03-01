@@ -3,12 +3,8 @@
   "display": "Utils Library",
   "extends": "./base.json",
   "compilerOptions": {
-    "noEmit": false,
-    "declaration": false,
-    "module": "CommonJS",
-    "moduleResolution": "Node",
-    "declarationMap": false,
-    "target": "ES6",
-    "types": ["node"]
+    "noEmit": true,
+    "declaration": true,
+    "declarationMap": true
   }
 }

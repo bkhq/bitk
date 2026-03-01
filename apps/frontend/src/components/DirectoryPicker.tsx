@@ -52,7 +52,7 @@ export function DirectoryPicker({
     }
   }
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+  // biome-ignore lint/correctness/useExhaustiveDependencies: fetchDirs is a stable inner function, not needed as dependency
   useEffect(() => {
     if (open) {
       void fetchDirs(initialPath || undefined)

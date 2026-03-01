@@ -7,7 +7,7 @@ let highlighter: HighlighterCore | null = null
 let highlighterLoading: Promise<HighlighterCore> | null = null
 
 async function getHighlighter(): Promise<HighlighterCore> {
-  // biome-ignore lint/nursery/noMisusedPromises: <explanation>
+  // biome-ignore lint/nursery/noMisusedPromises: returns cached sync value when highlighter is already initialized
   if (highlighter) return highlighter
   if (!highlighterLoading) {
     highlighterLoading = (async () => {
@@ -62,7 +62,7 @@ export function MarkdownContent({
   return (
     <div
       className={`markdown-shiki ${containerClassName}`}
-      // biome-ignore lint/security/noDangerouslySetInnerHtml: <explanation>
+      // biome-ignore lint/security/noDangerouslySetInnerHtml: content is sanitized via DOMPurify.sanitize()
       dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(html) }}
     />
   )

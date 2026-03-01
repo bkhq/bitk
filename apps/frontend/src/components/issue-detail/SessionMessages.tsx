@@ -152,7 +152,7 @@ function ShikiCodeBlock({
   return (
     <div
       className={`code-surface shiki-block ${maxHeightClass} overflow-auto rounded-md`}
-      // biome-ignore lint/security/noDangerouslySetInnerHtml: <explanation>
+      // biome-ignore lint/security/noDangerouslySetInnerHtml: content is sanitized via DOMPurify.sanitize()
       dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(html) }}
     />
   )
@@ -401,7 +401,7 @@ export function SessionMessages({
   // Skip auto-scroll when older logs are prepended (first entry changes).
   const prevLenRef = useRef(visibleLogs.length)
   const prevFirstIdRef = useRef(visibleLogs[0]?.messageId)
-  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+  // biome-ignore lint/correctness/useExhaustiveDependencies: prevLenRef/prevFirstIdRef are stable refs, not needed as dependencies
   useEffect(() => {
     const firstId = visibleLogs[0]?.messageId
     const wasOlderPrepend =

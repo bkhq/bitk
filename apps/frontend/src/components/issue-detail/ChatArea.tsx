@@ -46,7 +46,7 @@ export function ChatArea({
   const titleBeforeAutoRef = useRef<string | null>(null)
 
   // Detect title change to clear auto-titling state
-  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+  // biome-ignore lint/correctness/useExhaustiveDependencies: titleBeforeAutoRef is a stable ref, not needed as dependency
   useEffect(() => {
     if (isAutoTitling && titleBeforeAutoRef.current !== null && issue) {
       if (issue.title !== titleBeforeAutoRef.current) {
