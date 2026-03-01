@@ -22,12 +22,10 @@
     "lint": "bun --filter '*' lint",
     "format": "bun --filter '*' format",
     "format:check": "bun --filter '*' format:check",
-    "db:generate": "bunx drizzle-kit generate",
-    "db:migrate": "bunx drizzle-kit migrate",
+    "db:generate": "bun --filter @bitk/api db:generate",
+    "db:migrate": "bun --filter @bitk/api db:migrate",
     "db:reset": "bun apps/api/src/db/reset.ts",
     "compile": "bun scripts/compile.ts"
   },
-  "devDependencies": {
-    "drizzle-kit": "^0.31.9"
-  }
+  "devDependencies": {}
 }

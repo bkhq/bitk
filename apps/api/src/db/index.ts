@@ -29,7 +29,7 @@ sqlite.run('PRAGMA mmap_size = 268435456')
 export const db = drizzle({ client: sqlite, schema })
 export { dbPath, sqlite }
 
-const migrationsFolder = resolve(ROOT_DIR, 'drizzle')
+const migrationsFolder = resolve(ROOT_DIR, 'apps/api/drizzle')
 const journalPath = resolve(migrationsFolder, 'meta/_journal.json')
 
 function runMigrations(folder: string) {

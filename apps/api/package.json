@@ -11,7 +11,9 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier . --write",
-    "format:check": "prettier . --check"
+    "format:check": "prettier . --check",
+    "db:generate": "bunx drizzle-kit generate",
+    "db:migrate": "bunx drizzle-kit migrate"
   },
   "dependencies": {
     "@hono/zod-validator": "^0.7.6",
@@ -24,6 +26,7 @@
   },
   "devDependencies": {
     "@antfu/eslint-config": "^7.4.3",
+    "drizzle-kit": "^0.31.9",
     "@libsql/client": "^0.17.0",
     "@types/bun": "latest",
     "eslint": "^10.0.1",

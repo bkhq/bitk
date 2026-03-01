@@ -1,5 +1,8 @@
 # Changelog
 
+## 2026-03-01 01:10 [progress]
+Moved `drizzle/` migrations directory and `drizzle.config.ts` from monorepo root into `apps/api/`, moved `drizzle-kit` dependency to `@bitk/api`, and updated root db scripts to proxy via `bun --filter`. Prevents future conflicts if other workspaces need their own databases.
+
 ## 2026-02-28 05:45 [progress]
 Initialized PMA project-management files (`docs/task/*`, `docs/plan/*`, format docs, architecture/changelog) and migrated active tasks into PMA task index/detail tracking.
 

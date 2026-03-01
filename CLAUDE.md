@@ -37,9 +37,9 @@ bun --filter @bitk/frontend lint  # frontend lint
 cd apps/api && bun test --preload ./test/preload.ts test/api-issues.test.ts
 cd apps/frontend && bunx vitest run src/__tests__/lib/format.test.ts
 
-# Database
-bun run db:generate          # drizzle-kit generate (creates migration SQL)
-bun run db:migrate           # drizzle-kit migrate (applies migrations)
+# Database (drizzle config lives in apps/api/)
+bun run db:generate          # drizzle-kit generate (proxies to @bitk/api)
+bun run db:migrate           # drizzle-kit migrate (proxies to @bitk/api)
 bun run db:reset             # deletes SQLite DB files (data/bitk.db)
 
 # Compile to standalone binary
@@ -64,14 +64,14 @@ bitk/
 │   │   │   ├── routes/         ← API routes
 │   │   │   ├── events/         ← SSE event system
 │   │   │   └── jobs/           ← Background jobs (upload cleanup)
+│   │   ├── drizzle/            ← Database migrations (auto-applied on startup)
+│   │   ├── drizzle.config.ts   ← Drizzle-kit configuration
 │   │   └── test/               ← Backend tests (bun:test)
 │   └── frontend/               ← @bitk/frontend
 │       └── src/
 ├── packages/shared/            ← @bitk/shared (TypeScript types)
-├── drizzle/                    ← Database migrations (auto-applied on startup)
 ├── scripts/compile.ts          ← Standalone binary compiler
-├── data/                       ← SQLite database (gitignored)
-└── drizzle.config.ts
+└── data/                       ← SQLite database (gitignored)
 ```
 
 ### Backend (`apps/api/src/`)
@@ -82,7 +82,7 @@ bitk/
   - Schema: `apps/api/src/db/schema.ts` using Drizzle's `sqliteTable`
   - All tables share `commonFields` (ULID `id`, `createdAt`, `updatedAt`, `isDeleted`)
   - Projects and issues use `shortId()` (nanoid 8-char), logs use `id()` (ULID)
-  - Migrations in `drizzle/`, auto-applied on startup
+  - Migrations in `apps/api/drizzle/`, auto-applied on startup
 - **Logging**: pino (`apps/api/src/logger.ts`)
 - **Static serving**: In production, `index.ts` serves `apps/frontend/dist/` with SPA fallback. In compiled mode, assets are embedded.
 
