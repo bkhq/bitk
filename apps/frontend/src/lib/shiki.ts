@@ -26,8 +26,16 @@ async function getShiki(): Promise<ShikiModule> {
 export async function codeToHtml(code: string, lang: string): Promise<string> {
   const { codeToHtml: shikiCodeToHtml } = await getShiki()
   try {
-    return await shikiCodeToHtml(code, { lang, themes: THEMES })
+    return await shikiCodeToHtml(code, {
+      lang,
+      themes: THEMES,
+      defaultColor: false,
+    })
   } catch {
-    return await shikiCodeToHtml(code, { lang: 'text', themes: THEMES })
+    return await shikiCodeToHtml(code, {
+      lang: 'text',
+      themes: THEMES,
+      defaultColor: false,
+    })
   }
 }

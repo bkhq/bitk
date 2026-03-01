@@ -273,7 +273,9 @@
     "back": "Back",
     "title": "Files",
     "close": "Close file browser",
-    "resizePanel": "Resize file browser"
+    "resizePanel": "Resize file browser",
+    "viewSource": "Source",
+    "viewRendered": "Preview"
   },
   "terminal": {
     "title": "Terminal",

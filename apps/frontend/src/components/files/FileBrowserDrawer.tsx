@@ -173,7 +173,7 @@ export function FileBrowserDrawer() {
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-auto p-4">
+        <div className="flex-1 overflow-auto min-h-0 p-4 flex flex-col">
           {!project?.directory ? (
             <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
               <FolderOpen className="h-12 w-12" />

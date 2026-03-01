@@ -273,7 +273,9 @@
     "back": "返回",
     "title": "文件",
     "close": "关闭文件管理",
-    "resizePanel": "调整文件管理面板大小"
+    "resizePanel": "调整文件管理面板大小",
+    "viewSource": "源码",
+    "viewRendered": "预览"
   },
   "terminal": {
     "title": "终端",
