@@ -135,12 +135,16 @@
       "indexes": {
         "attachments_issue_id_idx": {
           "name": "attachments_issue_id_idx",
-          "columns": ["issue_id"],
+          "columns": [
+            "issue_id"
+          ],
           "isUnique": false
         },
         "attachments_log_id_idx": {
           "name": "attachments_log_id_idx",
-          "columns": ["log_id"],
+          "columns": [
+            "log_id"
+          ],
           "isUnique": false
         }
       },
@@ -149,8 +153,12 @@
           "name": "attachments_issue_id_issues_id_fk",
           "tableFrom": "attachments",
           "tableTo": "issues",
-          "columnsFrom": ["issue_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "issue_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -158,8 +166,12 @@
           "name": "attachments_log_id_issues_logs_id_fk",
           "tableFrom": "attachments",
           "tableTo": "issues_logs",
-          "columnsFrom": ["log_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "log_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -276,12 +288,18 @@
       "indexes": {
         "issues_logs_issue_id_idx": {
           "name": "issues_logs_issue_id_idx",
-          "columns": ["issue_id"],
+          "columns": [
+            "issue_id"
+          ],
           "isUnique": false
         },
         "issues_logs_issue_id_turn_entry_idx": {
           "name": "issues_logs_issue_id_turn_entry_idx",
-          "columns": ["issue_id", "turn_index", "entry_index"],
+          "columns": [
+            "issue_id",
+            "turn_index",
+            "entry_index"
+          ],
           "isUnique": false
         }
       },
@@ -290,8 +308,12 @@
           "name": "issues_logs_issue_id_issues_id_fk",
           "tableFrom": "issues_logs",
           "tableTo": "issues",
-          "columnsFrom": ["issue_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "issue_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -445,22 +467,31 @@
       "indexes": {
         "issues_project_id_idx": {
           "name": "issues_project_id_idx",
-          "columns": ["project_id"],
+          "columns": [
+            "project_id"
+          ],
           "isUnique": false
         },
         "issues_status_id_idx": {
           "name": "issues_status_id_idx",
-          "columns": ["status_id"],
+          "columns": [
+            "status_id"
+          ],
           "isUnique": false
         },
         "issues_parent_issue_id_idx": {
           "name": "issues_parent_issue_id_idx",
-          "columns": ["parent_issue_id"],
+          "columns": [
+            "parent_issue_id"
+          ],
           "isUnique": false
         },
         "issues_project_id_issue_number_uniq": {
           "name": "issues_project_id_issue_number_uniq",
-          "columns": ["project_id", "issue_number"],
+          "columns": [
+            "project_id",
+            "issue_number"
+          ],
           "isUnique": true
         }
       },
@@ -469,8 +500,12 @@
           "name": "issues_project_id_projects_id_fk",
           "tableFrom": "issues",
           "tableTo": "projects",
-          "columnsFrom": ["project_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "project_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -478,8 +513,12 @@
           "name": "issues_parent_issue_id_issues_id_fk",
           "tableFrom": "issues",
           "tableTo": "issues",
-          "columnsFrom": ["parent_issue_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "parent_issue_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -579,27 +618,38 @@
       "indexes": {
         "issues_logs_tools_call_log_id_idx": {
           "name": "issues_logs_tools_call_log_id_idx",
-          "columns": ["log_id"],
+          "columns": [
+            "log_id"
+          ],
           "isUnique": false
         },
         "issues_logs_tools_call_issue_id_idx": {
           "name": "issues_logs_tools_call_issue_id_idx",
-          "columns": ["issue_id"],
+          "columns": [
+            "issue_id"
+          ],
           "isUnique": false
         },
         "issues_logs_tools_call_kind_idx": {
           "name": "issues_logs_tools_call_kind_idx",
-          "columns": ["kind"],
+          "columns": [
+            "kind"
+          ],
           "isUnique": false
         },
         "issues_logs_tools_call_tool_name_idx": {
           "name": "issues_logs_tools_call_tool_name_idx",
-          "columns": ["tool_name"],
+          "columns": [
+            "tool_name"
+          ],
           "isUnique": false
         },
         "issues_logs_tools_call_issue_id_kind_idx": {
           "name": "issues_logs_tools_call_issue_id_kind_idx",
-          "columns": ["issue_id", "kind"],
+          "columns": [
+            "issue_id",
+            "kind"
+          ],
           "isUnique": false
         }
       },
@@ -608,8 +658,12 @@
           "name": "issues_logs_tools_call_log_id_issues_logs_id_fk",
           "tableFrom": "issues_logs_tools_call",
           "tableTo": "issues_logs",
-          "columnsFrom": ["log_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "log_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -617,8 +671,12 @@
           "name": "issues_logs_tools_call_issue_id_issues_id_fk",
           "tableFrom": "issues_logs_tools_call",
           "tableTo": "issues",
-          "columnsFrom": ["issue_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "issue_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -698,7 +756,9 @@
       "indexes": {
         "projects_alias_unique": {
           "name": "projects_alias_unique",
-          "columns": ["alias"],
+          "columns": [
+            "alias"
+          ],
           "isUnique": true
         }
       },
