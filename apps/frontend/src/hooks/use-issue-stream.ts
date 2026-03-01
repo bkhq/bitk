@@ -43,6 +43,8 @@ function contentKey(entry: NormalizedLogEntry): string {
 /**
  * Sort comparator using ULID messageId for chronological order.
  * ULID is lexicographically sortable (first 10 chars encode ms timestamp).
+ * Uses simple string comparison (not localeCompare) to guarantee correct
+ * byte-level ordering of Crockford Base32 characters across all locales.
  * Entries without messageId (streaming deltas) sort after persisted entries.
  */
 function compareByMessageId(
@@ -50,7 +52,7 @@ function compareByMessageId(
   b: NormalizedLogEntry,
 ): number {
   if (a.messageId && b.messageId) {
-    return a.messageId.localeCompare(b.messageId)
+    return a.messageId < b.messageId ? -1 : a.messageId > b.messageId ? 1 : 0
   }
   // Streaming deltas (no messageId) stay after persisted entries
   if (a.messageId && !b.messageId) return -1
