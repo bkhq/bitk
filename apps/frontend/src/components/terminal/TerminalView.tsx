@@ -1,9 +1,71 @@
 import { FitAddon } from '@xterm/addon-fit'
+import { ImageAddon } from '@xterm/addon-image'
 import { WebLinksAddon } from '@xterm/addon-web-links'
+import { WebglAddon } from '@xterm/addon-webgl'
 import { Terminal } from '@xterm/xterm'
 import { useCallback, useEffect, useRef } from 'react'
 import { useTerminalSessionStore } from '@/stores/terminal-session-store'
 import '@xterm/xterm/css/xterm.css'
+
+// --- Terminal themes ---
+
+const DARK_THEME = {
+  background: '#0d1117',
+  foreground: '#e6edf3',
+  cursor: '#e6edf3',
+  cursorAccent: '#0d1117',
+  selectionBackground: '#264f78',
+  selectionForeground: '#e6edf3',
+  black: '#484f58',
+  red: '#ff7b72',
+  green: '#3fb950',
+  yellow: '#d29922',
+  blue: '#58a6ff',
+  magenta: '#bc8cff',
+  cyan: '#39c5cf',
+  white: '#b1bac4',
+  brightBlack: '#6e7681',
+  brightRed: '#ffa198',
+  brightGreen: '#56d364',
+  brightYellow: '#e3b341',
+  brightBlue: '#79c0ff',
+  brightMagenta: '#d2a8ff',
+  brightCyan: '#56d4dd',
+  brightWhite: '#f0f6fc',
+} as const
+
+const LIGHT_THEME = {
+  background: '#ffffff',
+  foreground: '#1f2328',
+  cursor: '#1f2328',
+  cursorAccent: '#ffffff',
+  selectionBackground: '#0969da33',
+  selectionForeground: '#1f2328',
+  black: '#24292f',
+  red: '#cf222e',
+  green: '#116329',
+  yellow: '#4d2d00',
+  blue: '#0969da',
+  magenta: '#8250df',
+  cyan: '#1b7c83',
+  white: '#6e7781',
+  brightBlack: '#57606a',
+  brightRed: '#a40e26',
+  brightGreen: '#1a7f37',
+  brightYellow: '#633c01',
+  brightBlue: '#218bff',
+  brightMagenta: '#a475f9',
+  brightCyan: '#3192aa',
+  brightWhite: '#8c959f',
+} as const
+
+function isDarkMode(): boolean {
+  return document.documentElement.classList.contains('dark')
+}
+
+function getTerminalTheme() {
+  return isDarkMode() ? DARK_THEME : LIGHT_THEME
+}
 
 // --- Binary protocol helpers ---
 
@@ -64,21 +126,30 @@ function getOrCreateTerminal(): { terminal: Terminal; fitAddon: FitAddon } {
     cursorBlink: true,
     fontSize: 14,
     fontFamily: 'JetBrains Mono, Menlo, Monaco, Consolas, monospace',
-    theme: {
-      background: '#1a1a2e',
-      foreground: '#e0e0e0',
-      cursor: '#e0e0e0',
-      selectionBackground: '#3a3a5c',
-    },
+    theme: getTerminalTheme(),
     allowProposedApi: true,
   })
 
   terminal.loadAddon(fitAddon)
   terminal.loadAddon(new WebLinksAddon())
+  terminal.loadAddon(new ImageAddon())
 
   store.getState().set({ terminal, fitAddon })
 
   return { terminal, fitAddon }
+}
+
+/** Try to enable GPU-accelerated WebGL rendering */
+function tryLoadWebgl(terminal: Terminal): void {
+  try {
+    const webglAddon = new WebglAddon()
+    webglAddon.onContextLoss(() => {
+      webglAddon.dispose()
+    })
+    terminal.loadAddon(webglAddon)
+  } catch {
+    // WebGL not available — falls back to canvas renderer
+  }
 }
 
 function connectWs(
@@ -228,9 +299,14 @@ export function TerminalView({ className }: { className?: string }) {
       if (terminal.element.parentElement !== container) {
         container.appendChild(terminal.element)
       }
+      // Theme may have changed while terminal was hidden — sync now
+      terminal.options.theme = getTerminalTheme()
     } else {
       terminal.open(container)
       store.getState().set({ initialized: true })
+
+      // Load WebGL addon after terminal is opened (needs a canvas context)
+      tryLoadWebgl(terminal)
     }
 
     // Delay fit to ensure container is laid out
@@ -251,10 +327,23 @@ export function TerminalView({ className }: { className?: string }) {
     const resizeObserver = new ResizeObserver(() => handleResize())
     resizeObserver.observe(container)
 
+    // Observe theme changes via MutationObserver on <html> class list
+    const themeObserver = new MutationObserver(() => {
+      const t = store.getState().terminal
+      if (t) {
+        t.options.theme = getTerminalTheme()
+      }
+    })
+    themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class'],
+    })
+
     return () => {
       mountedRef.current = false
       inputDisposable.dispose()
       resizeObserver.disconnect()
+      themeObserver.disconnect()
       // Do NOT dispose terminal or close WS — they persist across mounts
     }
   }, [handleResize])

@@ -61,18 +61,8 @@ const LazyFileBrowserDrawer = lazy(() =>
 )
 
 function AppShell({ children }: { children: React.ReactNode }) {
-  const isOpen = useTerminalStore((s) => s.isOpen)
-  const isFullscreen = useTerminalStore((s) => s.isFullscreen)
-  const height = useTerminalStore((s) => s.height)
-
-  // When terminal is open (not fullscreen), shrink main content to avoid overlap
-  const offset = isOpen && !isFullscreen ? height : 0
-
   return (
-    <div
-      className="w-full"
-      style={{ height: offset ? `calc(100dvh - ${offset}px)` : '100dvh' }}
-    >
+    <div className="w-full" style={{ height: '100dvh' }}>
       {children}
     </div>
   )
