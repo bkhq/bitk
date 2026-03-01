@@ -121,8 +121,8 @@ export function FileViewer({ file, onBack }: FileViewerProps) {
   }
 
   return (
-    <div className="border border-border rounded-lg overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-2 bg-muted/50 border-b border-border">
+    <div className="flex flex-col h-full border border-border rounded-lg overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-2 bg-muted/50 border-b border-border shrink-0">
         <div className="flex items-center gap-2">
           <button
             type="button"
@@ -169,7 +169,7 @@ export function FileViewer({ file, onBack }: FileViewerProps) {
           ) : null}
         </div>
       </div>
-      <div className="overflow-auto max-h-[calc(100vh-16rem)]">
+      <div className="flex-1 overflow-auto min-h-0">
         {loading ? (
           <div className="flex items-center justify-center py-16">
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
