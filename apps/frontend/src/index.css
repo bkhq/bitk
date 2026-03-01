@@ -315,9 +315,10 @@
 }
 
 /* ─── Shiki dual-theme (light/dark via CSS vars) ─── */
+/* !important needed so .prose pre / dark:prose-invert cannot override */
 .shiki {
-  color: var(--shiki-light);
-  background-color: var(--shiki-light-bg);
+  color: var(--shiki-light) !important;
+  background-color: var(--shiki-light-bg) !important;
 }
 
 .shiki span {
@@ -325,8 +326,8 @@
 }
 
 .dark .shiki {
-  color: var(--shiki-dark);
-  background-color: var(--shiki-dark-bg);
+  color: var(--shiki-dark) !important;
+  background-color: var(--shiki-dark-bg) !important;
 }
 
 .dark .shiki span {
