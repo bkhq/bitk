@@ -42,8 +42,16 @@ export default function IssueDetailPage() {
       const onMouseMove = (ev: MouseEvent) => {
         if (!isResizingList.current) return
         const delta = ev.clientX - startX
-        const newWidth = Math.min(
+        // Dynamic max: ensure MIN_CHAT_WIDTH remains after sidebar + list + diff
+        const viewport =
+          typeof window !== 'undefined' ? window.innerWidth : 1600
+        const diffSpace = showDiff ? diffWidth : 0
+        const dynamicMax = Math.min(
           MAX_LIST_WIDTH,
+          viewport - SIDEBAR_WIDTH - diffSpace - MIN_CHAT_WIDTH,
+        )
+        const newWidth = Math.min(
+          dynamicMax,
           Math.max(MIN_LIST_WIDTH, startWidth + delta),
         )
         setListWidth(newWidth)
@@ -62,7 +70,7 @@ export default function IssueDetailPage() {
       document.addEventListener('mousemove', onMouseMove)
       document.addEventListener('mouseup', onMouseUp)
     },
-    [listWidth],
+    [listWidth, showDiff, diffWidth],
   )
 
   // On mobile: show list when no issue selected, show chat when issue selected
@@ -72,14 +80,26 @@ export default function IssueDetailPage() {
   const hideListPanel =
     (isMobile && !!issueId) || (showDiff && diffWidth > availableWidth * 0.5)
 
-  const handleDiffWidthChange = useCallback((w: number) => {
-    // Max = everything except sidebar + min chat area
-    const maxWidth =
-      (typeof window !== 'undefined' ? window.innerWidth : 1600) -
-      SIDEBAR_WIDTH -
-      MIN_CHAT_WIDTH
-    setDiffWidth(Math.min(Math.max(DIFF_MIN_WIDTH, w), maxWidth))
-  }, [])
+  const handleDiffWidthChange = useCallback(
+    (w: number) => {
+      const viewport = typeof window !== 'undefined' ? window.innerWidth : 1600
+      const listSpace = hideListPanel ? 0 : listWidth
+      const maxWidth = viewport - SIDEBAR_WIDTH - listSpace - MIN_CHAT_WIDTH
+      setDiffWidth(Math.min(Math.max(DIFF_MIN_WIDTH, w), maxWidth))
+    },
+    [hideListPanel, listWidth],
+  )
+
+  // Clamp listWidth when diff panel opens or grows to preserve MIN_CHAT_WIDTH
+  useEffect(() => {
+    if (!showDiff) return
+    const viewport = typeof window !== 'undefined' ? window.innerWidth : 1600
+    const maxList = Math.min(
+      MAX_LIST_WIDTH,
+      viewport - SIDEBAR_WIDTH - diffWidth - MIN_CHAT_WIDTH,
+    )
+    setListWidth((prev) => Math.max(MIN_LIST_WIDTH, Math.min(prev, maxList)))
+  }, [showDiff, diffWidth])
 
   useEffect(() => {
     if (!isLoading && (isError || !project)) {

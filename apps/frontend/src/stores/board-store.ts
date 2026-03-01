@@ -33,11 +33,16 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     for (const status of STATUSES) {
       groups[status.id] = issues
         .filter((i) => i.statusId === status.id)
-        .sort(
-          (a, b) =>
+        .sort((a, b) => {
+          // Primary: sortOrder ASC (preserves drag reorder)
+          const orderDiff = a.sortOrder - b.sortOrder
+          if (orderDiff !== 0) return orderDiff
+          // Tiebreaker: statusUpdatedAt DESC (most recent first)
+          return (
             new Date(b.statusUpdatedAt).getTime() -
-            new Date(a.statusUpdatedAt).getTime(),
-        )
+            new Date(a.statusUpdatedAt).getTime()
+          )
+        })
     }
     set({ groupedItems: groups })
   },
