@@ -26,6 +26,5 @@
     "db:migrate": "bun --filter @bitk/api db:migrate",
     "db:reset": "bun apps/api/src/db/reset.ts",
     "compile": "bun scripts/compile.ts"
-  },
-  "devDependencies": {}
+  }
 }
