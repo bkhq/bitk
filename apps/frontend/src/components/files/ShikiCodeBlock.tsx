@@ -21,7 +21,7 @@ export function ShikiCodeBlock({ code, lang }: ShikiCodeBlockProps) {
 
   if (!html) {
     return (
-      <pre className="overflow-x-auto rounded-md bg-muted/50 p-4 text-sm">
+      <pre className="overflow-x-auto rounded-md bg-muted p-4 text-sm">
         <code>{code}</code>
       </pre>
     )
@@ -29,7 +29,7 @@ export function ShikiCodeBlock({ code, lang }: ShikiCodeBlockProps) {
 
   return (
     <div
-      className="[&_.shiki]:rounded-md [&_.shiki]:p-4 [&_.shiki]:text-sm [&_.shiki]:overflow-x-auto [&_code]:leading-relaxed"
+      className="rounded-md bg-muted overflow-hidden [&_.shiki]:!bg-transparent [&_.shiki]:p-4 [&_.shiki]:text-sm [&_.shiki]:overflow-x-auto [&_code]:leading-relaxed"
       // biome-ignore lint/security/noDangerouslySetInnerHtml: Shiki generates safe HTML
       dangerouslySetInnerHTML={{ __html: html }}
     />
