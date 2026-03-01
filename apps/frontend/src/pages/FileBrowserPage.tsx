@@ -1,13 +1,16 @@
-import { FolderOpen } from 'lucide-react'
-import { useCallback, useEffect } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
+import { Check, Copy, Download, Eye, EyeOff, FolderOpen } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
 import { FileBreadcrumb } from '@/components/files/FileBreadcrumb'
 import { FileList } from '@/components/files/FileList'
 import { FileViewer } from '@/components/files/FileViewer'
 import { AppSidebar } from '@/components/kanban/AppSidebar'
-import { useProject, useProjectFiles } from '@/hooks/use-kanban'
+import { queryKeys, useProject, useProjectFiles } from '@/hooks/use-kanban'
 import { useIsMobile } from '@/hooks/use-mobile'
+import { kanbanApi } from '@/lib/kanban-api'
+import { useFileBrowserStore } from '@/stores/file-browser-store'
 
 export default function FileBrowserPage() {
   const { t } = useTranslation()
@@ -18,8 +21,34 @@ export default function FileBrowserPage() {
   }>()
   const { data: project, isLoading, isError } = useProject(projectId)
   const isMobile = useIsMobile()
+  const queryClient = useQueryClient()
+  const { hideIgnored, toggleHideIgnored } = useFileBrowserStore()
 
   const currentPath = splatPath || '.'
+
+  const [copied, setCopied] = useState(false)
+
+  const handleToggleIgnored = useCallback(() => {
+    toggleHideIgnored()
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.projectFiles(projectId, currentPath),
+    })
+  }, [toggleHideIgnored, projectId, currentPath, queryClient])
+
+  const handleCopyPath = useCallback(() => {
+    navigator.clipboard.writeText(currentPath === '.' ? '/' : currentPath)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 1500)
+  }, [currentPath])
+
+  const handleDownload = useCallback(() => {
+    if (currentPath === '.') return
+    const url = kanbanApi.rawFileUrl(projectId, currentPath)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = ''
+    a.click()
+  }, [projectId, currentPath])
 
   // Single request: returns { type: 'directory', entries } or { type: 'file', content, ... }
   const {
@@ -104,6 +133,53 @@ export default function FileBrowserPage() {
             path={currentPath}
             onNavigate={navigateToPath}
           />
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={handleCopyPath}
+              className="p-1.5 rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+              aria-label={t('fileBrowser.copyPath')}
+              title={t('fileBrowser.copyPath')}
+            >
+              {copied ? (
+                <Check className="h-4 w-4 text-green-500" />
+              ) : (
+                <Copy className="h-4 w-4" />
+              )}
+            </button>
+            {listing?.type === 'file' && (
+              <button
+                type="button"
+                onClick={handleDownload}
+                className="p-1.5 rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                aria-label={t('fileBrowser.download')}
+                title={t('fileBrowser.download')}
+              >
+                <Download className="h-4 w-4" />
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={handleToggleIgnored}
+              className={`p-1.5 rounded transition-colors ${
+                hideIgnored
+                  ? 'text-foreground bg-accent'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+              }`}
+              aria-label={t('fileBrowser.hideIgnored')}
+              title={
+                hideIgnored
+                  ? t('fileBrowser.showIgnored')
+                  : t('fileBrowser.hideIgnored')
+              }
+            >
+              {hideIgnored ? (
+                <EyeOff className="h-4 w-4" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Content */}

@@ -275,7 +275,11 @@
     "close": "关闭文件管理",
     "resizePanel": "调整文件管理面板大小",
     "viewSource": "源码",
-    "viewRendered": "预览"
+    "viewRendered": "预览",
+    "showIgnored": "显示被 Git 忽略的文件",
+    "hideIgnored": "隐藏被 Git 忽略的文件",
+    "copyPath": "复制路径",
+    "download": "下载"
   },
   "terminal": {
     "title": "终端",

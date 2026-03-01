@@ -21,6 +21,7 @@ interface FileBrowserStore {
   width: number
   projectId: string | null
   currentPath: string
+  hideIgnored: boolean
   open: (projectId: string) => void
   openFullscreen: (projectId: string) => void
   close: () => void
@@ -30,6 +31,7 @@ interface FileBrowserStore {
   toggleFullscreen: () => void
   setWidth: (w: number) => void
   navigateTo: (path: string) => void
+  toggleHideIgnored: () => void
 }
 
 export { MIN_WIDTH as FILE_BROWSER_MIN_WIDTH }
@@ -42,6 +44,7 @@ export const useFileBrowserStore = create<FileBrowserStore>((set) => ({
   width: Math.round(getViewportWidth() * DEFAULT_WIDTH_RATIO),
   projectId: null,
   currentPath: '.',
+  hideIgnored: false,
 
   open: (projectId) =>
     set((s) => ({
@@ -84,6 +87,7 @@ export const useFileBrowserStore = create<FileBrowserStore>((set) => ({
   toggleFullscreen: () => set((s) => ({ isFullscreen: !s.isFullscreen })),
   setWidth: (w) => set({ width: clampWidth(w) }),
   navigateTo: (path) => set({ currentPath: path }),
+  toggleHideIgnored: () => set((s) => ({ hideIgnored: !s.hideIgnored })),
 }))
 
 // Re-clamp width on window resize

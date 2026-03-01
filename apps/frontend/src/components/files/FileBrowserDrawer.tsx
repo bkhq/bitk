@@ -1,8 +1,21 @@
-import { FolderOpen, Maximize2, Minimize2, Minus, X } from 'lucide-react'
-import { useCallback, useRef } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
+import {
+  Check,
+  Copy,
+  Download,
+  Eye,
+  EyeOff,
+  FolderOpen,
+  Maximize2,
+  Minimize2,
+  Minus,
+  X,
+} from 'lucide-react'
+import { useCallback, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useProject, useProjectFiles } from '@/hooks/use-kanban'
+import { queryKeys, useProject, useProjectFiles } from '@/hooks/use-kanban'
 import { useIsMobile } from '@/hooks/use-mobile'
+import { kanbanApi } from '@/lib/kanban-api'
 import {
   FILE_BROWSER_MAX_WIDTH_RATIO,
   FILE_BROWSER_MIN_WIDTH,
@@ -20,14 +33,43 @@ export function FileBrowserDrawer() {
     width,
     projectId,
     currentPath,
+    hideIgnored,
     close,
     minimize,
     toggleFullscreen,
     setWidth,
     navigateTo,
+    toggleHideIgnored,
   } = useFileBrowserStore()
   const isMobile = useIsMobile()
+  const queryClient = useQueryClient()
   const dragRef = useRef<{ startX: number; startWidth: number } | null>(null)
+
+  const [copied, setCopied] = useState(false)
+
+  const handleToggleIgnored = useCallback(() => {
+    toggleHideIgnored()
+    if (projectId) {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.projectFiles(projectId, currentPath),
+      })
+    }
+  }, [toggleHideIgnored, projectId, currentPath, queryClient])
+
+  const handleCopyPath = useCallback(() => {
+    navigator.clipboard.writeText(currentPath === '.' ? '/' : currentPath)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 1500)
+  }, [currentPath])
+
+  const handleDownload = useCallback(() => {
+    if (!projectId || currentPath === '.') return
+    const url = kanbanApi.rawFileUrl(projectId, currentPath)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = ''
+    a.click()
+  }, [projectId, currentPath])
 
   const { data: project } = useProject(projectId ?? '')
   const {
@@ -125,6 +167,51 @@ export function FileBrowserDrawer() {
             </span>
           </div>
           <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={handleCopyPath}
+              className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+              aria-label={t('fileBrowser.copyPath')}
+              title={t('fileBrowser.copyPath')}
+            >
+              {copied ? (
+                <Check className="h-3.5 w-3.5 text-green-500" />
+              ) : (
+                <Copy className="h-3.5 w-3.5" />
+              )}
+            </button>
+            {listing?.type === 'file' && (
+              <button
+                type="button"
+                onClick={handleDownload}
+                className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                aria-label={t('fileBrowser.download')}
+                title={t('fileBrowser.download')}
+              >
+                <Download className="h-3.5 w-3.5" />
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={handleToggleIgnored}
+              className={`p-1 rounded transition-colors ${
+                hideIgnored
+                  ? 'text-foreground bg-accent'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+              }`}
+              aria-label={t('fileBrowser.hideIgnored')}
+              title={
+                hideIgnored
+                  ? t('fileBrowser.showIgnored')
+                  : t('fileBrowser.hideIgnored')
+              }
+            >
+              {hideIgnored ? (
+                <EyeOff className="h-3.5 w-3.5" />
+              ) : (
+                <Eye className="h-3.5 w-3.5" />
+              )}
+            </button>
             <button
               type="button"
               onClick={minimize}

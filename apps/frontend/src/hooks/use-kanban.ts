@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { kanbanApi } from '@/lib/kanban-api'
 import { useBoardStore } from '@/stores/board-store'
+import { useFileBrowserStore } from '@/stores/file-browser-store'
 import type { ExecuteIssueRequest, Issue } from '@/types/kanban'
 
 export const queryKeys = {
@@ -447,7 +448,10 @@ export function useProjectFiles(
 ) {
   return useQuery({
     queryKey: queryKeys.projectFiles(projectId, path),
-    queryFn: () => kanbanApi.listFiles(projectId, path || undefined),
+    queryFn: () => {
+      const { hideIgnored } = useFileBrowserStore.getState()
+      return kanbanApi.listFiles(projectId, path || undefined, hideIgnored)
+    },
     enabled: !!projectId && enabled,
   })
 }
