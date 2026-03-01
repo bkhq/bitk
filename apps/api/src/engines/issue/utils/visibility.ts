@@ -15,8 +15,8 @@ export function isVisibleForMode(entry: NormalizedLogEntry, devMode: boolean): b
   // User & assistant messages are always visible
   if (entry.entryType === 'user-message' || entry.entryType === 'assistant-message') return true
 
-  // Tool-use entries are always visible (command runs, file changes, etc.)
-  if (entry.entryType === 'tool-use') return true
+  // Tool-use entries are only visible in dev mode
+  if (entry.entryType === 'tool-use') return false
 
   // System messages — only command output and compact boundary
   if (entry.entryType === 'system-message') {

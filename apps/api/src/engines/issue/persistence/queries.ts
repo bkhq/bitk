@@ -21,12 +21,7 @@ export function getLogsFromDb(
   const conditions = [eq(logsTable.issueId, issueId), eq(logsTable.visible, 1)]
   if (!devMode) {
     conditions.push(
-      inArray(logsTable.entryType, [
-        'user-message',
-        'assistant-message',
-        'system-message',
-        'tool-use',
-      ]),
+      inArray(logsTable.entryType, ['user-message', 'assistant-message', 'system-message']),
     )
   }
 
@@ -74,14 +69,17 @@ export function getLogsFromDb(
   // Reverse results so output is always in ascending (chronological) order
   if (isReverse) rows.reverse()
 
-  // Batch-fetch tool details for this issue (bounded by log count)
-  const toolRows = db
-    .select()
-    .from(toolsTable)
-    .where(eq(toolsTable.issueId, issueId))
-    .limit(MAX_LOG_ENTRIES)
-    .all()
-  const toolByLogId = new Map(toolRows.map((r) => [r.logId, r]))
+  // Batch-fetch tool details only in devMode (non-dev excludes tool-use at SQL level)
+  const toolByLogId = new Map<string, (typeof toolsTable)['$inferSelect']>()
+  if (devMode) {
+    const toolRows = db
+      .select()
+      .from(toolsTable)
+      .where(eq(toolsTable.issueId, issueId))
+      .limit(MAX_LOG_ENTRIES)
+      .all()
+    for (const r of toolRows) toolByLogId.set(r.logId, r)
+  }
 
   const includeCursorMeta = !!opts
   return rows
