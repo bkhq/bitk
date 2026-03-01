@@ -347,3 +347,14 @@
   background: transparent;
   padding: 0;
 }
+
+/* ─── GFM task list checkboxes ─── */
+.prose ul:has(> li > input[type="checkbox"]) {
+  list-style: none;
+  padding-left: 0;
+}
+
+.prose li > input[type="checkbox"] {
+  margin-right: 0.5rem;
+  accent-color: var(--primary);
+}

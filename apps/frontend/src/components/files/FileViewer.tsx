@@ -1,8 +1,9 @@
-import { ArrowLeft, FileWarning } from 'lucide-react'
+import { ArrowLeft, Code, Eye, FileWarning } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { codeToHtml } from '@/lib/shiki'
 import type { FileContent } from '@/types/kanban'
+import { MarkdownRenderer } from './MarkdownRenderer'
 
 /** Infer language from file extension for Shiki syntax highlighting. */
 function inferLang(path: string): string {
@@ -40,6 +41,11 @@ function inferLang(path: string): string {
   return map[ext] || 'text'
 }
 
+function isMarkdownFile(path: string): boolean {
+  const ext = path.split('.').pop()?.toLowerCase() ?? ''
+  return ext === 'md' || ext === 'mdx'
+}
+
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
@@ -55,12 +61,20 @@ export function FileViewer({ file, onBack }: FileViewerProps) {
   const { t } = useTranslation()
   const [html, setHtml] = useState<string>('')
   const [loading, setLoading] = useState(true)
+  const isMd = isMarkdownFile(file.path)
+  const [showRendered, setShowRendered] = useState(isMd)
 
   const lineCount = file.content ? file.content.split('\n').length : 0
   const fileName = file.path.split('/').pop() ?? file.path
 
   useEffect(() => {
     if (file.isBinary) {
+      setLoading(false)
+      return
+    }
+
+    // Skip Shiki highlighting when showing rendered markdown
+    if (isMd && showRendered) {
       setLoading(false)
       return
     }
@@ -77,7 +91,7 @@ export function FileViewer({ file, onBack }: FileViewerProps) {
     return () => {
       cancelled = true
     }
-  }, [file.content, file.path, file.isBinary])
+  }, [file.content, file.path, file.isBinary, isMd, showRendered])
 
   if (file.isBinary) {
     return (
@@ -121,6 +135,29 @@ export function FileViewer({ file, onBack }: FileViewerProps) {
           <span className="font-medium text-sm">{fileName}</span>
         </div>
         <div className="flex items-center gap-3 text-xs text-muted-foreground">
+          {isMd ? (
+            <button
+              type="button"
+              onClick={() => setShowRendered((v) => !v)}
+              className="flex items-center gap-1 rounded px-1.5 py-0.5 hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
+              title={
+                showRendered
+                  ? t('fileBrowser.viewSource')
+                  : t('fileBrowser.viewRendered')
+              }
+            >
+              {showRendered ? (
+                <Code className="h-3.5 w-3.5" />
+              ) : (
+                <Eye className="h-3.5 w-3.5" />
+              )}
+              <span>
+                {showRendered
+                  ? t('fileBrowser.viewSource')
+                  : t('fileBrowser.viewRendered')}
+              </span>
+            </button>
+          ) : null}
           <span>
             {lineCount} {t('fileBrowser.lines')}
           </span>
@@ -137,9 +174,11 @@ export function FileViewer({ file, onBack }: FileViewerProps) {
           <div className="flex items-center justify-center py-16">
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
           </div>
+        ) : isMd && showRendered ? (
+          <MarkdownRenderer content={file.content} />
         ) : (
           <div
-            className="shiki-wrapper text-sm [&_pre]:!bg-transparent [&_pre]:p-4 [&_pre]:overflow-x-auto [&_code]:leading-relaxed [&_.line]:before:content-[attr(data-line)] [&_.line]:before:mr-6 [&_.line]:before:text-muted-foreground/40 [&_.line]:before:text-right [&_.line]:before:inline-block [&_.line]:before:w-8"
+            className="shiki-wrapper text-sm [&_pre]:!bg-transparent [&_pre]:p-4 [&_pre]:overflow-x-auto [&_code]:leading-relaxed [&_.line]:before:content-[attr(data-line)] [&_.line]:before:mr-3 [&_.line]:before:text-muted-foreground/40 [&_.line]:before:text-right [&_.line]:before:inline-block [&_.line]:before:w-5"
             // biome-ignore lint/security/noDangerouslySetInnerHtml: Shiki generates safe HTML
             dangerouslySetInnerHTML={{ __html: html }}
           />
