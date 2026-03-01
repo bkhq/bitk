@@ -54,24 +54,50 @@ bun scripts/compile.ts --target bun-linux-x64 --outfile bitk-linux-x64
 ```
 bitk/
 ├── apps/
-│   ├── api/                    ← @bitk/api
+│   ├── api/                      ← @bitk/api
 │   │   ├── src/
-│   │   │   ├── index.ts        ← Server entry (Bun.serve, static serving, graceful shutdown)
-│   │   │   ├── app.ts          ← Hono router + middleware
-│   │   │   ├── config.ts       ← Hardcoded statuses (todo/working/review/done)
-│   │   │   ├── db/             ← SQLite/Drizzle schema + migrations
-│   │   │   ├── engines/        ← AI engine executors + process management
-│   │   │   ├── routes/         ← API routes
-│   │   │   ├── events/         ← SSE event system
-│   │   │   └── jobs/           ← Background jobs (upload cleanup)
-│   │   ├── drizzle/            ← Database migrations (auto-applied on startup)
-│   │   ├── drizzle.config.ts   ← Drizzle-kit configuration
-│   │   └── test/               ← Backend tests (bun:test)
-│   └── frontend/               ← @bitk/frontend
+│   │   │   ├── index.ts          ← Server entry (Bun.serve, static serving, graceful shutdown)
+│   │   │   ├── app.ts            ← Hono router + middleware
+│   │   │   ├── config.ts         ← Hardcoded statuses (todo/working/review/done)
+│   │   │   ├── db/               ← SQLite/Drizzle schema + migrations
+│   │   │   ├── engines/          ← AI engine executors + process management
+│   │   │   ├── routes/           ← API routes
+│   │   │   ├── events/           ← SSE event system
+│   │   │   └── jobs/             ← Background jobs (upload cleanup)
+│   │   ├── drizzle/              ← Database migrations (auto-applied on startup)
+│   │   ├── drizzle.config.ts     ← Drizzle-kit configuration
+│   │   └── test/                 ← Backend tests (bun:test)
+│   └── frontend/                 ← @bitk/frontend
+│       ├── package.json
+│       ├── tsconfig.json
+│       ├── vite.config.ts
+│       ├── index.html
 │       └── src/
-├── packages/shared/            ← @bitk/shared (TypeScript types)
-├── scripts/compile.ts          ← Standalone binary compiler
-└── data/                       ← SQLite database (gitignored)
+│           ├── main.tsx          ← App entry
+│           ├── components/       ← UI components (kanban, issue-detail, ui)
+│           ├── hooks/            ← React Query + custom hooks (use-kanban.ts)
+│           ├── pages/            ← Route pages
+│           ├── stores/           ← Zustand (board, panel, view-mode)
+│           ├── lib/              ← API client, utils, constants
+│           ├── i18n/             ← en.json, zh.json
+│           ├── types/            ← Re-exports from @bitk/shared
+│           └── __tests__/
+├── packages/
+│   ├── tsconfig/                 ← Shared tsconfig (base, hono, react, utils)
+│   │   ├── package.json
+│   │   ├── base.json
+│   │   ├── hono.json
+│   │   ├── react.json
+│   │   └── utils.json
+│   └── shared/                   ← @bitk/shared (shared types)
+│       ├── package.json
+│       ├── tsconfig.json
+│       └── src/
+│           └── index.ts          ← TypeScript types (Project, Issue, etc.)
+├── scripts/compile.ts            ← Standalone binary compiler
+├── data/                         ← SQLite database (gitignored)
+├── package.json                  ← Monorepo root + Catalogs
+└── bun.lock                      ← Single lock file
 ```
 
 ### Backend (`apps/api/src/`)

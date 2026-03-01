@@ -86,8 +86,8 @@ bun run dev:api          # 仅 API（端口 3010）
 bun run dev:frontend     # 仅前端（端口 3000）
 
 # 代码质量
-bun run lint             # ESLint（所有工作区）
-bun run format           # Prettier（所有工作区）
+bun run lint             # Biome 检查（所有工作区）
+bun run format           # Biome 格式化（所有工作区）
 bun run format:check
 
 # 测试

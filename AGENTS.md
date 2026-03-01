@@ -46,34 +46,50 @@ bun run db:reset             # deletes SQLite DB files (data/bitk.db)
 ```
 bitk/
 ├── apps/
-│   ├── api/                    ← @bitk/api
-│   │   ├── package.json
-│   │   ├── tsconfig.json
-│   │   ├── eslint.config.mjs
-│   │   ├── src/                ← Backend source
-│   │   │   ├── index.ts        ← Server entry point
-│   │   │   ├── app.ts          ← Hono router
-│   │   │   ├── db/             ← Database layer
-│   │   │   ├── engines/        ← AI engine executors
-│   │   │   ├── routes/         ← API routes
-│   │   │   ├── events/         ← SSE event system
-│   │   │   └── jobs/           ← Background jobs
-│   │   └── test/               ← Backend tests (bun:test)
-│   └── frontend/               ← @bitk/frontend
+│   ├── api/                      ← @bitk/api
+│   │   ├── src/
+│   │   │   ├── index.ts          ← Server entry (Bun.serve, static serving, graceful shutdown)
+│   │   │   ├── app.ts            ← Hono router + middleware
+│   │   │   ├── config.ts         ← Hardcoded statuses (todo/working/review/done)
+│   │   │   ├── db/               ← SQLite/Drizzle schema + migrations
+│   │   │   ├── engines/          ← AI engine executors + process management
+│   │   │   ├── routes/           ← API routes
+│   │   │   ├── events/           ← SSE event system
+│   │   │   └── jobs/             ← Background jobs (upload cleanup)
+│   │   ├── drizzle/              ← Database migrations (auto-applied on startup)
+│   │   ├── drizzle.config.ts     ← Drizzle-kit configuration
+│   │   └── test/                 ← Backend tests (bun:test)
+│   └── frontend/                 ← @bitk/frontend
 │       ├── package.json
 │       ├── tsconfig.json
 │       ├── vite.config.ts
+│       ├── index.html
 │       └── src/
+│           ├── main.tsx          ← App entry
+│           ├── components/       ← UI components (kanban, issue-detail, ui)
+│           ├── hooks/            ← React Query + custom hooks (use-kanban.ts)
+│           ├── pages/            ← Route pages
+│           ├── stores/           ← Zustand (board, panel, view-mode)
+│           ├── lib/              ← API client, utils, constants
+│           ├── i18n/             ← en.json, zh.json
+│           ├── types/            ← Re-exports from @bitk/shared
+│           └── __tests__/
 ├── packages/
-│   └── shared/                 ← @bitk/shared (shared types)
+│   ├── tsconfig/                 ← Shared tsconfig (base, hono, react, utils)
+│   │   ├── package.json
+│   │   ├── base.json
+│   │   ├── hono.json
+│   │   ├── react.json
+│   │   └── utils.json
+│   └── shared/                   ← @bitk/shared (shared types)
 │       ├── package.json
-│       └── src/index.ts
-├── drizzle/                    ← Database migrations
-├── scripts/                    ← Build scripts (compile.ts)
-├── data/                       ← SQLite database (gitignored)
-├── package.json                ← Monorepo root + Catalogs
-├── drizzle.config.ts
-└── bun.lock                    ← Single lock file
+│       ├── tsconfig.json
+│       └── src/
+│           └── index.ts          ← TypeScript types (Project, Issue, etc.)
+├── scripts/compile.ts           ← Standalone binary compiler
+├── data/                         ← SQLite database (gitignored)
+├── package.json                  ← Monorepo root + Catalogs
+└── bun.lock                     ← Single lock file
 ```
 
 ### Backend (`apps/api/src/`)

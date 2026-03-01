@@ -86,8 +86,8 @@ bun run dev:api          # API only (port 3010)
 bun run dev:frontend     # Frontend only (port 3000)
 
 # Code Quality
-bun run lint             # ESLint (all workspaces)
-bun run format           # Prettier (all workspaces)
+bun run lint             # Biome check (all workspaces)
+bun run format           # Biome format (all workspaces)
 bun run format:check
 
 # Testing
