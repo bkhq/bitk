@@ -178,7 +178,7 @@ export function FileViewer({ file, onBack }: FileViewerProps) {
           <MarkdownRenderer content={file.content} />
         ) : (
           <div
-            className="shiki-wrapper text-sm [&_pre]:!bg-transparent [&_pre]:p-4 [&_pre]:overflow-x-auto [&_code]:leading-relaxed [&_.line]:before:content-[attr(data-line)] [&_.line]:before:mr-3 [&_.line]:before:text-muted-foreground/40 [&_.line]:before:text-right [&_.line]:before:inline-block [&_.line]:before:w-5"
+            className="shiki-wrapper text-sm [&_pre]:!bg-transparent [&_pre]:p-4 [&_pre]:overflow-x-auto [&_code]:leading-relaxed"
             // biome-ignore lint/security/noDangerouslySetInnerHtml: Shiki generates safe HTML
             dangerouslySetInnerHTML={{ __html: html }}
           />
