@@ -1,5 +1,4 @@
 import {
-  ChevronDown,
   FileText,
   Image as ImageIcon,
   Loader2,
@@ -10,8 +9,33 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { EngineIcon } from '@/components/EngineIcons'
+import { Button } from '@/components/ui/button'
+import {
+  Command,
+  CommandEmpty,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
+import { Textarea } from '@/components/ui/textarea'
 import { useChangesSummary } from '@/hooks/use-changes-summary'
-import { useClickOutside } from '@/hooks/use-click-outside'
 import { useEngineAvailability, useFollowUpIssue } from '@/hooks/use-kanban'
 import { formatFileSize, formatModelName } from '@/lib/format'
 import type { BusyAction, EngineModel, SessionStatus } from '@/types/kanban'
@@ -100,25 +124,11 @@ export function ChatInput({
       : busyAction
     : undefined
 
-  // Command picker
-  const [cmdPickerOpen, setCmdPickerOpen] = useState(false)
-  const [cmdPickerSearch, setCmdPickerSearch] = useState('')
-  const cmdPickerRef = useRef<HTMLDivElement>(null)
-  const cmdSearchRef = useRef<HTMLInputElement>(null)
-  useClickOutside(cmdPickerRef, cmdPickerOpen, () => setCmdPickerOpen(false))
-
   // Commands from SDK may or may not have "/" prefix — normalize
   const normalizedCommands = useMemo(
     () => slashCommands.map((cmd) => (cmd.startsWith('/') ? cmd : `/${cmd}`)),
     [slashCommands],
   )
-
-  const filteredPickerCommands = useMemo(() => {
-    if (!cmdPickerOpen) return []
-    if (!cmdPickerSearch.trim()) return normalizedCommands
-    const q = cmdPickerSearch.toLowerCase()
-    return normalizedCommands.filter((cmd) => cmd.toLowerCase().includes(q))
-  }, [cmdPickerOpen, cmdPickerSearch, normalizedCommands])
 
   const normalizedPrompt = normalizePrompt(input)
   const canSend =
@@ -315,7 +325,7 @@ export function ChatInput({
   )
 
   return (
-    <div className="shrink-0 w-full min-w-0 px-4 pb-4 relative z-30">
+    <div className="shrink-0 w-full min-w-0 p-4 relative z-30">
       <div
         className={`rounded-xl border bg-card/80 backdrop-blur-sm shadow-sm transition-all duration-200 focus-within:border-border focus-within:shadow-md ${
           isDragOver
@@ -377,16 +387,15 @@ export function ChatInput({
           </div>
         ) : null}
 
-        {/* Textarea */}
+        {/* Textarea — shadcn Textarea, style overrides to match original */}
         <div className="px-3 py-2.5">
-          <textarea
+          <Textarea
             ref={textareaRef}
             value={input}
             onChange={handleInput}
             onKeyDown={handleKeyDown}
             onPaste={handlePaste}
             onFocus={() => {
-              // Scroll chat to bottom when keyboard opens on mobile
               setTimeout(() => {
                 scrollRef?.current?.scrollTo({
                   top: scrollRef.current.scrollHeight,
@@ -400,7 +409,7 @@ export function ChatInput({
                 : t('chat.placeholder')
             }
             rows={1}
-            className="w-full bg-transparent text-base md:text-sm resize-none outline-none placeholder:text-muted-foreground/40 min-h-[24px] leading-relaxed"
+            className="w-full bg-transparent text-base md:text-sm resize-none outline-none border-none shadow-none placeholder:text-muted-foreground/40 leading-relaxed focus-visible:ring-0"
           />
         </div>
 
@@ -451,55 +460,40 @@ export function ChatInput({
         <div className="flex items-center justify-between px-2.5 pb-2.5 pt-0.5">
           <div className="flex items-center gap-0.5">
             {engineType ? <EngineInfo engineType={engineType} /> : null}
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+            <Button
+              variant="ghost"
+              size="icon"
               title={t('chat.attach')}
+              onClick={() => fileInputRef.current?.click()}
             >
-              <Paperclip className="h-3.5 w-3.5" />
-            </button>
+              <Paperclip className="size-4" />
+            </Button>
             {normalizedCommands.length > 0 ? (
               <CommandPicker
-                commands={filteredPickerCommands}
-                open={cmdPickerOpen}
-                search={cmdPickerSearch}
-                onSearchChange={setCmdPickerSearch}
-                onToggle={() => {
-                  setCmdPickerOpen((v) => !v)
-                  setCmdPickerSearch('')
-                  setTimeout(() => cmdSearchRef.current?.focus(), 0)
-                }}
-                onSelect={(cmd) => {
-                  selectSlashCommand(cmd)
-                  setCmdPickerOpen(false)
-                  setCmdPickerSearch('')
-                }}
-                pickerRef={cmdPickerRef}
-                searchRef={cmdSearchRef}
+                commands={normalizedCommands}
+                onSelect={(cmd) => selectSlashCommand(cmd)}
               />
             ) : null}
           </div>
 
-          <button
+          <Button
             type="button"
             disabled={!canSend || followUp.isPending}
             onClick={handleSend}
-            className="rounded-lg bg-foreground px-4 py-1.5 text-sm font-semibold text-background transition-all duration-200 hover:opacity-90 active:scale-[0.97] disabled:opacity-25 disabled:cursor-not-allowed disabled:active:scale-100"
           >
             {followUp.isPending ? (
               <span className="flex items-center gap-1.5">
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                <Loader2 className="size-3.5 animate-spin" />
                 {t('session.sending')}
               </span>
             ) : (
               t('chat.send')
             )}
-          </button>
+          </Button>
         </div>
       </div>
 
-      {/* File preview modal */}
+      {/* File preview modal — shadcn Dialog */}
       {previewFile ? (
         <FilePreviewModal
           file={previewFile}
@@ -509,6 +503,9 @@ export function ChatInput({
     </div>
   )
 }
+
+// ─── FilePreviewModal ────────────────────────────────────────────────────────
+// Replaced custom modal with shadcn Dialog
 
 function FilePreviewModal({
   file,
@@ -521,14 +518,6 @@ function FilePreviewModal({
   const [imageUrl, setImageUrl] = useState<string | null>(null)
 
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    }
-    document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [onClose])
-
-  useEffect(() => {
     if (file.type.startsWith('image/')) {
       const url = URL.createObjectURL(file)
       setImageUrl(url)
@@ -538,35 +527,19 @@ function FilePreviewModal({
   }, [file])
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
-      onClick={onClose}
-    >
-      <div
-        className="relative mx-4 max-h-[80vh] max-w-[90vw] md:max-w-[600px] rounded-xl border border-border/60 bg-card shadow-2xl overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-border/30">
-          <div className="flex items-center gap-2 min-w-0">
-            {file.type.startsWith('image/') ? (
-              <ImageIcon className="h-4 w-4 shrink-0 text-blue-500" />
-            ) : (
-              <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
-            )}
-            <span className="text-sm font-medium truncate">{file.name}</span>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-md p-1 text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
-            aria-label={t('chat.closePreview')}
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-[600px] max-h-[80vh] overflow-hidden p-0">
+        <DialogHeader className="flex flex-row items-center gap-2 px-4 py-3 border-b border-border/30 space-y-0">
+          {file.type.startsWith('image/') ? (
+            <ImageIcon className="h-4 w-4 shrink-0 text-blue-500" />
+          ) : (
+            <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+          )}
+          <DialogTitle className="text-sm font-medium truncate">
+            {file.name}
+          </DialogTitle>
+        </DialogHeader>
 
-        {/* Body */}
         <div className="p-4 overflow-auto max-h-[calc(80vh-56px)]">
           {imageUrl ? (
             <img
@@ -589,10 +562,13 @@ function FilePreviewModal({
             </div>
           )}
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }
+
+// ─── BusyActionSelect ────────────────────────────────────────────────────────
+// Replaced custom dropdown with shadcn DropdownMenu
 
 function BusyActionSelect({
   value,
@@ -602,82 +578,73 @@ function BusyActionSelect({
   onChange: (v: BusyAction) => void
 }) {
   const { t } = useTranslation()
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-  useClickOutside(ref, open, () => setOpen(false))
 
   return (
-    <div ref={ref} className="relative flex">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
-        title={t('chat.busyAction.label')}
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-6 px-2 text-xs text-muted-foreground gap-1"
+          title={t('chat.busyAction.label')}
+        >
+          <span className="truncate max-w-[100px]">
+            {t(`chat.busyAction.${value}`)}
+          </span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="end"
+        side="top"
+        className="min-w-[150px] text-xs"
       >
-        <span className="truncate max-w-[100px]">
-          {t(`chat.busyAction.${value}`)}
-        </span>
-        <ChevronDown className="h-3 w-3 shrink-0" />
-      </button>
-      {open ? (
-        <div className="absolute right-0 bottom-full mb-1.5 z-50 min-w-[150px] rounded-xl border border-border/60 bg-popover/95 backdrop-blur-sm py-1 shadow-xl text-xs text-popover-foreground">
-          {(['queue', 'cancel'] as const).map((option) => {
-            const isActive = option === value
-            return (
-              <button
-                key={option}
-                type="button"
-                onClick={() => {
-                  onChange(option)
-                  setOpen(false)
-                }}
-                className={`flex items-center gap-2 w-full px-3 py-1.5 text-left transition-colors ${
-                  isActive
-                    ? 'bg-primary/10 text-primary font-medium'
-                    : 'hover:bg-accent/50'
-                }`}
-              >
-                <span className="truncate">
-                  {t(`chat.busyAction.${option}`)}
-                </span>
-              </button>
-            )
-          })}
-        </div>
-      ) : null}
-    </div>
+        {(['queue', 'cancel'] as const).map((option) => (
+          <DropdownMenuItem
+            key={option}
+            onSelect={() => onChange(option)}
+            className={
+              option === value ? 'bg-primary/10 text-primary font-medium' : ''
+            }
+          >
+            {t(`chat.busyAction.${option}`)}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
+
+// ─── EngineInfo ──────────────────────────────────────────────────────────────
+// Replaced custom popover with shadcn Popover
 
 function EngineInfo({ engineType }: { engineType: string }) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-  useClickOutside(ref, open, () => setOpen(false))
-
   const engineName = t(`createIssue.engineLabel.${engineType}`, engineType)
 
   return (
-    <div ref={ref} className="relative flex">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-        title={engineName}
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button variant="ghost" size="icon" title={engineName}>
+          <EngineIcon engineType={engineType} className="size-4" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent
+        side="top"
+        align="start"
+        className="w-auto px-3 py-2 text-xs"
       >
-        <EngineIcon engineType={engineType} className="h-3.5 w-3.5" />
-      </button>
-      {open ? (
-        <div className="absolute left-0 bottom-full mb-1.5 z-50 whitespace-nowrap rounded-xl border border-border/60 bg-popover/95 backdrop-blur-sm px-3 py-2 shadow-xl text-xs text-popover-foreground">
-          <div className="flex items-center gap-1.5">
-            <EngineIcon engineType={engineType} className="h-3 w-3 shrink-0" />
-            <span className="font-medium">{engineName}</span>
-          </div>
+        <div className="flex items-center gap-1.5">
+          <EngineIcon engineType={engineType} className="h-3 w-3 shrink-0" />
+          <span className="font-medium">{engineName}</span>
         </div>
-      ) : null}
-    </div>
+      </PopoverContent>
+    </Popover>
   )
 }
+
+// ─── ModelSelect ─────────────────────────────────────────────────────────────
+// Replaced custom dropdown with shadcn DropdownMenu
 
 function ModelSelect({
   models,
@@ -688,128 +655,95 @@ function ModelSelect({
   value: string
   onChange: (v: string) => void
 }) {
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-  useClickOutside(ref, open, () => setOpen(false))
-
   const current = models.find((m) => m.id === value)
   const displayName = current
     ? formatModelName(current.name || current.id)
     : formatModelName(value)
 
   return (
-    <div ref={ref} className="relative flex">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-6 px-2 text-xs text-muted-foreground gap-1"
+        >
+          <span className="truncate max-w-[140px]">{displayName}</span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="end"
+        side="top"
+        className="min-w-[180px] text-xs"
       >
-        <span className="truncate max-w-[140px]">{displayName}</span>
-        <ChevronDown className="h-3 w-3 shrink-0" />
-      </button>
-      {open ? (
-        <div className="absolute right-0 bottom-full mb-1.5 z-50 min-w-[180px] rounded-xl border border-border/60 bg-popover/95 backdrop-blur-sm py-1 shadow-xl text-xs text-popover-foreground">
-          {models.map((m) => {
-            const isActive = m.id === value
-            return (
-              <button
-                key={m.id}
-                type="button"
-                onClick={() => {
-                  onChange(m.id)
-                  setOpen(false)
-                }}
-                className={`flex items-center gap-2 w-full px-3 py-1.5 text-left transition-colors ${
-                  isActive
-                    ? 'bg-primary/10 text-primary font-medium'
-                    : 'hover:bg-accent/50'
-                }`}
-              >
-                <span className="truncate">
-                  {formatModelName(m.name || m.id)}
-                </span>
-              </button>
-            )
-          })}
-        </div>
-      ) : null}
-    </div>
+        {models.map((m) => (
+          <DropdownMenuItem
+            key={m.id}
+            onSelect={() => onChange(m.id)}
+            className={
+              m.id === value ? 'bg-primary/10 text-primary font-medium' : ''
+            }
+          >
+            {formatModelName(m.name || m.id)}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
+
+// ─── CommandPicker ────────────────────────────────────────────────────────────
+// Replaced custom popover + search with shadcn Popover + Command
 
 function CommandPicker({
   commands,
-  open,
-  search,
-  onSearchChange,
-  onToggle,
   onSelect,
-  pickerRef,
-  searchRef,
 }: {
   commands: string[]
-  open: boolean
-  search: string
-  onSearchChange: (v: string) => void
-  onToggle: () => void
   onSelect: (cmd: string) => void
-  pickerRef: React.RefObject<HTMLDivElement | null>
-  searchRef: React.RefObject<HTMLInputElement | null>
 }) {
   const { t } = useTranslation()
+  const [open, setOpen] = useState(false)
 
   return (
-    <div ref={pickerRef} className="relative flex">
-      <button
-        type="button"
-        onClick={onToggle}
-        className="flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-        title={t('chat.commands')}
-      >
-        <SlashSquare className="h-3.5 w-3.5" />
-      </button>
-      {open ? (
-        <div className="absolute left-0 bottom-full mb-1.5 z-50 w-[260px] rounded-xl border border-border/60 bg-popover/95 backdrop-blur-sm shadow-xl text-xs text-popover-foreground">
-          <div className="px-2 pt-2 pb-1">
-            <input
-              ref={searchRef}
-              type="text"
-              value={search}
-              onChange={(e) => onSearchChange(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Escape') {
-                  onToggle()
-                }
-              }}
-              placeholder={t('chat.commandSearch')}
-              className="w-full rounded-md border border-border/40 bg-background/80 px-2 py-1 text-xs outline-none placeholder:text-muted-foreground/40 focus:border-border"
-            />
-          </div>
-          <div className="max-h-[240px] overflow-y-auto py-1">
-            {commands.length === 0 ? (
-              <div className="px-3 py-2 text-muted-foreground/50">
-                {t('chat.noCommands')}
-              </div>
-            ) : (
-              commands.map((cmd) => (
-                <button
-                  key={cmd}
-                  type="button"
-                  onClick={() => onSelect(cmd)}
-                  className="flex items-center gap-2 w-full px-3 py-1.5 text-left transition-colors hover:bg-accent/50"
-                >
-                  <code className="font-mono text-xs text-foreground/80">
-                    {cmd}
-                  </code>
-                </button>
-              ))
-            )}
-          </div>
-        </div>
-      ) : null}
-    </div>
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button variant="ghost" size="icon" title={t('chat.commands')}>
+          <SlashSquare className="size-4" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent side="top" align="start" className="w-[260px] p-0">
+        <Command>
+          <CommandInput
+            placeholder={t('chat.commandSearch')}
+            className="text-xs h-8"
+          />
+          <CommandList className="max-h-[240px]">
+            <CommandEmpty className="text-xs text-muted-foreground/50 px-3 py-2">
+              {t('chat.noCommands')}
+            </CommandEmpty>
+            {commands.map((cmd) => (
+              <CommandItem
+                key={cmd}
+                value={cmd}
+                onSelect={() => {
+                  onSelect(cmd)
+                  setOpen(false)
+                }}
+                className="text-xs px-3 py-1.5"
+              >
+                <code className="font-mono text-foreground/80">{cmd}</code>
+              </CommandItem>
+            ))}
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   )
 }
+
+// ─── ModeSelect ───────────────────────────────────────────────────────────────
+// Replaced custom dropdown with shadcn DropdownMenu
 
 function ModeSelect({
   value,
@@ -819,49 +753,38 @@ function ModeSelect({
   onChange: (v: ModeOption) => void
 }) {
   const { t } = useTranslation()
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-  useClickOutside(ref, open, () => setOpen(false))
 
   return (
-    <div ref={ref} className="relative flex">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
-        title={t('createIssue.mode')}
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-6 px-2 text-xs text-muted-foreground gap-1"
+          title={t('createIssue.mode')}
+        >
+          <span className="truncate max-w-[84px]">
+            {t(`createIssue.perm.${value}`)}
+          </span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="end"
+        side="top"
+        className="min-w-[130px] text-xs"
       >
-        <span className="truncate max-w-[84px]">
-          {t(`createIssue.perm.${value}`)}
-        </span>
-        <ChevronDown className="h-3 w-3 shrink-0" />
-      </button>
-      {open ? (
-        <div className="absolute right-0 bottom-full mb-1.5 z-50 min-w-[130px] rounded-xl border border-border/60 bg-popover/95 backdrop-blur-sm py-1 shadow-xl text-xs text-popover-foreground">
-          {MODE_OPTIONS.map((option) => {
-            const isActive = option === value
-            return (
-              <button
-                key={option}
-                type="button"
-                onClick={() => {
-                  onChange(option)
-                  setOpen(false)
-                }}
-                className={`flex items-center gap-2 w-full px-3 py-1.5 text-left transition-colors ${
-                  isActive
-                    ? 'bg-primary/10 text-primary font-medium'
-                    : 'hover:bg-accent/50'
-                }`}
-              >
-                <span className="truncate">
-                  {t(`createIssue.perm.${option}`)}
-                </span>
-              </button>
-            )
-          })}
-        </div>
-      ) : null}
-    </div>
+        {MODE_OPTIONS.map((option) => (
+          <DropdownMenuItem
+            key={option}
+            onSelect={() => onChange(option)}
+            className={
+              option === value ? 'bg-primary/10 text-primary font-medium' : ''
+            }
+          >
+            {t(`createIssue.perm.${option}`)}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }

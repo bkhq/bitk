@@ -6,18 +6,27 @@ import {
   Loader2,
   RefreshCw,
 } from 'lucide-react'
-import { useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { DirectoryPicker } from '@/components/DirectoryPicker'
 import { EngineIcon } from '@/components/EngineIcons'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import {
   Dialog,
-  DialogCloseButton,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { useClickOutside } from '@/hooks/use-click-outside'
+import { Field } from '@/components/ui/field'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import {
   useEngineAvailability,
   useEngineProfiles,
@@ -81,32 +90,27 @@ export function AppSettingsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md p-0" aria-describedby={undefined}>
+      <DialogContent aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle>{t('settings.title')}</DialogTitle>
-          <DialogCloseButton />
         </DialogHeader>
 
-        <div className="max-h-[70dvh] overflow-y-auto px-5 pb-5">
-          {/* Workspace section */}
-          <div className="mb-4">
-            <label className="text-xs font-medium text-muted-foreground">
-              {t('settings.workspacePath')}
-            </label>
+        <div className="max-h-[70dvh] overflow-y-auto">
+          <Field className="mb-4">
+            <Label>{t('settings.workspacePath')}</Label>
             <div className="mt-1.5 flex items-center gap-1.5">
-              <div className="flex-1 rounded-md border bg-muted/50 px-3 py-2 text-sm font-mono text-muted-foreground truncate">
+              <div className="flex-1 rounded-md border bg-muted/50 px-2 py-1.5 text-sm font-mono text-muted-foreground truncate">
                 {wsData?.path ?? '/'}
               </div>
-              <button
-                type="button"
+              <Button
+                variant="outline"
+                size="icon"
                 onClick={() => setDirPickerOpen(true)}
-                className="flex shrink-0 items-center justify-center rounded-md border px-2.5 py-2 hover:bg-accent transition-colors"
-                title={t('settings.browseWorkspace')}
               >
-                <FolderOpen className="h-4 w-4 text-muted-foreground" />
-              </button>
+                <FolderOpen className="size-4 text-muted-foreground" />
+              </Button>
             </div>
-            <p className="mt-1 text-[11px] text-muted-foreground">
+            <p className="text-[11px] text-muted-foreground">
               {t('settings.workspacePathHint')}
             </p>
             <DirectoryPicker
@@ -115,41 +119,54 @@ export function AppSettingsDialog({
               initialPath={wsData?.path ?? '/'}
               onSelect={handleSelectWorkspace}
             />
-          </div>
+          </Field>
 
           {/* Language & Theme */}
           <div className="mb-4 grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs font-medium text-muted-foreground">
-                {t('settings.language')}
-              </label>
-              <SettingsSelect
+            <Field>
+              <Label>{t('settings.language')}</Label>
+              <Select
                 value={i18n.language}
-                options={LANGUAGES.map((l) => ({ id: l.id, label: l.label }))}
-                onChange={(id) => i18n.changeLanguage(id)}
-              />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-muted-foreground">
-                {t('settings.appearance')}
-              </label>
-              <SettingsSelect
+                onValueChange={(value) => i18n.changeLanguage(value)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {LANGUAGES.map((lang) => (
+                    <SelectItem key={lang.id} value={lang.id}>
+                      {lang.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+            <Field>
+              <Label>{t('settings.appearance')}</Label>
+              <Select
                 value={theme}
-                options={THEME_OPTIONS.map((o) => ({
-                  id: o.id,
-                  label: t(o.labelKey),
-                }))}
-                onChange={(id) => setTheme(id as 'system' | 'light' | 'dark')}
-              />
-            </div>
+                onValueChange={(value) =>
+                  setTheme(value as 'system' | 'light' | 'dark')
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {THEME_OPTIONS.map((option) => (
+                    <SelectItem key={option.id} value={option.id}>
+                      {t(option.labelKey)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
           </div>
 
           {/* Default Engine */}
           {!enginesLoading && availableEngines.length > 0 ? (
-            <div className="mb-4">
-              <label className="text-xs font-medium text-muted-foreground">
-                {t('settings.defaultEngine')}
-              </label>
+            <Field className="mb-4">
+              <Label>{t('settings.defaultEngine')}</Label>
               <div className="mt-1.5 flex flex-wrap gap-1.5">
                 {availableEngines.map((eng) => {
                   const profile = profiles?.find(
@@ -180,31 +197,26 @@ export function AppSettingsDialog({
                   )
                 })}
               </div>
-              <p className="mt-1 text-[11px] text-muted-foreground">
+              <p className="text-[11px] text-muted-foreground">
                 {t('settings.defaultEngineHint')}
               </p>
-            </div>
+            </Field>
           ) : null}
 
           {/* Engines section */}
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-muted-foreground">
-              {t('settings.engines')}
-            </span>
-            <button
-              type="button"
+            <Label>{t('settings.engines')}</Label>
+            <Button
               onClick={() => probe.mutate()}
+              variant="ghost"
+              size="sm"
               disabled={probe.isPending}
-              className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors disabled:opacity-50"
-              title={
-                probe.isPending ? t('settings.probing') : t('settings.probe')
-              }
             >
               <RefreshCw
-                className={cn('h-3.5 w-3.5', probe.isPending && 'animate-spin')}
+                className={cn('size-3', probe.isPending && 'animate-spin')}
               />
               {probe.isPending ? t('settings.probing') : t('settings.probe')}
-            </button>
+            </Button>
           </div>
 
           <div className="flex flex-col gap-2">
@@ -283,18 +295,16 @@ function EngineCard({
       >
         <EngineIcon
           engineType={engine.engineType}
-          className="h-4 w-4 text-muted-foreground shrink-0"
+          className="size-4 text-muted-foreground shrink-0"
         />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium">
               {profile?.name ?? engine.engineType}
             </span>
-            {engine.version ? (
-              <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                v{engine.version}
-              </span>
-            ) : null}
+            {engine.version && (
+              <Badge variant="outline">v{engine.version}</Badge>
+            )}
           </div>
           <div className="flex items-center gap-1.5 mt-0.5 text-xs text-muted-foreground">
             {selectedModelName ? (
@@ -367,62 +377,6 @@ function EngineCard({
               </button>
             )
           })}
-        </div>
-      ) : null}
-    </div>
-  )
-}
-
-function SettingsSelect({
-  value,
-  options,
-  onChange,
-}: {
-  value: string
-  options: { id: string; label: string }[]
-  onChange: (id: string) => void
-}) {
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-  useClickOutside(ref, open, () => setOpen(false))
-
-  const selected = options.find((o) => o.id === value) ?? options[0]
-
-  return (
-    <div ref={ref} className="relative mt-1.5">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between rounded-lg border px-3 py-2 text-sm transition-colors hover:bg-accent/50"
-      >
-        <span className="truncate">{selected.label}</span>
-        <ChevronDown
-          className={cn(
-            'h-3.5 w-3.5 text-muted-foreground shrink-0 transition-transform',
-            open && 'rotate-180',
-          )}
-        />
-      </button>
-      {open ? (
-        <div className="absolute left-0 right-0 top-full mt-1 z-[60] rounded-lg border bg-popover py-1 shadow-lg">
-          {options.map((opt) => (
-            <button
-              key={opt.id}
-              type="button"
-              onClick={() => {
-                onChange(opt.id)
-                setOpen(false)
-              }}
-              className={`flex w-full items-center gap-2 px-3 py-1.5 text-sm transition-colors hover:bg-accent ${
-                opt.id === value ? 'bg-accent/50 font-medium' : ''
-              }`}
-            >
-              {opt.label}
-              {opt.id === value ? (
-                <Check className="h-3 w-3 ml-auto shrink-0" />
-              ) : null}
-            </button>
-          ))}
         </div>
       ) : null}
     </div>

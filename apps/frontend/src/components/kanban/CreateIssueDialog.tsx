@@ -3,14 +3,23 @@ import {
   ChevronsRight,
   GitBranch,
   MousePointerClick,
-  X,
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useParams } from 'react-router-dom'
 import { EngineIcon } from '@/components/EngineIcons'
+import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
-import { useClickOutside } from '@/hooks/use-click-outside'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Switch } from '@/components/ui/switch'
+import { Textarea } from '@/components/ui/textarea'
 import {
   useCreateIssue,
   useEngineAvailability,
@@ -38,55 +47,6 @@ const PERMISSIONS = [
 type PermissionId = (typeof PERMISSIONS)[number]['id']
 
 const PRIORITIES: Priority[] = ['urgent', 'high', 'medium', 'low']
-
-// ── Shared primitives ─────────────────────────────────
-
-function DropdownPanel({
-  children,
-  className,
-  heading,
-}: {
-  children: React.ReactNode
-  className?: string
-  heading?: string
-}) {
-  return (
-    <div
-      className={`absolute left-0 top-full mt-1 z-[60] rounded-lg border bg-popover shadow-lg ${className ?? ''}`}
-    >
-      {heading ? (
-        <div className="px-3 pt-2 pb-1">
-          <span className="text-xs font-semibold text-muted-foreground">
-            {heading}
-          </span>
-        </div>
-      ) : null}
-      <div className="py-1">{children}</div>
-    </div>
-  )
-}
-
-function DropdownItem({
-  children,
-  active,
-  onClick,
-}: {
-  children: React.ReactNode
-  active?: boolean
-  onClick?: () => void
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`flex w-full items-center gap-2 px-3 py-1.5 text-sm transition-colors hover:bg-accent ${
-        active ? 'bg-accent/50' : ''
-      }`}
-    >
-      {children}
-    </button>
-  )
-}
 
 // ── Shared form body ─────────────────────────────────
 
@@ -166,7 +126,6 @@ export function CreateIssueForm({
   const handleSubmit = useCallback(() => {
     const trimmed = input.trim()
     if (!trimmed || !statusId) return
-    // Map UI permission IDs to backend permission modes
     const permissionMap: Record<PermissionId, string | undefined> = {
       auto: 'auto',
       ask: 'supervised',
@@ -227,30 +186,28 @@ export function CreateIssueForm({
   return (
     <div onKeyDown={handleKeyDown}>
       {/* ─── Input area ─────────────────────────── */}
-      <div className="px-5">
-        <div className="rounded-lg border bg-muted/30 focus-within:ring-1 focus-within:ring-ring transition-shadow">
-          <textarea
-            ref={textareaRef}
-            value={input}
-            onChange={handleTextarea}
-            placeholder={t('issue.describeWork')}
-            rows={4}
-            className="w-full bg-transparent text-sm resize-none outline-none placeholder:text-muted-foreground/50 px-3 pt-3 pb-2 min-h-[100px]"
-            disabled={createIssue.isPending}
-          />
-          <div className="flex items-center justify-between px-3 pb-2">
-            <span className="text-[11px] text-muted-foreground/50">
-              {t('issue.cmdEnterSubmit')}
-            </span>
-            <span className="text-[11px] text-muted-foreground/50 tabular-nums">
-              {input.length} / 2000
-            </span>
-          </div>
+      <div className="rounded-lg border bg-muted/30 focus-within:ring-1 focus-within:ring-ring transition-shadow">
+        <Textarea
+          ref={textareaRef}
+          value={input}
+          onChange={handleTextarea}
+          placeholder={t('issue.describeWork')}
+          rows={4}
+          className="w-full bg-transparent text-sm resize-none border-none shadow-none outline-none placeholder:text-muted-foreground/50 px-3 pt-3 pb-2 min-h-25 focus-visible:ring-0 rounded-b-none!"
+          disabled={createIssue.isPending}
+        />
+        <div className="flex items-center justify-between px-3 py-2">
+          <span className="text-[11px] text-muted-foreground/50">
+            {t('issue.cmdEnterSubmit')}
+          </span>
+          <span className="text-[11px] text-muted-foreground/50 tabular-nums">
+            {input.length} / 2000
+          </span>
         </div>
       </div>
 
       {/* ─── Properties (selectors) ─────────────── */}
-      <div className="px-5 pt-3.5">
+      <div className="pt-3.5">
         <p className="text-xs font-medium text-muted-foreground mb-2">
           {t('issue.properties')}
         </p>
@@ -290,27 +247,21 @@ export function CreateIssueForm({
       </div>
 
       {/* ─── Footer ─────────────────────────────── */}
-      <div className="flex items-center justify-end px-5 pt-4 pb-4">
+      <div className="flex items-center justify-end pt-4">
         <div className="flex items-center gap-2">
           {onCancel ? (
-            <button
-              type="button"
-              onClick={onCancel}
-              className="rounded-lg px-3 py-1.5 text-sm text-muted-foreground hover:bg-accent transition-colors"
-            >
+            <Button variant="secondary" onClick={onCancel}>
               {t('common.cancel')}
-            </button>
+            </Button>
           ) : null}
-          <button
-            type="button"
+          <Button
             onClick={handleSubmit}
             disabled={createIssue.isPending || !input.trim()}
-            className="rounded-lg bg-foreground px-4 py-1.5 text-sm font-medium text-background transition-opacity hover:opacity-80 disabled:opacity-30"
           >
             {createIssue.isPending
               ? t('createIssue.creating')
               : t('createIssue.create')}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -333,27 +284,12 @@ export function CreateIssueDialog() {
       }}
     >
       <DialogContent
-        className="flex flex-col gap-0 p-0 max-w-[calc(100%-2rem)] md:max-w-[580px] max-h-[calc(100dvh-2rem)] rounded-xl overflow-visible"
+        className="max-w-[calc(100%-2rem)] md:max-w-[580px]"
         aria-describedby={undefined}
         onInteractOutside={(e) => e.preventDefault()}
         onPointerDownOutside={(e) => e.preventDefault()}
       >
-        <DialogTitle className="sr-only">{t('issue.createTask')}</DialogTitle>
-
-        {/* ─── Header ─────────────────────────────── */}
-        <div className="flex items-center justify-between px-5 pt-4 pb-3">
-          <h2 className="text-sm font-semibold text-foreground">
-            {t('issue.createTask')}
-          </h2>
-          <button
-            type="button"
-            onClick={closeCreateDialog}
-            className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
+        <DialogTitle>{t('issue.createTask')}</DialogTitle>
         <CreateIssueForm
           projectId={projectId}
           initialStatusId={createDialogStatusId}
@@ -385,7 +321,8 @@ function PropertyRow({
   )
 }
 
-// ── Select components (inline in property rows) ──────
+// ── Select components ────────────────────────────────
+// All replaced with shadcn DropdownMenu; no more useClickOutside / manual open state
 
 function StatusSelect({
   statuses,
@@ -397,48 +334,41 @@ function StatusSelect({
   onChange: (id: string) => void
 }) {
   const { t } = useTranslation()
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-  useClickOutside(ref, open, () => setOpen(false))
   const current = statuses.find((s) => s.id === value)
 
   return (
-    <div ref={ref} className="relative flex">
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className="flex items-center gap-1.5 text-sm hover:text-foreground transition-colors w-full"
-      >
-        <span
-          className="h-2 w-2 rounded-full shrink-0"
-          style={{ backgroundColor: current?.color }}
-        />
-        <span className="truncate">
-          {current ? tStatus(t, current.name) : t('issue.selectStatus')}
-        </span>
-        <ChevronDown className="h-3 w-3 text-muted-foreground ml-auto shrink-0" />
-      </button>
-      {open ? (
-        <DropdownPanel className="min-w-[160px]">
-          {statuses.map((s) => (
-            <DropdownItem
-              key={s.id}
-              active={s.id === value}
-              onClick={() => {
-                onChange(s.id)
-                setOpen(false)
-              }}
-            >
-              <span
-                className="h-2 w-2 rounded-full shrink-0"
-                style={{ backgroundColor: s.color }}
-              />
-              <span>{tStatus(t, s.name)}</span>
-            </DropdownItem>
-          ))}
-        </DropdownPanel>
-      ) : null}
-    </div>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          className="flex items-center gap-1.5 text-sm hover:text-foreground transition-colors w-full"
+        >
+          <span
+            className="h-2 w-2 rounded-full shrink-0"
+            style={{ backgroundColor: current?.color }}
+          />
+          <span className="truncate">
+            {current ? tStatus(t, current.name) : t('issue.selectStatus')}
+          </span>
+          <ChevronDown className="h-3 w-3 text-muted-foreground ml-auto shrink-0" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="min-w-[160px]">
+        {statuses.map((s) => (
+          <DropdownMenuItem
+            key={s.id}
+            onSelect={() => onChange(s.id)}
+            className={s.id === value ? 'bg-accent/50' : ''}
+          >
+            <span
+              className="h-2 w-2 rounded-full shrink-0"
+              style={{ backgroundColor: s.color }}
+            />
+            <span>{tStatus(t, s.name)}</span>
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
 
@@ -450,39 +380,32 @@ function PrioritySelect({
   onChange: (p: Priority) => void
 }) {
   const { t } = useTranslation()
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-  useClickOutside(ref, open, () => setOpen(false))
 
   return (
-    <div ref={ref} className="relative flex">
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className="flex items-center gap-1.5 text-sm hover:text-foreground transition-colors w-full"
-      >
-        <PriorityIcon priority={value} />
-        <span className="capitalize truncate">{tPriority(t, value)}</span>
-        <ChevronDown className="h-3 w-3 text-muted-foreground ml-auto shrink-0" />
-      </button>
-      {open ? (
-        <DropdownPanel className="w-36">
-          {PRIORITIES.map((p) => (
-            <DropdownItem
-              key={p}
-              active={p === value}
-              onClick={() => {
-                onChange(p)
-                setOpen(false)
-              }}
-            >
-              <PriorityIcon priority={p} />
-              <span className="capitalize">{tPriority(t, p)}</span>
-            </DropdownItem>
-          ))}
-        </DropdownPanel>
-      ) : null}
-    </div>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          className="flex items-center gap-1.5 text-sm hover:text-foreground transition-colors w-full"
+        >
+          <PriorityIcon priority={value} />
+          <span className="capitalize truncate">{tPriority(t, value)}</span>
+          <ChevronDown className="h-3 w-3 text-muted-foreground ml-auto shrink-0" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-36">
+        {PRIORITIES.map((p) => (
+          <DropdownMenuItem
+            key={p}
+            onSelect={() => onChange(p)}
+            className={p === value ? 'bg-accent/50' : ''}
+          >
+            <PriorityIcon priority={p} />
+            <span className="capitalize">{tPriority(t, p)}</span>
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
 
@@ -498,9 +421,6 @@ function EngineSelect({
   onChange: (v: string) => void
 }) {
   const { t } = useTranslation()
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-  useClickOutside(ref, open, () => setOpen(false))
 
   const isDefault = !value
   const currentProfile = profiles.find((p) => p.engineType === value)
@@ -509,66 +429,62 @@ function EngineSelect({
     : (currentProfile?.name ?? value)
 
   return (
-    <div ref={ref} className="relative flex">
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className="flex items-center gap-1.5 text-sm hover:text-foreground transition-colors w-full"
-      >
-        {value ? (
-          <EngineIcon
-            engineType={value}
-            className="h-3.5 w-3.5 text-muted-foreground shrink-0"
-          />
-        ) : null}
-        <span className="truncate">{currentName}</span>
-        <ChevronDown className="h-3 w-3 text-muted-foreground ml-auto shrink-0" />
-      </button>
-      {open ? (
-        <DropdownPanel className="min-w-[200px]">
-          <DropdownItem
-            active={isDefault}
-            onClick={() => {
-              onChange('')
-              setOpen(false)
-            }}
-          >
-            <span className="font-medium">{t('createIssue.modelDefault')}</span>
-            <span className="text-[10px] text-muted-foreground">
-              ({t('createIssue.modelDefaultHint')})
-            </span>
-          </DropdownItem>
-          {engines.map((a) => {
-            const profile = profiles.find((p) => p.engineType === a.engineType)
-            return (
-              <DropdownItem
-                key={a.engineType}
-                active={a.engineType === value}
-                onClick={() => {
-                  onChange(a.engineType)
-                  setOpen(false)
-                }}
-              >
-                <EngineIcon
-                  engineType={a.engineType}
-                  className="h-3.5 w-3.5 text-muted-foreground shrink-0"
-                />
-                <span className="font-medium">
-                  {profile?.name ?? a.engineType}
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          className="flex items-center gap-1.5 text-sm hover:text-foreground transition-colors w-full"
+        >
+          {value ? (
+            <EngineIcon
+              engineType={value}
+              className="h-3.5 w-3.5 text-muted-foreground shrink-0"
+            />
+          ) : null}
+          <span className="truncate">{currentName}</span>
+          <ChevronDown className="h-3 w-3 text-muted-foreground ml-auto shrink-0" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="min-w-[200px]">
+        <DropdownMenuItem
+          onSelect={() => onChange('')}
+          className={isDefault ? 'bg-accent/50' : ''}
+        >
+          <span className="font-medium">{t('createIssue.modelDefault')}</span>
+          <span className="text-[10px] text-muted-foreground ml-1">
+            ({t('createIssue.modelDefaultHint')})
+          </span>
+        </DropdownMenuItem>
+        {engines.map((a) => {
+          const profile = profiles.find((p) => p.engineType === a.engineType)
+          return (
+            <DropdownMenuItem
+              key={a.engineType}
+              onSelect={() => onChange(a.engineType)}
+              className={a.engineType === value ? 'bg-accent/50' : ''}
+            >
+              <EngineIcon
+                engineType={a.engineType}
+                className="h-3.5 w-3.5 text-muted-foreground shrink-0"
+              />
+              <span className="font-medium">
+                {profile?.name ?? a.engineType}
+              </span>
+              {a.version ? (
+                <span className="text-[10px] text-muted-foreground ml-1">
+                  v{a.version}
                 </span>
-                {a.version ? (
-                  <span className="text-[10px] text-muted-foreground">
-                    v{a.version}
-                  </span>
-                ) : null}
-              </DropdownItem>
-            )
-          })}
-        </DropdownPanel>
-      ) : null}
-    </div>
+              ) : null}
+            </DropdownMenuItem>
+          )
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
+
+// ── WorktreeToggle ────────────────────────────────────
+// Replaced manual button with shadcn Switch for better semantics & accessibility
 
 function WorktreeToggle({
   value,
@@ -580,18 +496,17 @@ function WorktreeToggle({
   const { t } = useTranslation()
 
   return (
-    <button
-      type="button"
-      onClick={() => onChange(!value)}
-      className="flex items-center gap-1.5 text-sm hover:text-foreground transition-colors w-full"
-    >
-      <GitBranch
-        className={`h-3.5 w-3.5 shrink-0 ${value ? 'text-emerald-500' : 'text-muted-foreground'}`}
-      />
-      <span className={value ? 'text-emerald-600 dark:text-emerald-400' : ''}>
+    <div className="flex items-center gap-2 w-full">
+      <Switch checked={value} onCheckedChange={onChange} className="shrink-0" />
+      <span
+        className={`text-sm ${value ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'}`}
+      >
+        <GitBranch
+          className={`inline h-3.5 w-3.5 mr-1 shrink-0 ${value ? 'text-emerald-500' : 'text-muted-foreground'}`}
+        />
         {value ? t('createIssue.worktreeOn') : t('createIssue.worktreeOff')}
       </span>
-    </button>
+    </div>
   )
 }
 
@@ -605,62 +520,52 @@ function ModelSelect({
   onChange: (v: string) => void
 }) {
   const { t } = useTranslation()
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-  useClickOutside(ref, open, () => setOpen(false))
   const current = value ? models.find((m) => m.id === value) : null
   const isDefault = !value
 
   return (
-    <div ref={ref} className="relative flex">
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className="flex items-center gap-1.5 text-sm hover:text-foreground transition-colors w-full"
-      >
-        <span className="truncate">
-          {isDefault ? t('createIssue.modelDefault') : (current?.name ?? '—')}
-        </span>
-        <ChevronDown className="h-3 w-3 text-muted-foreground ml-auto shrink-0" />
-      </button>
-      {open ? (
-        <DropdownPanel className="min-w-[220px]">
-          <DropdownItem
-            active={isDefault}
-            onClick={() => {
-              onChange('')
-              setOpen(false)
-            }}
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          className="flex items-center gap-1.5 text-sm hover:text-foreground transition-colors w-full"
+        >
+          <span className="truncate">
+            {isDefault ? t('createIssue.modelDefault') : (current?.name ?? '—')}
+          </span>
+          <ChevronDown className="h-3 w-3 text-muted-foreground ml-auto shrink-0" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="min-w-[220px]">
+        <DropdownMenuItem
+          onSelect={() => onChange('')}
+          className={isDefault ? 'bg-accent/50' : ''}
+        >
+          <span className="font-medium">{t('createIssue.modelDefault')}</span>
+          <span className="text-[10px] text-muted-foreground ml-1">
+            ({t('createIssue.modelDefaultHint')})
+          </span>
+        </DropdownMenuItem>
+        {models.map((m) => (
+          <DropdownMenuItem
+            key={m.id}
+            onSelect={() => onChange(m.id)}
+            className={m.id === value ? 'bg-accent/50' : ''}
           >
-            <span className="font-medium">{t('createIssue.modelDefault')}</span>
-            <span className="text-[10px] text-muted-foreground">
-              ({t('createIssue.modelDefaultHint')})
-            </span>
-          </DropdownItem>
-          {models.map((m) => (
-            <DropdownItem
-              key={m.id}
-              active={m.id === value}
-              onClick={() => {
-                onChange(m.id)
-                setOpen(false)
-              }}
-            >
-              <span className="font-medium">{m.name}</span>
-              {m.isDefault ? (
-                <span className="text-[10px] text-muted-foreground">
-                  ({t('createIssue.engineLabel.default')})
-                </span>
-              ) : null}
-            </DropdownItem>
-          ))}
-        </DropdownPanel>
-      ) : null}
-    </div>
+            <span className="font-medium">{m.name}</span>
+            {m.isDefault ? (
+              <span className="text-[10px] text-muted-foreground ml-1">
+                ({t('createIssue.engineLabel.default')})
+              </span>
+            ) : null}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
 
-// ── Permission select (inline in property row) ───────
+// ── PermissionSelect ──────────────────────────────────
 
 function PermissionSelect({
   value,
@@ -670,48 +575,44 @@ function PermissionSelect({
   onChange: (v: PermissionId) => void
 }) {
   const { t } = useTranslation()
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-  useClickOutside(ref, open, () => setOpen(false))
   const current = PERMISSIONS.find((p) => p.id === value) ?? PERMISSIONS[0]
   const Icon = current.icon
 
   return (
-    <div ref={ref} className="relative flex">
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className="flex items-center gap-1.5 text-sm hover:text-foreground transition-colors w-full"
-      >
-        <Icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-        <span className="truncate">{t(`createIssue.perm.${current.id}`)}</span>
-        <ChevronDown className="h-3 w-3 text-muted-foreground ml-auto shrink-0" />
-      </button>
-      {open ? (
-        <DropdownPanel
-          className="min-w-[140px]"
-          heading={t('createIssue.permission')}
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          className="flex items-center gap-1.5 text-sm hover:text-foreground transition-colors w-full"
         >
-          {PERMISSIONS.map((perm) => {
-            const PermIcon = perm.icon
-            return (
-              <DropdownItem
-                key={perm.id}
-                active={perm.id === value}
-                onClick={() => {
-                  onChange(perm.id)
-                  setOpen(false)
-                }}
-              >
-                <PermIcon className="h-4 w-4 text-muted-foreground shrink-0" />
-                <span className="font-medium">
-                  {t(`createIssue.perm.${perm.id}`)}
-                </span>
-              </DropdownItem>
-            )
-          })}
-        </DropdownPanel>
-      ) : null}
-    </div>
+          <Icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+          <span className="truncate">
+            {t(`createIssue.perm.${current.id}`)}
+          </span>
+          <ChevronDown className="h-3 w-3 text-muted-foreground ml-auto shrink-0" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="min-w-[140px]">
+        <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground">
+          {t('createIssue.permission')}
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        {PERMISSIONS.map((perm) => {
+          const PermIcon = perm.icon
+          return (
+            <DropdownMenuItem
+              key={perm.id}
+              onSelect={() => onChange(perm.id)}
+              className={perm.id === value ? 'bg-accent/50' : ''}
+            >
+              <PermIcon className="h-4 w-4 text-muted-foreground shrink-0" />
+              <span className="font-medium">
+                {t(`createIssue.perm.${perm.id}`)}
+              </span>
+            </DropdownMenuItem>
+          )
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }

@@ -6,14 +6,93 @@ import { DirectoryPicker } from '@/components/DirectoryPicker'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
-  DialogCloseButton,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { Field, FieldGroup } from '@/components/ui/field'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { useDeleteProject, useUpdateProject } from '@/hooks/use-kanban'
 import type { Project } from '@/types/kanban'
+
+function DeleteProjectDialog({
+  open,
+  onOpenChange,
+  project,
+  onDeleted,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  project: Project
+  onDeleted: () => void
+}) {
+  const { t } = useTranslation()
+  const [confirmName, setConfirmName] = useState('')
+  const [error, setError] = useState('')
+  const deleteProject = useDeleteProject()
+
+  useEffect(() => {
+    if (!open) {
+      setConfirmName('')
+      setError('')
+    }
+  }, [open])
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="md:max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="text-destructive">
+            {t('project.delete')}
+          </DialogTitle>
+          <DialogDescription>{t('project.deleteConfirm')}</DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-3">
+          <p className="text-xs text-muted-foreground">
+            {t('project.deleteConfirmHint', { name: project.name })}
+          </p>
+          <Input
+            type="text"
+            value={confirmName}
+            onChange={(e) => setConfirmName(e.target.value)}
+            placeholder={t('project.deleteConfirmPlaceholder')}
+            className="w-full"
+          />
+          {error ? <p className="text-sm text-destructive">{error}</p> : null}
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            {t('common.cancel')}
+          </Button>
+          <Button
+            variant="destructive"
+            disabled={
+              confirmName.trim() !== project.name.trim() ||
+              deleteProject.isPending
+            }
+            onClick={() => {
+              setError('')
+              deleteProject.mutate(project.id, {
+                onSuccess: onDeleted,
+                onError: (err) => setError(err.message),
+              })
+            }}
+          >
+            {deleteProject.isPending
+              ? t('project.deleting')
+              : t('project.delete')}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
 
 export function ProjectSettingsDialog({
   open,
@@ -33,10 +112,8 @@ export function ProjectSettingsDialog({
   )
   const [dirPickerOpen, setDirPickerOpen] = useState(false)
   const [error, setError] = useState('')
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
-  const [deleteConfirmName, setDeleteConfirmName] = useState('')
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const updateProject = useUpdateProject()
-  const deleteProject = useDeleteProject()
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -46,8 +123,6 @@ export function ProjectSettingsDialog({
       setDirectory(project.directory ?? '')
       setRepositoryUrl(project.repositoryUrl ?? '')
       setError('')
-      setShowDeleteConfirm(false)
-      setDeleteConfirmName('')
     }
   }, [open, project])
 
@@ -82,167 +157,118 @@ export function ProjectSettingsDialog({
     )
   }
 
-  const inputClass =
-    'w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring'
-
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[calc(100%-2rem)] md:max-w-lg">
-        <DialogHeader>
-          <div>
-            <DialogTitle>{t('project.settings')}</DialogTitle>
-            <DialogDescription className="mt-1">
-              {t('project.settingsDescription')}
-            </DialogDescription>
-          </div>
-          <DialogCloseButton />
-        </DialogHeader>
-
-        <div className="max-h-[85dvh] overflow-y-auto space-y-4 px-5 pb-5 pt-3">
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">
-              {t('project.name')} <span className="text-destructive">*</span>
-            </label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder={t('project.namePlaceholder')}
-              autoFocus
-              className={inputClass}
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">
-              {t('project.description')}
-            </label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder={t('project.descriptionPlaceholder')}
-              rows={3}
-              className={`${inputClass} resize-none`}
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">
-              {t('project.directory')}
-            </label>
-            <div className="flex gap-1.5">
-              <input
-                type="text"
-                value={directory}
-                onChange={(e) => setDirectory(e.target.value)}
-                placeholder={t('project.directoryPlaceholder')}
-                className={inputClass}
-              />
-              <button
-                type="button"
-                onClick={() => setDirPickerOpen(true)}
-                className="flex shrink-0 items-center justify-center rounded-md border px-2.5 hover:bg-accent transition-colors"
-                title={t('project.browseDirectories')}
-              >
-                <FolderOpen className="h-4 w-4 text-muted-foreground" />
-              </button>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="md:max-w-lg">
+          <DialogHeader>
+            <div>
+              <DialogTitle>{t('project.settings')}</DialogTitle>
+              <DialogDescription>
+                {t('project.settingsDescription')}
+              </DialogDescription>
             </div>
-            <DirectoryPicker
-              open={dirPickerOpen}
-              onOpenChange={setDirPickerOpen}
-              initialPath={directory || undefined}
-              onSelect={setDirectory}
-            />
-          </div>
+          </DialogHeader>
 
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">
-              {t('project.repositoryUrl')}
-            </label>
-            <input
-              type="text"
-              value={repositoryUrl}
-              onChange={(e) => setRepositoryUrl(e.target.value)}
-              placeholder={t('project.repositoryUrlPlaceholder')}
-              className={inputClass}
-            />
-          </div>
-
-          {error ? <p className="text-sm text-destructive">{error}</p> : null}
-
-          <Button
-            className="w-full"
-            variant="outline"
-            onClick={handleSave}
-            disabled={updateProject.isPending || !name.trim() || !hasChanges}
-          >
-            {updateProject.isPending
-              ? t('project.saving')
-              : t('project.saveChanges')}
-          </Button>
-
-          <div className="border-t pt-4">
-            {!showDeleteConfirm ? (
-              <Button
+          <FieldGroup>
+            <Field>
+              <Label>
+                {t('project.name')} <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder={t('project.namePlaceholder')}
+                autoFocus
                 className="w-full"
-                variant="destructive"
-                onClick={() => setShowDeleteConfirm(true)}
-              >
-                {t('project.delete')}
-              </Button>
-            ) : (
-              <div className="space-y-2">
-                <p className="text-sm text-destructive">
-                  {t('project.deleteConfirm')}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {t('project.deleteConfirmHint', { name: project.name })}
-                </p>
-                <input
+              />
+            </Field>
+
+            <Field>
+              <Label>{t('project.description')}</Label>
+              <Textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder={t('project.descriptionPlaceholder')}
+                rows={3}
+                className="w-full resize-none"
+              />
+            </Field>
+
+            <Field>
+              <Label>{t('project.directory')}</Label>
+              <div className="flex gap-1.5">
+                <Input
                   type="text"
-                  value={deleteConfirmName}
-                  onChange={(e) => setDeleteConfirmName(e.target.value)}
-                  placeholder={t('project.deleteConfirmPlaceholder')}
-                  className={inputClass}
+                  value={directory}
+                  onChange={(e) => setDirectory(e.target.value)}
+                  placeholder={t('project.directoryPlaceholder')}
+                  className="w-full"
                 />
-                <div className="flex gap-2">
-                  <Button
-                    className="flex-1"
-                    variant="outline"
-                    onClick={() => {
-                      setShowDeleteConfirm(false)
-                      setDeleteConfirmName('')
-                    }}
-                  >
-                    {t('common.cancel')}
-                  </Button>
-                  <Button
-                    className="flex-1"
-                    variant="destructive"
-                    disabled={
-                      deleteConfirmName !== project.name ||
-                      deleteProject.isPending
-                    }
-                    onClick={() => {
-                      deleteProject.mutate(project.id, {
-                        onSuccess: () => {
-                          onOpenChange(false)
-                          void navigate('/')
-                        },
-                        onError: (err) => setError(err.message),
-                      })
-                    }}
-                  >
-                    {deleteProject.isPending
-                      ? t('project.deleting')
-                      : t('project.delete')}
-                  </Button>
-                </div>
+                <Button
+                  onClick={() => setDirPickerOpen(true)}
+                  variant="outline"
+                  size="icon"
+                  title={t('project.browseDirectories')}
+                >
+                  <FolderOpen className="size-4 text-muted-foreground" />
+                </Button>
               </div>
-            )}
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+              <DirectoryPicker
+                open={dirPickerOpen}
+                onOpenChange={setDirPickerOpen}
+                initialPath={directory || undefined}
+                onSelect={setDirectory}
+              />
+            </Field>
+
+            <Field className="space-y-1.5">
+              <Label>{t('project.repositoryUrl')}</Label>
+              <Input
+                type="text"
+                value={repositoryUrl}
+                onChange={(e) => setRepositoryUrl(e.target.value)}
+                placeholder={t('project.repositoryUrlPlaceholder')}
+                className="w-full"
+              />
+            </Field>
+
+            {error ? <p className="text-sm text-destructive">{error}</p> : null}
+          </FieldGroup>
+
+          <DialogFooter>
+            <Button
+              variant="destructive"
+              onClick={() => setDeleteDialogOpen(true)}
+            >
+              {t('project.delete')}
+            </Button>
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              {t('common.cancel')}
+            </Button>
+            <Button
+              onClick={handleSave}
+              disabled={updateProject.isPending || !name.trim() || !hasChanges}
+            >
+              {updateProject.isPending
+                ? t('project.saving')
+                : t('project.saveChanges')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <DeleteProjectDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        project={project}
+        onDeleted={() => {
+          setDeleteDialogOpen(false)
+          onOpenChange(false)
+          void navigate('/')
+        }}
+      />
+    </>
   )
 }
