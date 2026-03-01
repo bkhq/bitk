@@ -76,6 +76,16 @@ export function useUpdateProject() {
   })
 }
 
+export function useDeleteProject() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => kanbanApi.deleteProject(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects() })
+    },
+  })
+}
+
 export function useProject(projectId: string) {
   return useQuery({
     queryKey: queryKeys.project(projectId),

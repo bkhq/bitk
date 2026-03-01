@@ -4,9 +4,12 @@ import { and, eq, ne } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { customAlphabet } from 'nanoid'
 import * as z from 'zod'
+import { cacheDelByPrefix } from '@/cache'
 import { db } from '@/db'
 import { findProject, invalidateProjectCache } from '@/db/helpers'
-import { projects as projectsTable } from '@/db/schema'
+import { issues as issuesTable, projects as projectsTable } from '@/db/schema'
+import { issueEngine } from '@/engines/issue'
+import { logger } from '@/logger'
 
 import { toISO } from '@/utils/date'
 
@@ -203,5 +206,59 @@ projects.patch(
     return c.json({ success: true, data: serializeProject(row) })
   },
 )
+
+projects.delete('/:projectId', async (c) => {
+  const existing = await findProject(c.req.param('projectId'))
+  if (!existing) {
+    return c.json({ success: false, error: 'Project not found' }, 404)
+  }
+
+  // Find all active issues and cancel running sessions
+  const activeIssues = await db
+    .select({ id: issuesTable.id, sessionStatus: issuesTable.sessionStatus })
+    .from(issuesTable)
+    .where(
+      and(eq(issuesTable.projectId, existing.id), eq(issuesTable.isDeleted, 0)),
+    )
+
+  for (const issue of activeIssues) {
+    if (
+      issue.sessionStatus === 'running' ||
+      issue.sessionStatus === 'pending'
+    ) {
+      void issueEngine.cancelIssue(issue.id).catch((err) => {
+        logger.error({ issueId: issue.id, err }, 'project_delete_cancel_failed')
+      })
+    }
+  }
+
+  await db.transaction(async (tx) => {
+    // Soft-delete all issues in this project
+    await tx
+      .update(issuesTable)
+      .set({ isDeleted: 1 })
+      .where(
+        and(
+          eq(issuesTable.projectId, existing.id),
+          eq(issuesTable.isDeleted, 0),
+        ),
+      )
+
+    // Soft-delete the project
+    await tx
+      .update(projectsTable)
+      .set({ isDeleted: 1 })
+      .where(eq(projectsTable.id, existing.id))
+  })
+
+  // Invalidate caches
+  await invalidateProjectCache(existing.id, existing.alias)
+  await cacheDelByPrefix(`projectIssueIds:${existing.id}`)
+  await cacheDelByPrefix(`childCounts:${existing.id}`)
+
+  logger.info({ projectId: existing.id }, 'project_deleted')
+
+  return c.json({ success: true, data: { id: existing.id } })
+})
 
 export default projects

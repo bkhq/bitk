@@ -30,7 +30,12 @@
     "issueCount": "{{count}} 个任务",
     "statusCount": "{{count}} 个状态",
     "browseDirectories": "浏览目录",
-    "directoryAlreadyUsed": "该目录已被其他项目使用"
+    "directoryAlreadyUsed": "该目录已被其他项目使用",
+    "delete": "删除项目",
+    "deleteConfirm": "确定要删除此项目吗？所有任务也将一并删除，此操作无法撤销。",
+    "deleting": "删除中...",
+    "deleteConfirmPlaceholder": "输入项目名称以确认",
+    "deleteConfirmHint": "请输入 \"{{name}}\" 以确认删除"
   },
   "kanban": {
     "newIssue": "新建任务",

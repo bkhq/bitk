@@ -80,6 +80,7 @@ export const kanbanApi = {
       repositoryUrl?: string
     },
   ) => patch<Project>(`/api/projects/${id}`, data),
+  deleteProject: (id: string) => del<{ id: string }>(`/api/projects/${id}`),
 
   // Issues
   getIssues: (projectId: string) =>

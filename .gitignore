@@ -68,3 +68,6 @@ apps/api/src/_static-assets.generated.ts
 
 # core dumps
 core
+
+# temp
+tmp/

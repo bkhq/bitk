@@ -30,7 +30,12 @@
     "issueCount": "{{count}} issues",
     "statusCount": "{{count}} statuses",
     "browseDirectories": "Browse directories",
-    "directoryAlreadyUsed": "This directory is already used by another project"
+    "directoryAlreadyUsed": "This directory is already used by another project",
+    "delete": "Delete Project",
+    "deleteConfirm": "Are you sure you want to delete this project? All issues will also be deleted. This action cannot be undone.",
+    "deleting": "Deleting...",
+    "deleteConfirmPlaceholder": "Type project name to confirm",
+    "deleteConfirmHint": "Please type \"{{name}}\" to confirm deletion"
   },
   "kanban": {
     "newIssue": "New Issue",

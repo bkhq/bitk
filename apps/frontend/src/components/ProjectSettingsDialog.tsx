@@ -1,6 +1,7 @@
 import { FolderOpen } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router-dom'
 import { DirectoryPicker } from '@/components/DirectoryPicker'
 import { Button } from '@/components/ui/button'
 import {
@@ -11,7 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { useUpdateProject } from '@/hooks/use-kanban'
+import { useDeleteProject, useUpdateProject } from '@/hooks/use-kanban'
 import type { Project } from '@/types/kanban'
 
 export function ProjectSettingsDialog({
@@ -32,7 +33,11 @@ export function ProjectSettingsDialog({
   )
   const [dirPickerOpen, setDirPickerOpen] = useState(false)
   const [error, setError] = useState('')
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deleteConfirmName, setDeleteConfirmName] = useState('')
   const updateProject = useUpdateProject()
+  const deleteProject = useDeleteProject()
+  const navigate = useNavigate()
 
   useEffect(() => {
     if (open) {
@@ -41,6 +46,8 @@ export function ProjectSettingsDialog({
       setDirectory(project.directory ?? '')
       setRepositoryUrl(project.repositoryUrl ?? '')
       setError('')
+      setShowDeleteConfirm(false)
+      setDeleteConfirmName('')
     }
   }, [open, project])
 
@@ -173,6 +180,67 @@ export function ProjectSettingsDialog({
               ? t('project.saving')
               : t('project.saveChanges')}
           </Button>
+
+          <div className="border-t pt-4">
+            {!showDeleteConfirm ? (
+              <Button
+                className="w-full"
+                variant="destructive"
+                onClick={() => setShowDeleteConfirm(true)}
+              >
+                {t('project.delete')}
+              </Button>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-sm text-destructive">
+                  {t('project.deleteConfirm')}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {t('project.deleteConfirmHint', { name: project.name })}
+                </p>
+                <input
+                  type="text"
+                  value={deleteConfirmName}
+                  onChange={(e) => setDeleteConfirmName(e.target.value)}
+                  placeholder={t('project.deleteConfirmPlaceholder')}
+                  className={inputClass}
+                />
+                <div className="flex gap-2">
+                  <Button
+                    className="flex-1"
+                    variant="outline"
+                    onClick={() => {
+                      setShowDeleteConfirm(false)
+                      setDeleteConfirmName('')
+                    }}
+                  >
+                    {t('common.cancel')}
+                  </Button>
+                  <Button
+                    className="flex-1"
+                    variant="destructive"
+                    disabled={
+                      deleteConfirmName !== project.name ||
+                      deleteProject.isPending
+                    }
+                    onClick={() => {
+                      deleteProject.mutate(project.id, {
+                        onSuccess: () => {
+                          onOpenChange(false)
+                          void navigate('/')
+                        },
+                        onError: (err) => setError(err.message),
+                      })
+                    }}
+                  >
+                    {deleteProject.isPending
+                      ? t('project.deleting')
+                      : t('project.delete')}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </DialogContent>
     </Dialog>
