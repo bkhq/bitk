@@ -55,13 +55,17 @@ export async function reconcileStaleWorkingIssues(): Promise<number> {
     if (!isTerminal) {
       await db
         .update(issuesTable)
-        .set({ sessionStatus: 'failed', statusId: 'review' })
+        .set({
+          sessionStatus: 'failed',
+          statusId: 'review',
+          statusUpdatedAt: new Date(),
+        })
         .where(eq(issuesTable.id, issue.id))
     } else {
       // sessionStatus is already terminal but statusId is still working
       await db
         .update(issuesTable)
-        .set({ statusId: 'review' })
+        .set({ statusId: 'review', statusUpdatedAt: new Date() })
         .where(eq(issuesTable.id, issue.id))
     }
 

@@ -97,7 +97,7 @@ export async function autoMoveToReview(issueId: string): Promise<void> {
 
   const [updated] = await db
     .update(issuesTable)
-    .set({ statusId: 'review' })
+    .set({ statusId: 'review', statusUpdatedAt: new Date() })
     .where(eq(issuesTable.id, issueId))
     .returning()
 

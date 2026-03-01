@@ -42,6 +42,7 @@ export type Issue = {
   externalSessionId: string | null
   model: string | null
   devMode: boolean
+  statusUpdatedAt: string
   createdAt: string
   updatedAt: string
 }

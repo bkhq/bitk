@@ -33,7 +33,11 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     for (const status of STATUSES) {
       groups[status.id] = issues
         .filter((i) => i.statusId === status.id)
-        .sort((a, b) => a.sortOrder - b.sortOrder)
+        .sort(
+          (a, b) =>
+            new Date(b.statusUpdatedAt).getTime() -
+            new Date(a.statusUpdatedAt).getTime(),
+        )
     }
     set({ groupedItems: groups })
   },

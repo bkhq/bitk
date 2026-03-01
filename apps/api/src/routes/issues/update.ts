@@ -78,7 +78,10 @@ update.patch(
         if (!projectIssueIdSet.has(u.id)) continue
 
         const changes: Record<string, unknown> = {}
-        if (u.statusId !== undefined) changes.statusId = u.statusId
+        if (u.statusId !== undefined) {
+          changes.statusId = u.statusId
+          changes.statusUpdatedAt = new Date()
+        }
         if (u.sortOrder !== undefined) changes.sortOrder = u.sortOrder
         if (u.priority !== undefined) changes.priority = u.priority
 
@@ -205,6 +208,7 @@ update.patch(
     if (body.priority !== undefined) updates.priority = body.priority
     if (body.statusId !== undefined) {
       updates.statusId = body.statusId
+      updates.statusUpdatedAt = new Date()
     }
     if (body.sortOrder !== undefined) updates.sortOrder = body.sortOrder
     if (body.devMode !== undefined) {

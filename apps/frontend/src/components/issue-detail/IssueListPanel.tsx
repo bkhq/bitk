@@ -1,4 +1,11 @@
-import { ChevronDown, ChevronRight, Plus, Search, Settings } from 'lucide-react'
+import {
+  ChevronDown,
+  ChevronRight,
+  FolderOpen,
+  Plus,
+  Search,
+  Settings,
+} from 'lucide-react'
 import { memo, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
@@ -8,6 +15,7 @@ import { useIssues, useProject } from '@/hooks/use-kanban'
 import { tStatus } from '@/lib/i18n-utils'
 import type { StatusDefinition } from '@/lib/statuses'
 import { STATUSES } from '@/lib/statuses'
+import { useFileBrowserStore } from '@/stores/file-browser-store'
 import { usePanelStore } from '@/stores/panel-store'
 import type { Issue } from '@/types/kanban'
 
@@ -15,11 +23,15 @@ export function IssueListPanel({
   projectId,
   activeIssueId,
   projectName,
+  width,
+  onResizeStart,
   mobileNav,
 }: {
   projectId: string
   activeIssueId: string
   projectName: string
+  width?: number
+  onResizeStart?: (e: React.MouseEvent) => void
   mobileNav?: React.ReactNode
 }) {
   const { t } = useTranslation()
@@ -27,6 +39,7 @@ export function IssueListPanel({
   const { data: issues } = useIssues(projectId)
   const { data: project } = useProject(projectId)
   const openCreateDialog = usePanelStore((s) => s.openCreateDialog)
+  const toggleFileBrowser = useFileBrowserStore((s) => s.toggle)
   const [search, setSearch] = useState('')
   const [showSettings, setShowSettings] = useState(false)
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
@@ -40,7 +53,7 @@ export function IssueListPanel({
     )
   }, [issues, searchTerm])
 
-  // Build child map for parent-child grouping
+  // Build child map for parent-child grouping, sorted by statusUpdatedAt DESC
   const childMap = useMemo(() => {
     const map = new Map<string, Issue[]>()
     for (const issue of filtered) {
@@ -49,6 +62,16 @@ export function IssueListPanel({
         children.push(issue)
         map.set(issue.parentIssueId, children)
       }
+    }
+    for (const [key, children] of map.entries()) {
+      map.set(
+        key,
+        children.sort(
+          (a, b) =>
+            new Date(b.statusUpdatedAt).getTime() -
+            new Date(a.statusUpdatedAt).getTime(),
+        ),
+      )
     }
     return map
   }, [filtered])
@@ -65,7 +88,9 @@ export function IssueListPanel({
     return STATUSES.map((status) => ({
       status,
       issues: (map.get(status.id) ?? []).sort(
-        (a, b) => a.sortOrder - b.sortOrder,
+        (a, b) =>
+          new Date(b.statusUpdatedAt).getTime() -
+          new Date(a.statusUpdatedAt).getTime(),
       ),
     }))
   }, [filtered, issues])
@@ -75,7 +100,10 @@ export function IssueListPanel({
   }
 
   return (
-    <div className="flex flex-col h-full w-full md:w-[232px] border-r border-border bg-secondary shrink-0">
+    <div
+      className="relative flex flex-col h-full w-full border-r border-border bg-secondary shrink-0"
+      style={width ? { width: `${width}px` } : undefined}
+    >
       {/* Header */}
       <div className="flex items-center justify-between px-2.5 py-2 border-b border-border/60 shrink-0 min-h-[42px] bg-secondary/50">
         <div className="flex items-center gap-1.5 min-w-0">
@@ -93,6 +121,18 @@ export function IssueListPanel({
           >
             <Settings className="h-3.5 w-3.5" />
           </Button>
+          {project?.directory && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 text-muted-foreground hover:text-foreground md:hidden"
+              onClick={() => toggleFileBrowser(projectId)}
+              aria-label={t('viewMode.files')}
+              title={t('viewMode.files')}
+            >
+              <FolderOpen className="h-3.5 w-3.5" />
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon"
@@ -143,6 +183,15 @@ export function IssueListPanel({
           />
         ))}
       </div>
+
+      {/* Resize handle */}
+      {onResizeStart ? (
+        <div
+          role="separator"
+          onMouseDown={onResizeStart}
+          className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-primary/20 active:bg-primary/30 transition-colors z-20"
+        />
+      ) : null}
     </div>
   )
 }
@@ -241,6 +290,7 @@ function StatusGroup({
                             #{child.issueNumber}
                           </span>
                           <span
+                            title={child.title}
                             className={`text-[12px] truncate ${
                               isChildActive
                                 ? 'text-foreground font-medium'
@@ -325,6 +375,7 @@ const IssueRow = memo(function IssueRow({
         #{issue.issueNumber}
       </span>
       <span
+        title={issue.title}
         className={`text-[13px] truncate ${
           isActive ? 'text-foreground font-medium' : 'text-foreground/90'
         }`}
