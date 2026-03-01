@@ -48,7 +48,11 @@ export async function cacheGet<T>(key: string): Promise<T | null> {
   return value ?? null
 }
 
-export async function cacheSet<T>(key: string, value: T, ttlSeconds?: number): Promise<void> {
+export async function cacheSet<T>(
+  key: string,
+  value: T,
+  ttlSeconds?: number,
+): Promise<void> {
   store.set(key, value)
   accessOrder.set(key, Date.now())
   if (ttlSeconds !== undefined) {

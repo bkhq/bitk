@@ -1,16 +1,16 @@
-import { useState, useEffect } from 'react'
-import { Folder, ArrowUp, Loader2, FolderPlus } from 'lucide-react'
+import { ArrowUp, Folder, FolderPlus, Loader2 } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { kanbanApi } from '@/lib/kanban-api'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
+  DialogCloseButton,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
-  DialogCloseButton,
 } from '@/components/ui/dialog'
+import { kanbanApi } from '@/lib/kanban-api'
 
 interface DirectoryPickerProps {
   open: boolean
@@ -52,9 +52,10 @@ export function DirectoryPicker({
     }
   }
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: fetchDirs is a stable inner function, not needed as dependency
   useEffect(() => {
     if (open) {
-      fetchDirs(initialPath || undefined)
+      void fetchDirs(initialPath || undefined)
     } else {
       setDirData(null)
       setError(null)
@@ -65,13 +66,13 @@ export function DirectoryPicker({
 
   const handleNavigate = (dir: string) => {
     if (dirData) {
-      fetchDirs(`${dirData.current}/${dir}`)
+      void fetchDirs(`${dirData.current}/${dir}`)
     }
   }
 
   const handleParent = () => {
     if (dirData?.parent) {
-      fetchDirs(dirData.parent)
+      void fetchDirs(dirData.parent)
     }
   }
 
@@ -92,7 +93,7 @@ export function DirectoryPicker({
       )
       setShowNewFolder(false)
       setNewFolderName('')
-      fetchDirs(result.path)
+      void fetchDirs(result.path)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to create directory')
     } finally {
@@ -147,7 +148,7 @@ export function DirectoryPicker({
                 value={newFolderName}
                 onChange={(e) => setNewFolderName(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleCreateFolder()
+                  if (e.key === 'Enter') void handleCreateFolder()
                   if (e.key === 'Escape') {
                     setShowNewFolder(false)
                     setNewFolderName('')

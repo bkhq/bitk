@@ -40,12 +40,11 @@ If you prefer not to use Tailwind CSS:
 
 ## Linting & Formatting
 
-This project uses [eslint](https://eslint.org/) and [prettier](https://prettier.io/) for linting and formatting. Eslint is configured using [tanstack/eslint-config](https://tanstack.com/config/latest/docs/eslint). The following scripts are available:
+This project uses [Biome](https://biomejs.dev/) for linting and formatting. Configuration is in `biome.json` at the monorepo root. Run from the root:
 
 ```bash
-bun --bun run lint
-bun --bun run format
-bun --bun run check
+bun run lint
+bun run format
 ```
 
 ## Routing

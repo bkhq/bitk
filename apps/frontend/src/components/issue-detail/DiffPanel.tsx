@@ -1,8 +1,8 @@
-import { lazy, Suspense, useMemo, useRef, useState } from 'react'
 import { X } from 'lucide-react'
+import { lazy, Suspense, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useTheme } from '@/hooks/use-theme'
 import { useIssueChanges, useIssueFilePatch } from '@/hooks/use-kanban'
+import { useTheme } from '@/hooks/use-theme'
 import { DIFF_MIN_WIDTH } from './diff-constants'
 
 const LazyMultiFileDiff = lazy(() =>

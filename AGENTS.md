@@ -190,8 +190,7 @@ Components use the shadcn/ui pattern: `cn()` utility (`apps/frontend/src/lib/uti
 ## Conventions
 
 - Use Bun APIs over Node.js equivalents (`Bun.file()`, `Bun.serve()`, `bun:sqlite`, `bun:test`)
-- Backend eslint: `@antfu/eslint-config` — no semicolons, single quotes
-- Frontend eslint: `@tanstack/eslint-config`
+- Linting & formatting: Biome (`biome.json` at root) — no semicolons, single quotes
 - Frontend tests use vitest + @testing-library/react (`bun run test:frontend`)
 - Backend tests use `bun test` with `bun:test` (`bun run test:api`)
 - Bun auto-loads `.env` — do not use dotenv

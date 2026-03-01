@@ -30,8 +30,9 @@ data/
 .cache
 *.tsbuildinfo
 
-# IntelliJ based IDEs
+# IDEs
 .idea
+.vscode
 
 # Finder (MacOS) folder config
 .DS_Store

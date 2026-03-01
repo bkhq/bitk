@@ -30,7 +30,9 @@ async function createDirectIssue(overrides: {
   sessionStatus?: string | null
   title?: string
 }) {
-  const [maxRow] = await db.select({ maxNum: db.$count(issuesTable) }).from(issuesTable)
+  const [maxRow] = await db
+    .select({ maxNum: db.$count(issuesTable) })
+    .from(issuesTable)
   const num = (maxRow?.maxNum ?? 0) + 1
 
   const [row] = await db
@@ -53,7 +55,10 @@ async function createDirectIssue(overrides: {
 }
 
 async function getIssue(id: string) {
-  const [row] = await db.select().from(issuesTable).where(eq(issuesTable.id, id))
+  const [row] = await db
+    .select()
+    .from(issuesTable)
+    .where(eq(issuesTable.id, id))
   return row
 }
 
@@ -180,7 +185,10 @@ describe('reconcileStaleWorkingIssues', () => {
     })
 
     // Soft-delete the issue
-    await db.update(issuesTable).set({ isDeleted: 1 }).where(eq(issuesTable.id, issue.id))
+    await db
+      .update(issuesTable)
+      .set({ isDeleted: 1 })
+      .where(eq(issuesTable.id, issue.id))
 
     await reconcileStaleWorkingIssues()
 

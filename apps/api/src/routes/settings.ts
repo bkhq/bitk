@@ -1,12 +1,15 @@
-import type { WriteFilterRule } from '@/engines/write-filter'
 import { stat } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { resolve } from 'node:path'
 import { zValidator } from '@hono/zod-validator'
 import { Hono } from 'hono'
-import { z } from 'zod'
+import * as z from 'zod'
 import { getAppSetting, setAppSetting } from '@/db/helpers'
-import { DEFAULT_FILTER_RULES, WRITE_FILTER_RULES_KEY } from '@/engines/write-filter'
+import type { WriteFilterRule } from '@/engines/write-filter'
+import {
+  DEFAULT_FILTER_RULES,
+  WRITE_FILTER_RULES_KEY,
+} from '@/engines/write-filter'
 
 const settings = new Hono()
 
@@ -102,9 +105,14 @@ settings.patch(
       return c.json({ success: false, error: `Rule not found: ${ruleId}` }, 404)
     }
 
-    const updatedRules = rules.map((r) => (r.id === ruleId ? { ...r, enabled } : r))
+    const updatedRules = rules.map((r) =>
+      r.id === ruleId ? { ...r, enabled } : r,
+    )
     await setAppSetting(WRITE_FILTER_RULES_KEY, JSON.stringify(updatedRules))
-    return c.json({ success: true, data: updatedRules.find((r) => r.id === ruleId) })
+    return c.json({
+      success: true,
+      data: updatedRules.find((r) => r.id === ruleId),
+    })
   },
 )
 

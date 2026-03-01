@@ -1,7 +1,6 @@
-import type { EngineContext } from '@/engines/issue/context'
-import type { PermissionPolicy } from '@/engines/types'
 import { getIssueWithSession, updateIssueSession } from '@/engines/engine-store'
 import { engineRegistry } from '@/engines/executors'
+import type { EngineContext } from '@/engines/issue/context'
 import { spawnFollowUpProcess } from '@/engines/issue/lifecycle/spawn'
 import { cancel } from '@/engines/issue/process/cancel'
 import { withIssueLock } from '@/engines/issue/process/lock'
@@ -10,6 +9,7 @@ import { dispatch } from '@/engines/issue/state'
 import { sendInputToRunningProcess } from '@/engines/issue/user-message'
 import { getPidFromManaged } from '@/engines/issue/utils/pid'
 import { setIssueDevMode } from '@/engines/issue/utils/visibility'
+import type { PermissionPolicy } from '@/engines/types'
 import { logger } from '@/logger'
 
 export async function followUpIssue(
@@ -24,7 +24,13 @@ export async function followUpIssue(
 ): Promise<{ executionId: string; messageId?: string | null }> {
   return withIssueLock(ctx, issueId, async () => {
     logger.debug(
-      { issueId, model, permissionMode, busyAction, promptChars: prompt.length },
+      {
+        issueId,
+        model,
+        permissionMode,
+        busyAction,
+        promptChars: prompt.length,
+      },
       'issue_followup_requested',
     )
     const issue = await getIssueWithSession(issueId)
@@ -33,7 +39,8 @@ export async function followUpIssue(
 
     if (!issue.sessionFields.externalSessionId)
       throw new Error('No external session ID for follow-up')
-    if (!issue.sessionFields.engineType) throw new Error('No engine type set on issue')
+    if (!issue.sessionFields.engineType)
+      throw new Error('No engine type set on issue')
 
     const engineType = issue.sessionFields.engineType
     const executor = engineRegistry.get(engineType)
@@ -87,7 +94,11 @@ export async function followUpIssue(
           'issue_followup_queued',
         )
 
-        if (busyAction === 'cancel' && active.state === 'running' && !active.queueCancelRequested) {
+        if (
+          busyAction === 'cancel' &&
+          active.state === 'running' &&
+          !active.queueCancelRequested
+        ) {
           dispatch(active, { type: 'REQUEST_QUEUE_CANCEL' })
           logger.debug(
             {
@@ -98,8 +109,13 @@ export async function followUpIssue(
             },
             'issue_followup_queue_requested_cancel_current',
           )
-          void cancel(ctx, active.executionId, { emitCancelledState: false }).catch((error) => {
-            logger.warn({ issueId, executionId: active.executionId, error }, 'queue_cancel_failed')
+          void cancel(ctx, active.executionId, {
+            emitCancelledState: false,
+          }).catch((error) => {
+            logger.warn(
+              { issueId, executionId: active.executionId, error },
+              'queue_cancel_failed',
+            )
           })
         }
         return { executionId: active.executionId, messageId: null }
@@ -139,7 +155,10 @@ export async function followUpIssue(
       }
     }
 
-    logger.debug({ issueId, engineType, model: effectiveModel }, 'issue_followup_spawn_new_process')
+    logger.debug(
+      { issueId, engineType, model: effectiveModel },
+      'issue_followup_spawn_new_process',
+    )
     return spawnFollowUpProcess(
       ctx,
       issueId,

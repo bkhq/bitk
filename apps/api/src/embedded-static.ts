@@ -11,7 +11,11 @@ import type { Context, MiddlewareHandler } from 'hono'
 /** The asset map is generated at build time and imported by index.ts */
 type StaticAssetMap = Map<string, string>
 
-function serveEmbeddedFile(c: Context, bunfsPath: string, urlPath: string): Response {
+function serveEmbeddedFile(
+  c: Context,
+  bunfsPath: string,
+  urlPath: string,
+): Response {
   const file = Bun.file(bunfsPath)
 
   let cacheControl = 'public, max-age=3600, must-revalidate'

@@ -1,15 +1,15 @@
+import { ChevronDown, ChevronRight, Plus, Search, Settings } from 'lucide-react'
 import { memo, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { ChevronDown, ChevronRight, Search, Settings, Plus } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router-dom'
+import { ProjectSettingsDialog } from '@/components/ProjectSettingsDialog'
+import { Button } from '@/components/ui/button'
 import { useIssues, useProject } from '@/hooks/use-kanban'
-import type { Issue } from '@/types/kanban'
+import { tStatus } from '@/lib/i18n-utils'
 import type { StatusDefinition } from '@/lib/statuses'
 import { STATUSES } from '@/lib/statuses'
-import { Button } from '@/components/ui/button'
 import { usePanelStore } from '@/stores/panel-store'
-import { ProjectSettingsDialog } from '@/components/ProjectSettingsDialog'
-import { tStatus } from '@/lib/i18n-utils'
+import type { Issue } from '@/types/kanban'
 
 export function IssueListPanel({
   projectId,

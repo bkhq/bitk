@@ -1,6 +1,6 @@
-import { memo } from 'react'
 import { useSortable } from '@dnd-kit/react/sortable'
 import { GitBranchPlus } from 'lucide-react'
+import { memo } from 'react'
 import type { Issue } from '@/types/kanban'
 import { PriorityIcon } from './PriorityIcon'
 

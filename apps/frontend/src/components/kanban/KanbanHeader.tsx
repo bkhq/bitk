@@ -1,5 +1,3 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import {
   LayoutGrid,
   List,
@@ -8,14 +6,16 @@ import {
   Settings,
   SlidersHorizontal,
 } from 'lucide-react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { Project } from '@/types/kanban'
-import { cn } from '@/lib/utils'
+import { useNavigate } from 'react-router-dom'
+import { ProjectSettingsDialog } from '@/components/ProjectSettingsDialog'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
+import { cn } from '@/lib/utils'
 import { usePanelStore } from '@/stores/panel-store'
 import { useViewModeStore } from '@/stores/view-mode-store'
-import { ProjectSettingsDialog } from '@/components/ProjectSettingsDialog'
+import type { Project } from '@/types/kanban'
 
 export function KanbanHeader({
   project,
@@ -69,7 +69,7 @@ export function KanbanHeader({
               type="button"
               onClick={() => {
                 setMode('kanban')
-                navigate(`/projects/${project.alias}`)
+                void navigate(`/projects/${project.alias}`)
               }}
               className={cn(
                 'rounded-sm px-2 py-1 text-xs transition-colors',
@@ -85,7 +85,7 @@ export function KanbanHeader({
               type="button"
               onClick={() => {
                 setMode('list')
-                navigate(`/projects/${project.alias}/issues`)
+                void navigate(`/projects/${project.alias}/issues`)
               }}
               className={cn(
                 'rounded-sm px-2 py-1 text-xs transition-colors',

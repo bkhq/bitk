@@ -1,6 +1,11 @@
-import type { EngineContext } from './context'
-import type { IssueSettledCallback, LogCallback, StateChangeCallback, UnsubscribeFn } from './types'
 import type { NormalizedLogEntry, ProcessStatus } from '@/engines/types'
+import type { EngineContext } from './context'
+import type {
+  IssueSettledCallback,
+  LogCallback,
+  StateChangeCallback,
+  UnsubscribeFn,
+} from './types'
 import { getIssueDevMode, isVisibleForMode } from './utils/visibility'
 
 // ---------- Event subscriptions ----------
@@ -13,7 +18,10 @@ export function onLog(ctx: EngineContext, cb: LogCallback): UnsubscribeFn {
   }
 }
 
-export function onStateChange(ctx: EngineContext, cb: StateChangeCallback): UnsubscribeFn {
+export function onStateChange(
+  ctx: EngineContext,
+  cb: StateChangeCallback,
+): UnsubscribeFn {
   const id = ctx.nextCallbackId++
   ctx.stateChangeCallbacks.set(id, cb)
   return () => {
@@ -21,7 +29,10 @@ export function onStateChange(ctx: EngineContext, cb: StateChangeCallback): Unsu
   }
 }
 
-export function onIssueSettled(ctx: EngineContext, cb: IssueSettledCallback): UnsubscribeFn {
+export function onIssueSettled(
+  ctx: EngineContext,
+  cb: IssueSettledCallback,
+): UnsubscribeFn {
   const id = ctx.nextCallbackId++
   ctx.issueSettledCallbacks.set(id, cb)
   return () => {

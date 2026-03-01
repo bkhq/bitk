@@ -37,7 +37,10 @@ function emit(summary: ChangesSummary): void {
 
 // --- Git helpers ---
 
-async function runGit(args: string[], cwd: string): Promise<{ code: number; stdout: string }> {
+async function runGit(
+  args: string[],
+  cwd: string,
+): Promise<{ code: number; stdout: string }> {
   const proc = Bun.spawn(['git', ...args], {
     cwd,
     stdout: 'pipe',
@@ -80,13 +83,18 @@ async function computeAndEmit(issueId: string): Promise<void> {
     // Count changed files (working tree only)
     let filePaths: string[] = []
 
-    const { code: statusCode, stdout: statusOut } = await runGit(['status', '--porcelain=v1'], root)
+    const { code: statusCode, stdout: statusOut } = await runGit(
+      ['status', '--porcelain=v1'],
+      root,
+    )
     if (statusCode === 0) {
       const lines = statusOut
         .split('\n')
         .map((l) => l.trimEnd())
         .filter(Boolean)
-      filePaths = lines.map((line) => line.slice(3).trim().split(' -> ').at(-1)?.trim() ?? '')
+      filePaths = lines.map(
+        (line) => line.slice(3).trim().split(' -> ').at(-1)?.trim() ?? '',
+      )
     }
 
     const fileCount = filePaths.length

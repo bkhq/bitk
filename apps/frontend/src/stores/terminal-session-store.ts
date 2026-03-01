@@ -1,6 +1,6 @@
-import { create } from 'zustand'
-import type { Terminal } from '@xterm/xterm'
 import type { FitAddon } from '@xterm/addon-fit'
+import type { Terminal } from '@xterm/xterm'
+import { create } from 'zustand'
 
 interface TerminalSessionStore {
   terminal: Terminal | null

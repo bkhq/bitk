@@ -1,0 +1,12 @@
+{
+  "name": "@bitk/tsconfig",
+  "version": "0.0.3",
+  "private": true,
+  "description": "Shared typescript configuration for the workspace.",
+  "homepage": "https://github.com/bkhq",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bkhq/bitk.git",
+    "directory": "packages/tsconfig"
+  }
+}

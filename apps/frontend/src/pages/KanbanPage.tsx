@@ -1,21 +1,21 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { useProject, useIssues } from '@/hooks/use-kanban'
-import { STATUSES, DEFAULT_STATUS_ID } from '@/lib/statuses'
-import {
-  usePanelStore,
-  useIsPanelOpen,
-  PANEL_MIN_WIDTH,
-  PANEL_MAX_WIDTH_RATIO,
-} from '@/stores/panel-store'
-import { useIsMobile } from '@/hooks/use-mobile'
+import { useNavigate, useParams } from 'react-router-dom'
+import { AppSidebar } from '@/components/kanban/AppSidebar'
+import { CreateIssueDialog } from '@/components/kanban/CreateIssueDialog'
+import { IssuePanel } from '@/components/kanban/IssuePanel'
 import { KanbanBoard } from '@/components/kanban/KanbanBoard'
 import { KanbanHeader } from '@/components/kanban/KanbanHeader'
-import { AppSidebar } from '@/components/kanban/AppSidebar'
 import { MobileSidebar } from '@/components/kanban/MobileSidebar'
-import { IssuePanel } from '@/components/kanban/IssuePanel'
-import { CreateIssueDialog } from '@/components/kanban/CreateIssueDialog'
+import { useIssues, useProject } from '@/hooks/use-kanban'
+import { useIsMobile } from '@/hooks/use-mobile'
+import { DEFAULT_STATUS_ID } from '@/lib/statuses'
+import {
+  PANEL_MAX_WIDTH_RATIO,
+  PANEL_MIN_WIDTH,
+  useIsPanelOpen,
+  usePanelStore,
+} from '@/stores/panel-store'
 
 export default function KanbanPage() {
   const { t } = useTranslation()
@@ -35,7 +35,7 @@ export default function KanbanPage() {
   const handleCardClick = useCallback(
     (issue: { id: string }) => {
       if (isMobile) {
-        navigate(`/projects/${projectId}/issues/${issue.id}`)
+        void navigate(`/projects/${projectId}/issues/${issue.id}`)
       } else {
         openView(issue.id)
       }
@@ -45,7 +45,7 @@ export default function KanbanPage() {
 
   useEffect(() => {
     if (!isLoading && (isError || !project)) {
-      navigate('/', { replace: true })
+      void navigate('/', { replace: true })
     }
   }, [isLoading, isError, project, navigate])
 

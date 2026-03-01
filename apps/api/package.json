@@ -1,17 +1,21 @@
 {
   "name": "@bitk/api",
-  "private": true,
   "type": "module",
+  "version": "0.0.3",
+  "private": true,
+  "description": "Backend API for the Bitk workspace.",
+  "homepage": "https://github.com/bkhq",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bkhq/bitk.git",
+    "directory": "apps/api"
+  },
   "module": "src/index.ts",
   "scripts": {
     "dev": "API_PORT=3010 bun --watch src/index.ts",
     "start": "NODE_ENV=production bun src/index.ts",
     "test": "bun test --preload ./test/preload.ts test/",
     "test:watch": "bun test --preload ./test/preload.ts --watch test/",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
-    "format": "prettier . --write",
-    "format:check": "prettier . --check",
     "db:generate": "bunx drizzle-kit generate",
     "db:migrate": "bunx drizzle-kit migrate"
   },
@@ -25,12 +29,10 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@antfu/eslint-config": "^7.4.3",
+    "@bitk/tsconfig": "workspace:*",
     "drizzle-kit": "^0.31.9",
     "@libsql/client": "^0.17.0",
     "@types/bun": "latest",
-    "eslint": "^10.0.1",
-    "prettier": "catalog:",
     "typescript": "catalog:"
   }
 }

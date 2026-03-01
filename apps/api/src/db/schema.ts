@@ -1,5 +1,12 @@
 import { sql } from 'drizzle-orm'
-import { check, index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
+import {
+  check,
+  index,
+  integer,
+  sqliteTable,
+  text,
+  uniqueIndex,
+} from 'drizzle-orm/sqlite-core'
 import { customAlphabet } from 'nanoid'
 import { ulid } from 'ulid'
 
@@ -51,7 +58,9 @@ export const issues = sqliteTable(
     priority: text('priority').notNull().default('medium'),
     sortOrder: integer('sort_order').notNull().default(0),
     parentIssueId: text('parent_issue_id').references((): any => issues.id),
-    useWorktree: integer('use_worktree', { mode: 'boolean' }).notNull().default(false),
+    useWorktree: integer('use_worktree', { mode: 'boolean' })
+      .notNull()
+      .default(false),
     // Session fields (null = no engine session started)
     engineType: text('engine_type'),
     sessionStatus: text('session_status'),
@@ -66,8 +75,14 @@ export const issues = sqliteTable(
     index('issues_project_id_idx').on(table.projectId),
     index('issues_status_id_idx').on(table.statusId),
     index('issues_parent_issue_id_idx').on(table.parentIssueId),
-    check('issues_status_id_check', sql`${table.statusId} IN ('todo','working','review','done')`),
-    uniqueIndex('issues_project_id_issue_number_uniq').on(table.projectId, table.issueNumber),
+    check(
+      'issues_status_id_check',
+      sql`${table.statusId} IN ('todo','working','review','done')`,
+    ),
+    uniqueIndex('issues_project_id_issue_number_uniq').on(
+      table.projectId,
+      table.issueNumber,
+    ),
   ],
 )
 
@@ -139,7 +154,9 @@ export const issuesLogsToolsCall = sqliteTable(
     toolName: text('tool_name').notNull(),
     toolCallId: text('tool_call_id'),
     kind: text('kind').notNull(), // file-read | file-edit | command-run | search | web-fetch | task | tool | other
-    isResult: integer('is_result', { mode: 'boolean' }).notNull().default(false),
+    isResult: integer('is_result', { mode: 'boolean' })
+      .notNull()
+      .default(false),
     raw: text('raw'), // Full original JSON (entry metadata + input + result, for future analysis)
     ...commonFields,
   },
@@ -148,6 +165,9 @@ export const issuesLogsToolsCall = sqliteTable(
     index('issues_logs_tools_call_issue_id_idx').on(table.issueId),
     index('issues_logs_tools_call_kind_idx').on(table.kind),
     index('issues_logs_tools_call_tool_name_idx').on(table.toolName),
-    index('issues_logs_tools_call_issue_id_kind_idx').on(table.issueId, table.kind),
+    index('issues_logs_tools_call_issue_id_kind_idx').on(
+      table.issueId,
+      table.kind,
+    ),
   ],
 )

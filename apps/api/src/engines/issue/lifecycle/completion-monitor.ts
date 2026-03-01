@@ -1,12 +1,12 @@
-import type { EngineContext } from '@/engines/issue/context'
-import type { ManagedProcess } from '@/engines/issue/types'
-import type { EngineType, ProcessStatus } from '@/engines/types'
 import { updateIssueSession } from '@/engines/engine-store'
 import { MAX_AUTO_RETRIES } from '@/engines/issue/constants'
+import type { EngineContext } from '@/engines/issue/context'
 import { emitStateChange } from '@/engines/issue/events'
 import { cleanupDomainData, syncPmState } from '@/engines/issue/process/state'
 import { dispatch } from '@/engines/issue/state'
+import type { ManagedProcess } from '@/engines/issue/types'
 import { getPidFromManaged } from '@/engines/issue/utils/pid'
+import type { EngineType, ProcessStatus } from '@/engines/types'
 import { logger } from '@/logger'
 import { settleIssue } from './settle'
 import { spawnFollowUpProcess, spawnRetry } from './spawn'
@@ -20,7 +20,8 @@ import { spawnFollowUpProcess, spawnRetry } from './spawn'
  * so other failures (API errors, network issues, etc.) don't clear a valid session.
  */
 function isSessionIdError(managed: ManagedProcess): boolean {
-  if (managed.logs.toArray().some((l) => l.entryType === 'assistant-message')) return false
+  if (managed.logs.toArray().some((l) => l.entryType === 'assistant-message'))
+    return false
   const reason = (managed.logicalFailureReason ?? '').toLowerCase()
   return reason.includes('no conversation found') || reason.includes('session')
 }
@@ -28,8 +29,14 @@ function isSessionIdError(managed: ManagedProcess): boolean {
 /**
  * Clear the externalSessionId in DB so the next spawn creates a fresh session.
  */
-async function resetBrokenSession(issueId: string, executionId: string): Promise<void> {
-  logger.warn({ issueId, executionId }, 'session_init_failure_resetting_session')
+async function resetBrokenSession(
+  issueId: string,
+  executionId: string,
+): Promise<void> {
+  logger.warn(
+    { issueId, executionId },
+    'session_init_failure_resetting_session',
+  )
   await updateIssueSession(issueId, { externalSessionId: null }).catch((e) =>
     logger.error({ issueId, error: e }, 'session_reset_failed'),
   )
@@ -66,8 +73,11 @@ export function monitorCompletion(
       // If the issue was already settled by handleTurnCompleted (conversational
       // engines where the process stays alive between turns), just clean up.
       if (managed.turnSettled) {
-        const finalState = (managed.logicalFailure ? 'failed' : 'completed') as ProcessStatus
-        if (finalState === 'completed') dispatch(managed, { type: 'MARK_COMPLETED' })
+        const finalState = (
+          managed.logicalFailure ? 'failed' : 'completed'
+        ) as ProcessStatus
+        if (finalState === 'completed')
+          dispatch(managed, { type: 'MARK_COMPLETED' })
         else dispatch(managed, { type: 'MARK_FAILED' })
         syncPmState(ctx, executionId, finalState)
 
@@ -128,7 +138,10 @@ export function monitorCompletion(
           }
           return
         } catch (error) {
-          logger.error({ issueId, executionId, error }, 'queued_followup_spawn_failed')
+          logger.error(
+            { issueId, executionId, error },
+            'queued_followup_spawn_failed',
+          )
         }
       }
 
@@ -167,7 +180,10 @@ export function monitorCompletion(
         // Auto-retry logic (in-memory only, no DB writes for retryCount)
         if (!isRetry && managed.retryCount < MAX_AUTO_RETRIES) {
           managed.retryCount++
-          logger.info({ issueId, executionId, retryCount: managed.retryCount }, 'auto_retry_issue')
+          logger.info(
+            { issueId, executionId, retryCount: managed.retryCount },
+            'auto_retry_issue',
+          )
           cleanupDomainData(ctx, executionId)
 
           try {

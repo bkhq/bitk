@@ -37,7 +37,9 @@ const SAFE_ENV_KEYS = [
  * Build an env object containing only allowlisted vars from process.env,
  * merged with any extra vars from the caller.
  */
-export function safeEnv(extra?: Record<string, string>): Record<string, string> {
+export function safeEnv(
+  extra?: Record<string, string>,
+): Record<string, string> {
   const env: Record<string, string> = {}
   for (const key of SAFE_ENV_KEYS) {
     if (process.env[key]) {

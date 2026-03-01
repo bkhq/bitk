@@ -3,7 +3,7 @@ import { zValidator } from '@hono/zod-validator'
 import { and, eq, ne } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { customAlphabet } from 'nanoid'
-import { z } from 'zod'
+import * as z from 'zod'
 import { db } from '@/db'
 import { findProject, invalidateProjectCache } from '@/db/helpers'
 import { projects as projectsTable } from '@/db/schema'
@@ -73,8 +73,14 @@ function normalizeDir(dir: string): string {
   return resolved
 }
 
-async function isDirectoryTaken(directory: string, excludeId?: string): Promise<boolean> {
-  const conditions = [eq(projectsTable.directory, directory), eq(projectsTable.isDeleted, 0)]
+async function isDirectoryTaken(
+  directory: string,
+  excludeId?: string,
+): Promise<boolean> {
+  const conditions = [
+    eq(projectsTable.directory, directory),
+    eq(projectsTable.isDeleted, 0),
+  ]
   if (excludeId) {
     conditions.push(ne(projectsTable.id, excludeId))
   }
@@ -88,7 +94,10 @@ async function isDirectoryTaken(directory: string, excludeId?: string): Promise<
 const projects = new Hono()
 
 projects.get('/', async (c) => {
-  const rows = await db.select().from(projectsTable).where(eq(projectsTable.isDeleted, 0))
+  const rows = await db
+    .select()
+    .from(projectsTable)
+    .where(eq(projectsTable.isDeleted, 0))
   return c.json({ success: true, data: rows.map(serializeProject) })
 })
 
@@ -97,7 +106,10 @@ projects.post(
   zValidator('json', createProjectSchema, (result, c) => {
     if (!result.success) {
       return c.json(
-        { success: false, error: result.error.issues.map((i) => i.message).join(', ') },
+        {
+          success: false,
+          error: result.error.issues.map((i) => i.message).join(', '),
+        },
         400,
       )
     }
@@ -139,7 +151,10 @@ projects.patch(
   zValidator('json', updateProjectSchema, (result, c) => {
     if (!result.success) {
       return c.json(
-        { success: false, error: result.error.issues.map((i) => i.message).join(', ') },
+        {
+          success: false,
+          error: result.error.issues.map((i) => i.message).join(', '),
+        },
         400,
       )
     }
@@ -166,7 +181,8 @@ projects.patch(
       updates.directory = dir
     }
     if (body.repositoryUrl !== undefined) {
-      updates.repositoryUrl = body.repositoryUrl === '' ? null : body.repositoryUrl
+      updates.repositoryUrl =
+        body.repositoryUrl === '' ? null : body.repositoryUrl
     }
 
     if (Object.keys(updates).length === 0) {

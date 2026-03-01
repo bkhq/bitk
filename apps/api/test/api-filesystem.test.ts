@@ -1,6 +1,6 @@
+import { describe, expect, test } from 'bun:test'
 import { existsSync, rmdirSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { describe, expect, test } from 'bun:test'
 import { expectSuccess, get, post } from './helpers'
 /**
  * Filesystem API tests.
@@ -9,9 +9,11 @@ import './setup'
 
 describe('GET /api/filesystem/dirs', () => {
   test('lists dirs from cwd by default', async () => {
-    const result = await get<{ current: string; parent: string | null; dirs: string[] }>(
-      '/api/filesystem/dirs',
-    )
+    const result = await get<{
+      current: string
+      parent: string | null
+      dirs: string[]
+    }>('/api/filesystem/dirs')
     expect(result.status).toBe(200)
     const data = expectSuccess(result)
     expect(typeof data.current).toBe('string')
@@ -21,9 +23,11 @@ describe('GET /api/filesystem/dirs', () => {
   })
 
   test('lists dirs from a specific path', async () => {
-    const result = await get<{ current: string; parent: string | null; dirs: string[] }>(
-      '/api/filesystem/dirs?path=/tmp',
-    )
+    const result = await get<{
+      current: string
+      parent: string | null
+      dirs: string[]
+    }>('/api/filesystem/dirs?path=/tmp')
     // May return 200 or 403 depending on workspace root config
     if (result.status === 200) {
       const data = expectSuccess(result)
@@ -44,9 +48,11 @@ describe('GET /api/filesystem/dirs', () => {
 
   test('excludes hidden directories (starting with dot)', async () => {
     // Use cwd (default) which is always within workspace
-    const result = await get<{ current: string; parent: string | null; dirs: string[] }>(
-      '/api/filesystem/dirs',
-    )
+    const result = await get<{
+      current: string
+      parent: string | null
+      dirs: string[]
+    }>('/api/filesystem/dirs')
     expect(result.status).toBe(200)
     const data = expectSuccess(result)
     // None of the returned dirs should start with a dot

@@ -1,7 +1,7 @@
-import type { ManagedProcess } from '@/engines/issue/types'
-import type { NormalizedLogEntry } from '@/engines/types'
 import { setAppSetting } from '@/db/helpers'
+import type { ManagedProcess } from '@/engines/issue/types'
 import { normalizeStream } from '@/engines/logs'
+import type { NormalizedLogEntry } from '@/engines/types'
 import { isCancelledNoiseEntry, isTurnCompletionEntry } from './classification'
 
 const SLASH_COMMANDS_KEY = 'engine:slashCommands'
@@ -119,14 +119,24 @@ export async function consumeStderr(
           reader.releaseLock()
           return
         }
-        pushStderrEntry(managed, line, callbacks.getTurnIndex(), callbacks.onEntry)
+        pushStderrEntry(
+          managed,
+          line,
+          callbacks.getTurnIndex(),
+          callbacks.onEntry,
+        )
       }
     }
 
     if (buffer.trim()) {
       const managed = callbacks.getManaged()
       if (managed) {
-        pushStderrEntry(managed, buffer, callbacks.getTurnIndex(), callbacks.onEntry)
+        pushStderrEntry(
+          managed,
+          buffer,
+          callbacks.getTurnIndex(),
+          callbacks.onEntry,
+        )
       }
     }
   } catch {

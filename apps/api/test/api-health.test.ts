@@ -17,7 +17,9 @@ describe('GET /api', () => {
 
 describe('GET /api/health', () => {
   test('returns health status with DB check', async () => {
-    const result = await get<{ status: string; db: string; timestamp: string }>('/api/health')
+    const result = await get<{ status: string; db: string; timestamp: string }>(
+      '/api/health',
+    )
     expect(result.status).toBe(200)
     const data = expectSuccess(result)
     expect(data.status).toBe('ok')

@@ -24,7 +24,10 @@ update.patch(
   zValidator('json', bulkUpdateSchema, (result, c) => {
     if (!result.success) {
       return c.json(
-        { success: false, error: result.error.issues.map((i) => i.message).join(', ') },
+        {
+          success: false,
+          error: result.error.issues.map((i) => i.message).join(', '),
+        },
         400,
       )
     }
@@ -46,7 +49,12 @@ update.patch(
         const rows = await db
           .select({ id: issuesTable.id })
           .from(issuesTable)
-          .where(and(eq(issuesTable.projectId, project.id), eq(issuesTable.isDeleted, 0)))
+          .where(
+            and(
+              eq(issuesTable.projectId, project.id),
+              eq(issuesTable.isDeleted, 0),
+            ),
+          )
         return rows.map((i) => i.id)
       },
     )
@@ -78,9 +86,15 @@ update.patch(
 
         // Check if this is a transition to working that should trigger execution
         if (u.statusId === 'working') {
-          const [existing] = await tx.select().from(issuesTable).where(eq(issuesTable.id, u.id))
+          const [existing] = await tx
+            .select()
+            .from(issuesTable)
+            .where(eq(issuesTable.id, u.id))
           if (existing && existing.statusId !== 'working') {
-            if (!existing.sessionStatus || existing.sessionStatus === 'pending') {
+            if (
+              !existing.sessionStatus ||
+              existing.sessionStatus === 'pending'
+            ) {
               changes.sessionStatus = 'pending'
               toExecute.push({
                 id: u.id,
@@ -88,7 +102,11 @@ update.patch(
                 prompt: existing.prompt,
                 model: existing.model,
               })
-            } else if (['completed', 'failed', 'cancelled'].includes(existing.sessionStatus)) {
+            } else if (
+              ['completed', 'failed', 'cancelled'].includes(
+                existing.sessionStatus,
+              )
+            ) {
               // Session already finished — flush pending messages as follow-up
               toFlush.push({ id: u.id, model: existing.model })
             }
@@ -97,7 +115,10 @@ update.patch(
 
         // Check if transitioning to done → cancel active processes
         if (u.statusId === 'done') {
-          const [existing] = await tx.select().from(issuesTable).where(eq(issuesTable.id, u.id))
+          const [existing] = await tx
+            .select()
+            .from(issuesTable)
+            .where(eq(issuesTable.id, u.id))
           if (existing && existing.statusId !== 'done') {
             toCancel.push(u.id)
           }
@@ -116,7 +137,10 @@ update.patch(
 
     // Fire-and-forget execution for issues that transitioned to working
     for (const issue of toExecute) {
-      emitIssueUpdated(issue.id, { statusId: 'working', sessionStatus: 'pending' })
+      emitIssueUpdated(issue.id, {
+        statusId: 'working',
+        sessionStatus: 'pending',
+      })
       triggerIssueExecution(issue.id, issue, project.directory || undefined)
     }
     // Flush pending messages for issues with existing sessions
@@ -145,7 +169,10 @@ update.patch(
   zValidator('json', updateIssueSchema, (result, c) => {
     if (!result.success) {
       return c.json(
-        { success: false, error: result.error.issues.map((i) => i.message).join(', ') },
+        {
+          success: false,
+          error: result.error.issues.map((i) => i.message).join(', '),
+        },
         400,
       )
     }
@@ -189,10 +216,16 @@ update.patch(
         updates.parentIssueId = null
       } else {
         if (body.parentIssueId === issueId) {
-          return c.json({ success: false, error: 'Issue cannot be its own parent' }, 400)
+          return c.json(
+            { success: false, error: 'Issue cannot be its own parent' },
+            400,
+          )
         }
         const [parent] = await db
-          .select({ id: issuesTable.id, parentIssueId: issuesTable.parentIssueId })
+          .select({
+            id: issuesTable.id,
+            parentIssueId: issuesTable.parentIssueId,
+          })
           .from(issuesTable)
           .where(
             and(
@@ -202,11 +235,17 @@ update.patch(
             ),
           )
         if (!parent) {
-          return c.json({ success: false, error: 'Parent issue not found in this project' }, 400)
+          return c.json(
+            { success: false, error: 'Parent issue not found in this project' },
+            400,
+          )
         }
         if (parent.parentIssueId) {
           return c.json(
-            { success: false, error: 'Cannot create sub-issue of a sub-issue (max depth is 1)' },
+            {
+              success: false,
+              error: 'Cannot create sub-issue of a sub-issue (max depth is 1)',
+            },
             400,
           )
         }
@@ -219,16 +258,21 @@ update.patch(
     }
 
     // Check if transitioning to working → trigger execution or flush
-    const transitioningToWorking = body.statusId === 'working' && existing.statusId !== 'working'
+    const transitioningToWorking =
+      body.statusId === 'working' && existing.statusId !== 'working'
     const shouldExecute =
-      transitioningToWorking && (!existing.sessionStatus || existing.sessionStatus === 'pending')
+      transitioningToWorking &&
+      (!existing.sessionStatus || existing.sessionStatus === 'pending')
     const shouldFlush =
       transitioningToWorking &&
       !shouldExecute &&
-      ['completed', 'failed', 'cancelled'].includes(existing.sessionStatus ?? '')
+      ['completed', 'failed', 'cancelled'].includes(
+        existing.sessionStatus ?? '',
+      )
 
     // Check if transitioning to done → cancel active processes
-    const transitioningToDone = body.statusId === 'done' && existing.statusId !== 'done'
+    const transitioningToDone =
+      body.statusId === 'done' && existing.statusId !== 'done'
 
     if (shouldExecute) {
       updates.sessionStatus = 'pending'
@@ -250,10 +294,17 @@ update.patch(
     }
 
     if (shouldExecute) {
-      emitIssueUpdated(issueId, { statusId: 'working', sessionStatus: 'pending' })
+      emitIssueUpdated(issueId, {
+        statusId: 'working',
+        sessionStatus: 'pending',
+      })
       triggerIssueExecution(
         issueId,
-        { engineType: existing.engineType, prompt: existing.prompt, model: existing.model },
+        {
+          engineType: existing.engineType,
+          prompt: existing.prompt,
+          model: existing.model,
+        },
         project.directory || undefined,
       )
     } else if (shouldFlush) {

@@ -1,3 +1,7 @@
+import { existsSync } from 'node:fs'
+import { join } from 'node:path'
+import { CommandBuilder } from '@/engines/command'
+import { safeEnv } from '@/engines/safe-env'
 import type {
   EngineAvailability,
   EngineCapability,
@@ -10,10 +14,6 @@ import type {
   SpawnOptions,
 } from '@/engines/types'
 import type { WriteFilterRule } from '@/engines/write-filter'
-import { existsSync } from 'node:fs'
-import { join } from 'node:path'
-import { CommandBuilder } from '@/engines/command'
-import { safeEnv } from '@/engines/safe-env'
 import { logger } from '@/logger'
 import { ClaudeLogNormalizer } from './normalizer'
 import { ClaudeProtocolHandler } from './protocol'
@@ -38,7 +38,11 @@ const BASE_COMMAND = CLAUDE_BINARY ?? 'npx -y @anthropic-ai/claude-code'
 // [1m] variants use 1 million context token window
 const CLAUDE_MODELS: EngineModel[] = [
   { id: 'claude-sonnet-4-6', name: 'Claude Sonnet 4.6', isDefault: false },
-  { id: 'claude-sonnet-4-6[1m]', name: 'Claude Sonnet 4.6 (1M)', isDefault: false },
+  {
+    id: 'claude-sonnet-4-6[1m]',
+    name: 'Claude Sonnet 4.6 (1M)',
+    isDefault: false,
+  },
   { id: 'claude-opus-4-6', name: 'Claude Opus 4.6', isDefault: true },
   { id: 'claude-opus-4-6[1m]', name: 'Claude Opus 4.6 (1M)', isDefault: false },
 ]
@@ -62,9 +66,16 @@ function applyPermissionArgs(
 export class ClaudeCodeExecutor implements EngineExecutor {
   readonly engineType = 'claude-code' as const
   readonly protocol = 'stream-json' as const
-  readonly capabilities: EngineCapability[] = ['session-fork', 'context-usage', 'plan-mode']
+  readonly capabilities: EngineCapability[] = [
+    'session-fork',
+    'context-usage',
+    'plan-mode',
+  ]
 
-  async spawn(options: SpawnOptions, env: ExecutionEnv): Promise<SpawnedProcess> {
+  async spawn(
+    options: SpawnOptions,
+    env: ExecutionEnv,
+  ): Promise<SpawnedProcess> {
     const builder = CommandBuilder.create(BASE_COMMAND)
       .params(['-p', '--output-format=stream-json', '--verbose', '--no-chrome'])
       .param('--input-format', 'stream-json')
@@ -131,7 +142,9 @@ export class ClaudeCodeExecutor implements EngineExecutor {
     )
 
     // Wrap stdout to intercept control_request messages
-    const filteredStdout = handler.wrapStdout(proc.stdout as ReadableStream<Uint8Array>)
+    const filteredStdout = handler.wrapStdout(
+      proc.stdout as ReadableStream<Uint8Array>,
+    )
 
     return {
       subprocess: proc,
@@ -142,7 +155,10 @@ export class ClaudeCodeExecutor implements EngineExecutor {
     }
   }
 
-  async spawnFollowUp(options: FollowUpOptions, env: ExecutionEnv): Promise<SpawnedProcess> {
+  async spawnFollowUp(
+    options: FollowUpOptions,
+    env: ExecutionEnv,
+  ): Promise<SpawnedProcess> {
     const builder = CommandBuilder.create(BASE_COMMAND)
       .params(['-p', '--output-format=stream-json', '--verbose', '--no-chrome'])
       .param('--input-format', 'stream-json')
@@ -204,7 +220,9 @@ export class ClaudeCodeExecutor implements EngineExecutor {
       'claude_process_spawned',
     )
 
-    const filteredStdout = handler.wrapStdout(proc.stdout as ReadableStream<Uint8Array>)
+    const filteredStdout = handler.wrapStdout(
+      proc.stdout as ReadableStream<Uint8Array>,
+    )
 
     return {
       subprocess: proc,
@@ -266,11 +284,14 @@ export class ClaudeCodeExecutor implements EngineExecutor {
 
       if (exitCode !== 0) {
         // Fall back to npx
-        const proc = Bun.spawn(['npx', '-y', '@anthropic-ai/claude-code', '--version'], {
-          stdout: 'pipe',
-          stderr: 'pipe',
-          env: safeEnv({ NPM_CONFIG_LOGLEVEL: 'error' }),
-        })
+        const proc = Bun.spawn(
+          ['npx', '-y', '@anthropic-ai/claude-code', '--version'],
+          {
+            stdout: 'pipe',
+            stderr: 'pipe',
+            env: safeEnv({ NPM_CONFIG_LOGLEVEL: 'error' }),
+          },
+        )
 
         const timer = setTimeout(() => proc.kill(), 10000)
         exitCode = await proc.exited
@@ -282,7 +303,11 @@ export class ClaudeCodeExecutor implements EngineExecutor {
       }
 
       if (exitCode !== 0) {
-        return { engineType: 'claude-code', installed: false, authStatus: 'unknown' }
+        return {
+          engineType: 'claude-code',
+          installed: false,
+          authStatus: 'unknown',
+        }
       }
 
       const versionMatch = stdout.match(/(\d+\.\d+\.\d[\w.-]*)/)
@@ -328,7 +353,9 @@ export class ClaudeCodeExecutor implements EngineExecutor {
 
   private defaultNormalizer = new ClaudeLogNormalizer()
 
-  normalizeLog(rawLine: string): NormalizedLogEntry | NormalizedLogEntry[] | null {
+  normalizeLog(
+    rawLine: string,
+  ): NormalizedLogEntry | NormalizedLogEntry[] | null {
     return this.defaultNormalizer.parse(rawLine)
   }
 

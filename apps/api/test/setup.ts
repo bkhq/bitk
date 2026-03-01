@@ -2,8 +2,9 @@
  * Test setup — import in every test file for cleanup registration.
  * DB_PATH is already set by preload.ts.
  */
-import { rmSync } from 'node:fs'
+
 import { afterAll } from 'bun:test'
+import { rmSync } from 'node:fs'
 
 const testDbPath = (globalThis as any).__TEST_DB_PATH as string
 

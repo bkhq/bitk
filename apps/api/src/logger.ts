@@ -1,6 +1,6 @@
-import type { MiddlewareHandler } from 'hono'
 import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
+import type { MiddlewareHandler } from 'hono'
 import pino from 'pino'
 import { ROOT_DIR } from './root'
 

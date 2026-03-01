@@ -1,11 +1,26 @@
-import type { NormalizedLogEntry } from '@/engines/types'
-import type { WriteFilterRule } from '@/engines/write-filter'
 import { describe, expect, test } from 'bun:test'
 import { ClaudeLogNormalizer } from '@/engines/executors/claude'
+import type { NormalizedLogEntry } from '@/engines/types'
+import type { WriteFilterRule } from '@/engines/write-filter'
 
-const READ_RULE: WriteFilterRule = { id: 'read', type: 'tool-name', match: 'Read', enabled: true }
-const GLOB_RULE: WriteFilterRule = { id: 'glob', type: 'tool-name', match: 'Glob', enabled: true }
-const GREP_RULE: WriteFilterRule = { id: 'grep', type: 'tool-name', match: 'Grep', enabled: true }
+const READ_RULE: WriteFilterRule = {
+  id: 'read',
+  type: 'tool-name',
+  match: 'Read',
+  enabled: true,
+}
+const GLOB_RULE: WriteFilterRule = {
+  id: 'glob',
+  type: 'tool-name',
+  match: 'Glob',
+  enabled: true,
+}
+const GREP_RULE: WriteFilterRule = {
+  id: 'grep',
+  type: 'tool-name',
+  match: 'Grep',
+  enabled: true,
+}
 const ALL_RULES: WriteFilterRule[] = [READ_RULE, GLOB_RULE, GREP_RULE]
 
 function line(obj: Record<string, unknown>): string {
@@ -13,7 +28,10 @@ function line(obj: Record<string, unknown>): string {
 }
 
 // Helper to flatten parse result into array
-function parseAll(normalizer: ClaudeLogNormalizer, rawLine: string): NormalizedLogEntry[] {
+function parseAll(
+  normalizer: ClaudeLogNormalizer,
+  rawLine: string,
+): NormalizedLogEntry[] {
   const result = normalizer.parse(rawLine)
   if (!result) return []
   return Array.isArray(result) ? result : [result]
@@ -29,7 +47,10 @@ describe('ClaudeLogNormalizer', () => {
         line({
           type: 'assistant',
           timestamp: '2025-01-01T00:00:00Z',
-          message: { id: 'msg1', content: [{ type: 'text', text: 'Hello world' }] },
+          message: {
+            id: 'msg1',
+            content: [{ type: 'text', text: 'Hello world' }],
+          },
         }),
       )
       expect(entries).toHaveLength(1)
@@ -47,7 +68,12 @@ describe('ClaudeLogNormalizer', () => {
             id: 'msg2',
             content: [
               { type: 'text', text: 'Let me read' },
-              { type: 'tool_use', id: 'tu_1', name: 'Read', input: { file_path: '/foo' } },
+              {
+                type: 'tool_use',
+                id: 'tu_1',
+                name: 'Read',
+                input: { file_path: '/foo' },
+              },
             ],
           },
         }),
@@ -61,7 +87,12 @@ describe('ClaudeLogNormalizer', () => {
     test('standalone tool_use', () => {
       const entries = parseAll(
         normalizer,
-        line({ type: 'tool_use', name: 'Bash', id: 'tu_2', input: { command: 'ls' } }),
+        line({
+          type: 'tool_use',
+          name: 'Bash',
+          id: 'tu_2',
+          input: { command: 'ls' },
+        }),
       )
       expect(entries).toHaveLength(1)
       expect(entries[0]!.entryType).toBe('tool-use')
@@ -81,7 +112,10 @@ describe('ClaudeLogNormalizer', () => {
     test('error message', () => {
       const entries = parseAll(
         normalizer,
-        line({ type: 'error', error: { type: 'api_error', message: 'Rate limit' } }),
+        line({
+          type: 'error',
+          error: { type: 'api_error', message: 'Rate limit' },
+        }),
       )
       expect(entries).toHaveLength(1)
       expect(entries[0]!.entryType).toBe('error-message')
@@ -91,7 +125,12 @@ describe('ClaudeLogNormalizer', () => {
     test('system init', () => {
       const entries = parseAll(
         normalizer,
-        line({ type: 'system', subtype: 'init', session_id: 's1', cwd: '/home' }),
+        line({
+          type: 'system',
+          subtype: 'init',
+          session_id: 's1',
+          cwd: '/home',
+        }),
       )
       expect(entries).toHaveLength(1)
       expect(entries[0]!.entryType).toBe('system-message')
@@ -132,7 +171,12 @@ describe('ClaudeLogNormalizer', () => {
 
     test('standalone Read tool_use is filtered', () => {
       const result = normalizer.parse(
-        line({ type: 'tool_use', name: 'Read', id: 'tu_read1', input: { file_path: '/bar' } }),
+        line({
+          type: 'tool_use',
+          name: 'Read',
+          id: 'tu_read1',
+          input: { file_path: '/bar' },
+        }),
       )
       expect(result).toBeNull()
     })
@@ -140,7 +184,12 @@ describe('ClaudeLogNormalizer', () => {
     test('standalone Bash tool_use is NOT filtered', () => {
       const entries = parseAll(
         normalizer,
-        line({ type: 'tool_use', name: 'Bash', id: 'tu_bash1', input: { command: 'echo hi' } }),
+        line({
+          type: 'tool_use',
+          name: 'Bash',
+          id: 'tu_bash1',
+          input: { command: 'echo hi' },
+        }),
       )
       expect(entries).toHaveLength(1)
       expect(entries[0]!.content).toBe('Tool: Bash')
@@ -159,7 +208,12 @@ describe('ClaudeLogNormalizer', () => {
             id: 'msg3',
             content: [
               { type: 'text', text: 'Let me check' },
-              { type: 'tool_use', id: 'tu_r1', name: 'Read', input: { file_path: '/x' } },
+              {
+                type: 'tool_use',
+                id: 'tu_r1',
+                name: 'Read',
+                input: { file_path: '/x' },
+              },
             ],
           },
         }),
@@ -175,7 +229,14 @@ describe('ClaudeLogNormalizer', () => {
           type: 'assistant',
           message: {
             id: 'msg4',
-            content: [{ type: 'tool_use', id: 'tu_r2', name: 'Read', input: { file_path: '/y' } }],
+            content: [
+              {
+                type: 'tool_use',
+                id: 'tu_r2',
+                name: 'Read',
+                input: { file_path: '/y' },
+              },
+            ],
           },
         }),
       )
@@ -190,8 +251,18 @@ describe('ClaudeLogNormalizer', () => {
           message: {
             id: 'msg5',
             content: [
-              { type: 'tool_use', id: 'tu_r3', name: 'Read', input: { file_path: '/a' } },
-              { type: 'tool_use', id: 'tu_e1', name: 'Edit', input: { file_path: '/b' } },
+              {
+                type: 'tool_use',
+                id: 'tu_r3',
+                name: 'Read',
+                input: { file_path: '/a' },
+              },
+              {
+                type: 'tool_use',
+                id: 'tu_e1',
+                name: 'Edit',
+                input: { file_path: '/b' },
+              },
             ],
           },
         }),
@@ -208,12 +279,21 @@ describe('ClaudeLogNormalizer', () => {
 
       // First, filter the tool_use
       normalizer.parse(
-        line({ type: 'tool_use', name: 'Read', id: 'tu_corr1', input: { file_path: '/z' } }),
+        line({
+          type: 'tool_use',
+          name: 'Read',
+          id: 'tu_corr1',
+          input: { file_path: '/z' },
+        }),
       )
 
       // Now the tool_result should also be filtered
       const result = normalizer.parse(
-        line({ type: 'tool_result', tool_use_id: 'tu_corr1', content: 'file contents' }),
+        line({
+          type: 'tool_result',
+          tool_use_id: 'tu_corr1',
+          content: 'file contents',
+        }),
       )
       expect(result).toBeNull()
     })
@@ -223,12 +303,21 @@ describe('ClaudeLogNormalizer', () => {
 
       // Bash is not filtered
       normalizer.parse(
-        line({ type: 'tool_use', name: 'Bash', id: 'tu_corr2', input: { command: 'ls' } }),
+        line({
+          type: 'tool_use',
+          name: 'Bash',
+          id: 'tu_corr2',
+          input: { command: 'ls' },
+        }),
       )
 
       const entries = parseAll(
         normalizer,
-        line({ type: 'tool_result', tool_use_id: 'tu_corr2', content: 'output' }),
+        line({
+          type: 'tool_result',
+          tool_use_id: 'tu_corr2',
+          content: 'output',
+        }),
       )
       expect(entries).toHaveLength(1)
       expect(entries[0]!.content).toBe('output')
@@ -244,8 +333,18 @@ describe('ClaudeLogNormalizer', () => {
           message: {
             id: 'msg6',
             content: [
-              { type: 'tool_use', id: 'tu_uc1', name: 'Read', input: { file_path: '/f' } },
-              { type: 'tool_use', id: 'tu_uc2', name: 'Edit', input: { file_path: '/g' } },
+              {
+                type: 'tool_use',
+                id: 'tu_uc1',
+                name: 'Read',
+                input: { file_path: '/f' },
+              },
+              {
+                type: 'tool_use',
+                id: 'tu_uc2',
+                name: 'Edit',
+                input: { file_path: '/g' },
+              },
             ],
           },
         }),
@@ -258,8 +357,16 @@ describe('ClaudeLogNormalizer', () => {
           type: 'user',
           message: {
             content: [
-              { type: 'tool_result', tool_use_id: 'tu_uc1', content: 'read result' },
-              { type: 'tool_result', tool_use_id: 'tu_uc2', content: 'edit result' },
+              {
+                type: 'tool_result',
+                tool_use_id: 'tu_uc1',
+                content: 'read result',
+              },
+              {
+                type: 'tool_result',
+                tool_use_id: 'tu_uc2',
+                content: 'edit result',
+              },
             ],
           },
         }),
@@ -306,7 +413,12 @@ describe('ClaudeLogNormalizer', () => {
     test('Edit passes through', () => {
       const entries = parseAll(
         normalizer,
-        line({ type: 'tool_use', name: 'Edit', id: 'tu_edit', input: { file_path: '/x' } }),
+        line({
+          type: 'tool_use',
+          name: 'Edit',
+          id: 'tu_edit',
+          input: { file_path: '/x' },
+        }),
       )
       expect(entries).toHaveLength(1)
       expect(entries[0]!.content).toBe('Tool: Edit')
@@ -315,7 +427,12 @@ describe('ClaudeLogNormalizer', () => {
     test('Bash passes through', () => {
       const entries = parseAll(
         normalizer,
-        line({ type: 'tool_use', name: 'Bash', id: 'tu_bash', input: { command: 'echo' } }),
+        line({
+          type: 'tool_use',
+          name: 'Bash',
+          id: 'tu_bash',
+          input: { command: 'echo' },
+        }),
       )
       expect(entries).toHaveLength(1)
       expect(entries[0]!.content).toBe('Tool: Bash')
@@ -324,7 +441,12 @@ describe('ClaudeLogNormalizer', () => {
     test('Write passes through', () => {
       const entries = parseAll(
         normalizer,
-        line({ type: 'tool_use', name: 'Write', id: 'tu_write', input: { file_path: '/w' } }),
+        line({
+          type: 'tool_use',
+          name: 'Write',
+          id: 'tu_write',
+          input: { file_path: '/w' },
+        }),
       )
       expect(entries).toHaveLength(1)
       expect(entries[0]!.content).toBe('Tool: Write')
@@ -359,7 +481,12 @@ describe('ClaudeLogNormalizer', () => {
     test('Read is NOT filtered when rule is disabled', () => {
       const entries = parseAll(
         normalizer,
-        line({ type: 'tool_use', name: 'Read', id: 'tu_dis1', input: { file_path: '/d' } }),
+        line({
+          type: 'tool_use',
+          name: 'Read',
+          id: 'tu_dis1',
+          input: { file_path: '/d' },
+        }),
       )
       expect(entries).toHaveLength(1)
       expect(entries[0]!.content).toBe('Tool: Read')
@@ -372,7 +499,10 @@ describe('ClaudeLogNormalizer', () => {
     test('text_delta produces assistant-message', () => {
       const entries = parseAll(
         normalizer,
-        line({ type: 'content_block_delta', delta: { type: 'text_delta', text: 'Hi' } }),
+        line({
+          type: 'content_block_delta',
+          delta: { type: 'text_delta', text: 'Hi' },
+        }),
       )
       expect(entries).toHaveLength(1)
       expect(entries[0]!.entryType).toBe('assistant-message')
@@ -381,7 +511,10 @@ describe('ClaudeLogNormalizer', () => {
 
     test('thinking_delta returns null', () => {
       const result = normalizer.parse(
-        line({ type: 'content_block_delta', delta: { type: 'thinking_delta' } }),
+        line({
+          type: 'content_block_delta',
+          delta: { type: 'thinking_delta' },
+        }),
       )
       expect(result).toBeNull()
     })
@@ -411,15 +544,27 @@ describe('ClaudeLogNormalizer', () => {
       const normalizer = new ClaudeLogNormalizer([READ_RULE])
 
       // Filter the tool_use
-      normalizer.parse(line({ type: 'tool_use', name: 'Read', id: 'tu_clean1', input: {} }))
+      normalizer.parse(
+        line({ type: 'tool_use', name: 'Read', id: 'tu_clean1', input: {} }),
+      )
 
       // First result is filtered and cleans up the id
-      normalizer.parse(line({ type: 'tool_result', tool_use_id: 'tu_clean1', content: 'data' }))
+      normalizer.parse(
+        line({
+          type: 'tool_result',
+          tool_use_id: 'tu_clean1',
+          content: 'data',
+        }),
+      )
 
       // Second result with same id should NOT be filtered (id was cleaned up)
       const entries = parseAll(
         normalizer,
-        line({ type: 'tool_result', tool_use_id: 'tu_clean1', content: 'duplicate' }),
+        line({
+          type: 'tool_result',
+          tool_use_id: 'tu_clean1',
+          content: 'duplicate',
+        }),
       )
       expect(entries).toHaveLength(1)
       expect(entries[0]!.content).toBe('duplicate')

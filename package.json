@@ -1,12 +1,14 @@
 {
-  "name": "bitk",
+  "name": "@bitk/root",
   "private": true,
   "type": "module",
   "workspaces": {
-    "packages": ["apps/*", "packages/*"],
+    "packages": [
+      "apps/*",
+      "packages/*"
+    ],
     "catalog": {
       "typescript": "^5.7.2",
-      "prettier": "^3.8.1",
       "zod": "^4.3.6"
     }
   },
@@ -19,12 +21,19 @@
     "test": "bun --parallel --filter '*' test",
     "test:api": "bun --filter @bitk/api test",
     "test:frontend": "bun --filter @bitk/frontend test",
-    "lint": "bun --filter '*' lint",
-    "format": "bun --filter '*' format",
-    "format:check": "bun --filter '*' format:check",
+    "lint": "biome check .",
+    "lint:fix": "biome check . --fix",
+    "format": "biome format . --write",
+    "format:check": "biome check . --formatter-enabled=true --linter-enabled=false",
     "db:generate": "bun --filter @bitk/api db:generate",
     "db:migrate": "bun --filter @bitk/api db:migrate",
     "db:reset": "bun apps/api/src/db/reset.ts",
     "compile": "bun scripts/compile.ts"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.4",
+    "@bitk/tsconfig": "workspace:*",
+    "drizzle-kit": "^0.31.9",
+    "typescript": "catalog:"
   }
 }

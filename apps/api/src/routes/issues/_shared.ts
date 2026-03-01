@@ -1,15 +1,21 @@
-import type { EngineType } from '@/engines/types'
 import { mkdir, stat } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { and, eq, inArray } from 'drizzle-orm'
-import { z } from 'zod'
+import * as z from 'zod'
 import { cacheDel, cacheGetOrSet } from '@/cache'
 import { STATUS_IDS } from '@/config'
 import { db } from '@/db'
 import { getAppSetting } from '@/db/helpers'
-import { getPendingMessages, markPendingMessagesDispatched } from '@/db/pending-messages'
-import { attachments as attachmentsTable, issues as issuesTable } from '@/db/schema'
+import {
+  getPendingMessages,
+  markPendingMessagesDispatched,
+} from '@/db/pending-messages'
+import {
+  attachments as attachmentsTable,
+  issues as issuesTable,
+} from '@/db/schema'
 import { issueEngine } from '@/engines/issue'
+import type { EngineType } from '@/engines/types'
 import { emitIssueUpdated } from '@/events/issue-events'
 import { logger } from '@/logger'
 import { UPLOAD_DIR } from '@/uploads'
@@ -77,7 +83,10 @@ export const followUpSchema = z.object({
 
 export type IssueRow = typeof issuesTable.$inferSelect
 
-export { getPendingMessages, markPendingMessagesDispatched } from '@/db/pending-messages'
+export {
+  getPendingMessages,
+  markPendingMessagesDispatched,
+} from '@/db/pending-messages'
 
 export function serializeIssue(row: IssueRow, childCount?: number) {
   return {
@@ -119,7 +128,10 @@ export async function getProjectOwnedIssue(projectId: string, issueId: string) {
   })
 }
 
-export async function invalidateIssueCache(projectId: string, issueId: string): Promise<void> {
+export async function invalidateIssueCache(
+  projectId: string,
+  issueId: string,
+): Promise<void> {
   await cacheDel(`issue:${projectId}:${issueId}`)
 }
 
@@ -130,12 +142,17 @@ export { toISO } from '@/utils/date'
  * existing session.  Called when an issue transitions to working but
  * already has a completed/failed session.
  */
-export function flushPendingAsFollowUp(issueId: string, issue: { model: string | null }): void {
+export function flushPendingAsFollowUp(
+  issueId: string,
+  issue: { model: string | null },
+): void {
   void (async () => {
     try {
       const pending = await getPendingMessages(issueId)
       if (pending.length === 0) return
-      const attachmentCtx = await getAttachmentContextForLogIds(pending.map((m) => m.id))
+      const attachmentCtx = await getAttachmentContextForLogIds(
+        pending.map((m) => m.id),
+      )
       const parts = pending.map((m) => {
         const fileCtx = attachmentCtx.get(m.id) ?? ''
         return (m.content + fileCtx).trim()
@@ -146,7 +163,10 @@ export function flushPendingAsFollowUp(issueId: string, issue: { model: string |
       await issueEngine.followUpIssue(issueId, prompt, issue.model ?? undefined)
       // Delete pending rows only AFTER successful follow-up to prevent message loss
       await markPendingMessagesDispatched(pending.map((m) => m.id))
-      logger.debug({ issueId, pendingCount: pending.length }, 'pending_flushed_as_followup')
+      logger.debug(
+        { issueId, pendingCount: pending.length },
+        'pending_flushed_as_followup',
+      )
     } catch (err) {
       logger.error({ issueId, err }, 'pending_flush_followup_failed')
     }
@@ -170,7 +190,12 @@ export function normalizePrompt(input: string): string {
  * stored attachment records rather than in-memory SavedFile objects.
  */
 function buildFileContextFromRows(
-  rows: { originalName: string; storedName: string; mimeType: string; size: number }[],
+  rows: {
+    originalName: string
+    storedName: string
+    mimeType: string
+    size: number
+  }[],
 ): string {
   if (rows.length === 0) return ''
   const parts = rows.map((f) => {
@@ -194,7 +219,9 @@ function buildFileContextFromRows(
  * Look up attachment records for the given log IDs and return file context
  * grouped by log ID.
  */
-async function getAttachmentContextForLogIds(logIds: string[]): Promise<Map<string, string>> {
+async function getAttachmentContextForLogIds(
+  logIds: string[],
+): Promise<Map<string, string>> {
   if (logIds.length === 0) return new Map()
   const rows = await db
     .select()
@@ -227,7 +254,9 @@ export async function collectPendingMessages(
 ): Promise<{ prompt: string; pendingIds: string[] }> {
   const pending = await getPendingMessages(issueId)
   if (pending.length === 0) return { prompt: basePrompt, pendingIds: [] }
-  const attachmentCtx = await getAttachmentContextForLogIds(pending.map((m) => m.id))
+  const attachmentCtx = await getAttachmentContextForLogIds(
+    pending.map((m) => m.id),
+  )
   const parts = pending.map((m) => {
     const fileCtx = attachmentCtx.get(m.id) ?? ''
     return (m.content + fileCtx).trim()
@@ -242,16 +271,24 @@ export async function collectPendingMessages(
  * - review → move to working, then execute
  * - working → proceed as-is
  */
-export async function ensureWorking(issue: IssueRow): Promise<{ ok: boolean; reason?: string }> {
+export async function ensureWorking(
+  issue: IssueRow,
+): Promise<{ ok: boolean; reason?: string }> {
   if (issue.statusId === 'todo') {
-    return { ok: false, reason: 'Cannot execute a todo issue — move to working first' }
+    return {
+      ok: false,
+      reason: 'Cannot execute a todo issue — move to working first',
+    }
   }
   if (issue.statusId === 'done') {
     return { ok: false, reason: 'Cannot execute a done issue' }
   }
   if (issue.statusId !== 'working') {
     // review → working
-    await db.update(issuesTable).set({ statusId: 'working' }).where(eq(issuesTable.id, issue.id))
+    await db
+      .update(issuesTable)
+      .set({ statusId: 'working' })
+      .where(eq(issuesTable.id, issue.id))
     await cacheDel(`issue:${issue.projectId}:${issue.id}`)
     emitIssueUpdated(issue.id, { statusId: 'working' })
     logger.info({ issueId: issue.id, from: issue.statusId }, 'moved_to_working')
@@ -279,7 +316,10 @@ export function triggerIssueExecution(
         const workspaceRoot = await getAppSetting('workspace:defaultPath')
         if (workspaceRoot && workspaceRoot !== '/') {
           const resolvedRoot = resolve(workspaceRoot)
-          if (!resolvedDir.startsWith(`${resolvedRoot}/`) && resolvedDir !== resolvedRoot) {
+          if (
+            !resolvedDir.startsWith(`${resolvedRoot}/`) &&
+            resolvedDir !== resolvedRoot
+          ) {
             logger.warn(
               { issueId, resolvedDir, workspaceRoot: resolvedRoot },
               'auto_execute_workdir_outside_workspace',
@@ -295,22 +335,32 @@ export function triggerIssueExecution(
           if (s.isDirectory()) {
             effectiveWorkingDir = resolvedDir
           } else {
-            logger.warn({ issueId, resolvedDir }, 'auto_execute_workdir_not_directory')
+            logger.warn(
+              { issueId, resolvedDir },
+              'auto_execute_workdir_not_directory',
+            )
           }
         } catch (error) {
-          logger.warn({ issueId, resolvedDir, error }, 'auto_execute_workdir_prepare_failed')
+          logger.warn(
+            { issueId, resolvedDir, error },
+            'auto_execute_workdir_prepare_failed',
+          )
         }
       }
 
       const pending = await getPendingMessages(issueId)
       let effectivePrompt = issue.prompt ?? ''
       if (pending.length > 0) {
-        const attachmentCtx = await getAttachmentContextForLogIds(pending.map((m) => m.id))
+        const attachmentCtx = await getAttachmentContextForLogIds(
+          pending.map((m) => m.id),
+        )
         const parts = pending.map((m) => {
           const fileCtx = attachmentCtx.get(m.id) ?? ''
           return (m.content + fileCtx).trim()
         })
-        effectivePrompt = [effectivePrompt, ...parts].filter(Boolean).join('\n\n')
+        effectivePrompt = [effectivePrompt, ...parts]
+          .filter(Boolean)
+          .join('\n\n')
       }
 
       await issueEngine.executeIssue(issueId, {
@@ -324,17 +374,26 @@ export function triggerIssueExecution(
       if (pending.length > 0) {
         await markPendingMessagesDispatched(pending.map((m) => m.id))
       }
-      logger.debug({ issueId, pendingCount: pending.length }, 'auto_execute_started')
+      logger.debug(
+        { issueId, pendingCount: pending.length },
+        'auto_execute_started',
+      )
     } catch (err) {
       logger.error({ issueId, err }, 'auto_execute_failed')
-      issueEngine.setLastError(issueId, err instanceof Error ? err.message : 'auto_execute_failed')
+      issueEngine.setLastError(
+        issueId,
+        err instanceof Error ? err.message : 'auto_execute_failed',
+      )
       try {
         await db
           .update(issuesTable)
           .set({ sessionStatus: 'failed' })
           .where(eq(issuesTable.id, issueId))
       } catch (dbErr) {
-        logger.error({ issueId, err: dbErr }, 'auto_execute_status_update_failed')
+        logger.error(
+          { issueId, err: dbErr },
+          'auto_execute_status_update_failed',
+        )
       }
     }
   })()

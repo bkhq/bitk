@@ -1,13 +1,13 @@
-import { useRef, useState } from 'react'
 import { Bug, Calendar, ChevronDown, Trash2 } from 'lucide-react'
+import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { Issue, Priority } from '@/types/kanban'
+import { PriorityIcon } from '@/components/kanban/PriorityIcon'
+import { Button } from '@/components/ui/button'
+import { useClickOutside } from '@/hooks/use-click-outside'
+import { tPriority, tStatus } from '@/lib/i18n-utils'
 import type { StatusDefinition, StatusId } from '@/lib/statuses'
 import { STATUSES } from '@/lib/statuses'
-import { tStatus, tPriority } from '@/lib/i18n-utils'
-import { PriorityIcon } from '@/components/kanban/PriorityIcon'
-import { useClickOutside } from '@/hooks/use-click-outside'
-import { Button } from '@/components/ui/button'
+import type { Issue, Priority } from '@/types/kanban'
 
 export const PRIORITIES: Priority[] = ['urgent', 'high', 'medium', 'low']
 

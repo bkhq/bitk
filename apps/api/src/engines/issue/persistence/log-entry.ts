@@ -1,7 +1,7 @@
-import type { NormalizedLogEntry } from '@/engines/types'
 import { ulid } from 'ulid'
 import { db } from '@/db'
 import { issueLogs as logsTable } from '@/db/schema'
+import type { NormalizedLogEntry } from '@/engines/types'
 import { logger } from '@/logger'
 
 /** Persist a single log entry to DB with explicit counter and turn values. */

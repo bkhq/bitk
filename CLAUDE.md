@@ -193,8 +193,7 @@ The engine layer is the most complex part of the backend. Key components:
 ## Conventions
 
 - Use Bun APIs over Node.js equivalents (`Bun.file()`, `Bun.serve()`, `bun:sqlite`, `bun:test`)
-- Backend eslint: `@antfu/eslint-config` — no semicolons, single quotes
-- Frontend eslint: `@tanstack/eslint-config`
+- Linting & formatting: Biome (`biome.json` at root) — no semicolons, single quotes
 - Frontend tests: vitest + @testing-library/react (`bun run test:frontend`)
 - Backend tests: `bun test` with `bun:test` (`bun run test:api`). Tests use preload to set `DB_PATH` to an isolated temp DB.
 - Bun auto-loads `.env` — do not use dotenv

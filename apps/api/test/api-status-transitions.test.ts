@@ -1,5 +1,12 @@
 import { beforeAll, describe, expect, test } from 'bun:test'
-import { createTestProject, expectSuccess, get, patch, post, waitFor } from './helpers'
+import {
+  createTestProject,
+  expectSuccess,
+  get,
+  patch,
+  post,
+  waitFor,
+} from './helpers'
 /**
  * Status transition tests — verifies the execution lifecycle:
  * - Status guards on execute/follow-up/restart
@@ -27,7 +34,10 @@ beforeAll(async () => {
 
 // ---- Helper: create issue in a specific status ----
 
-async function createIssueInStatus(statusId: string, title = `Issue ${statusId} ${Date.now()}`) {
+async function createIssueInStatus(
+  statusId: string,
+  title = `Issue ${statusId} ${Date.now()}`,
+) {
   // Create in todo first, then move if needed
   const created = expectSuccess(
     await post<Issue>(`/api/projects/${projectId}/issues`, {
@@ -50,10 +60,14 @@ async function createIssueInStatus(statusId: string, title = `Issue ${statusId} 
       }),
     )
     await waitFor(async () => {
-      const r = await get<Issue>(`/api/projects/${projectId}/issues/${moved.id}`)
+      const r = await get<Issue>(
+        `/api/projects/${projectId}/issues/${moved.id}`,
+      )
       return expectSuccess(r).statusId === 'review'
     }, 5000)
-    return expectSuccess(await get<Issue>(`/api/projects/${projectId}/issues/${moved.id}`))
+    return expectSuccess(
+      await get<Issue>(`/api/projects/${projectId}/issues/${moved.id}`),
+    )
   }
 
   // Move to target status via PATCH
@@ -67,14 +81,18 @@ async function createIssueInStatus(statusId: string, title = `Issue ${statusId} 
   // Wait for it to complete so we have a clean state.
   if (statusId === 'working') {
     await waitFor(async () => {
-      const r = await get<Issue>(`/api/projects/${projectId}/issues/${moved.id}`)
+      const r = await get<Issue>(
+        `/api/projects/${projectId}/issues/${moved.id}`,
+      )
       const s = expectSuccess(r).sessionStatus
       return s === 'completed' || s === 'failed'
     }, 5000)
   }
 
   // Re-fetch to get current state
-  return expectSuccess(await get<Issue>(`/api/projects/${projectId}/issues/${moved.id}`))
+  return expectSuccess(
+    await get<Issue>(`/api/projects/${projectId}/issues/${moved.id}`),
+  )
 }
 
 // ============================
@@ -84,10 +102,13 @@ async function createIssueInStatus(statusId: string, title = `Issue ${statusId} 
 describe('Execute status guards', () => {
   test('rejects execute on todo issue with 400', async () => {
     const issue = await createIssueInStatus('todo')
-    const result = await post<unknown>(`/api/projects/${projectId}/issues/${issue.id}/execute`, {
-      engineType: 'echo',
-      prompt: 'test',
-    })
+    const result = await post<unknown>(
+      `/api/projects/${projectId}/issues/${issue.id}/execute`,
+      {
+        engineType: 'echo',
+        prompt: 'test',
+      },
+    )
     expect(result.status).toBe(400)
     expect(result.json.success).toBe(false)
     if (!result.json.success) {
@@ -97,10 +118,13 @@ describe('Execute status guards', () => {
 
   test('rejects execute on done issue with 400', async () => {
     const issue = await createIssueInStatus('done')
-    const result = await post<unknown>(`/api/projects/${projectId}/issues/${issue.id}/execute`, {
-      engineType: 'echo',
-      prompt: 'test',
-    })
+    const result = await post<unknown>(
+      `/api/projects/${projectId}/issues/${issue.id}/execute`,
+      {
+        engineType: 'echo',
+        prompt: 'test',
+      },
+    )
     expect(result.status).toBe(400)
     expect(result.json.success).toBe(false)
     if (!result.json.success) {
@@ -119,7 +143,9 @@ describe('Execute status guards', () => {
     expect(result.status).toBe(200)
 
     // Issue should now be working (ensureInProgress moved it)
-    const after = expectSuccess(await get<Issue>(`/api/projects/${projectId}/issues/${issue.id}`))
+    const after = expectSuccess(
+      await get<Issue>(`/api/projects/${projectId}/issues/${issue.id}`),
+    )
     expect(after.statusId).toBe('working')
   })
 })
@@ -173,14 +199,20 @@ describe('Follow-up status guards', () => {
 describe('Restart status guards', () => {
   test('rejects restart on todo issue with 400', async () => {
     const issue = await createIssueInStatus('todo')
-    const result = await post<unknown>(`/api/projects/${projectId}/issues/${issue.id}/restart`, {})
+    const result = await post<unknown>(
+      `/api/projects/${projectId}/issues/${issue.id}/restart`,
+      {},
+    )
     expect(result.status).toBe(400)
     expect(result.json.success).toBe(false)
   })
 
   test('rejects restart on done issue with 400', async () => {
     const issue = await createIssueInStatus('done')
-    const result = await post<unknown>(`/api/projects/${projectId}/issues/${issue.id}/restart`, {})
+    const result = await post<unknown>(
+      `/api/projects/${projectId}/issues/${issue.id}/restart`,
+      {},
+    )
     expect(result.status).toBe(400)
     expect(result.json.success).toBe(false)
   })
@@ -206,13 +238,17 @@ describe('Auto-move to review after AI completion', () => {
 
     // Wait for echo to finish AND auto-move to review
     await waitFor(async () => {
-      const r = await get<Issue>(`/api/projects/${projectId}/issues/${created.id}`)
+      const r = await get<Issue>(
+        `/api/projects/${projectId}/issues/${created.id}`,
+      )
       const issue = expectSuccess(r)
       return issue.statusId === 'review'
     }, 5000)
 
     // Verify final state
-    const final = expectSuccess(await get<Issue>(`/api/projects/${projectId}/issues/${created.id}`))
+    const final = expectSuccess(
+      await get<Issue>(`/api/projects/${projectId}/issues/${created.id}`),
+    )
     expect(final.statusId).toBe('review')
     expect(final.sessionStatus).toBe('completed')
   })
@@ -240,11 +276,15 @@ describe('Auto-move to review after AI completion', () => {
 
     // Wait for echo to complete and auto-move
     await waitFor(async () => {
-      const r = await get<Issue>(`/api/projects/${projectId}/issues/${created.id}`)
+      const r = await get<Issue>(
+        `/api/projects/${projectId}/issues/${created.id}`,
+      )
       return expectSuccess(r).statusId === 'review'
     }, 5000)
 
-    const final = expectSuccess(await get<Issue>(`/api/projects/${projectId}/issues/${created.id}`))
+    const final = expectSuccess(
+      await get<Issue>(`/api/projects/${projectId}/issues/${created.id}`),
+    )
     expect(final.statusId).toBe('review')
     expect(final.sessionStatus).toBe('completed')
   })
@@ -260,18 +300,25 @@ describe('Auto-move to review after AI completion', () => {
     )
 
     // Bulk update to working
-    const result = await patch<Issue[]>(`/api/projects/${projectId}/issues/bulk`, {
-      updates: [{ id: created.id, statusId: 'working' }],
-    })
+    const result = await patch<Issue[]>(
+      `/api/projects/${projectId}/issues/bulk`,
+      {
+        updates: [{ id: created.id, statusId: 'working' }],
+      },
+    )
     expect(result.status).toBe(200)
 
     // Wait for auto-move to review
     await waitFor(async () => {
-      const r = await get<Issue>(`/api/projects/${projectId}/issues/${created.id}`)
+      const r = await get<Issue>(
+        `/api/projects/${projectId}/issues/${created.id}`,
+      )
       return expectSuccess(r).statusId === 'review'
     }, 5000)
 
-    const final = expectSuccess(await get<Issue>(`/api/projects/${projectId}/issues/${created.id}`))
+    const final = expectSuccess(
+      await get<Issue>(`/api/projects/${projectId}/issues/${created.id}`),
+    )
     expect(final.statusId).toBe('review')
   })
 
@@ -287,7 +334,9 @@ describe('Auto-move to review after AI completion', () => {
     )
 
     await waitFor(async () => {
-      const r = await get<Issue>(`/api/projects/${projectId}/issues/${created.id}`)
+      const r = await get<Issue>(
+        `/api/projects/${projectId}/issues/${created.id}`,
+      )
       return expectSuccess(r).statusId === 'review'
     }, 5000)
 
@@ -300,13 +349,17 @@ describe('Auto-move to review after AI completion', () => {
 
     // Wait for re-execution to complete and auto-move back to review
     await waitFor(async () => {
-      const r = await get<Issue>(`/api/projects/${projectId}/issues/${created.id}`)
+      const r = await get<Issue>(
+        `/api/projects/${projectId}/issues/${created.id}`,
+      )
       const issue = expectSuccess(r)
       // Must be back review with completed status
       return issue.statusId === 'review' && issue.sessionStatus === 'completed'
     }, 5000)
 
-    const final = expectSuccess(await get<Issue>(`/api/projects/${projectId}/issues/${created.id}`))
+    const final = expectSuccess(
+      await get<Issue>(`/api/projects/${projectId}/issues/${created.id}`),
+    )
     expect(final.statusId).toBe('review')
     expect(final.sessionStatus).toBe('completed')
   })
@@ -321,7 +374,9 @@ describe('SSE issue-updated events', () => {
     const { default: app } = await import('../src/app')
 
     // Open SSE stream
-    const sseRes = await app.request(`http://localhost/api/events?projectId=${projectId}`)
+    const sseRes = await app.request(
+      `http://localhost/api/events?projectId=${projectId}`,
+    )
     expect(sseRes.status).toBe(200)
     expect(sseRes.headers.get('content-type')).toContain('text/event-stream')
 

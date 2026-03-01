@@ -13,7 +13,7 @@ const testDbPath = resolve(testDir, `test-${process.pid}-${Date.now()}.db`)
 // Set DB_PATH before any app module is imported
 process.env.DB_PATH = testDbPath
 // Ensure no auth is needed
-delete process.env.API_SECRET
+process.env.API_SECRET = ''
 // Suppress engine startup probe logs during tests
 process.env.NODE_ENV = 'test'
 
@@ -21,6 +21,5 @@ process.env.NODE_ENV = 'test'
 if (!existsSync(testDir)) {
   mkdirSync(testDir, { recursive: true })
 }
-
 // Store path for cleanup
 ;(globalThis as any).__TEST_DB_PATH = testDbPath

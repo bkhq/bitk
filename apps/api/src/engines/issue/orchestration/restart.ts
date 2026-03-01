@@ -1,7 +1,7 @@
-import type { EngineContext } from '@/engines/issue/context'
 import { cleanupStaleSessions } from '@/db/helpers'
 import { getIssueWithSession, updateIssueSession } from '@/engines/engine-store'
 import { engineRegistry } from '@/engines/executors'
+import type { EngineContext } from '@/engines/issue/context'
 import { monitorCompletion } from '@/engines/issue/lifecycle/completion-monitor'
 import { spawnFresh } from '@/engines/issue/lifecycle/spawn'
 import { handleTurnCompleted } from '@/engines/issue/lifecycle/turn-completion'
@@ -9,7 +9,10 @@ import { getNextTurnIndex } from '@/engines/issue/persistence/queries'
 import { ensureNoActiveProcess } from '@/engines/issue/process/guards'
 import { withIssueLock } from '@/engines/issue/process/lock'
 import { register } from '@/engines/issue/process/register'
-import { getPermissionOptions, resolveWorkingDir } from '@/engines/issue/utils/helpers'
+import {
+  getPermissionOptions,
+  resolveWorkingDir,
+} from '@/engines/issue/utils/helpers'
 import { createLogNormalizer } from '@/engines/issue/utils/normalizer'
 import { createWorktree } from '@/engines/issue/utils/worktree'
 import { logger } from '@/logger'
@@ -26,7 +29,8 @@ export async function restartIssue(
     if (status !== 'failed' && status !== 'cancelled')
       throw new Error(`Cannot restart issue in session status: ${status}`)
 
-    if (!issue.sessionFields.engineType) throw new Error('No engine type set on issue')
+    if (!issue.sessionFields.engineType)
+      throw new Error('No engine type set on issue')
     if (!issue.sessionFields.prompt) throw new Error('No prompt set on issue')
 
     ensureNoActiveProcess(ctx, issueId)
@@ -47,7 +51,10 @@ export async function restartIssue(
         worktreePath = await createWorktree(baseDir, issueId)
         workingDir = worktreePath
       } catch (error) {
-        logger.warn({ issueId, error }, 'worktree_creation_failed_fallback_to_base')
+        logger.warn(
+          { issueId, error },
+          'worktree_creation_failed_fallback_to_base',
+        )
       }
     }
 

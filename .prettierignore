@@ -1,9 +1,0 @@
-node_modules
-apps/frontend/node_modules
-apps/frontend/dist
-vibe/**
-drizzle/**
-.github/**
-bun.lock
-AGENTS.md
-CLAUDE.md

@@ -1,4 +1,3 @@
-import { useRef, useState, useCallback, useEffect, useMemo } from 'react'
 import {
   ChevronDown,
   FileText,
@@ -8,12 +7,13 @@ import {
   SlashSquare,
   X,
 } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { EngineIcon } from '@/components/EngineIcons'
-import { formatFileSize, formatModelName } from '@/lib/format'
-import { useClickOutside } from '@/hooks/use-click-outside'
 import { useChangesSummary } from '@/hooks/use-changes-summary'
+import { useClickOutside } from '@/hooks/use-click-outside'
 import { useEngineAvailability, useFollowUpIssue } from '@/hooks/use-kanban'
+import { formatFileSize, formatModelName } from '@/lib/format'
 import type { BusyAction, EngineModel, SessionStatus } from '@/types/kanban'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10 MB
@@ -251,7 +251,7 @@ export function ChatInput({
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
       e.preventDefault()
-      handleSend()
+      void handleSend()
     }
   }
 

@@ -1,12 +1,12 @@
+import { ArrowLeft, Check, Link, Plus, Sparkles } from 'lucide-react'
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Link, Check, Plus, Sparkles } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router-dom'
+import { Button } from '@/components/ui/button'
 import { useAutoTitleIssue, useIssue, useUpdateIssue } from '@/hooks/use-kanban'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { ChatBody } from './ChatBody'
 import { SubIssueDialog } from './SubIssueDialog'
-import { Button } from '@/components/ui/button'
 
 const LazyDiffPanel = lazy(() =>
   import('./DiffPanel').then((m) => ({ default: m.DiffPanel })),
@@ -46,6 +46,7 @@ export function ChatArea({
   const titleBeforeAutoRef = useRef<string | null>(null)
 
   // Detect title change to clear auto-titling state
+  // biome-ignore lint/correctness/useExhaustiveDependencies: titleBeforeAutoRef is a stable ref, not needed as dependency
   useEffect(() => {
     if (isAutoTitling && titleBeforeAutoRef.current !== null && issue) {
       if (issue.title !== titleBeforeAutoRef.current) {
@@ -101,7 +102,7 @@ export function ChatArea({
   }, [issue])
 
   const handleAfterDelete = useCallback(() => {
-    navigate(
+    void navigate(
       showBackToList
         ? `/projects/${projectId}/issues`
         : `/projects/${projectId}`,

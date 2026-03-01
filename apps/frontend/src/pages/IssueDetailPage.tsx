@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { useProject } from '@/hooks/use-kanban'
-import { useIsMobile } from '@/hooks/use-mobile'
-import { AppSidebar } from '@/components/kanban/AppSidebar'
-import { MobileSidebar } from '@/components/kanban/MobileSidebar'
-import { CreateIssueDialog } from '@/components/kanban/CreateIssueDialog'
-import { IssueListPanel } from '@/components/issue-detail/IssueListPanel'
+import { useNavigate, useParams } from 'react-router-dom'
 import { ChatArea } from '@/components/issue-detail/ChatArea'
 import { DIFF_MIN_WIDTH } from '@/components/issue-detail/diff-constants'
+import { IssueListPanel } from '@/components/issue-detail/IssueListPanel'
+import { AppSidebar } from '@/components/kanban/AppSidebar'
+import { CreateIssueDialog } from '@/components/kanban/CreateIssueDialog'
+import { MobileSidebar } from '@/components/kanban/MobileSidebar'
+import { useProject } from '@/hooks/use-kanban'
+import { useIsMobile } from '@/hooks/use-mobile'
 
 const SIDEBAR_WIDTH = 56
 const MIN_CHAT_WIDTH = 300
@@ -45,7 +45,7 @@ export default function IssueDetailPage() {
 
   useEffect(() => {
     if (!isLoading && (isError || !project)) {
-      navigate('/', { replace: true })
+      void navigate('/', { replace: true })
     }
   }, [isLoading, isError, project, navigate])
 

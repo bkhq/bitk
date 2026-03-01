@@ -18,7 +18,10 @@ query.get('/', async (c) => {
 
   const parentId = c.req.query('parentId')
 
-  const conditions = [eq(issuesTable.projectId, project.id), eq(issuesTable.isDeleted, 0)]
+  const conditions = [
+    eq(issuesTable.projectId, project.id),
+    eq(issuesTable.isDeleted, 0),
+  ]
 
   if (parentId === 'null' || parentId === '') {
     // Root issues only (no parent)
@@ -44,7 +47,12 @@ query.get('/', async (c) => {
           cnt: count(),
         })
         .from(issuesTable)
-        .where(and(eq(issuesTable.projectId, project.id), eq(issuesTable.isDeleted, 0)))
+        .where(
+          and(
+            eq(issuesTable.projectId, project.id),
+            eq(issuesTable.isDeleted, 0),
+          ),
+        )
         .groupBy(issuesTable.parentIssueId)
       const map: Record<string, number> = {}
       for (const cr of childRows) {

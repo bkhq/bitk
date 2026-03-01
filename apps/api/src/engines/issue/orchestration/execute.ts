@@ -1,8 +1,7 @@
-import type { EngineContext } from '@/engines/issue/context'
-import type { EngineType, PermissionPolicy } from '@/engines/types'
 import { getEngineDefaultModel } from '@/db/helpers'
 import { getIssueWithSession, updateIssueSession } from '@/engines/engine-store'
 import { engineRegistry } from '@/engines/executors'
+import type { EngineContext } from '@/engines/issue/context'
 import { monitorCompletion } from '@/engines/issue/lifecycle/completion-monitor'
 import { handleTurnCompleted } from '@/engines/issue/lifecycle/turn-completion'
 import { ensureNoActiveProcess } from '@/engines/issue/process/guards'
@@ -14,6 +13,7 @@ import { createLogNormalizer } from '@/engines/issue/utils/normalizer'
 import { getPidFromSubprocess } from '@/engines/issue/utils/pid'
 import { setIssueDevMode } from '@/engines/issue/utils/visibility'
 import { createWorktree } from '@/engines/issue/utils/worktree'
+import type { EngineType, PermissionPolicy } from '@/engines/types'
 import { logger } from '@/logger'
 
 export async function executeIssue(
@@ -44,7 +44,8 @@ export async function executeIssue(
     ensureNoActiveProcess(ctx, issueId)
 
     const executor = engineRegistry.get(opts.engineType)
-    if (!executor) throw new Error(`No executor for engine type: ${opts.engineType}`)
+    if (!executor)
+      throw new Error(`No executor for engine type: ${opts.engineType}`)
 
     let model = opts.model
     if (!model) {
@@ -68,11 +69,17 @@ export async function executeIssue(
         worktreePath = await createWorktree(baseDir, issueId)
         workingDir = worktreePath
       } catch (error) {
-        logger.warn({ issueId, error }, 'worktree_creation_failed_fallback_to_base')
+        logger.warn(
+          { issueId, error },
+          'worktree_creation_failed_fallback_to_base',
+        )
       }
     }
 
-    const permOptions = getPermissionOptions(opts.engineType, opts.permissionMode)
+    const permOptions = getPermissionOptions(
+      opts.engineType,
+      opts.permissionMode,
+    )
     const externalSessionId = crypto.randomUUID()
     const executionId = crypto.randomUUID()
 
@@ -93,8 +100,11 @@ export async function executeIssue(
     )
 
     // Allow executor to override the external session ID (e.g. Codex uses server-generated thread IDs)
-    const finalExternalSessionId = spawned.externalSessionId ?? externalSessionId
-    await updateIssueSession(issueId, { externalSessionId: finalExternalSessionId })
+    const finalExternalSessionId =
+      spawned.externalSessionId ?? externalSessionId
+    await updateIssueSession(issueId, {
+      externalSessionId: finalExternalSessionId,
+    })
     logger.info(
       {
         issueId,

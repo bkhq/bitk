@@ -17,7 +17,9 @@ export async function withIssueLock<T>(
   if (currentTail) {
     const depth = (ctx as any).__lockDepth?.get(issueId) ?? 0
     if (depth >= MAX_QUEUE_DEPTH) {
-      throw new Error(`Lock queue full for issue ${issueId} (max ${MAX_QUEUE_DEPTH})`)
+      throw new Error(
+        `Lock queue full for issue ${issueId} (max ${MAX_QUEUE_DEPTH})`,
+      )
     }
   }
 
@@ -51,7 +53,9 @@ export async function withIssueLock<T>(
     if (ctx.issueOpLocks.get(issueId) === newTail) {
       ctx.issueOpLocks.delete(issueId)
     }
-    throw new Error(`Lock acquire timeout for issue ${issueId} after ${LOCK_ACQUIRE_TIMEOUT_MS}ms`)
+    throw new Error(
+      `Lock acquire timeout for issue ${issueId} after ${LOCK_ACQUIRE_TIMEOUT_MS}ms`,
+    )
   }
 
   const waitMs = Date.now() - acquireStart

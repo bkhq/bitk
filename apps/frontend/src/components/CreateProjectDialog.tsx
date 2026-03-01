@@ -1,18 +1,18 @@
-import { useState, useEffect } from 'react'
 import { FolderOpen } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useCreateProject, useWorkspacePath } from '@/hooks/use-kanban'
-import type { Project } from '@/types/kanban'
+import { DirectoryPicker } from '@/components/DirectoryPicker'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
+  DialogCloseButton,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
-  DialogCloseButton,
 } from '@/components/ui/dialog'
-import { DirectoryPicker } from '@/components/DirectoryPicker'
+import { useCreateProject, useWorkspacePath } from '@/hooks/use-kanban'
+import type { Project } from '@/types/kanban'
 
 export function CreateProjectDialog({
   open,

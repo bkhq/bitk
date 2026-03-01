@@ -1,13 +1,16 @@
-import type { EngineContext } from '@/engines/issue/context'
-import type { NormalizedLogEntry } from '@/engines/types'
 import { eq } from 'drizzle-orm'
 import { db } from '@/db'
 import { issueLogs as logsTable } from '@/db/schema'
+import type { EngineContext } from '@/engines/issue/context'
 import { emitLog } from '@/engines/issue/events'
 import { persistEntry } from '@/engines/issue/persistence/entry'
-import { buildToolDetail, persistToolDetail } from '@/engines/issue/persistence/tool-detail'
+import {
+  buildToolDetail,
+  persistToolDetail,
+} from '@/engines/issue/persistence/tool-detail'
 import { dispatch } from '@/engines/issue/state'
 import { applyAutoTitle } from '@/engines/issue/title'
+import type { NormalizedLogEntry } from '@/engines/types'
 
 // ---------- Stdout stream entry handler ----------
 
@@ -54,7 +57,11 @@ export function handleStreamEntry(
       // Restore content/metadata on the in-memory entry for emitting to live clients
       persisted.content = entry.content
       persisted.metadata = entry.metadata
-      const toolRecordId = persistToolDetail(persisted.messageId, issueId, entry)
+      const toolRecordId = persistToolDetail(
+        persisted.messageId,
+        issueId,
+        entry,
+      )
       if (toolRecordId) {
         db.update(logsTable)
           .set({ toolCallRefId: toolRecordId })
@@ -71,11 +78,17 @@ export function handleStreamEntry(
   }
 
   const resultSubtype = entry.metadata?.resultSubtype
-  const isResultError = typeof resultSubtype === 'string' && resultSubtype !== 'success'
-  if (!managed.cancelledByUser && (isResultError || entry.metadata?.isError === true)) {
+  const isResultError =
+    typeof resultSubtype === 'string' && resultSubtype !== 'success'
+  if (
+    !managed.cancelledByUser &&
+    (isResultError || entry.metadata?.isError === true)
+  ) {
     dispatch(managed, {
       type: 'SET_LOGICAL_FAILURE',
-      reason: (entry.metadata?.error as string | undefined) ?? String(resultSubtype ?? 'unknown'),
+      reason:
+        (entry.metadata?.error as string | undefined) ??
+        String(resultSubtype ?? 'unknown'),
     })
   }
 }

@@ -1,10 +1,10 @@
-import type { EngineContext } from './context'
-import type { ManagedProcess } from './types'
 import type { NormalizedLogEntry } from '@/engines/types'
 import { logger } from '@/logger'
+import type { EngineContext } from './context'
 import { emitLog, emitStateChange } from './events'
 import { persistEntry } from './persistence/entry'
 import { dispatch } from './state'
+import type { ManagedProcess } from './types'
 import { getPidFromManaged } from './utils/pid'
 
 // ---------- User message persistence ----------
@@ -67,14 +67,19 @@ export function sendInputToRunningProcess(
   }
   const handler = managed.process.protocolHandler
   if (!handler?.sendUserMessage) {
-    throw new Error('Active process does not support interactive follow-up input')
+    throw new Error(
+      'Active process does not support interactive follow-up input',
+    )
   }
 
   // IMPORTANT: send to engine first, then persist.
   // If send throws (e.g. stdin closed in a race), caller may fallback to spawn
   // a new process. Persisting before send would duplicate this message across turns.
   handler.sendUserMessage(prompt)
-  dispatch(managed, { type: 'START_TURN', metaTurn: metadata?.type === 'system' })
+  dispatch(managed, {
+    type: 'START_TURN',
+    metaTurn: metadata?.type === 'system',
+  })
   // Emit running state BEFORE user message so the frontend resets doneReceivedRef
   // and accepts the subsequent user message SSE event.
   emitStateChange(ctx, issueId, managed.executionId, 'running')

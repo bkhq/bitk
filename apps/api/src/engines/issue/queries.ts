@@ -1,9 +1,9 @@
-import type { EngineContext } from './context'
-import type { ManagedProcess } from './types'
 import type { NormalizedLogEntry } from '@/engines/types'
+import type { EngineContext } from './context'
 import { getLogsFromDb } from './persistence/queries'
 import { cancel } from './process/cancel'
 import { getActiveProcesses, getActiveProcessForIssue } from './process/state'
+import type { ManagedProcess } from './types'
 import { isVisibleForMode, setIssueDevMode } from './utils/visibility'
 
 // ---------- Public read-only queries ----------
@@ -54,11 +54,17 @@ export function getLogs(
   return merged
 }
 
-export function getProcess(ctx: EngineContext, executionId: string): ManagedProcess | undefined {
+export function getProcess(
+  ctx: EngineContext,
+  executionId: string,
+): ManagedProcess | undefined {
   return ctx.pm.get(executionId)?.meta
 }
 
-export function hasActiveProcessForIssue(ctx: EngineContext, issueId: string): boolean {
+export function hasActiveProcessForIssue(
+  ctx: EngineContext,
+  issueId: string,
+): boolean {
   return getActiveProcessForIssue(ctx, issueId) !== undefined
 }
 
@@ -67,12 +73,17 @@ export function isTurnInFlight(ctx: EngineContext, issueId: string): boolean {
   return !!active && active.turnInFlight
 }
 
-export function getSlashCommands(ctx: EngineContext, issueId: string): string[] {
+export function getSlashCommands(
+  ctx: EngineContext,
+  issueId: string,
+): string[] {
   const active = getActiveProcessForIssue(ctx, issueId)
   return active?.slashCommands ?? []
 }
 
 export async function cancelAll(ctx: EngineContext): Promise<void> {
   const active = getActiveProcesses(ctx)
-  await Promise.all(active.map((p) => cancel(ctx, p.executionId, { hard: true })))
+  await Promise.all(
+    active.map((p) => cancel(ctx, p.executionId, { hard: true })),
+  )
 }

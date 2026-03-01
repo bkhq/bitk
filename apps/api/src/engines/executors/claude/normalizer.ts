@@ -1,6 +1,6 @@
+import { classifyCommand } from '@/engines/logs'
 import type { NormalizedLogEntry, ToolAction } from '@/engines/types'
 import type { WriteFilterRule } from '@/engines/write-filter'
-import { classifyCommand } from '@/engines/logs'
 
 export class ClaudeLogNormalizer {
   private readonly rules: WriteFilterRule[]
@@ -44,8 +44,12 @@ export class ClaudeLogNormalizer {
 
   // --- Private parsers ---
 
-  private parseAssistant(data: any): NormalizedLogEntry | NormalizedLogEntry[] | null {
-    const contentBlocks = Array.isArray(data.message?.content) ? data.message.content : null
+  private parseAssistant(
+    data: any,
+  ): NormalizedLogEntry | NormalizedLogEntry[] | null {
+    const contentBlocks = Array.isArray(data.message?.content)
+      ? data.message.content
+      : null
     const entries: NormalizedLogEntry[] = []
 
     const text = extractTextContent(contentBlocks ?? data.message?.content)
@@ -88,24 +92,37 @@ export class ClaudeLogNormalizer {
     return entries
   }
 
-  private parseUser(data: any): NormalizedLogEntry | NormalizedLogEntry[] | null {
-    const contentBlocks = Array.isArray(data.message?.content) ? data.message.content : null
+  private parseUser(
+    data: any,
+  ): NormalizedLogEntry | NormalizedLogEntry[] | null {
+    const contentBlocks = Array.isArray(data.message?.content)
+      ? data.message.content
+      : null
     const toolResults = (contentBlocks ?? []).filter(
       (block: { type?: string }) => block?.type === 'tool_result',
-    ) as { tool_use_id?: string; content?: string | unknown[]; is_error?: boolean }[]
+    ) as {
+      tool_use_id?: string
+      content?: string | unknown[]
+      is_error?: boolean
+    }[]
 
     if (toolResults.length > 0) {
       const kept: NormalizedLogEntry[] = []
 
       for (const toolResult of toolResults) {
-        if (toolResult.tool_use_id && this.filteredToolCallIds.has(toolResult.tool_use_id)) {
+        if (
+          toolResult.tool_use_id &&
+          this.filteredToolCallIds.has(toolResult.tool_use_id)
+        ) {
           this.filteredToolCallIds.delete(toolResult.tool_use_id)
           continue
         }
 
         const resultContent = Array.isArray(toolResult.content)
           ? toolResult.content
-              .map((part: unknown) => (typeof part === 'string' ? part : JSON.stringify(part)))
+              .map((part: unknown) =>
+                typeof part === 'string' ? part : JSON.stringify(part),
+              )
               .join('\n')
           : typeof toolResult.content === 'string'
             ? toolResult.content
@@ -129,7 +146,8 @@ export class ClaudeLogNormalizer {
     }
 
     // Slash command output
-    const rawContent = typeof data.message?.content === 'string' ? data.message.content : null
+    const rawContent =
+      typeof data.message?.content === 'string' ? data.message.content : null
     if (rawContent) {
       const stripped = rawContent
         .replace(/^<local-command-stdout>\s*/, '')
@@ -182,7 +200,10 @@ export class ClaudeLogNormalizer {
 
     return {
       entryType: data.is_error ? 'error-message' : 'tool-use',
-      content: typeof data.content === 'string' ? data.content : JSON.stringify(data.content),
+      content:
+        typeof data.content === 'string'
+          ? data.content
+          : JSON.stringify(data.content),
       timestamp: data.timestamp,
       metadata: { toolCallId: data.tool_use_id, isResult: true },
     }
@@ -207,7 +228,9 @@ export class ClaudeLogNormalizer {
           subtype: data.subtype,
           sessionId: data.session_id,
           cwd: data.cwd,
-          slashCommands: Array.isArray(data.slash_commands) ? data.slash_commands : [],
+          slashCommands: Array.isArray(data.slash_commands)
+            ? data.slash_commands
+            : [],
         },
       }
     }
@@ -282,7 +305,9 @@ export class ClaudeLogNormalizer {
   private parseDefault(data: any): NormalizedLogEntry | null {
     const fallbackContent = data.message ?? data.content ?? ''
     const fallbackStr =
-      typeof fallbackContent === 'string' ? fallbackContent : JSON.stringify(fallbackContent)
+      typeof fallbackContent === 'string'
+        ? fallbackContent
+        : JSON.stringify(fallbackContent)
     if (!fallbackStr.trim()) return null
     return {
       entryType: 'system-message' as NormalizedLogEntry['entryType'],
@@ -295,15 +320,23 @@ export class ClaudeLogNormalizer {
   // --- Private helpers ---
 
   private isFiltered(toolName: string): boolean {
-    return this.rules.some((r) => r.type === 'tool-name' && r.match === toolName)
+    return this.rules.some(
+      (r) => r.type === 'tool-name' && r.match === toolName,
+    )
   }
 }
 
 // --- Module-level helpers ---
 
-function normalizeExecutionError(raw: string): { kind?: string; summary: string } {
+function normalizeExecutionError(raw: string): {
+  kind?: string
+  summary: string
+} {
   const lower = raw.toLowerCase()
-  if (lower.includes('lsp server plugin:rust-analyzer-lsp') && lower.includes('crashed')) {
+  if (
+    lower.includes('lsp server plugin:rust-analyzer-lsp') &&
+    lower.includes('crashed')
+  ) {
     return {
       kind: 'rust_analyzer_crash',
       summary:
@@ -327,13 +360,22 @@ export function extractTextContent(content: unknown): string | null {
   return null
 }
 
-export function classifyToolAction(toolName: string, input: Record<string, unknown>): ToolAction {
+export function classifyToolAction(
+  toolName: string,
+  input: Record<string, unknown>,
+): ToolAction {
   switch (toolName) {
     case 'Read':
-      return { kind: 'file-read', path: String(input.file_path ?? input.path ?? '') }
+      return {
+        kind: 'file-read',
+        path: String(input.file_path ?? input.path ?? ''),
+      }
     case 'Write':
     case 'Edit':
-      return { kind: 'file-edit', path: String(input.file_path ?? input.path ?? '') }
+      return {
+        kind: 'file-edit',
+        path: String(input.file_path ?? input.path ?? ''),
+      }
     case 'Bash':
       return {
         kind: 'command-run',
@@ -342,7 +384,10 @@ export function classifyToolAction(toolName: string, input: Record<string, unkno
       }
     case 'Grep':
     case 'Glob':
-      return { kind: 'search', query: String(input.pattern ?? input.query ?? '') }
+      return {
+        kind: 'search',
+        query: String(input.pattern ?? input.query ?? ''),
+      }
     case 'WebFetch':
       return { kind: 'web-fetch', url: String(input.url ?? '') }
     default:

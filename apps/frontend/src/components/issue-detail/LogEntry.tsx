@@ -14,9 +14,9 @@ import {
   Wrench,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import type { NormalizedLogEntry, ToolAction } from '@/types/kanban'
-import { formatFileSize } from '@/lib/format'
 import { getCommandPreview } from '@/lib/command-preview'
+import { formatFileSize } from '@/lib/format'
+import type { NormalizedLogEntry, ToolAction } from '@/types/kanban'
 import { MarkdownContent } from './MarkdownContent'
 
 interface AttachmentMeta {

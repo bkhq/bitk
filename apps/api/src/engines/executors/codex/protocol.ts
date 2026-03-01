@@ -74,7 +74,9 @@ export class CodexProtocolHandler {
   private readonly stdin: FileSink
   private readonly pending = new Map<number | string, PendingRequest>()
   private readonly requestTimeout: number
-  private notificationController: ReadableStreamDefaultController<Uint8Array> | undefined
+  private notificationController:
+    | ReadableStreamDefaultController<Uint8Array>
+    | undefined
   private nextId = 1
   private closed = false
   private _threadId: string | undefined
@@ -203,7 +205,9 @@ export class CodexProtocolHandler {
     // Reject all pending requests
     for (const [id, pending] of this.pending) {
       clearTimeout(pending.timer)
-      pending.reject(new Error(`Connection closed while waiting for response id=${id}`))
+      pending.reject(
+        new Error(`Connection closed while waiting for response id=${id}`),
+      )
     }
     this.pending.clear()
 
@@ -257,7 +261,10 @@ export class CodexProtocolHandler {
   /** Route a single stdout line to the appropriate handler. */
   private processLine(line: string): void {
     if (IO_LOG_ENABLED) {
-      logger.debug({ stream: 'stdout', line: clipForLog(line) }, 'codex_protocol_io')
+      logger.debug(
+        { stream: 'stdout', line: clipForLog(line) },
+        'codex_protocol_io',
+      )
     }
 
     const encoder = new TextEncoder()
@@ -307,13 +314,20 @@ export class CodexProtocolHandler {
   }
 
   /** Send a JSON-RPC request and wait for a matching response. */
-  private sendRequest(method: string, params: Record<string, unknown>): Promise<unknown> {
+  private sendRequest(
+    method: string,
+    params: Record<string, unknown>,
+  ): Promise<unknown> {
     const id = this.nextId++
 
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => {
         this.pending.delete(id)
-        reject(new Error(`JSON-RPC timeout waiting for response to ${method} (id=${id})`))
+        reject(
+          new Error(
+            `JSON-RPC timeout waiting for response to ${method} (id=${id})`,
+          ),
+        )
       }, this.requestTimeout)
 
       this.pending.set(id, { resolve, reject, timer })
@@ -322,7 +336,10 @@ export class CodexProtocolHandler {
   }
 
   /** Send a JSON-RPC notification (no id, no response expected). */
-  private sendNotification(method: string, params?: Record<string, unknown>): void {
+  private sendNotification(
+    method: string,
+    params?: Record<string, unknown>,
+  ): void {
     const msg: Record<string, unknown> = { method }
     if (params !== undefined) {
       msg.params = params
@@ -382,7 +399,9 @@ export class CodexProtocolHandler {
 
     // Extract turn ID if provided in turn/started
     if (method === 'turn/started' && params) {
-      const turnId = (params as Record<string, unknown>).turnId as string | undefined
+      const turnId = (params as Record<string, unknown>).turnId as
+        | string
+        | undefined
       if (turnId) {
         this._turnId = turnId
       }
@@ -395,7 +414,10 @@ export class CodexProtocolHandler {
     try {
       const json = JSON.stringify(data)
       if (IO_LOG_ENABLED) {
-        logger.debug({ stream: 'stdin', line: clipForLog(json) }, 'codex_protocol_io')
+        logger.debug(
+          { stream: 'stdin', line: clipForLog(json) },
+          'codex_protocol_io',
+        )
       }
       this.stdin.write(`${json}\n`)
       this.stdin.flush?.()

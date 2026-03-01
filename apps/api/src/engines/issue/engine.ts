@@ -1,15 +1,16 @@
-import type { EngineContext } from './context'
-import type {
-  IssueSettledCallback,
-  LogCallback,
-  ManagedProcess,
-  StateChangeCallback,
-  UnsubscribeFn,
-} from './types'
-import type { EngineType, NormalizedLogEntry, PermissionPolicy } from '@/engines/types'
 import { ProcessManager } from '@/engines/process-manager'
+import type {
+  EngineType,
+  NormalizedLogEntry,
+  PermissionPolicy,
+} from '@/engines/types'
 import { logger } from '@/logger'
-import { AUTO_CLEANUP_DELAY_MS, GC_INTERVAL_MS, MAX_CONCURRENT_EXECUTIONS } from './constants'
+import {
+  AUTO_CLEANUP_DELAY_MS,
+  GC_INTERVAL_MS,
+  MAX_CONCURRENT_EXECUTIONS,
+} from './constants'
+import type { EngineContext } from './context'
 import { onIssueSettled, onLog, onStateChange } from './events'
 import { gcSweep } from './gc'
 import {
@@ -27,6 +28,13 @@ import {
   hasActiveProcessForIssue,
   isTurnInFlight,
 } from './queries'
+import type {
+  IssueSettledCallback,
+  LogCallback,
+  ManagedProcess,
+  StateChangeCallback,
+  UnsubscribeFn,
+} from './types'
 
 // ---------- IssueEngine ----------
 
@@ -80,14 +88,22 @@ export class IssueEngine {
       )
 
     this.gcTimer = setInterval(() => gcSweep(this.ctx), GC_INTERVAL_MS)
-    if (this.gcTimer && typeof this.gcTimer === 'object' && 'unref' in this.gcTimer) {
+    if (
+      this.gcTimer &&
+      typeof this.gcTimer === 'object' &&
+      'unref' in this.gcTimer
+    ) {
       this.gcTimer.unref()
     }
 
     // Sync PM auto-cleanup with domain data
     pm.onStateChange((entry) => {
       const state = entry.state
-      if (state === 'completed' || state === 'failed' || state === 'cancelled') {
+      if (
+        state === 'completed' ||
+        state === 'failed' ||
+        state === 'cancelled'
+      ) {
         // When PM auto-removes, clean domain data too
         // (entryCounters, turnIndexes are cleaned on remove)
       }

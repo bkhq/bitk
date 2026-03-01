@@ -1,23 +1,23 @@
 import {
+  ChevronRight,
   Menu,
   Plus,
   Settings,
-  ChevronRight,
   TerminalSquare,
 } from 'lucide-react'
-import { useState, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { Project } from '@/types/kanban'
-import { useProjects } from '@/hooks/use-kanban'
+import { useNavigate } from 'react-router-dom'
+import { AppLogo } from '@/components/AppLogo'
+import { AppSettingsDialog } from '@/components/AppSettingsDialog'
+import { CreateProjectDialog } from '@/components/CreateProjectDialog'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
-import { CreateProjectDialog } from '@/components/CreateProjectDialog'
-import { AppSettingsDialog } from '@/components/AppSettingsDialog'
-import { AppLogo } from '@/components/AppLogo'
+import { useProjects } from '@/hooks/use-kanban'
 import { getProjectInitials } from '@/lib/format'
 import { useTerminalStore } from '@/stores/terminal-store'
+import type { Project } from '@/types/kanban'
 
 export function MobileSidebarTrigger({ onOpen }: { onOpen: () => void }) {
   const { t } = useTranslation()
@@ -56,7 +56,7 @@ export function MobileSidebar({
     (project: Project) => {
       setShowCreate(false)
       setOpen(false)
-      navigate(mobileProjectPath(project.alias))
+      void navigate(mobileProjectPath(project.alias))
     },
     [navigate, mobileProjectPath],
   )
@@ -78,7 +78,7 @@ export function MobileSidebar({
               type="button"
               onClick={() => {
                 setOpen(false)
-                navigate('/')
+                void navigate('/')
               }}
               className="flex items-center gap-3 px-4 py-3 border-b hover:bg-accent/50 active:bg-accent transition-colors"
             >
@@ -104,7 +104,7 @@ export function MobileSidebar({
                     type="button"
                     onClick={() => {
                       setOpen(false)
-                      navigate(mobileProjectPath(project.alias))
+                      void navigate(mobileProjectPath(project.alias))
                     }}
                     className={`flex items-center gap-3 w-full px-2 min-h-[44px] rounded-md text-left transition-colors ${
                       isActive

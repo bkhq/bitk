@@ -1,3 +1,4 @@
+import { safeEnv } from '@/engines/safe-env'
 import type {
   EngineAvailability,
   EngineCapability,
@@ -9,7 +10,6 @@ import type {
   SpawnedProcess,
   SpawnOptions,
 } from '@/engines/types'
-import { safeEnv } from '@/engines/safe-env'
 
 /**
  * Gemini CLI executor — uses ACP (Agent Communication Protocol).
@@ -24,7 +24,10 @@ export class GeminiExecutor implements EngineExecutor {
   readonly protocol = 'acp' as const
   readonly capabilities: EngineCapability[] = ['session-fork']
 
-  async spawn(_options: SpawnOptions, _env: ExecutionEnv): Promise<SpawnedProcess> {
+  async spawn(
+    _options: SpawnOptions,
+    _env: ExecutionEnv,
+  ): Promise<SpawnedProcess> {
     // TODO: Implement Gemini CLI spawn
     // 1. Start `npx -y @google/gemini-cli` with appropriate flags
     // 2. Send initial prompt via ACP protocol
@@ -32,7 +35,10 @@ export class GeminiExecutor implements EngineExecutor {
     throw new Error('Gemini executor not yet implemented')
   }
 
-  async spawnFollowUp(_options: FollowUpOptions, _env: ExecutionEnv): Promise<SpawnedProcess> {
+  async spawnFollowUp(
+    _options: FollowUpOptions,
+    _env: ExecutionEnv,
+  ): Promise<SpawnedProcess> {
     // TODO: Implement follow-up via ACP session continuation
     throw new Error('Gemini follow-up not yet implemented')
   }
@@ -110,11 +116,14 @@ export class GeminiExecutor implements EngineExecutor {
     try {
       // Gemini CLI — query via `gemini --list-models` or Google API
       // TODO: Implement proper model discovery when Gemini CLI supports it
-      const proc = Bun.spawn(['npx', '-y', '@google/gemini-cli', '--list-models'], {
-        stdout: 'pipe',
-        stderr: 'pipe',
-        env: safeEnv({ NPM_CONFIG_LOGLEVEL: 'error' }),
-      })
+      const proc = Bun.spawn(
+        ['npx', '-y', '@google/gemini-cli', '--list-models'],
+        {
+          stdout: 'pipe',
+          stderr: 'pipe',
+          env: safeEnv({ NPM_CONFIG_LOGLEVEL: 'error' }),
+        },
+      )
 
       const timer = setTimeout(() => proc.kill(), 10000)
       const exitCode = await proc.exited
@@ -149,7 +158,10 @@ export class GeminiExecutor implements EngineExecutor {
       if (data.type === 'response' || data.type === 'message') {
         return {
           entryType: 'assistant-message',
-          content: typeof data.content === 'string' ? data.content : JSON.stringify(data.content),
+          content:
+            typeof data.content === 'string'
+              ? data.content
+              : JSON.stringify(data.content),
           timestamp: data.timestamp ?? new Date().toISOString(),
         }
       }
@@ -167,7 +179,10 @@ export class GeminiExecutor implements EngineExecutor {
           entryType: 'tool-use',
           content: `Tool: ${data.name ?? data.function ?? 'unknown'}`,
           timestamp: data.timestamp ?? new Date().toISOString(),
-          metadata: { toolName: data.name, input: data.arguments ?? data.input },
+          metadata: {
+            toolName: data.name,
+            input: data.arguments ?? data.input,
+          },
         }
       }
 

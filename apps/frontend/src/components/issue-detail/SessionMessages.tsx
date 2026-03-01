@@ -1,11 +1,11 @@
-import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import DOMPurify from 'dompurify'
 import { FileEdit, FileText } from 'lucide-react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useTheme } from '@/hooks/use-theme'
+import { getCommandPreview } from '@/lib/command-preview'
 import { codeToHtml } from '@/lib/shiki'
 import type { NormalizedLogEntry } from '@/types/kanban'
-import { getCommandPreview } from '@/lib/command-preview'
 import { LogEntry } from './LogEntry'
 
 const LazyMultiFileDiff = lazy(() =>
@@ -131,7 +131,7 @@ function ShikiCodeBlock({
 
   useEffect(() => {
     let cancelled = false
-    codeToHtml(content, language).then((h) => {
+    void codeToHtml(content, language).then((h) => {
       if (!cancelled) setHtml(h)
     })
     return () => {
@@ -152,6 +152,7 @@ function ShikiCodeBlock({
   return (
     <div
       className={`code-surface shiki-block ${maxHeightClass} overflow-auto rounded-md`}
+      // biome-ignore lint/security/noDangerouslySetInnerHtml: content is sanitized via DOMPurify.sanitize()
       dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(html) }}
     />
   )
@@ -400,6 +401,7 @@ export function SessionMessages({
   // Skip auto-scroll when older logs are prepended (first entry changes).
   const prevLenRef = useRef(visibleLogs.length)
   const prevFirstIdRef = useRef(visibleLogs[0]?.messageId)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: prevLenRef/prevFirstIdRef are stable refs, not needed as dependencies
   useEffect(() => {
     const firstId = visibleLogs[0]?.messageId
     const wasOlderPrepend =

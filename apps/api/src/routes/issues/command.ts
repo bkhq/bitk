@@ -22,7 +22,10 @@ command.post(
   zValidator('json', executeIssueSchema, (result, c) => {
     if (!result.success) {
       return c.json(
-        { success: false, error: result.error.issues.map((i) => i.message).join(', ') },
+        {
+          success: false,
+          error: result.error.issues.map((i) => i.message).join(', '),
+        },
         400,
       )
     }
@@ -58,7 +61,10 @@ command.post(
       const workspaceRoot = await getAppSetting('workspace:defaultPath')
       if (workspaceRoot && workspaceRoot !== '/') {
         const resolvedRoot = resolve(workspaceRoot)
-        if (!resolvedDir.startsWith(`${resolvedRoot}/`) && resolvedDir !== resolvedRoot) {
+        if (
+          !resolvedDir.startsWith(`${resolvedRoot}/`) &&
+          resolvedDir !== resolvedRoot
+        ) {
           return c.json(
             {
               success: false,
@@ -84,11 +90,17 @@ command.post(
       try {
         const s = await stat(resolvedDir)
         if (!s.isDirectory()) {
-          return c.json({ success: false, error: 'Project directory is not a directory' }, 400)
+          return c.json(
+            { success: false, error: 'Project directory is not a directory' },
+            400,
+          )
         }
       } catch {
         return c.json(
-          { success: false, error: `Project directory is unavailable: ${resolvedDir}` },
+          {
+            success: false,
+            error: `Project directory is unavailable: ${resolvedDir}`,
+          },
           400,
         )
       }
@@ -100,7 +112,8 @@ command.post(
       if (!guard.ok) {
         return c.json({ success: false, error: guard.reason! }, 400)
       }
-      const { prompt: effectivePrompt, pendingIds } = await collectPendingMessages(issueId, prompt)
+      const { prompt: effectivePrompt, pendingIds } =
+        await collectPendingMessages(issueId, prompt)
       const result = await issueEngine.executeIssue(issueId, {
         engineType: body.engineType,
         prompt: effectivePrompt,
@@ -111,7 +124,11 @@ command.post(
       await markPendingMessagesDispatched(pendingIds)
       return c.json({
         success: true,
-        data: { executionId: result.executionId, issueId, messageId: result.messageId },
+        data: {
+          executionId: result.executionId,
+          issueId,
+          messageId: result.messageId,
+        },
       })
     } catch (error) {
       logger.warn(
@@ -120,7 +137,10 @@ command.post(
           issueId,
           model: body.model,
           permissionMode: body.permissionMode,
-          error: error instanceof Error ? { message: error.message, stack: error.stack } : error,
+          error:
+            error instanceof Error
+              ? { message: error.message, stack: error.stack }
+              : error,
         },
         'issue_followup_failed',
       )

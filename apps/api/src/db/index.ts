@@ -1,7 +1,7 @@
+import { Database } from 'bun:sqlite'
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, resolve } from 'node:path'
-import { Database } from 'bun:sqlite'
 import { sql } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/bun-sqlite'
 import { migrate } from 'drizzle-orm/bun-sqlite/migrator'
@@ -11,7 +11,9 @@ import { embeddedMigrations } from './embedded-migrations'
 import * as schema from './schema'
 
 const rawDbPath = process.env.DB_PATH || 'data/bitk.db'
-const dbPath = rawDbPath.startsWith('/') ? rawDbPath : resolve(ROOT_DIR, rawDbPath)
+const dbPath = rawDbPath.startsWith('/')
+  ? rawDbPath
+  : resolve(ROOT_DIR, rawDbPath)
 
 const dir = dirname(dbPath)
 if (!existsSync(dir)) {
@@ -40,8 +42,10 @@ function runMigrations(folder: string) {
   } catch (err: unknown) {
     sqlite.run('PRAGMA foreign_keys = ON')
     const errObj = err as { message?: string; cause?: { message?: string } }
-    const msg = String(errObj?.message ?? '') + String(errObj?.cause?.message ?? '')
-    const alreadyExists = /table .+ already exists|index .+ already exists/i.test(msg)
+    const msg =
+      String(errObj?.message ?? '') + String(errObj?.cause?.message ?? '')
+    const alreadyExists =
+      /table .+ already exists|index .+ already exists/i.test(msg)
     if (!alreadyExists) {
       throw err
     }
@@ -63,7 +67,9 @@ if (existsSync(journalPath)) {
   runMigrations(tmpMigrations)
   logger.info({ count: embeddedMigrations.size }, 'embedded_migrations_applied')
 } else {
-  throw new Error('No migrations available (missing drizzle/ folder and no embedded migrations)')
+  throw new Error(
+    'No migrations available (missing drizzle/ folder and no embedded migrations)',
+  )
 }
 
 export async function checkDbHealth() {
