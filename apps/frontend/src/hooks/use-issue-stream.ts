@@ -32,39 +32,31 @@ const TERMINAL: Set<string> = new Set(['completed', 'failed', 'cancelled'])
 /** Max entries in the live logs array. Older entries are trimmed when SSE pushes beyond this. */
 const MAX_LIVE_LOGS = 500
 
-function appendLogWithDedup(
-  prev: NormalizedLogEntry[],
-  incoming: NormalizedLogEntry,
-): NormalizedLogEntry[] {
-  // Dedup by messageId (guaranteed unique from server)
-  if (incoming.messageId) {
-    if (prev.some((entry) => entry.messageId === incoming.messageId))
-      return prev
-  }
-
-  // Exact duplicate guard (DB refresh + SSE replay)
-  const duplicate = prev.some(
-    (entry) =>
-      entry.entryType === incoming.entryType &&
-      (entry.turnIndex ?? null) === (incoming.turnIndex ?? null) &&
-      (entry.timestamp ?? null) === (incoming.timestamp ?? null) &&
-      entry.content === incoming.content,
-  )
-  if (duplicate) return prev
-
-  return [...prev, incoming]
+/**
+ * Generate a stable dedup key for entries without a messageId
+ * (e.g. streaming deltas that are never persisted).
+ */
+function contentKey(entry: NormalizedLogEntry): string {
+  return `${entry.turnIndex ?? 0}:${entry.timestamp ?? ''}:${entry.entryType}:${entry.content}`
 }
 
-/** Append and trim oldest entries if the list exceeds MAX_LIVE_LOGS. */
-function appendAndTrim(
-  prev: NormalizedLogEntry[],
-  incoming: NormalizedLogEntry,
-): NormalizedLogEntry[] {
-  const next = appendLogWithDedup(prev, incoming)
-  if (next.length > MAX_LIVE_LOGS) {
-    return next.slice(next.length - MAX_LIVE_LOGS)
+/**
+ * Sort comparator using ULID messageId for chronological order.
+ * ULID is lexicographically sortable (first 10 chars encode ms timestamp).
+ * Entries without messageId (streaming deltas) sort after persisted entries.
+ */
+function compareByMessageId(
+  a: NormalizedLogEntry,
+  b: NormalizedLogEntry,
+): number {
+  if (a.messageId && b.messageId) {
+    return a.messageId.localeCompare(b.messageId)
   }
-  return next
+  // Streaming deltas (no messageId) stay after persisted entries
+  if (a.messageId && !b.messageId) return -1
+  if (!a.messageId && b.messageId) return 1
+  // Both lack messageId — preserve insertion order (stable sort)
+  return 0
 }
 
 export function useIssueStream({
@@ -91,11 +83,34 @@ export function useIssueStream({
   const streamScopeRef = useRef<string | null>(null)
   const olderCursorRef = useRef<string | null>(null)
 
-  // Combined logs for rendering: olderLogs (history) + liveLogs (current window)
-  const logs = useMemo(
-    () => (olderLogs.length > 0 ? [...olderLogs, ...liveLogs] : liveLogs),
-    [olderLogs, liveLogs],
-  )
+  // ---- MessageId-based dedup tracking ----
+  // O(1) lookup instead of scanning the entire array on every append.
+  const seenIdsRef = useRef(new Set<string>())
+  // Fallback dedup for entries without messageId (streaming deltas)
+  const seenContentKeysRef = useRef(new Set<string>())
+
+  // Combined logs for rendering: olderLogs (history) + liveLogs (current window).
+  // Always sort by ULID and dedup by messageId — this is the final safety net
+  // that guarantees correct chronological order and no duplicates regardless
+  // of how entries arrived (HTTP fetch, SSE, optimistic append, race conditions).
+  const logs = useMemo(() => {
+    const combined =
+      olderLogs.length > 0 ? [...olderLogs, ...liveLogs] : liveLogs
+    if (combined.length === 0) return combined
+
+    const sorted = (olderLogs.length > 0 ? combined : [...combined]).sort(
+      compareByMessageId,
+    )
+
+    // Dedup by messageId (keep first occurrence after sort)
+    const deduped = new Set<string>()
+    return sorted.filter((entry) => {
+      if (!entry.messageId) return true
+      if (deduped.has(entry.messageId)) return false
+      deduped.add(entry.messageId)
+      return true
+    })
+  }, [olderLogs, liveLogs])
 
   const clearLogs = useCallback(() => {
     setLiveLogs([])
@@ -104,19 +119,44 @@ export function useIssueStream({
     olderCursorRef.current = null
     doneReceivedRef.current = false
     activeExecutionRef.current = null
+    seenIdsRef.current.clear()
+    seenContentKeysRef.current.clear()
+  }, [])
+
+  /** Register an entry's identity into the seen sets. */
+  const markSeen = useCallback((entry: NormalizedLogEntry) => {
+    if (entry.messageId) {
+      seenIdsRef.current.add(entry.messageId)
+    } else {
+      seenContentKeysRef.current.add(contentKey(entry))
+    }
+  }, [])
+
+  /** Check if an entry has already been seen. */
+  const isSeen = useCallback((entry: NormalizedLogEntry): boolean => {
+    if (entry.messageId) {
+      return seenIdsRef.current.has(entry.messageId)
+    }
+    return seenContentKeysRef.current.has(contentKey(entry))
   }, [])
 
   /** Append an entry to live logs, auto-trim oldest when exceeding MAX_LIVE_LOGS. */
-  const appendEntry = useCallback((incoming: NormalizedLogEntry) => {
-    setLiveLogs((prev) => {
-      const next = appendAndTrim(prev, incoming)
-      if (next.length < prev.length + 1 && next !== prev) {
-        // Entries were trimmed from the front — older history exists in DB
-        setHasOlderLogs(true)
-      }
-      return next
-    })
-  }, [])
+  const appendEntry = useCallback(
+    (incoming: NormalizedLogEntry) => {
+      setLiveLogs((prev) => {
+        if (isSeen(incoming)) return prev
+        markSeen(incoming)
+        const next = [...prev, incoming]
+        if (next.length > MAX_LIVE_LOGS) {
+          const trimmed = next.slice(next.length - MAX_LIVE_LOGS)
+          setHasOlderLogs(true)
+          return trimmed
+        }
+        return next
+      })
+    },
+    [isSeen, markSeen],
+  )
 
   /** Append a user message with a server-assigned messageId */
   const appendServerMessage = useCallback(
@@ -126,7 +166,11 @@ export function useIssueStream({
       metadata?: Record<string, unknown>,
     ) => {
       const trimmed = content.trim()
-      if (!trimmed) return
+      const hasAttachments =
+        Array.isArray(metadata?.attachments) &&
+        (metadata.attachments as unknown[]).length > 0
+      // Allow messages with attachments even if text content is empty
+      if (!trimmed && !hasAttachments) return
       if (metadata?.type !== 'pending') {
         doneReceivedRef.current = false
       }
@@ -157,14 +201,12 @@ export function useIssueStream({
         olderCursorRef.current = data.nextCursor
         setHasOlderLogs(data.hasMore)
         setOlderLogs((prev) => {
-          // Dedup against existing older logs
-          const existingIds = new Set(
-            prev.map((e) => e.messageId).filter(Boolean),
-          )
-          const newEntries = data.logs.filter(
-            (e) => !e.messageId || !existingIds.has(e.messageId),
-          )
-          return [...newEntries, ...prev]
+          const newEntries = data.logs.filter((e) => {
+            if (e.messageId && seenIdsRef.current.has(e.messageId)) return false
+            if (e.messageId) seenIdsRef.current.add(e.messageId)
+            return true
+          })
+          return [...newEntries, ...prev].sort(compareByMessageId)
         })
       })
       .catch((err) => {
@@ -201,7 +243,8 @@ export function useIssueStream({
     }
   }, [issueId, enabled, externalStatus])
 
-  // Fetch latest historical logs from DB (reverse mode — newest first)
+  // Fetch latest historical logs from DB (reverse mode — newest first).
+  // Merges with any SSE entries that may have arrived before the HTTP response.
   useEffect(() => {
     if (!issueId || !enabled) return
 
@@ -212,7 +255,38 @@ export function useIssueStream({
       .getIssueLogs(projectId, issueId)
       .then((data) => {
         if (cancelled || streamScopeRef.current !== scope) return
-        setLiveLogs(data.logs)
+
+        // Merge instead of wholesale replacement: SSE entries that arrived
+        // before this HTTP response should be preserved, not overwritten.
+        // After merging, sort by messageId (ULID) to guarantee chronological order.
+        setLiveLogs((prev) => {
+          // Register all DB entries in seenIds
+          for (const entry of data.logs) {
+            markSeen(entry)
+          }
+
+          if (prev.length === 0) {
+            // Fast path: no SSE entries arrived yet, just use the DB snapshot
+            return data.logs
+          }
+
+          // Collect SSE-only entries (arrived before HTTP response, not in DB snapshot)
+          const dbIds = new Set(
+            data.logs.map((e) => e.messageId).filter(Boolean),
+          )
+          const sseOnly = prev.filter(
+            (e) => e.messageId && !dbIds.has(e.messageId),
+          )
+
+          if (sseOnly.length === 0) {
+            // All SSE entries are already in the DB snapshot
+            return data.logs
+          }
+
+          // Merge + sort by ULID to ensure correct chronological order
+          return [...data.logs, ...sseOnly].sort(compareByMessageId)
+        })
+
         setOlderLogs([])
         setHasOlderLogs(data.hasMore)
         olderCursorRef.current = data.nextCursor
@@ -224,7 +298,12 @@ export function useIssueStream({
     return () => {
       cancelled = true
     }
-  }, [projectId, issueId, enabled, externalStatus, devMode])
+    // NOTE: externalStatus is intentionally excluded. The SSE handler already
+    // merges new entries in real time via appendEntry. Re-fetching the entire
+    // log window on every status transition (running → completed) causes a
+    // race: the HTTP response can overwrite SSE entries that arrived between
+    // the request and response, making messages appear/disappear/reappear.
+  }, [projectId, issueId, enabled, devMode, markSeen])
 
   // Subscribe to live SSE events for this issue.
   useEffect(() => {
@@ -278,7 +357,7 @@ export function useIssueStream({
     return () => {
       cleanup.unsub()
     }
-  }, [projectId, issueId, enabled, queryClient])
+  }, [projectId, issueId, enabled, queryClient, appendEntry])
 
   return {
     logs,
