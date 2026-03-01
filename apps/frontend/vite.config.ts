@@ -19,10 +19,13 @@ function shikiSlim(): Plugin {
     name: 'shiki-slim',
     enforce: 'pre',
     resolveId(source, importer) {
+      const fromShiki = importer?.includes('/shiki/') ?? false
+
       // Redirect full language/theme bundles → slim subsets
-      if (importer?.includes('shiki')) {
+      if (fromShiki) {
         if (
           source === './langs.mjs' ||
+          source.includes('langs-bundle-full') ||
           source.endsWith('/shiki/dist/langs.mjs')
         )
           return slim.langs
@@ -67,6 +70,9 @@ const config = defineConfig({
           if (pkg.startsWith('@dnd-kit/')) return 'vendor-dnd'
           if (pkg.startsWith('@radix-ui/') || pkg === 'lucide-react')
             return 'vendor-ui'
+          if (pkg === '@pierre/diffs') return 'vendor-diff'
+          if (pkg === 'shiki' || pkg.startsWith('@shikijs/'))
+            return 'vendor-shiki'
           if (pkg === 'i18next' || pkg === 'react-i18next') return 'vendor-i18n'
           if (
             pkg === 'tailwind-merge' ||

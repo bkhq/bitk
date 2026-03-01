@@ -1,11 +1,17 @@
-import { useMemo, useRef, useState } from 'react'
+import { lazy, Suspense, useMemo, useRef, useState } from 'react'
 import { X } from 'lucide-react'
-import { MultiFileDiff, PatchDiff } from '@pierre/diffs/react'
 import { useTranslation } from 'react-i18next'
 import { useTheme } from '@/hooks/use-theme'
 import { useIssueChanges, useIssueFilePatch } from '@/hooks/use-kanban'
+import { DIFF_MIN_WIDTH } from './diff-constants'
 
-const MIN_WIDTH = 260
+const LazyMultiFileDiff = lazy(() =>
+  import('@pierre/diffs/react').then((m) => ({ default: m.MultiFileDiff })),
+)
+
+const LazyPatchDiff = lazy(() =>
+  import('@pierre/diffs/react').then((m) => ({ default: m.PatchDiff })),
+)
 
 function getPatchStats(patch: string): {
   additions: number
@@ -116,7 +122,7 @@ export function DiffPanel({
   )
 }
 
-export { MIN_WIDTH as DIFF_MIN_WIDTH }
+export { DIFF_MIN_WIDTH }
 
 function DiffFileCard({
   projectId,
@@ -186,24 +192,32 @@ function DiffFileCard({
             </div>
           ) : fullFilePair ? (
             <div className="overflow-x-auto">
-              <MultiFileDiff
-                oldFile={{ name: path, contents: fullFilePair.oldText }}
-                newFile={{ name: path, contents: fullFilePair.newText }}
-                options={{
-                  diffStyle: 'unified',
-                  diffIndicators: 'bars',
-                  expandUnchanged: false,
-                  hunkSeparators: 'line-info',
-                  disableLineNumbers: false,
-                  overflow: 'wrap',
-                  theme: {
-                    light: 'github-light-default',
-                    dark: 'github-dark-default',
-                  },
-                  themeType,
-                  disableFileHeader: true,
-                }}
-              />
+              <Suspense
+                fallback={
+                  <div className="px-2.5 py-2 text-[11px] text-muted-foreground">
+                    {t('common.loading')}
+                  </div>
+                }
+              >
+                <LazyMultiFileDiff
+                  oldFile={{ name: path, contents: fullFilePair.oldText }}
+                  newFile={{ name: path, contents: fullFilePair.newText }}
+                  options={{
+                    diffStyle: 'unified',
+                    diffIndicators: 'bars',
+                    expandUnchanged: false,
+                    hunkSeparators: 'line-info',
+                    disableLineNumbers: false,
+                    overflow: 'wrap',
+                    theme: {
+                      light: 'github-light-default',
+                      dark: 'github-dark-default',
+                    },
+                    themeType,
+                    disableFileHeader: true,
+                  }}
+                />
+              </Suspense>
             </div>
           ) : patchText.trim() ? (
             <PatchDiffView patch={patchText} />
@@ -241,22 +255,30 @@ function PatchDiffView({ patch }: { patch: string }) {
 
   return (
     <div className="overflow-x-auto">
-      <PatchDiff
-        patch={patch}
-        options={{
-          diffStyle: 'unified',
-          diffIndicators: 'bars',
-          expandUnchanged: true,
-          disableLineNumbers: false,
-          overflow: 'wrap',
-          theme: {
-            light: 'github-light-default',
-            dark: 'github-dark-default',
-          },
-          themeType,
-          disableFileHeader: true,
-        }}
-      />
+      <Suspense
+        fallback={
+          <pre className="px-2.5 py-2 text-xs font-mono overflow-x-auto whitespace-pre-wrap">
+            {patch}
+          </pre>
+        }
+      >
+        <LazyPatchDiff
+          patch={patch}
+          options={{
+            diffStyle: 'unified',
+            diffIndicators: 'bars',
+            expandUnchanged: true,
+            disableLineNumbers: false,
+            overflow: 'wrap',
+            theme: {
+              light: 'github-light-default',
+              dark: 'github-dark-default',
+            },
+            themeType,
+            disableFileHeader: true,
+          }}
+        />
+      </Suspense>
     </div>
   )
 }
@@ -284,7 +306,7 @@ function ResizeHandle({
         if (!dragRef.current) return
         const dx = dragRef.current.startX - e.clientX
         const next = dragRef.current.startWidth + dx
-        onWidthChange(Math.max(MIN_WIDTH, next))
+        onWidthChange(Math.max(DIFF_MIN_WIDTH, next))
       }}
       onPointerUp={() => {
         dragRef.current = null

@@ -5,7 +5,6 @@ import ReactDOM from 'react-dom/client'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { Toaster } from './components/ui/sonner'
-import { TerminalDrawer } from './components/terminal/TerminalDrawer'
 import { useTerminalStore } from './stores/terminal-store'
 import { eventBus } from './lib/event-bus'
 import './i18n'
@@ -49,6 +48,11 @@ const HomePage = lazy(() => import('./pages/HomePage'))
 const KanbanPage = lazy(() => import('./pages/KanbanPage'))
 const IssueDetailPage = lazy(() => import('./pages/IssueDetailPage'))
 const TerminalPage = lazy(() => import('./pages/TerminalPage'))
+const LazyTerminalDrawer = lazy(() =>
+  import('./components/terminal/TerminalDrawer').then((m) => ({
+    default: m.TerminalDrawer,
+  })),
+)
 
 function AppShell({ children }: { children: React.ReactNode }) {
   const isOpen = useTerminalStore((s) => s.isOpen)
@@ -65,6 +69,18 @@ function AppShell({ children }: { children: React.ReactNode }) {
     >
       {children}
     </div>
+  )
+}
+
+function TerminalDrawerMount() {
+  const isOpen = useTerminalStore((s) => s.isOpen)
+
+  if (!isOpen) return null
+
+  return (
+    <Suspense fallback={null}>
+      <LazyTerminalDrawer />
+    </Suspense>
   )
 }
 
@@ -129,7 +145,7 @@ if (!rootElement.innerHTML) {
               </Routes>
             </Suspense>
           </AppShell>
-          <TerminalDrawer />
+          <TerminalDrawerMount />
           <Toaster position="top-center" />
         </ErrorBoundary>
       </BrowserRouter>

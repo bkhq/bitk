@@ -1,14 +1,18 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { X, Maximize2, Link, Check, Plus } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { ChatBody } from '@/components/issue-detail/ChatBody'
-import { DiffPanel } from '@/components/issue-detail/DiffPanel'
 import { SubIssueDialog } from '@/components/issue-detail/SubIssueDialog'
 import { useIssue, useUpdateIssue } from '@/hooks/use-kanban'
 
 const DEFAULT_DIFF_WIDTH = 360
+const LazyDiffPanel = lazy(() =>
+  import('@/components/issue-detail/DiffPanel').then((m) => ({
+    default: m.DiffPanel,
+  })),
+)
 
 interface IssuePanelProps {
   projectId: string
@@ -201,14 +205,22 @@ export function IssuePanel({
       {/* Diff panel — full-screen overlay within the panel */}
       {showDiff && issueId ? (
         <div className="absolute inset-0 z-40 bg-background flex flex-col">
-          <DiffPanel
-            projectId={projectId}
-            issueId={issueId}
-            width={diffWidth}
-            onWidthChange={setDiffWidth}
-            onClose={() => setShowDiff(false)}
-            fullScreen
-          />
+          <Suspense
+            fallback={
+              <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+                {t('common.loading')}
+              </div>
+            }
+          >
+            <LazyDiffPanel
+              projectId={projectId}
+              issueId={issueId}
+              width={diffWidth}
+              onWidthChange={setDiffWidth}
+              onClose={() => setShowDiff(false)}
+              fullScreen
+            />
+          </Suspense>
         </div>
       ) : null}
 

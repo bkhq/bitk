@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { ArrowDownToLine, ArrowUpToLine } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -24,7 +24,10 @@ import {
 } from '@/components/ui/alert-dialog'
 import { IssueDetail } from './IssueDetail'
 import { ChatInput } from './ChatInput'
-import { SessionMessages } from './SessionMessages'
+
+const LazySessionMessages = lazy(() =>
+  import('./SessionMessages').then((m) => ({ default: m.SessionMessages })),
+)
 
 // ---------- shared session-state helpers ----------
 
@@ -214,18 +217,26 @@ export function ChatBody({
           className="h-full overflow-y-auto overflow-x-hidden"
         >
           <div className="flex flex-col min-h-full justify-end py-2">
-            <SessionMessages
-              logs={logs}
-              scrollRef={scrollRef}
-              isRunning={isThinking}
-              workingStep={workingStep}
-              onCancel={() => cancelIssue.mutate(issueId)}
-              isCancelling={cancelIssue.isPending}
-              devMode={issue.devMode}
-              hasOlderLogs={hasOlderLogs}
-              isLoadingOlder={isLoadingOlder}
-              onLoadOlder={loadOlderLogs}
-            />
+            <Suspense
+              fallback={
+                <div className="px-5 py-2 text-xs text-muted-foreground">
+                  {t('common.loading')}
+                </div>
+              }
+            >
+              <LazySessionMessages
+                logs={logs}
+                scrollRef={scrollRef}
+                isRunning={isThinking}
+                workingStep={workingStep}
+                onCancel={() => cancelIssue.mutate(issueId)}
+                isCancelling={cancelIssue.isPending}
+                devMode={issue.devMode}
+                hasOlderLogs={hasOlderLogs}
+                isLoadingOlder={isLoadingOlder}
+                onLoadOlder={loadOlderLogs}
+              />
+            </Suspense>
           </div>
         </div>
 

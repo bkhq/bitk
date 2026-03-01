@@ -107,4 +107,8 @@ export {
   bundledLanguagesAlias,
   bundledLanguagesBase,
   bundledLanguagesInfo,
+  bundledLanguagesInfo as i,
+  bundledLanguagesAlias as n,
+  bundledLanguagesBase as r,
+  bundledLanguages as t,
 }

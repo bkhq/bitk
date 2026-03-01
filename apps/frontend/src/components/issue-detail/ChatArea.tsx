@@ -1,13 +1,16 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Link, Check, Plus, Sparkles } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useAutoTitleIssue, useIssue, useUpdateIssue } from '@/hooks/use-kanban'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { ChatBody } from './ChatBody'
-import { DiffPanel } from './DiffPanel'
 import { SubIssueDialog } from './SubIssueDialog'
 import { Button } from '@/components/ui/button'
+
+const LazyDiffPanel = lazy(() =>
+  import('./DiffPanel').then((m) => ({ default: m.DiffPanel })),
+)
 
 export function ChatArea({
   projectId,
@@ -252,23 +255,39 @@ export function ChatArea({
       {showDiff ? (
         isMobile ? (
           <div className="fixed inset-0 z-40 bg-background flex flex-col">
-            <DiffPanel
-              projectId={projectId}
-              issueId={issueId}
-              width={0}
-              onWidthChange={onDiffWidthChange}
-              onClose={onCloseDiff}
-              fullScreen
-            />
+            <Suspense
+              fallback={
+                <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+                  {t('common.loading')}
+                </div>
+              }
+            >
+              <LazyDiffPanel
+                projectId={projectId}
+                issueId={issueId}
+                width={0}
+                onWidthChange={onDiffWidthChange}
+                onClose={onCloseDiff}
+                fullScreen
+              />
+            </Suspense>
           </div>
         ) : (
-          <DiffPanel
-            projectId={projectId}
-            issueId={issueId}
-            width={diffWidth}
-            onWidthChange={onDiffWidthChange}
-            onClose={onCloseDiff}
-          />
+          <Suspense
+            fallback={
+              <div className="flex w-[360px] shrink-0 items-center justify-center border-l border-border bg-background text-sm text-muted-foreground">
+                {t('common.loading')}
+              </div>
+            }
+          >
+            <LazyDiffPanel
+              projectId={projectId}
+              issueId={issueId}
+              width={diffWidth}
+              onWidthChange={onDiffWidthChange}
+              onClose={onCloseDiff}
+            />
+          </Suspense>
         )
       ) : null}
 

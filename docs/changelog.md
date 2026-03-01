@@ -11,3 +11,6 @@ Moved legacy archive file from repository root `task.md` to `docs/task.md` and u
 
 ## 2026-02-28 06:03 [progress]
 Added `docs/tmp/` to `.gitignore` to keep temporary documentation artifacts out of version control.
+
+## 2026-03-01 00:21 [progress]
+Optimized frontend bundle loading by fixing Shiki slim alias compatibility for `langs-bundle-full-*`, deferring terminal drawer/runtime with lazy imports, and lazy-loading heavy diff components. Build verification confirms `cpp-*` and `emacs-lisp-*` chunks are no longer emitted.

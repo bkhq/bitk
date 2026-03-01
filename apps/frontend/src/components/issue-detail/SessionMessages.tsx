@@ -1,13 +1,16 @@
-import { useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import DOMPurify from 'dompurify'
 import { FileEdit, FileText } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { MultiFileDiff } from '@pierre/diffs/react'
 import { useTheme } from '@/hooks/use-theme'
 import { codeToHtml } from '@/lib/shiki'
 import type { NormalizedLogEntry } from '@/types/kanban'
 import { getCommandPreview } from '@/lib/command-preview'
 import { LogEntry } from './LogEntry'
+
+const LazyMultiFileDiff = lazy(() =>
+  import('@pierre/diffs/react').then((m) => ({ default: m.MultiFileDiff })),
+)
 
 /** Extract duration (ms) from the last system-message with duration metadata in a turn */
 function getTurnDuration(
@@ -183,30 +186,39 @@ function ShikiUnifiedDiff({
   modified: string
   filePath?: string
 }) {
+  const { t } = useTranslation()
   const { resolved } = useTheme()
   const themeType = resolved === 'dark' ? 'dark' : 'light'
   const name = filePath ?? 'file'
 
   return (
     <div className="overflow-x-auto rounded-md border border-border/40">
-      <MultiFileDiff
-        oldFile={{ name, contents: original }}
-        newFile={{ name, contents: modified }}
-        options={{
-          diffStyle: 'unified',
-          diffIndicators: 'bars',
-          expandUnchanged: false,
-          hunkSeparators: 'line-info',
-          disableLineNumbers: false,
-          overflow: 'wrap',
-          theme: {
-            light: 'github-light-default',
-            dark: 'github-dark-default',
-          },
-          themeType,
-          disableFileHeader: true,
-        }}
-      />
+      <Suspense
+        fallback={
+          <div className="px-2.5 py-2 text-[11px] text-muted-foreground">
+            {t('common.loading')}
+          </div>
+        }
+      >
+        <LazyMultiFileDiff
+          oldFile={{ name, contents: original }}
+          newFile={{ name, contents: modified }}
+          options={{
+            diffStyle: 'unified',
+            diffIndicators: 'bars',
+            expandUnchanged: false,
+            hunkSeparators: 'line-info',
+            disableLineNumbers: false,
+            overflow: 'wrap',
+            theme: {
+              light: 'github-light-default',
+              dark: 'github-dark-default',
+            },
+            themeType,
+            disableFileHeader: true,
+          }}
+        />
+      </Suspense>
     </div>
   )
 }

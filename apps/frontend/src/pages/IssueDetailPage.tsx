@@ -8,7 +8,7 @@ import { MobileSidebar } from '@/components/kanban/MobileSidebar'
 import { CreateIssueDialog } from '@/components/kanban/CreateIssueDialog'
 import { IssueListPanel } from '@/components/issue-detail/IssueListPanel'
 import { ChatArea } from '@/components/issue-detail/ChatArea'
-import { DIFF_MIN_WIDTH } from '@/components/issue-detail/DiffPanel'
+import { DIFF_MIN_WIDTH } from '@/components/issue-detail/diff-constants'
 
 const SIDEBAR_WIDTH = 56
 const MIN_CHAT_WIDTH = 300
