@@ -1,17 +1,7 @@
-import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { ArrowDownToLine, ArrowUpToLine } from 'lucide-react'
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import {
-  useCancelIssue,
-  useDeleteIssue,
-  useGlobalSlashCommands,
-  useSlashCommands,
-  useUpdateIssue,
-} from '@/hooks/use-kanban'
-import { useIssueStream } from '@/hooks/use-issue-stream'
-import { STATUS_MAP } from '@/lib/statuses'
-import type { Issue, NormalizedLogEntry } from '@/types/kanban'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,8 +12,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { IssueDetail } from './IssueDetail'
+import { useIssueStream } from '@/hooks/use-issue-stream'
+import {
+  useCancelIssue,
+  useDeleteIssue,
+  useGlobalSlashCommands,
+  useSlashCommands,
+  useUpdateIssue,
+} from '@/hooks/use-kanban'
+import { STATUS_MAP } from '@/lib/statuses'
+import type { Issue, NormalizedLogEntry } from '@/types/kanban'
 import { ChatInput } from './ChatInput'
+import { IssueDetail } from './IssueDetail'
 
 const LazySessionMessages = lazy(() =>
   import('./SessionMessages').then((m) => ({ default: m.SessionMessages })),
@@ -184,6 +184,7 @@ export function ChatBody({
   const [showScrollTop, setShowScrollTop] = useState(false)
   const [showScrollBottom, setShowScrollBottom] = useState(false)
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
     const el = scrollRef.current
     if (!el) return

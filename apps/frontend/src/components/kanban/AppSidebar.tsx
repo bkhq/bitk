@@ -1,4 +1,3 @@
-import { useRef, useState, useCallback } from 'react'
 import {
   LayoutGrid,
   List,
@@ -8,20 +7,21 @@ import {
   Wifi,
   WifiOff,
 } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { useCallback, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { Project } from '@/types/kanban'
-import { useProjects } from '@/hooks/use-kanban'
-import { useEventConnection } from '@/hooks/use-event-connection'
+import { useNavigate } from 'react-router-dom'
+import { AppLogo } from '@/components/AppLogo'
+import { AppSettingsDialog } from '@/components/AppSettingsDialog'
+import { CreateProjectDialog } from '@/components/CreateProjectDialog'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
-import { CreateProjectDialog } from '@/components/CreateProjectDialog'
-import { AppSettingsDialog } from '@/components/AppSettingsDialog'
-import { AppLogo } from '@/components/AppLogo'
-import { useViewModeStore } from '@/stores/view-mode-store'
 import { useClickOutside } from '@/hooks/use-click-outside'
+import { useEventConnection } from '@/hooks/use-event-connection'
+import { useProjects } from '@/hooks/use-kanban'
 import { getProjectInitials } from '@/lib/format'
 import { useTerminalStore } from '@/stores/terminal-store'
+import { useViewModeStore } from '@/stores/view-mode-store'
+import type { Project } from '@/types/kanban'
 
 function ProjectButton({
   project,
@@ -94,7 +94,7 @@ export function AppSidebar({ activeProjectId }: { activeProjectId: string }) {
   const handleProjectCreated = useCallback(
     (project: Project) => {
       setShowCreate(false)
-      navigate(projectPath(project.alias))
+      void navigate(projectPath(project.alias))
     },
     [navigate, projectPath],
   )
@@ -207,7 +207,7 @@ function ViewModeToggle({ activeProjectId }: { activeProjectId: string }) {
       newMode === 'list'
         ? `/projects/${activeProjectId}/issues`
         : `/projects/${activeProjectId}`
-    navigate(path)
+    void navigate(path)
   }
 
   return (

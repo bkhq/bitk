@@ -1,13 +1,13 @@
+import { Maximize2, Minimize2, Minus, Trash2 } from 'lucide-react'
 import { useRef } from 'react'
-import { Minus, Maximize2, Minimize2, Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import {
-  useTerminalStore,
-  TERMINAL_MIN_HEIGHT,
-  TERMINAL_MAX_HEIGHT_RATIO,
-} from '@/stores/terminal-store'
 import { useIsMobile } from '@/hooks/use-mobile'
-import { TerminalView, disposeTerminal } from './TerminalView'
+import {
+  TERMINAL_MAX_HEIGHT_RATIO,
+  TERMINAL_MIN_HEIGHT,
+  useTerminalStore,
+} from '@/stores/terminal-store'
+import { disposeTerminal, TerminalView } from './TerminalView'
 
 export function TerminalDrawer() {
   const { t } = useTranslation()

@@ -1,5 +1,5 @@
 {
-  "extends": "../../tsconfig.json",
+  "extends": "@bitk/tsconfig/utils.json",
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules"]
 }

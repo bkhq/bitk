@@ -1,7 +1,7 @@
 import { AlertTriangle, ArrowDown, ArrowUp, Flame } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import type { Priority } from '@/types/kanban'
 import { tPriority } from '@/lib/i18n-utils'
+import type { Priority } from '@/types/kanban'
 
 const priorityConfig: Record<Priority, { icon: typeof Flame; color: string }> =
   {

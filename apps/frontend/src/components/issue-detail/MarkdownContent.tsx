@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
 import DOMPurify from 'dompurify'
+import { useEffect, useState } from 'react'
 
 import type { HighlighterCore } from 'shiki'
 
@@ -7,6 +7,7 @@ let highlighter: HighlighterCore | null = null
 let highlighterLoading: Promise<HighlighterCore> | null = null
 
 async function getHighlighter(): Promise<HighlighterCore> {
+  // biome-ignore lint/nursery/noMisusedPromises: <explanation>
   if (highlighter) return highlighter
   if (!highlighterLoading) {
     highlighterLoading = (async () => {
@@ -33,7 +34,7 @@ export function MarkdownContent({
 
   useEffect(() => {
     let cancelled = false
-    getHighlighter().then((hl) => {
+    void getHighlighter().then((hl) => {
       if (cancelled) return
       const result = hl.codeToHtml(content, {
         lang: 'markdown',
@@ -61,6 +62,7 @@ export function MarkdownContent({
   return (
     <div
       className={`markdown-shiki ${containerClassName}`}
+      // biome-ignore lint/security/noDangerouslySetInnerHtml: <explanation>
       dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(html) }}
     />
   )

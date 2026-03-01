@@ -1,34 +1,34 @@
-import { useNavigate } from 'react-router-dom'
 import {
-  LayoutGrid,
-  List,
-  Plus,
   Hash,
   Layers,
+  LayoutGrid,
+  List,
   Menu,
   MoreVertical,
+  Plus,
   Settings,
   TerminalSquare,
 } from 'lucide-react'
+import { useCallback, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useProjects } from '@/hooks/use-kanban'
-import { useProjectStats } from '@/hooks/use-project-stats'
-import type { Project } from '@/types/kanban'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
+import { useNavigate } from 'react-router-dom'
+import { AppLogo } from '@/components/AppLogo'
+import { AppSettingsDialog } from '@/components/AppSettingsDialog'
 import { CreateProjectDialog } from '@/components/CreateProjectDialog'
 import { ProjectSettingsDialog } from '@/components/ProjectSettingsDialog'
-import { AppSettingsDialog } from '@/components/AppSettingsDialog'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Separator } from '@/components/ui/separator'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
-import { useState, useCallback, useRef } from 'react'
-import { useIsMobile } from '@/hooks/use-mobile'
-import { AppLogo } from '@/components/AppLogo'
-import { useViewModeStore } from '@/stores/view-mode-store'
 import { useClickOutside } from '@/hooks/use-click-outside'
+import { useProjects } from '@/hooks/use-kanban'
+import { useIsMobile } from '@/hooks/use-mobile'
+import { useProjectStats } from '@/hooks/use-project-stats'
 import { getProjectInitials } from '@/lib/format'
 import { useTerminalStore } from '@/stores/terminal-store'
+import { useViewModeStore } from '@/stores/view-mode-store'
+import type { Project } from '@/types/kanban'
 
 function ProjectCard({
   project,
@@ -290,7 +290,7 @@ export default function HomePage() {
 
   const handleProjectCreated = useCallback(
     (project: Project) => {
-      navigate(projectPath(project.alias))
+      void navigate(projectPath(project.alias))
     },
     [navigate, projectPath],
   )
@@ -329,6 +329,7 @@ export default function HomePage() {
         {isLoading ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: no unique identifier available
               <Card key={i} className="bg-card/30 animate-pulse min-h-[140px]">
                 <CardHeader>
                   <div className="flex items-start gap-3">

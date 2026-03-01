@@ -1,11 +1,20 @@
 {
   "name": "@bitk/shared",
-  "private": true,
   "type": "module",
+  "version": "0.0.3",
+  "private": true,
+  "description": "Shared code and utilities for the Bitk workspace.",
+  "homepage": "https://github.com/bkhq",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bkhq/bitk.git",
+    "directory": "packages/shared"
+  },
   "exports": {
     ".": "./src/index.ts"
   },
   "devDependencies": {
+    "@bitk/tsconfig": "workspace:*",
     "typescript": "catalog:"
   }
 }

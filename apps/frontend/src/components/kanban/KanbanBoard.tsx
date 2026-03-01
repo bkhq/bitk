@@ -2,10 +2,10 @@ import { DragDropProvider } from '@dnd-kit/react'
 import { useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useBulkUpdateIssues, useIssues } from '@/hooks/use-kanban'
-import type { Issue } from '@/types/kanban'
+import { STATUSES } from '@/lib/statuses'
 import { useBoardStore } from '@/stores/board-store'
 import { useSelectedIssueId } from '@/stores/panel-store'
-import { STATUSES } from '@/lib/statuses'
+import type { Issue } from '@/types/kanban'
 import { KanbanColumn } from './KanbanColumn'
 
 export function KanbanBoard({

@@ -1,7 +1,7 @@
-import { useEffect, useRef, useCallback } from 'react'
-import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
 import { WebLinksAddon } from '@xterm/addon-web-links'
+import { Terminal } from '@xterm/xterm'
+import { useCallback, useEffect, useRef } from 'react'
 import { useTerminalSessionStore } from '@/stores/terminal-session-store'
 import '@xterm/xterm/css/xterm.css'
 

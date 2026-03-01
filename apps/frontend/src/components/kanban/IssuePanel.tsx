@@ -1,10 +1,10 @@
+import { Check, Link, Maximize2, Plus, X } from 'lucide-react'
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { X, Maximize2, Link, Check, Plus } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { Button } from '@/components/ui/button'
+import { useNavigate } from 'react-router-dom'
 import { ChatBody } from '@/components/issue-detail/ChatBody'
 import { SubIssueDialog } from '@/components/issue-detail/SubIssueDialog'
+import { Button } from '@/components/ui/button'
 import { useIssue, useUpdateIssue } from '@/hooks/use-kanban'
 
 const DEFAULT_DIFF_WIDTH = 360
@@ -169,7 +169,7 @@ export function IssuePanel({
                 className="h-7 w-7 text-muted-foreground hover:text-foreground transition-colors"
                 title={t('issue.openFullPage')}
                 onClick={() => {
-                  navigate(`/projects/${projectId}/issues/${issueId}`)
+                  void navigate(`/projects/${projectId}/issues/${issueId}`)
                   onClose()
                 }}
               >

@@ -1,14 +1,14 @@
-import { useDroppable } from '@dnd-kit/react'
 import { CollisionPriority } from '@dnd-kit/abstract'
+import { useDroppable } from '@dnd-kit/react'
 import { Plus } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import type { Issue } from '@/types/kanban'
-import type { StatusDefinition } from '@/lib/statuses'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
-import { usePanelStore } from '@/stores/panel-store'
 import { tStatus } from '@/lib/i18n-utils'
+import type { StatusDefinition } from '@/lib/statuses'
+import { usePanelStore } from '@/stores/panel-store'
+import type { Issue } from '@/types/kanban'
 import { KanbanCard } from './KanbanCard'
 
 export function KanbanColumn({

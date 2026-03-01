@@ -1,6 +1,6 @@
 import { ArrowLeft } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router-dom'
 import { TerminalView } from '@/components/terminal/TerminalView'
 
 export default function TerminalPage() {
