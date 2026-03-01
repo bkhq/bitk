@@ -254,6 +254,29 @@ async function queryCodexModels(): Promise<EngineModel[]> {
 }
 
 /**
+ * Extract the command string from a Codex item.
+ * Codex sends `item.command` as either a string or string[] depending on version.
+ * Also checks `item.commandActions[].command` as fallback.
+ */
+function extractCommandString(item: Record<string, unknown>): string {
+  const cmd = item.command
+  if (typeof cmd === 'string') return cmd
+  if (Array.isArray(cmd)) {
+    return cmd
+      .map((a: unknown) => {
+        const s = String(a)
+        return /\s/.test(s) ? `"${s.replace(/"/g, '\\"')}"` : s
+      })
+      .join(' ')
+  }
+  // Fallback: extract from commandActions array
+  const actions = item.commandActions as Array<{ command?: unknown }> | undefined
+  const rawCmd = actions?.[0]?.command
+  if (typeof rawCmd === 'string' && rawCmd) return rawCmd
+  return ''
+}
+
+/**
  * Codex executor — uses JSON-RPC protocol via `app-server` mode.
  *
  * Launch: `codex app-server`
@@ -511,6 +534,7 @@ export class CodexExecutor implements EngineExecutor {
             entryType: 'assistant-message',
             content: delta,
             timestamp: now,
+            metadata: { streaming: true },
           }
         }
 
@@ -522,36 +546,60 @@ export class CodexExecutor implements EngineExecutor {
           const itemType = item.type as string | undefined
 
           if (itemType === 'commandExecution') {
+            const commandStr = extractCommandString(item)
+            const toolAction: ToolAction = {
+              kind: 'command-run',
+              command: commandStr,
+              category: commandStr ? classifyCommand(commandStr) : 'other',
+            }
+            // item/started is a live indicator only — mark streaming so it's
+            // emitted via SSE but NOT persisted. item/completed is the canonical record.
             return {
               entryType: 'tool-use',
-              content: 'Tool: command',
+              content: `Tool: Bash`,
               timestamp: now,
               metadata: {
-                toolName: 'command',
-                itemId: item.id,
-                itemType,
+                streaming: true,
+                toolName: 'Bash',
+                toolCallId: item.id as string | undefined,
+                input: commandStr ? { command: commandStr } : undefined,
               },
+              toolAction,
             }
           }
 
           if (itemType === 'fileChange') {
+            const path = item.path as string | undefined
+            const toolAction: ToolAction = {
+              kind: 'file-edit',
+              path: path ?? '',
+            }
+            // item/started is a live indicator only — see commandExecution above.
             return {
               entryType: 'tool-use',
-              content: 'Tool: fileChange',
+              content: `Tool: Edit`,
               timestamp: now,
               metadata: {
-                toolName: 'fileChange',
-                path: item.path as string | undefined,
-                itemId: item.id,
+                streaming: true,
+                toolName: 'Edit',
+                toolCallId: item.id as string | undefined,
+                path,
+                input: path ? { file_path: path } : undefined,
               },
+              toolAction,
             }
           }
 
+          // item/started for agentMessage is a streaming indicator — the canonical
+          // text arrives in item/agentMessage/delta and item/completed.
           if (itemType === 'agentMessage') {
+            const text = (item.text as string) ?? ''
+            if (!text) return null
             return {
               entryType: 'assistant-message',
-              content: (item.text as string) ?? '',
+              content: text,
               timestamp: now,
+              metadata: { streaming: true },
             }
           }
 
@@ -572,18 +620,19 @@ export class CodexExecutor implements EngineExecutor {
           const itemType = item.type as string | undefined
 
           if (itemType === 'commandExecution') {
+            // Codex uses aggregatedOutput instead of stdout/stderr
             const stdout = (item.stdout as string) ?? ''
             const stderr = (item.stderr as string) ?? ''
-            const combined = [stdout, stderr].filter(Boolean).join('\n')
+            const aggregated = (item.aggregatedOutput as string) ?? ''
+            const combined = aggregated || [stdout, stderr].filter(Boolean).join('\n')
             const exitCode = item.exitCode as number | undefined
-            const duration = item.duration as number | undefined
-            const cmdArr = item.command as string[] | undefined
-            const commandStr = cmdArr?.join(' ') ?? ''
+            const duration = (item.durationMs ?? item.duration) as number | undefined
+            const commandStr = extractCommandString(item)
 
             const toolAction: ToolAction = {
               kind: 'command-run',
               command: commandStr,
-              result: stdout || undefined,
+              result: combined || undefined,
               category: commandStr ? classifyCommand(commandStr) : 'other',
             }
 
@@ -592,6 +641,7 @@ export class CodexExecutor implements EngineExecutor {
               content: combined,
               timestamp: now,
               metadata: {
+                toolName: 'Bash',
                 isResult: true,
                 toolCallId: item.id as string | undefined,
                 exitCode,
@@ -619,7 +669,9 @@ export class CodexExecutor implements EngineExecutor {
               content: summary,
               timestamp: now,
               metadata: {
+                toolName: 'Edit',
                 isResult: true,
+                toolCallId: item.id as string | undefined,
                 path,
               },
               toolAction,

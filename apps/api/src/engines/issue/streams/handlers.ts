@@ -32,6 +32,14 @@ export function handleStreamEntry(
       ? { ...entry, metadata: { ...entry.metadata, type: 'system' } }
       : entry
 
+  // Streaming deltas are emitted to live clients for real-time UX but NOT persisted.
+  // Completed messages (from item/completed) will be persisted as the final record.
+  // Do NOT store in ring buffer — deltas would flood the buffer and evict canonical records.
+  if (effectiveEntry.metadata?.streaming === true) {
+    emitLog(ctx, issueId, executionId, effectiveEntry)
+    return
+  }
+
   // Persist first, then emit (DB is source of truth)
   // For tool-use entries, content & metadata are stored in the tools table only
   const isToolUse = effectiveEntry.entryType === 'tool-use'

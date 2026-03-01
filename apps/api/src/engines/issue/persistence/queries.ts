@@ -17,11 +17,16 @@ export function getLogsFromDb(
   },
 ): NormalizedLogEntry[] {
   // visible=1 filter preserves pending-message dedup (dispatched entries set visible=0).
-  // Non-devMode also pre-filters by entryType for performance (avoids loading tool-use rows).
+  // Non-devMode pre-filters by entryType for performance (skips thinking, error-message, etc.).
   const conditions = [eq(logsTable.issueId, issueId), eq(logsTable.visible, 1)]
   if (!devMode) {
     conditions.push(
-      inArray(logsTable.entryType, ['user-message', 'assistant-message', 'system-message']),
+      inArray(logsTable.entryType, [
+        'user-message',
+        'assistant-message',
+        'system-message',
+        'tool-use',
+      ]),
     )
   }
 
