@@ -22,6 +22,7 @@
     "descriptionPlaceholder": "这个项目是关于什么的？",
     "directoryPlaceholder": "/path/to/project",
     "repositoryUrlPlaceholder": "https://github.com/org/repo",
+    "detectGitRemote": "从目录探测 Git 远程仓库 URL",
     "createButton": "创建项目",
     "creating": "创建中...",
     "saving": "保存中...",
@@ -269,7 +270,10 @@
     "binaryFile": "二进制文件，无法预览",
     "lines": "行",
     "truncated": "已截断",
-    "back": "返回"
+    "back": "返回",
+    "title": "文件",
+    "close": "关闭文件管理",
+    "resizePanel": "调整文件管理面板大小"
   },
   "terminal": {
     "title": "终端",

@@ -1,4 +1,4 @@
-import { FolderOpen } from 'lucide-react'
+import { FolderOpen, Loader2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { useDeleteProject, useUpdateProject } from '@/hooks/use-kanban'
+import { kanbanApi } from '@/lib/kanban-api'
 import type { Project } from '@/types/kanban'
 
 function DeleteProjectDialog({
@@ -111,6 +112,7 @@ export function ProjectSettingsDialog({
     project.repositoryUrl ?? '',
   )
   const [dirPickerOpen, setDirPickerOpen] = useState(false)
+  const [detectingRemote, setDetectingRemote] = useState(false)
   const [error, setError] = useState('')
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const updateProject = useUpdateProject()
@@ -225,13 +227,41 @@ export function ProjectSettingsDialog({
 
             <Field className="space-y-1.5">
               <Label>{t('project.repositoryUrl')}</Label>
-              <Input
-                type="text"
-                value={repositoryUrl}
-                onChange={(e) => setRepositoryUrl(e.target.value)}
-                placeholder={t('project.repositoryUrlPlaceholder')}
-                className="w-full"
-              />
+              <div className="flex gap-1.5">
+                <Input
+                  type="text"
+                  value={repositoryUrl}
+                  onChange={(e) => setRepositoryUrl(e.target.value)}
+                  placeholder={t('project.repositoryUrlPlaceholder')}
+                  className="w-full"
+                />
+                <Button
+                  onClick={async () => {
+                    const dir = directory.trim()
+                    if (!dir) return
+                    setDetectingRemote(true)
+                    try {
+                      const result = await kanbanApi.detectGitRemote(dir)
+                      setRepositoryUrl(result.url)
+                    } catch {
+                      // silently ignore — directory may not be a git repo
+                    } finally {
+                      setDetectingRemote(false)
+                    }
+                  }}
+                  variant="outline"
+                  type="button"
+                  disabled={!directory.trim() || detectingRemote}
+                  title={t('project.detectGitRemote')}
+                  className="shrink-0"
+                >
+                  {detectingRemote ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    'Auto'
+                  )}
+                </Button>
+              </div>
             </Field>
 
             {error ? <p className="text-sm text-destructive">{error}</p> : null}

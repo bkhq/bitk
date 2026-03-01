@@ -54,6 +54,12 @@ async function postFormData<T>(url: string, formData: FormData): Promise<T> {
 }
 
 export const kanbanApi = {
+  // Git
+  detectGitRemote: (directory: string) =>
+    post<{ url: string; remote: string }>('/api/git/detect-remote', {
+      directory,
+    }),
+
   // Filesystem
   listDirs: (path?: string) =>
     get<{ current: string; parent: string | null; dirs: string[] }>(

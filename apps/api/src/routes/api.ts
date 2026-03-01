@@ -3,6 +3,7 @@ import { checkDbHealth } from '@/db'
 import { COMMIT, VERSION } from '@/version'
 import files from './files'
 import filesystem from './filesystem'
+import git from './git'
 import issues from './issues'
 import projects from './projects'
 
@@ -15,6 +16,7 @@ apiRoutes.route('/projects/:projectId/files', files)
 
 // Infrastructure routes
 apiRoutes.route('/filesystem', filesystem)
+apiRoutes.route('/git', git)
 
 function detectRuntime() {
   const hasBunGlobal = typeof Bun !== 'undefined'

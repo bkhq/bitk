@@ -22,6 +22,7 @@
     "descriptionPlaceholder": "What is this project about?",
     "directoryPlaceholder": "/path/to/project",
     "repositoryUrlPlaceholder": "https://github.com/org/repo",
+    "detectGitRemote": "Detect git remote URL from directory",
     "createButton": "Create Project",
     "creating": "Creating...",
     "saving": "Saving...",
@@ -269,7 +270,10 @@
     "binaryFile": "Binary file, cannot preview",
     "lines": "lines",
     "truncated": "Truncated",
-    "back": "Back"
+    "back": "Back",
+    "title": "Files",
+    "close": "Close file browser",
+    "resizePanel": "Resize file browser"
   },
   "terminal": {
     "title": "Terminal",
