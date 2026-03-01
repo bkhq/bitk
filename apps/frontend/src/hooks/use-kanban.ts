@@ -29,6 +29,8 @@ export const queryKeys = {
     ['projects', projectId, 'issues', 'children', parentId] as const,
   slashCommands: (projectId: string, issueId: string) =>
     ['projects', projectId, 'issues', issueId, 'slash-commands'] as const,
+  projectFiles: (projectId: string, path: string) =>
+    ['projects', projectId, 'files', path] as const,
 }
 
 export function useProjects() {
@@ -423,5 +425,19 @@ export function useUpdateWorkspacePath() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.workspacePath() })
     },
+  })
+}
+
+// --- File Browser hooks ---
+
+export function useProjectFiles(
+  projectId: string,
+  path: string,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: queryKeys.projectFiles(projectId, path),
+    queryFn: () => kanbanApi.listFiles(projectId, path || undefined),
+    enabled: !!projectId && enabled,
   })
 }

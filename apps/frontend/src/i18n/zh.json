@@ -210,7 +210,8 @@
   "viewMode": {
     "switchView": "切换视图模式",
     "kanban": "看板",
-    "list": "列表"
+    "list": "列表",
+    "files": "文件"
   },
   "settings": {
     "title": "设置",
@@ -251,6 +252,19 @@
     "high": "高",
     "medium": "中",
     "low": "低"
+  },
+  "fileBrowser": {
+    "breadcrumb": "文件路径",
+    "name": "名称",
+    "size": "大小",
+    "modified": "修改时间",
+    "emptyDirectory": "空目录",
+    "noDirectory": "此项目未配置目录，请在项目设置中添加目录路径",
+    "loadError": "加载失败",
+    "binaryFile": "二进制文件，无法预览",
+    "lines": "行",
+    "truncated": "已截断",
+    "back": "返回"
   },
   "terminal": {
     "title": "终端",

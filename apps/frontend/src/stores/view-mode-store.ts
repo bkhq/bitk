@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 
-type ViewMode = 'kanban' | 'list'
+type ViewMode = 'kanban' | 'list' | 'files'
 
 interface ViewModeStore {
   mode: ViewMode
@@ -13,7 +13,8 @@ const STORAGE_KEY = 'bitk-view-mode'
 function loadMode(): ViewMode {
   if (typeof window === 'undefined') return 'kanban'
   const stored = localStorage.getItem(STORAGE_KEY)
-  return stored === 'list' ? 'list' : 'kanban'
+  if (stored === 'list' || stored === 'files') return stored
+  return 'kanban'
 }
 
 export const useViewModeStore = create<ViewModeStore>((set, get) => ({
@@ -24,8 +25,10 @@ export const useViewModeStore = create<ViewModeStore>((set, get) => ({
     set({ mode })
   },
 
-  projectPath: (projectId) =>
-    get().mode === 'list'
-      ? `/projects/${projectId}/issues`
-      : `/projects/${projectId}`,
+  projectPath: (projectId) => {
+    const m = get().mode
+    if (m === 'list') return `/projects/${projectId}/issues`
+    if (m === 'files') return `/projects/${projectId}/files`
+    return `/projects/${projectId}`
+  },
 }))

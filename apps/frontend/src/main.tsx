@@ -47,6 +47,7 @@ eventBus.onIssueUpdated(() => {
 const HomePage = lazy(() => import('./pages/HomePage'))
 const KanbanPage = lazy(() => import('./pages/KanbanPage'))
 const IssueDetailPage = lazy(() => import('./pages/IssueDetailPage'))
+const FileBrowserPage = lazy(() => import('./pages/FileBrowserPage'))
 const TerminalPage = lazy(() => import('./pages/TerminalPage'))
 const LazyTerminalDrawer = lazy(() =>
   import('./components/terminal/TerminalDrawer').then((m) => ({
@@ -130,6 +131,14 @@ if (!rootElement.innerHTML) {
                   element={
                     <ErrorBoundary>
                       <IssueDetailPage />
+                    </ErrorBoundary>
+                  }
+                />
+                <Route
+                  path="/projects/:projectId/files/*"
+                  element={
+                    <ErrorBoundary>
+                      <FileBrowserPage />
                     </ErrorBoundary>
                   }
                 />

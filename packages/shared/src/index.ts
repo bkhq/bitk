@@ -190,3 +190,29 @@ export interface ProbeResult {
   models: Record<string, EngineModel[]>
   duration: number
 }
+
+// ── File Browser ──────────────────────────────────────────
+
+export interface FileEntry {
+  name: string
+  type: 'file' | 'directory'
+  size: number
+  modifiedAt: string
+}
+
+export interface DirectoryListing {
+  path: string
+  type: 'directory'
+  entries: FileEntry[]
+}
+
+export interface FileContent {
+  path: string
+  type: 'file'
+  content: string
+  size: number
+  isTruncated: boolean
+  isBinary: boolean
+}
+
+export type FileListingResult = DirectoryListing | FileContent

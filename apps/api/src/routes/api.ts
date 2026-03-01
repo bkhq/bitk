@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import { checkDbHealth } from '@/db'
 import { COMMIT, VERSION } from '@/version'
+import files from './files'
 import filesystem from './filesystem'
 import issues from './issues'
 import projects from './projects'
@@ -10,6 +11,7 @@ const apiRoutes = new Hono()
 // DB-backed routes
 apiRoutes.route('/projects', projects)
 apiRoutes.route('/projects/:projectId/issues', issues)
+apiRoutes.route('/projects/:projectId/files', files)
 
 // Infrastructure routes
 apiRoutes.route('/filesystem', filesystem)

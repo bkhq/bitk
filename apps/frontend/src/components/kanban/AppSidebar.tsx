@@ -1,4 +1,5 @@
 import {
+  FolderOpen,
   LayoutGrid,
   List,
   Plus,
@@ -198,16 +199,18 @@ function ViewModeToggle({ activeProjectId }: { activeProjectId: string }) {
   const ref = useRef<HTMLDivElement>(null)
   useClickOutside(ref, open, () => setOpen(false))
 
-  const Icon = mode === 'kanban' ? LayoutGrid : List
+  const Icon =
+    mode === 'files' ? FolderOpen : mode === 'list' ? List : LayoutGrid
 
-  const switchMode = (newMode: 'kanban' | 'list') => {
+  const switchMode = (newMode: 'kanban' | 'list' | 'files') => {
     setMode(newMode)
     setOpen(false)
-    const path =
-      newMode === 'list'
-        ? `/projects/${activeProjectId}/issues`
-        : `/projects/${activeProjectId}`
-    void navigate(path)
+    const paths = {
+      kanban: `/projects/${activeProjectId}`,
+      list: `/projects/${activeProjectId}/issues`,
+      files: `/projects/${activeProjectId}/files`,
+    }
+    void navigate(paths[newMode])
   }
 
   return (
@@ -217,7 +220,13 @@ function ViewModeToggle({ activeProjectId }: { activeProjectId: string }) {
         size="icon"
         className="h-9 w-9 text-muted-foreground"
         aria-label={t('viewMode.switchView')}
-        title={mode === 'kanban' ? t('viewMode.kanban') : t('viewMode.list')}
+        title={
+          mode === 'kanban'
+            ? t('viewMode.kanban')
+            : mode === 'files'
+              ? t('viewMode.files')
+              : t('viewMode.list')
+        }
         onClick={() => setOpen((v) => !v)}
       >
         <Icon className="h-4 w-4" />
@@ -243,6 +252,16 @@ function ViewModeToggle({ activeProjectId }: { activeProjectId: string }) {
           >
             <List className="h-3.5 w-3.5" />
             {t('viewMode.list')}
+          </button>
+          <button
+            type="button"
+            onClick={() => switchMode('files')}
+            className={`flex w-full items-center gap-2 px-3 py-1.5 text-sm transition-colors hover:bg-accent ${
+              mode === 'files' ? 'bg-accent/50 font-medium' : ''
+            }`}
+          >
+            <FolderOpen className="h-3.5 w-3.5" />
+            {t('viewMode.files')}
           </button>
         </div>
       ) : null}

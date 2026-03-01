@@ -210,7 +210,8 @@
   "viewMode": {
     "switchView": "Switch view mode",
     "kanban": "Kanban",
-    "list": "List"
+    "list": "List",
+    "files": "Files"
   },
   "settings": {
     "title": "Settings",
@@ -251,6 +252,19 @@
     "high": "High",
     "medium": "Medium",
     "low": "Low"
+  },
+  "fileBrowser": {
+    "breadcrumb": "File path",
+    "name": "Name",
+    "size": "Size",
+    "modified": "Modified",
+    "emptyDirectory": "Empty directory",
+    "noDirectory": "This project has no directory configured. Add a directory path in project settings.",
+    "loadError": "Failed to load",
+    "binaryFile": "Binary file, cannot preview",
+    "lines": "lines",
+    "truncated": "Truncated",
+    "back": "Back"
   },
   "terminal": {
     "title": "Terminal",

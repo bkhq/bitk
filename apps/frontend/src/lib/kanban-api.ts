@@ -6,6 +6,7 @@ import type {
   EngineSettings,
   ExecuteIssueRequest,
   ExecuteIssueResponse,
+  FileListingResult,
   Issue,
   IssueChangesResponse,
   IssueFilePatchResponse,
@@ -239,4 +240,16 @@ export const kanbanApi = {
   getWorkspacePath: () => get<{ path: string }>('/api/settings/workspace-path'),
   updateWorkspacePath: (path: string) =>
     patch<{ path: string }>('/api/settings/workspace-path', { path }),
+
+  // File Browser
+  listFiles: (projectId: string, path?: string, showHidden?: boolean) => {
+    const encodedPath =
+      path && path !== '.'
+        ? `/${path.split('/').map(encodeURIComponent).join('/')}`
+        : ''
+    const qs = showHidden ? '?showHidden=true' : ''
+    return get<FileListingResult>(
+      `/api/projects/${projectId}/files${encodedPath}${qs}`,
+    )
+  },
 }

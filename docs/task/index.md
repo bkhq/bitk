@@ -1,6 +1,8 @@
 # Task Index
 
-> Updated: 2026-03-01 00:21 UTC
+> Updated: 2026-03-01 06:00 UTC
+
+- [x] **FILE-001 添加 GitHub 风格的项目文件浏览器** `P1` - owner: claude - file: `docs/task/FILE-001.md`
 
 - [x] **ENG-006 Optimize frontend bundle size and heavy chunks** `P1` - owner: codex - file: `docs/task/ENG-006.md`
 - [-] **FEAT-005 Add global web terminal (xterm.js + Bun native PTY)** `P1` - owner: claude - file: `docs/task/FEAT-005.md`
