@@ -572,18 +572,13 @@ export class CodexExecutor implements EngineExecutor {
 
       switch (method) {
         // ------------------------------------------------------------------
-        // 1. Streaming assistant text delta
+        // 1. Streaming assistant text delta — skip
+        // The canonical full text is emitted by item/completed agentMessage,
+        // which is persisted to DB and sent via SSE. Forwarding individual
+        // character deltas causes scattered duplicate messages on the frontend.
         // ------------------------------------------------------------------
-        case 'item/agentMessage/delta': {
-          const delta = params.delta as string | undefined
-          if (!delta) return null
-          return {
-            entryType: 'assistant-message',
-            content: delta,
-            timestamp: now,
-            metadata: { streaming: true },
-          }
-        }
+        case 'item/agentMessage/delta':
+          return null
 
         // ------------------------------------------------------------------
         // 2. Item started — dispatch on item type
@@ -637,17 +632,13 @@ export class CodexExecutor implements EngineExecutor {
             }
           }
 
-          // item/started for agentMessage is a streaming indicator — the canonical
-          // text arrives in item/agentMessage/delta and item/completed.
+          // item/started for agentMessage — always skip.
+          // Streaming text arrives via item/agentMessage/delta and the canonical
+          // record is emitted by item/completed. Emitting text from item/started
+          // would duplicate the message: the full text appears first, then
+          // item/agentMessage/delta replays the same content as character deltas.
           if (itemType === 'agentMessage') {
-            const text = (item.text as string) ?? ''
-            if (!text) return null
-            return {
-              entryType: 'assistant-message',
-              content: text,
-              timestamp: now,
-              metadata: { streaming: true },
-            }
+            return null
           }
 
           // reasoning items are skipped (like Claude's thinking blocks)
