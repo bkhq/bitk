@@ -178,7 +178,7 @@ export function FileViewer({ file, onBack }: FileViewerProps) {
           <MarkdownRenderer content={file.content} />
         ) : (
           <div
-            className="shiki-line-numbers text-sm [&_pre]:!bg-transparent [&_pre]:px-2 [&_pre]:py-1.5 [&_pre]:overflow-x-auto [&_code]:leading-relaxed"
+            className="shiki-line-numbers text-xs [&_pre]:!bg-transparent [&_pre]:px-2 [&_pre]:py-1.5 [&_pre]:overflow-x-auto [&_code]:leading-snug"
             // biome-ignore lint/security/noDangerouslySetInnerHtml: Shiki generates safe HTML
             dangerouslySetInnerHTML={{ __html: html }}
           />

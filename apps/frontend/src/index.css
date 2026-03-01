@@ -305,11 +305,11 @@
   counter-increment: line;
   content: counter(line);
   display: inline-block;
-  width: 2rem;
-  margin-right: 0.75rem;
+  width: 2.5rem;
+  margin-right: 1rem;
   text-align: right;
   color: var(--muted-foreground);
-  opacity: 0.35;
+  opacity: 0.4;
   font-size: inherit;
   line-height: inherit;
   user-select: none;
