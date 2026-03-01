@@ -299,6 +299,8 @@ export function TerminalView({ className }: { className?: string }) {
       if (terminal.element.parentElement !== container) {
         container.appendChild(terminal.element)
       }
+      // Theme may have changed while terminal was hidden — sync now
+      terminal.options.theme = getTerminalTheme()
     } else {
       terminal.open(container)
       store.getState().set({ initialized: true })
