@@ -1,7 +1,7 @@
 {
   "name": "@bitk/frontend",
   "type": "module",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "private": true,
   "description": "Frontend application for the Bitk workspace.",
   "homepage": "https://github.com/bkhq",
