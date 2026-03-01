@@ -1,51 +1,18 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback } from 'react'
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { codeToHtml } from '@/lib/shiki'
-
-function CodeBlock({
-  className,
-  children,
-}: {
-  className?: string
-  children?: React.ReactNode
-}) {
-  const [html, setHtml] = useState<string>('')
-  const code = String(children).replace(/\n$/, '')
-  const lang = className?.replace('language-', '') ?? 'text'
-
-  useEffect(() => {
-    let cancelled = false
-    void codeToHtml(code, lang).then((result) => {
-      if (!cancelled) setHtml(result)
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [code, lang])
-
-  if (!html) {
-    return (
-      <pre className="overflow-x-auto rounded-md bg-muted/50 p-4 text-sm">
-        <code>{code}</code>
-      </pre>
-    )
-  }
-
-  return (
-    <div
-      className="shiki-wrapper [&_pre]:!rounded-md [&_pre]:!p-4 [&_pre]:text-sm [&_pre]:overflow-x-auto [&_code]:leading-relaxed"
-      // biome-ignore lint/security/noDangerouslySetInnerHtml: Shiki generates safe HTML
-      dangerouslySetInnerHTML={{ __html: html }}
-    />
-  )
-}
+import { ShikiCodeBlock } from './ShikiCodeBlock'
 
 interface MarkdownRendererProps {
   content: string
 }
 
 export function MarkdownRenderer({ content }: MarkdownRendererProps) {
+  const renderPre = useCallback(
+    ({ children }: React.HTMLAttributes<HTMLPreElement>) => <>{children}</>,
+    [],
+  )
+
   const renderCode = useCallback(
     ({
       className,
@@ -55,7 +22,9 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
       const isBlock = typeof children === 'string' && children.includes('\n')
 
       if (isBlock || className) {
-        return <CodeBlock className={className}>{children}</CodeBlock>
+        const code = String(children).replace(/\n$/, '')
+        const lang = className?.replace('language-', '') ?? 'text'
+        return <ShikiCodeBlock code={code} lang={lang} />
       }
 
       return (
@@ -75,6 +44,7 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
       <Markdown
         remarkPlugins={[remarkGfm]}
         components={{
+          pre: renderPre,
           code: renderCode,
         }}
       >

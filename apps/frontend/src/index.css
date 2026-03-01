@@ -315,16 +315,22 @@
 }
 
 /* ─── Shiki dual-theme (light/dark via CSS vars) ─── */
-.shiki,
-.shiki span {
+.shiki {
   color: var(--shiki-light);
   background-color: var(--shiki-light-bg);
 }
 
-.dark .shiki,
-.dark .shiki span {
+.shiki span {
+  color: var(--shiki-light);
+}
+
+.dark .shiki {
   color: var(--shiki-dark);
   background-color: var(--shiki-dark-bg);
+}
+
+.dark .shiki span {
+  color: var(--shiki-dark);
 }
 
 /* Shiki markdown source rendering (AI messages) */
