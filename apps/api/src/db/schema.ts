@@ -71,6 +71,7 @@ export const issues = sqliteTable(
     devMode: integer('dev_mode', { mode: 'boolean' }).notNull().default(false),
     statusUpdatedAt: integer('status_updated_at', { mode: 'timestamp' })
       .notNull()
+      .default(sql`0`)
       .$defaultFn(() => new Date()),
     ...commonFields,
   },

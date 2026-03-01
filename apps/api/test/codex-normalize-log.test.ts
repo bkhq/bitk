@@ -12,13 +12,11 @@ describe('CodexExecutor.normalizeLog', () => {
   // 1. item/agentMessage/delta
   // ------------------------------------------------------------------
   describe('item/agentMessage/delta', () => {
-    test('returns assistant-message with delta content', () => {
+    test('returns null (canonical text emitted by item/completed)', () => {
       const entry = normalize('item/agentMessage/delta', {
         delta: 'Hello world',
       })
-      expect(entry).not.toBeNull()
-      expect(entry!.entryType).toBe('assistant-message')
-      expect(entry!.content).toBe('Hello world')
+      expect(entry).toBeNull()
     })
 
     test('returns null when delta is empty', () => {
@@ -52,13 +50,11 @@ describe('CodexExecutor.normalizeLog', () => {
       expect(entry!.metadata?.path).toBe('/tmp/test.ts')
     })
 
-    test('agentMessage returns assistant-message', () => {
+    test('agentMessage returns null (canonical text emitted by item/completed)', () => {
       const entry = normalize('item/started', {
         item: { type: 'agentMessage', text: 'I will help you' },
       })
-      expect(entry).not.toBeNull()
-      expect(entry!.entryType).toBe('assistant-message')
-      expect(entry!.content).toBe('I will help you')
+      expect(entry).toBeNull()
     })
 
     test('reasoning returns null', () => {
@@ -351,7 +347,7 @@ describe('CodexExecutor.normalizeLog', () => {
     })
 
     test('all entries have a timestamp', () => {
-      const entry = normalize('item/agentMessage/delta', { delta: 'test' })
+      const entry = normalize('turn/started', { turn: { id: 'ts-1' } })
       expect(entry).not.toBeNull()
       expect(entry!.timestamp).toBeTruthy()
       // Verify ISO 8601 format
