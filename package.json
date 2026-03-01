@@ -25,8 +25,8 @@
     "lint:fix": "biome check . --fix",
     "format": "biome format . --write",
     "format:check": "biome format . --check",
-    "db:generate": "bunx drizzle-kit generate",
-    "db:migrate": "bunx drizzle-kit migrate",
+    "db:generate": "bun --filter @bitk/api db:generate",
+    "db:migrate": "bun --filter @bitk/api db:migrate",
     "db:reset": "bun apps/api/src/db/reset.ts",
     "compile": "bun scripts/compile.ts"
   },

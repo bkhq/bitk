@@ -13,6 +13,7 @@
     },
     "apps/api": {
       "name": "@bitk/api",
+      "version": "0.0.3",
       "dependencies": {
         "@hono/zod-validator": "^0.7.6",
         "drizzle-orm": "^0.45.1",
@@ -26,11 +27,13 @@
         "@bitk/tsconfig": "workspace:*",
         "@libsql/client": "^0.17.0",
         "@types/bun": "latest",
+        "drizzle-kit": "^0.31.9",
         "typescript": "catalog:",
       },
     },
     "apps/frontend": {
       "name": "@bitk/frontend",
+      "version": "0.0.3",
       "dependencies": {
         "@bitk/shared": "workspace:*",
         "@dnd-kit/abstract": "^0.3.2",
@@ -69,8 +72,8 @@
         "@testing-library/jest-dom": "^6.9.1",
         "@testing-library/react": "^16.3.2",
         "@types/dompurify": "^3.2.0",
-        "@types/react": "^19",
-        "@types/react-dom": "^19",
+        "@types/react": "^19.2.0",
+        "@types/react-dom": "^19.2.0",
         "@vitejs/plugin-react": "^5.0.4",
         "jsdom": "^28.1.0",
         "tailwindcss": "^4.1.18",
@@ -82,17 +85,19 @@
     },
     "packages/shared": {
       "name": "@bitk/shared",
+      "version": "0.0.3",
       "devDependencies": {
+        "@bitk/tsconfig": "workspace:*",
         "typescript": "catalog:",
       },
     },
     "packages/tsconfig": {
       "name": "@bitk/tsconfig",
-      "version": "1.0.0",
+      "version": "0.0.3",
     },
   },
   "catalog": {
-    "typescript": "^5",
+    "typescript": "^5.7.2",
     "zod": "^4.3.6",
   },
   "packages": {

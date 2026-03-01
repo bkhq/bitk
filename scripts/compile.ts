@@ -29,7 +29,7 @@ const { values: args } = parseArgs({
 
 const ROOT = resolve(import.meta.dir, '..')
 const DIST = resolve(ROOT, 'apps/frontend/dist')
-const DRIZZLE = resolve(ROOT, 'drizzle')
+const DRIZZLE = resolve(ROOT, 'apps/api/drizzle')
 
 const STATIC_FILE = resolve(ROOT, 'apps/api/src/static-assets.ts')
 const STATIC_BACKUP = resolve(ROOT, 'apps/api/src/static-assets.ts.bak')
