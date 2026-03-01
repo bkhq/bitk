@@ -1,5 +1,5 @@
 import { ArrowLeft, Code, Eye, FileWarning } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { codeToHtml } from '@/lib/shiki'
 import type { FileContent } from '@/types/kanban'
@@ -63,6 +63,13 @@ export function FileViewer({ file, onBack }: FileViewerProps) {
   const [loading, setLoading] = useState(true)
   const isMd = isMarkdownFile(file.path)
   const [showRendered, setShowRendered] = useState(isMd)
+  const prevPath = useRef(file.path)
+
+  // Reset view mode when navigating to a different file
+  if (prevPath.current !== file.path) {
+    prevPath.current = file.path
+    setShowRendered(isMarkdownFile(file.path))
+  }
 
   const lineCount = file.content ? file.content.split('\n').length : 0
   const fileName = file.path.split('/').pop() ?? file.path

@@ -19,10 +19,11 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
       children,
       ...rest
     }: React.HTMLAttributes<HTMLElement> & { children?: React.ReactNode }) => {
-      const isBlock = typeof children === 'string' && children.includes('\n')
+      const text = String(children ?? '')
+      const isBlock = className || text.includes('\n')
 
-      if (isBlock || className) {
-        const code = String(children).replace(/\n$/, '')
+      if (isBlock) {
+        const code = text.replace(/\n$/, '')
         const lang = className?.replace('language-', '') ?? 'text'
         return <ShikiCodeBlock code={code} lang={lang} />
       }

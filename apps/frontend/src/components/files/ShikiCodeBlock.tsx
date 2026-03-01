@@ -10,6 +10,7 @@ export function ShikiCodeBlock({ code, lang }: ShikiCodeBlockProps) {
   const [html, setHtml] = useState<string>('')
 
   useEffect(() => {
+    setHtml('')
     let cancelled = false
     void codeToHtml(code, lang).then((result) => {
       if (!cancelled) setHtml(result)
