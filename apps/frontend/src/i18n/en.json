@@ -275,7 +275,11 @@
     "close": "Close file browser",
     "resizePanel": "Resize file browser",
     "viewSource": "Source",
-    "viewRendered": "Preview"
+    "viewRendered": "Preview",
+    "showIgnored": "Show gitignored files",
+    "hideIgnored": "Hide gitignored files",
+    "copyPath": "Copy path",
+    "download": "Download"
   },
   "terminal": {
     "title": "Terminal",

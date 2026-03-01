@@ -249,14 +249,19 @@ export const kanbanApi = {
     patch<{ path: string }>('/api/settings/workspace-path', { path }),
 
   // File Browser
-  listFiles: (projectId: string, path?: string, showHidden?: boolean) => {
+  listFiles: (projectId: string, path?: string, hideIgnored?: boolean) => {
     const encodedPath =
       path && path !== '.'
         ? `/${path.split('/').map(encodeURIComponent).join('/')}`
         : ''
-    const qs = showHidden ? '?showHidden=true' : ''
+    const qs = hideIgnored ? '?hideIgnored=true' : ''
     return get<FileListingResult>(
-      `/api/projects/${projectId}/files${encodedPath}${qs}`,
+      `/api/projects/${projectId}/files/show${encodedPath}${qs}`,
     )
+  },
+
+  rawFileUrl: (projectId: string, path: string) => {
+    const encodedPath = path.split('/').map(encodeURIComponent).join('/')
+    return `/api/projects/${projectId}/files/raw/${encodedPath}`
   },
 }

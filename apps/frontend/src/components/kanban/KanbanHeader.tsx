@@ -1,4 +1,5 @@
 import {
+  FolderOpen,
   LayoutGrid,
   List,
   Plus,
@@ -13,6 +14,7 @@ import { ProjectSettingsDialog } from '@/components/ProjectSettingsDialog'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
+import { useFileBrowserStore } from '@/stores/file-browser-store'
 import { usePanelStore } from '@/stores/panel-store'
 import { useViewModeStore } from '@/stores/view-mode-store'
 import type { Project } from '@/types/kanban'
@@ -36,6 +38,7 @@ export function KanbanHeader({
   const navigate = useNavigate()
   const openCreateDialog = usePanelStore((s) => s.openCreateDialog)
   const { mode, setMode } = useViewModeStore()
+  const toggleFileBrowser = useFileBrowserStore((s) => s.toggle)
   const [showSettings, setShowSettings] = useState(false)
   const isListView = mode === 'list'
 
@@ -57,6 +60,17 @@ export function KanbanHeader({
           >
             <Settings className="h-3.5 w-3.5" />
           </button>
+          {project.directory && (
+            <button
+              type="button"
+              onClick={() => toggleFileBrowser(project.alias)}
+              className="rounded-md p-1 text-muted-foreground hover:text-foreground hover:bg-foreground/[0.07] transition-colors shrink-0 md:hidden"
+              aria-label={t('viewMode.files')}
+              title={t('viewMode.files')}
+            >
+              <FolderOpen className="h-3.5 w-3.5" />
+            </button>
+          )}
           <span className="text-xs text-muted-foreground tabular-nums hidden md:inline">
             {t('project.issueCount', { count: issueCount })}
           </span>

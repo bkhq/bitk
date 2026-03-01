@@ -30,8 +30,6 @@ export function KanbanColumn({
     collisionPriority: CollisionPriority.Normal,
   })
 
-  const sorted = [...issues].sort((a, b) => a.sortOrder - b.sortOrder)
-
   return (
     <div
       className={`flex h-full min-w-[85vw] md:min-w-[260px] flex-1 flex-col rounded-lg border snap-center md:snap-align-none transition-colors duration-200 ${
@@ -53,7 +51,7 @@ export function KanbanColumn({
           variant="secondary"
           className="h-5 min-w-5 px-1.5 text-[10px] font-medium"
         >
-          {sorted.length}
+          {issues.length}
         </Badge>
         <Button
           variant="ghost"
@@ -73,7 +71,7 @@ export function KanbanColumn({
         ref={ref}
         className="flex flex-1 flex-col gap-1.5 overflow-y-auto p-1.5"
       >
-        {sorted.map((issue, index) => (
+        {issues.map((issue, index) => (
           <KanbanCard
             key={issue.id}
             issue={issue}

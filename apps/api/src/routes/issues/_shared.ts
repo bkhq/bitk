@@ -103,6 +103,7 @@ export function serializeIssue(row: IssueRow, childCount?: number) {
     externalSessionId: row.externalSessionId ?? null,
     model: row.model ?? null,
     devMode: row.devMode,
+    statusUpdatedAt: toISO(row.statusUpdatedAt),
     createdAt: toISO(row.createdAt),
     updatedAt: toISO(row.updatedAt),
   }
@@ -213,7 +214,7 @@ export async function ensureWorking(
     // review → working
     await db
       .update(issuesTable)
-      .set({ statusId: 'working' })
+      .set({ statusId: 'working', statusUpdatedAt: new Date() })
       .where(eq(issuesTable.id, issue.id))
     await cacheDel(`issue:${issue.projectId}:${issue.id}`)
     emitIssueUpdated(issue.id, { statusId: 'working' })

@@ -69,12 +69,20 @@ export const issues = sqliteTable(
 
     model: text('model'),
     devMode: integer('dev_mode', { mode: 'boolean' }).notNull().default(false),
+    statusUpdatedAt: integer('status_updated_at', { mode: 'timestamp' })
+      .notNull()
+      .default(sql`0`)
+      .$defaultFn(() => new Date()),
     ...commonFields,
   },
   (table) => [
     index('issues_project_id_idx').on(table.projectId),
     index('issues_status_id_idx').on(table.statusId),
     index('issues_parent_issue_id_idx').on(table.parentIssueId),
+    index('issues_project_id_status_updated_at_idx').on(
+      table.projectId,
+      table.statusUpdatedAt,
+    ),
     check(
       'issues_status_id_check',
       sql`${table.statusId} IN ('todo','working','review','done')`,
