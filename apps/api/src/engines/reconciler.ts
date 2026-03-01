@@ -29,7 +29,9 @@ export async function reconcileStaleWorkingIssues(): Promise<number> {
       sessionStatus: issuesTable.sessionStatus,
     })
     .from(issuesTable)
-    .where(and(eq(issuesTable.statusId, 'working'), eq(issuesTable.isDeleted, 0)))
+    .where(
+      and(eq(issuesTable.statusId, 'working'), eq(issuesTable.isDeleted, 0)),
+    )
 
   if (staleIssues.length === 0) return 0
 
@@ -44,7 +46,9 @@ export async function reconcileStaleWorkingIssues(): Promise<number> {
     // No active process — this issue is stale. Determine the right sessionStatus.
     const sessionStatus = issue.sessionStatus
     const isTerminal =
-      sessionStatus === 'completed' || sessionStatus === 'failed' || sessionStatus === 'cancelled'
+      sessionStatus === 'completed' ||
+      sessionStatus === 'failed' ||
+      sessionStatus === 'cancelled'
 
     // If sessionStatus is still running/pending, mark it as failed
     // (the process vanished without proper settlement)
@@ -55,7 +59,10 @@ export async function reconcileStaleWorkingIssues(): Promise<number> {
         .where(eq(issuesTable.id, issue.id))
     } else {
       // sessionStatus is already terminal but statusId is still working
-      await db.update(issuesTable).set({ statusId: 'review' }).where(eq(issuesTable.id, issue.id))
+      await db
+        .update(issuesTable)
+        .set({ statusId: 'review' })
+        .where(eq(issuesTable.id, issue.id))
     }
 
     await cacheDel(`issue:${issue.projectId}:${issue.id}`)
@@ -96,7 +103,12 @@ export async function startupReconciliation(): Promise<void> {
   const staleRows = await db
     .select({ id: issuesTable.id })
     .from(issuesTable)
-    .where(and(inArray(issuesTable.sessionStatus, staleStatuses), eq(issuesTable.isDeleted, 0)))
+    .where(
+      and(
+        inArray(issuesTable.sessionStatus, staleStatuses),
+        eq(issuesTable.isDeleted, 0),
+      ),
+    )
 
   if (staleRows.length > 0) {
     const ids = staleRows.map((r) => r.id)
@@ -104,7 +116,10 @@ export async function startupReconciliation(): Promise<void> {
       .update(issuesTable)
       .set({ sessionStatus: 'failed' })
       .where(inArray(issuesTable.id, ids))
-    logger.info({ count: staleRows.length }, 'reconciler_marked_stale_sessions_failed')
+    logger.info(
+      { count: staleRows.length },
+      'reconciler_marked_stale_sessions_failed',
+    )
   }
 
   // Now reconcile: any issue that is working with no active process
@@ -139,7 +154,11 @@ export function startPeriodicReconciliation(): void {
   }, RECONCILE_INTERVAL_MS)
 
   // Allow the process to exit without waiting for this timer
-  if (reconcileTimer && typeof reconcileTimer === 'object' && 'unref' in reconcileTimer) {
+  if (
+    reconcileTimer &&
+    typeof reconcileTimer === 'object' &&
+    'unref' in reconcileTimer
+  ) {
     reconcileTimer.unref()
   }
 }

@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import type { ExecuteIssueRequest, Issue } from '@/types/kanban'
 import { kanbanApi } from '@/lib/kanban-api'
 import { useBoardStore } from '@/stores/board-store'
+import type { ExecuteIssueRequest, Issue } from '@/types/kanban'
 
 export const queryKeys = {
   workspacePath: () => ['settings', 'workspacePath'] as const,

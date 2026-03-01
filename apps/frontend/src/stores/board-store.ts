@@ -1,8 +1,8 @@
-import { create } from 'zustand'
 import { move } from '@dnd-kit/helpers'
 import type { DragDropProvider } from '@dnd-kit/react'
-import type { Issue } from '@/types/kanban'
+import { create } from 'zustand'
 import { STATUSES } from '@/lib/statuses'
+import type { Issue } from '@/types/kanban'
 
 type DragOverEvent = Parameters<
   NonNullable<Parameters<typeof DragDropProvider>[0]['onDragOver']>

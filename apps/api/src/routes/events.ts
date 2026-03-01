@@ -43,16 +43,20 @@ events.get('/', async (c) => {
       })
 
       // Non-terminal state changes
-      const unsubState = issueEngine.onStateChange((issueId, executionId, state) => {
-        if (TERMINAL.has(state)) return // handled by onIssueSettled below
-        writeEvent('state', { issueId, executionId, state })
-      })
+      const unsubState = issueEngine.onStateChange(
+        (issueId, executionId, state) => {
+          if (TERMINAL.has(state)) return // handled by onIssueSettled below
+          writeEvent('state', { issueId, executionId, state })
+        },
+      )
 
       // Terminal state changes come AFTER DB is updated
-      const unsubSettled = issueEngine.onIssueSettled((issueId, executionId, state) => {
-        writeEvent('state', { issueId, executionId, state })
-        writeEvent('done', { issueId, finalStatus: state })
-      })
+      const unsubSettled = issueEngine.onIssueSettled(
+        (issueId, executionId, state) => {
+          writeEvent('state', { issueId, executionId, state })
+          writeEvent('done', { issueId, finalStatus: state })
+        },
+      )
 
       // Issue data mutations (status changes, etc.)
       const unsubIssueUpdated = onIssueUpdated((data) => {
@@ -85,7 +89,12 @@ events.get('/', async (c) => {
     })
   } catch (err) {
     logger.error(
-      { err: err instanceof Error ? { message: err.message, stack: err.stack } : err },
+      {
+        err:
+          err instanceof Error
+            ? { message: err.message, stack: err.stack }
+            : err,
+      },
       'global_sse_error',
     )
     return c.json({ success: false, error: 'Stream error' }, 500)

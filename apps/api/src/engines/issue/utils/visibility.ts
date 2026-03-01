@@ -6,14 +6,21 @@ import type { NormalizedLogEntry } from '@/engines/types'
  * Single visibility filter — everything is stored in DB, this controls display.
  * devMode=true shows all entries; devMode=false shows only user-facing entries.
  */
-export function isVisibleForMode(entry: NormalizedLogEntry, devMode: boolean): boolean {
+export function isVisibleForMode(
+  entry: NormalizedLogEntry,
+  devMode: boolean,
+): boolean {
   if (devMode) return true
 
   // Meta-turn entries (auto-title etc.) are always hidden
   if (entry.metadata?.type === 'system') return false
 
   // User & assistant messages are always visible
-  if (entry.entryType === 'user-message' || entry.entryType === 'assistant-message') return true
+  if (
+    entry.entryType === 'user-message' ||
+    entry.entryType === 'assistant-message'
+  )
+    return true
 
   // Tool-use entries are only visible in dev mode
   if (entry.entryType === 'tool-use') return false

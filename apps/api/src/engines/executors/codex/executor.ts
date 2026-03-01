@@ -1,3 +1,5 @@
+import { classifyCommand } from '@/engines/logs'
+import { safeEnv } from '@/engines/safe-env'
 import type {
   EngineAvailability,
   EngineCapability,
@@ -10,8 +12,6 @@ import type {
   SpawnOptions,
   ToolAction,
 } from '@/engines/types'
-import { classifyCommand } from '@/engines/logs'
-import { safeEnv } from '@/engines/safe-env'
 import { logger } from '@/logger'
 import { CodexProtocolHandler } from './protocol'
 
@@ -35,7 +35,11 @@ class JsonRpcSession {
     ).getReader() as ReadableStreamDefaultReader<Uint8Array>
   }
 
-  async call(method: string, params: Record<string, unknown>, id: number): Promise<unknown> {
+  async call(
+    method: string,
+    params: Record<string, unknown>,
+    id: number,
+  ): Promise<unknown> {
     const request = JSON.stringify({ method, id, params })
     logger.debug({ method, id, request }, 'codex_rpc_send')
     ;(this.proc.stdin as import('bun').FileSink).write(`${request}\n`)
@@ -46,7 +50,10 @@ class JsonRpcSession {
       // First, drain any complete lines already in the buffer
       const parsed = this.parseLine(id)
       if (parsed !== undefined) {
-        logger.debug({ method, id, result: JSON.stringify(parsed).slice(0, 500) }, 'codex_rpc_recv')
+        logger.debug(
+          { method, id, result: JSON.stringify(parsed).slice(0, 500) },
+          'codex_rpc_recv',
+        )
         return parsed
       }
 
@@ -140,7 +147,10 @@ class JsonRpcSession {
       if (msg.id === id) {
         if (msg.error) {
           const err = msg.error as { message?: string }
-          logger.error({ method: `id=${id}`, error: err.message }, 'codex_rpc_error')
+          logger.error(
+            { method: `id=${id}`, error: err.message },
+            'codex_rpc_error',
+          )
           throw new Error(err.message ?? 'JSON-RPC error')
         }
         return msg.result
@@ -177,7 +187,10 @@ interface CodexModelListResponse {
  * Lifecycle: initialize -> initialized notification -> model/list (paginated) -> kill.
  */
 async function queryCodexModels(): Promise<EngineModel[]> {
-  logger.debug({ cmd: [...CODEX_CMD, 'app-server'].join(' ') }, 'codex_models_start')
+  logger.debug(
+    { cmd: [...CODEX_CMD, 'app-server'].join(' ') },
+    'codex_models_start',
+  )
 
   const proc = Bun.spawn([...CODEX_CMD, 'app-server'], {
     stdin: 'pipe',
@@ -190,7 +203,10 @@ async function queryCodexModels(): Promise<EngineModel[]> {
   const stderrReader = new Response(proc.stderr).text()
 
   const killTimer = setTimeout(() => {
-    logger.warn({ message: 'Killing codex app-server after timeout' }, 'codex_models_kill_timeout')
+    logger.warn(
+      { message: 'Killing codex app-server after timeout' },
+      'codex_models_kill_timeout',
+    )
     proc.kill()
   }, JSONRPC_TIMEOUT + 5000)
   const session = new JsonRpcSession(proc)
@@ -203,7 +219,10 @@ async function queryCodexModels(): Promise<EngineModel[]> {
       { clientInfo: { name: 'bitk', title: 'BitK', version: '0.1.0' } },
       0,
     )
-    logger.debug({ result: JSON.stringify(initResult).slice(0, 500) }, 'codex_models_init_done')
+    logger.debug(
+      { result: JSON.stringify(initResult).slice(0, 500) },
+      'codex_models_init_done',
+    )
 
     // 2. Send initialized notification (required before other methods)
     session.notify('initialized', {})
@@ -218,8 +237,15 @@ async function queryCodexModels(): Promise<EngineModel[]> {
       if (cursor) params.cursor = cursor
 
       logger.debug({ cursor, reqId }, 'codex_models_list')
-      const result = (await session.call('model/list', params, reqId++)) as CodexModelListResponse
-      logger.debug({ rawResult: JSON.stringify(result).slice(0, 1000) }, 'codex_models_list_done')
+      const result = (await session.call(
+        'model/list',
+        params,
+        reqId++,
+      )) as CodexModelListResponse
+      logger.debug(
+        { rawResult: JSON.stringify(result).slice(0, 1000) },
+        'codex_models_list_done',
+      )
 
       if (result?.data) {
         for (const m of result.data) {
@@ -234,7 +260,10 @@ async function queryCodexModels(): Promise<EngineModel[]> {
       cursor = result?.nextCursor
     } while (cursor)
 
-    logger.debug({ count: models.length, models: models.map((m) => m.id) }, 'codex_models_done')
+    logger.debug(
+      { count: models.length, models: models.map((m) => m.id) },
+      'codex_models_done',
+    )
     return models
   } catch (error) {
     const stderr = await stderrReader.catch(() => '')
@@ -270,7 +299,9 @@ function extractCommandString(item: Record<string, unknown>): string {
       .join(' ')
   }
   // Fallback: extract from commandActions array
-  const actions = item.commandActions as Array<{ command?: unknown }> | undefined
+  const actions = item.commandActions as
+    | Array<{ command?: unknown }>
+    | undefined
   const rawCmd = actions?.[0]?.command
   if (typeof rawCmd === 'string' && rawCmd) return rawCmd
   return ''
@@ -293,7 +324,10 @@ export class CodexExecutor implements EngineExecutor {
     'reasoning',
   ]
 
-  async spawn(options: SpawnOptions, env: ExecutionEnv): Promise<SpawnedProcess> {
+  async spawn(
+    options: SpawnOptions,
+    env: ExecutionEnv,
+  ): Promise<SpawnedProcess> {
     const cmd = [...CODEX_CMD, 'app-server']
 
     const proc = Bun.spawn(cmd, {
@@ -305,7 +339,10 @@ export class CodexExecutor implements EngineExecutor {
     })
 
     // Create protocol handler — starts reading stdout immediately
-    const handler = new CodexProtocolHandler(proc.stdin, proc.stdout as ReadableStream<Uint8Array>)
+    const handler = new CodexProtocolHandler(
+      proc.stdin,
+      proc.stdout as ReadableStream<Uint8Array>,
+    )
 
     // Perform initialize handshake
     await handler.initialize()
@@ -337,7 +374,9 @@ export class CodexExecutor implements EngineExecutor {
       stderr: proc.stderr as ReadableStream<Uint8Array>,
       cancel: () => {
         if (handler.threadId && handler.turnId) {
-          void handler.interrupt(handler.threadId, handler.turnId).catch(() => {})
+          void handler
+            .interrupt(handler.threadId, handler.turnId)
+            .catch(() => {})
         }
       },
       protocolHandler: {
@@ -357,7 +396,10 @@ export class CodexExecutor implements EngineExecutor {
     }
   }
 
-  async spawnFollowUp(options: FollowUpOptions, env: ExecutionEnv): Promise<SpawnedProcess> {
+  async spawnFollowUp(
+    options: FollowUpOptions,
+    env: ExecutionEnv,
+  ): Promise<SpawnedProcess> {
     const cmd = [...CODEX_CMD, 'app-server']
 
     const proc = Bun.spawn(cmd, {
@@ -368,7 +410,10 @@ export class CodexExecutor implements EngineExecutor {
       env: safeEnv({ NPM_CONFIG_LOGLEVEL: 'error' }),
     })
 
-    const handler = new CodexProtocolHandler(proc.stdin, proc.stdout as ReadableStream<Uint8Array>)
+    const handler = new CodexProtocolHandler(
+      proc.stdin,
+      proc.stdout as ReadableStream<Uint8Array>,
+    )
 
     await handler.initialize()
 
@@ -394,7 +439,9 @@ export class CodexExecutor implements EngineExecutor {
       stderr: proc.stderr as ReadableStream<Uint8Array>,
       cancel: () => {
         if (handler.threadId && handler.turnId) {
-          void handler.interrupt(handler.threadId, handler.turnId).catch(() => {})
+          void handler
+            .interrupt(handler.threadId, handler.turnId)
+            .catch(() => {})
         }
       },
       protocolHandler: {
@@ -624,9 +671,12 @@ export class CodexExecutor implements EngineExecutor {
             const stdout = (item.stdout as string) ?? ''
             const stderr = (item.stderr as string) ?? ''
             const aggregated = (item.aggregatedOutput as string) ?? ''
-            const combined = aggregated || [stdout, stderr].filter(Boolean).join('\n')
+            const combined =
+              aggregated || [stdout, stderr].filter(Boolean).join('\n')
             const exitCode = item.exitCode as number | undefined
-            const duration = (item.durationMs ?? item.duration) as number | undefined
+            const duration = (item.durationMs ?? item.duration) as
+              | number
+              | undefined
             const commandStr = extractCommandString(item)
 
             const toolAction: ToolAction = {

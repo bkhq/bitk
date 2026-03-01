@@ -17,14 +17,21 @@ export function getActiveProcessForIssue(
 
 // ---------- Domain data cleanup ----------
 
-export function cleanupDomainData(ctx: EngineContext, executionId: string): void {
+export function cleanupDomainData(
+  ctx: EngineContext,
+  executionId: string,
+): void {
   ctx.entryCounters.delete(executionId)
   ctx.turnIndexes.delete(executionId)
 }
 
 /** Sync ProcessManager state with the domain state set by IssueEngine.
  *  PM's transitionState is idempotent, so double-sets are safe. */
-export function syncPmState(ctx: EngineContext, executionId: string, state: ProcessStatus): void {
+export function syncPmState(
+  ctx: EngineContext,
+  executionId: string,
+  state: ProcessStatus,
+): void {
   if (state === 'completed') ctx.pm.markCompleted(executionId)
   else if (state === 'failed') ctx.pm.markFailed(executionId)
   // 'cancelled' is handled by pm.terminate() in cancel()

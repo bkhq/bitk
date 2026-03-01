@@ -13,7 +13,9 @@ describe('CodexExecutor.normalizeLog', () => {
   // ------------------------------------------------------------------
   describe('item/agentMessage/delta', () => {
     test('returns assistant-message with delta content', () => {
-      const entry = normalize('item/agentMessage/delta', { delta: 'Hello world' })
+      const entry = normalize('item/agentMessage/delta', {
+        delta: 'Hello world',
+      })
       expect(entry).not.toBeNull()
       expect(entry!.entryType).toBe('assistant-message')
       expect(entry!.content).toBe('Hello world')
@@ -171,7 +173,9 @@ describe('CodexExecutor.normalizeLog', () => {
   // ------------------------------------------------------------------
   describe('streaming deltas', () => {
     test('commandExecution/outputDelta returns tool-use streaming', () => {
-      const entry = normalize('item/commandExecution/outputDelta', { delta: 'some output\n' })
+      const entry = normalize('item/commandExecution/outputDelta', {
+        delta: 'some output\n',
+      })
       expect(entry).not.toBeNull()
       expect(entry!.entryType).toBe('tool-use')
       expect(entry!.content).toBe('some output\n')
@@ -185,7 +189,9 @@ describe('CodexExecutor.normalizeLog', () => {
     })
 
     test('fileChange/outputDelta returns tool-use streaming', () => {
-      const entry = normalize('item/fileChange/outputDelta', { delta: 'diff content' })
+      const entry = normalize('item/fileChange/outputDelta', {
+        delta: 'diff content',
+      })
       expect(entry).not.toBeNull()
       expect(entry!.entryType).toBe('tool-use')
       expect(entry!.content).toBe('diff content')
@@ -238,7 +244,9 @@ describe('CodexExecutor.normalizeLog', () => {
     })
 
     test('turn/completed without usage says Turn completed', () => {
-      const entry = normalize('turn/completed', { turn: { id: 'turn-no-usage' } })
+      const entry = normalize('turn/completed', {
+        turn: { id: 'turn-no-usage' },
+      })
       expect(entry).not.toBeNull()
       expect(entry!.content).toBe('Turn completed')
     })
@@ -300,11 +308,15 @@ describe('CodexExecutor.normalizeLog', () => {
   // ------------------------------------------------------------------
   describe('reasoning', () => {
     test('item/reasoning/textDelta returns null', () => {
-      expect(normalize('item/reasoning/textDelta', { delta: 'thinking...' })).toBeNull()
+      expect(
+        normalize('item/reasoning/textDelta', { delta: 'thinking...' }),
+      ).toBeNull()
     })
 
     test('item/reasoning/summaryTextDelta returns null', () => {
-      expect(normalize('item/reasoning/summaryTextDelta', { delta: 'summary' })).toBeNull()
+      expect(
+        normalize('item/reasoning/summaryTextDelta', { delta: 'summary' }),
+      ).toBeNull()
     })
   })
 

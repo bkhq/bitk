@@ -32,7 +32,11 @@ export async function cancel(
   if (!opts.hard) {
     managed.cancelledByUser = true
     logger.debug(
-      { issueId: managed.issueId, executionId, pid: getPidFromManaged(managed) },
+      {
+        issueId: managed.issueId,
+        executionId,
+        pid: getPidFromManaged(managed),
+      },
       'issue_process_interrupt_sent',
     )
     return

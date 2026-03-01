@@ -2,7 +2,7 @@ import { mkdir, readdir } from 'node:fs/promises'
 import { basename, dirname, resolve } from 'node:path'
 import { zValidator } from '@hono/zod-validator'
 import { Hono } from 'hono'
-import { z } from 'zod'
+import * as z from 'zod'
 import { getAppSetting } from '@/db/helpers'
 
 /** Check that `target` is inside `root` (or equals it). */
@@ -20,13 +20,26 @@ filesystem.get('/dirs', async (c) => {
   const current = resolve(raw)
 
   // SEC-022: Restrict to workspace root (unless root is '/')
-  if (resolvedRoot && resolvedRoot !== '/' && !isInsideRoot(current, resolvedRoot)) {
-    return c.json({ success: false, error: 'Path is outside the configured workspace' }, 403)
+  if (
+    resolvedRoot &&
+    resolvedRoot !== '/' &&
+    !isInsideRoot(current, resolvedRoot)
+  ) {
+    return c.json(
+      { success: false, error: 'Path is outside the configured workspace' },
+      403,
+    )
   }
 
   // Compute parent — clamp to workspace root
-  let parent: string | null = dirname(current) !== current ? dirname(current) : null
-  if (parent && resolvedRoot && resolvedRoot !== '/' && !isInsideRoot(parent, resolvedRoot)) {
+  let parent: string | null =
+    dirname(current) !== current ? dirname(current) : null
+  if (
+    parent &&
+    resolvedRoot &&
+    resolvedRoot !== '/' &&
+    !isInsideRoot(parent, resolvedRoot)
+  ) {
     parent = null
   }
 
@@ -59,7 +72,10 @@ filesystem.post(
   zValidator('json', createDirSchema, (result, c) => {
     if (!result.success) {
       return c.json(
-        { success: false, error: result.error.issues.map((i) => i.message).join(', ') },
+        {
+          success: false,
+          error: result.error.issues.map((i) => i.message).join(', '),
+        },
         400,
       )
     }
@@ -79,7 +95,10 @@ filesystem.post(
     if (workspaceRoot && workspaceRoot !== '/') {
       const resolvedRoot = resolve(workspaceRoot)
       if (!isInsideRoot(target, resolvedRoot)) {
-        return c.json({ success: false, error: 'Path is outside the configured workspace' }, 403)
+        return c.json(
+          { success: false, error: 'Path is outside the configured workspace' },
+          403,
+        )
       }
     }
 
@@ -87,7 +106,10 @@ filesystem.post(
       await mkdir(target, { recursive: true })
       return c.json({ success: true, data: { path: target } }, 201)
     } catch {
-      return c.json({ success: false, error: 'Failed to create directory' }, 500)
+      return c.json(
+        { success: false, error: 'Failed to create directory' },
+        500,
+      )
     }
   },
 )

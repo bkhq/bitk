@@ -1,11 +1,18 @@
+import {
+  getPendingMessages,
+  markPendingMessagesDispatched,
+} from '@/db/pending-messages'
+import {
+  autoMoveToReview,
+  getIssueWithSession,
+  updateIssueSession,
+} from '@/engines/engine-store'
 import type { EngineContext } from '@/engines/issue/context'
-import type { ManagedProcess } from '@/engines/issue/types'
-import type { ProcessStatus } from '@/engines/types'
-import { getPendingMessages, markPendingMessagesDispatched } from '@/db/pending-messages'
-import { autoMoveToReview, getIssueWithSession, updateIssueSession } from '@/engines/engine-store'
 import { emitIssueSettled, emitStateChange } from '@/engines/issue/events'
 import { dispatch } from '@/engines/issue/state'
+import type { ManagedProcess } from '@/engines/issue/types'
 import { sendInputToRunningProcess } from '@/engines/issue/user-message'
+import type { ProcessStatus } from '@/engines/types'
 import { logger } from '@/logger'
 
 // ---------- Turn completion ----------
@@ -99,7 +106,10 @@ export function handleTurnCompleted(
       // Emitting a stale settled event would cause the frontend to block
       // live log events for the new active execution.
       const freshIssue = await getIssueWithSession(issueId)
-      if (freshIssue && freshIssue.sessionFields.sessionStatus !== finalStatus) {
+      if (
+        freshIssue &&
+        freshIssue.sessionFields.sessionStatus !== finalStatus
+      ) {
         logger.debug(
           {
             issueId,
@@ -142,5 +152,12 @@ export async function flushQueuedInputs(
   if (next.model) {
     await updateIssueSession(issueId, { model: next.model })
   }
-  sendInputToRunningProcess(ctx, issueId, managed, next.prompt, next.displayPrompt, next.metadata)
+  sendInputToRunningProcess(
+    ctx,
+    issueId,
+    managed,
+    next.prompt,
+    next.displayPrompt,
+    next.metadata,
+  )
 }

@@ -1,9 +1,12 @@
-import type { NormalizedLogEntry } from '@/engines/types'
 import { and, asc, desc, eq, gt, inArray, lt, max, or } from 'drizzle-orm'
 import { db } from '@/db'
-import { issueLogs as logsTable, issuesLogsToolsCall as toolsTable } from '@/db/schema'
+import {
+  issueLogs as logsTable,
+  issuesLogsToolsCall as toolsTable,
+} from '@/db/schema'
 import { MAX_LOG_ENTRIES } from '@/engines/issue/constants'
 import { isVisibleForMode } from '@/engines/issue/utils/visibility'
+import type { NormalizedLogEntry } from '@/engines/types'
 import { rawToToolAction } from './tool-detail'
 
 /** Fetch logs from DB with tool detail join. */
@@ -21,7 +24,11 @@ export function getLogsFromDb(
   const conditions = [eq(logsTable.issueId, issueId), eq(logsTable.visible, 1)]
   if (!devMode) {
     conditions.push(
-      inArray(logsTable.entryType, ['user-message', 'assistant-message', 'system-message']),
+      inArray(logsTable.entryType, [
+        'user-message',
+        'assistant-message',
+        'system-message',
+      ]),
     )
   }
 

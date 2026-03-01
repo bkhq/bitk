@@ -33,7 +33,10 @@ del.delete('/:id', async (c) => {
   }
 
   // Cancel any active session before deleting
-  if (existing.sessionStatus === 'running' || existing.sessionStatus === 'pending') {
+  if (
+    existing.sessionStatus === 'running' ||
+    existing.sessionStatus === 'pending'
+  ) {
     void issueEngine.cancelIssue(issueId).catch((err) => {
       logger.error({ issueId, err }, 'delete_cancel_failed')
     })
@@ -41,7 +44,10 @@ del.delete('/:id', async (c) => {
 
   await db.transaction(async (tx) => {
     // Soft-delete the issue
-    await tx.update(issuesTable).set({ isDeleted: 1 }).where(eq(issuesTable.id, issueId))
+    await tx
+      .update(issuesTable)
+      .set({ isDeleted: 1 })
+      .where(eq(issuesTable.id, issueId))
 
     // Soft-delete child issues
     await tx

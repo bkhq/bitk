@@ -5,7 +5,10 @@ import { getActiveProcessForIssue } from './state'
 
 // ---------- Guards ----------
 
-export function ensureNoActiveProcess(ctx: EngineContext, issueId: string): void {
+export function ensureNoActiveProcess(
+  ctx: EngineContext,
+  issueId: string,
+): void {
   if (ctx.pm.hasActiveInGroup(issueId)) {
     const active = getActiveProcessForIssue(ctx, issueId)
     throw new Error(

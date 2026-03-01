@@ -1,5 +1,5 @@
-import type { EngineContext } from './context'
 import { logger } from '@/logger'
+import type { EngineContext } from './context'
 import { cleanupDomainData } from './process/state'
 
 // ---------- Domain GC sweep ----------

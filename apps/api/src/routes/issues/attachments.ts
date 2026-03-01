@@ -27,7 +27,9 @@ attachmentsRouter.get('/:id/attachments/:attachmentId', async (c) => {
   const [attachment] = await db
     .select()
     .from(attachments)
-    .where(and(eq(attachments.id, attachmentId), eq(attachments.issueId, issueId)))
+    .where(
+      and(eq(attachments.id, attachmentId), eq(attachments.issueId, issueId)),
+    )
   if (!attachment) {
     return c.json({ success: false, error: 'Attachment not found' }, 404)
   }

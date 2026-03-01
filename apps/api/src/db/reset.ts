@@ -3,9 +3,16 @@ import { resolve } from 'node:path'
 import { ROOT_DIR } from '@/root'
 
 const rawDbPath = process.env.DB_PATH || 'data/bitk.db'
-const dbPath = rawDbPath.startsWith('/') ? rawDbPath : resolve(ROOT_DIR, rawDbPath)
+const dbPath = rawDbPath.startsWith('/')
+  ? rawDbPath
+  : resolve(ROOT_DIR, rawDbPath)
 
-const candidates = [dbPath, `${dbPath}-wal`, `${dbPath}-shm`, `${dbPath}-journal`]
+const candidates = [
+  dbPath,
+  `${dbPath}-wal`,
+  `${dbPath}-shm`,
+  `${dbPath}-journal`,
+]
 
 const deleted: string[] = []
 const missing: string[] = []

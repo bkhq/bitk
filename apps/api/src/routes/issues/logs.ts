@@ -38,7 +38,9 @@ logs.get('/:id/logs', async (c) => {
   const cursor = parseCursor(cursorParam)
   const before = parseCursor(beforeParam)
 
-  const limit = limitParam ? Math.min(Math.max(Number(limitParam) || 30, 1), 1000) : undefined
+  const limit = limitParam
+    ? Math.min(Math.max(Number(limitParam) || 30, 1), 1000)
+    : undefined
   const effectiveLimit = limit ?? 30
 
   // Overfetch to compensate for JS isVisibleForMode filter removing entries

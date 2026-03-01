@@ -1,7 +1,7 @@
 import { X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { CreateIssueForm } from '@/components/kanban/CreateIssueDialog'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 
 export function SubIssueDialog({
   projectId,

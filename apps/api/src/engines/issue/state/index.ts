@@ -1,5 +1,5 @@
-import type { ManagedAction } from './actions'
 import type { ManagedProcess } from '@/engines/issue/types'
+import type { ManagedAction } from './actions'
 
 export function dispatch(managed: ManagedProcess, action: ManagedAction): void {
   switch (action.type) {

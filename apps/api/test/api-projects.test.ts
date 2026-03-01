@@ -82,7 +82,9 @@ describe('GET /api/projects', () => {
 
 describe('GET /api/projects/:id', () => {
   test('gets a project by ID', async () => {
-    const created = expectSuccess(await post<Project>('/api/projects', { name: 'GetById' }))
+    const created = expectSuccess(
+      await post<Project>('/api/projects', { name: 'GetById' }),
+    )
     const result = await get<Project>(`/api/projects/${created.id}`)
     expect(result.status).toBe(200)
     const data = expectSuccess(result)
@@ -92,7 +94,10 @@ describe('GET /api/projects/:id', () => {
 
   test('gets a project by alias', async () => {
     const created = expectSuccess(
-      await post<Project>('/api/projects', { name: 'GetByAlias', alias: 'byalias' }),
+      await post<Project>('/api/projects', {
+        name: 'GetByAlias',
+        alias: 'byalias',
+      }),
     )
     const result = await get<Project>(`/api/projects/${created.alias}`)
     expect(result.status).toBe(200)
@@ -108,7 +113,9 @@ describe('GET /api/projects/:id', () => {
 
 describe('PATCH /api/projects/:id', () => {
   test('updates project name', async () => {
-    const created = expectSuccess(await post<Project>('/api/projects', { name: 'BeforeUpdate' }))
+    const created = expectSuccess(
+      await post<Project>('/api/projects', { name: 'BeforeUpdate' }),
+    )
     const result = await patch<Project>(`/api/projects/${created.id}`, {
       name: 'AfterUpdate',
     })
@@ -118,7 +125,9 @@ describe('PATCH /api/projects/:id', () => {
   })
 
   test('updates project description', async () => {
-    const created = expectSuccess(await post<Project>('/api/projects', { name: 'DescProject' }))
+    const created = expectSuccess(
+      await post<Project>('/api/projects', { name: 'DescProject' }),
+    )
     const result = await patch<Project>(`/api/projects/${created.id}`, {
       description: 'Updated description',
     })

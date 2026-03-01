@@ -18,9 +18,12 @@ describe('GET /api/settings/workspace-path', () => {
 
 describe('PATCH /api/settings/workspace-path', () => {
   test('sets a valid workspace path', async () => {
-    const result = await patch<{ path: string }>('/api/settings/workspace-path', {
-      path: '/tmp',
-    })
+    const result = await patch<{ path: string }>(
+      '/api/settings/workspace-path',
+      {
+        path: '/tmp',
+      },
+    )
     expect(result.status).toBe(200)
     const data = expectSuccess(result)
     expect(data.path).toBe('/tmp')

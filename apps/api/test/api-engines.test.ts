@@ -7,9 +7,10 @@ import './setup'
 
 describe('GET /api/engines/available', () => {
   test('returns engines and models', async () => {
-    const result = await get<{ engines: unknown[]; models: Record<string, unknown[]> }>(
-      '/api/engines/available',
-    )
+    const result = await get<{
+      engines: unknown[]
+      models: Record<string, unknown[]>
+    }>('/api/engines/available')
     expect(result.status).toBe(200)
     const data = expectSuccess(result)
     expect(Array.isArray(data.engines)).toBe(true)
@@ -34,9 +35,10 @@ describe('GET /api/engines/profiles', () => {
 
 describe('GET /api/engines/settings', () => {
   test('returns default engine and per-engine settings', async () => {
-    const result = await get<{ defaultEngine: string | null; engines: Record<string, unknown> }>(
-      '/api/engines/settings',
-    )
+    const result = await get<{
+      defaultEngine: string | null
+      engines: Record<string, unknown>
+    }>('/api/engines/settings')
     expect(result.status).toBe(200)
     const data = expectSuccess(result)
     expect(typeof data.engines).toBe('object')
@@ -47,9 +49,12 @@ describe('GET /api/engines/settings', () => {
 
 describe('POST /api/engines/default-engine', () => {
   test('sets a valid default engine', async () => {
-    const result = await post<{ defaultEngine: string }>('/api/engines/default-engine', {
-      defaultEngine: 'echo',
-    })
+    const result = await post<{ defaultEngine: string }>(
+      '/api/engines/default-engine',
+      {
+        defaultEngine: 'echo',
+      },
+    )
     expect(result.status).toBe(200)
     const data = expectSuccess(result)
     expect(data.defaultEngine).toBe('echo')

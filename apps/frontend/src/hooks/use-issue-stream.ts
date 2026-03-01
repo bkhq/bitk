@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import type { NormalizedLogEntry, SessionStatus } from '@/types/kanban'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { eventBus } from '@/lib/event-bus'
 import { kanbanApi } from '@/lib/kanban-api'
+import type { NormalizedLogEntry, SessionStatus } from '@/types/kanban'
 import { queryKeys } from './use-kanban'
 
 interface UseIssueStreamOptions {
@@ -303,7 +303,7 @@ export function useIssueStream({
     // log window on every status transition (running → completed) causes a
     // race: the HTTP response can overwrite SSE entries that arrived between
     // the request and response, making messages appear/disappear/reappear.
-  }, [projectId, issueId, enabled, devMode, markSeen])
+  }, [projectId, issueId, enabled, markSeen])
 
   // Subscribe to live SSE events for this issue.
   useEffect(() => {

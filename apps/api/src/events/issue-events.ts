@@ -1,4 +1,7 @@
-type IssueUpdateCallback = (data: { issueId: string; changes: Record<string, unknown> }) => void
+type IssueUpdateCallback = (data: {
+  issueId: string
+  changes: Record<string, unknown>
+}) => void
 
 const listeners = new Set<IssueUpdateCallback>()
 
@@ -9,7 +12,10 @@ export function onIssueUpdated(cb: IssueUpdateCallback): () => void {
   }
 }
 
-export function emitIssueUpdated(issueId: string, changes: Record<string, unknown>): void {
+export function emitIssueUpdated(
+  issueId: string,
+  changes: Record<string, unknown>,
+): void {
   for (const cb of listeners) {
     try {
       cb({ issueId, changes })

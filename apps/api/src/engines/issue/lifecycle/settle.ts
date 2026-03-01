@@ -1,5 +1,5 @@
-import type { EngineContext } from '@/engines/issue/context'
 import { autoMoveToReview, updateIssueSession } from '@/engines/engine-store'
+import type { EngineContext } from '@/engines/issue/context'
 import { emitIssueSettled } from '@/engines/issue/events'
 import { cleanupDomainData } from '@/engines/issue/process/state'
 

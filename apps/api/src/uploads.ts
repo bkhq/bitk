@@ -7,7 +7,12 @@ export const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10 MB
 export const MAX_FILES = 10
 
 // MIME type prefixes that are safe to accept
-const ALLOWED_MIME_PREFIXES = ['image/', 'text/', 'application/json', 'application/pdf']
+const ALLOWED_MIME_PREFIXES = [
+  'image/',
+  'text/',
+  'application/json',
+  'application/pdf',
+]
 
 // File extensions that are never allowed regardless of MIME type
 const BLOCKED_EXTENSIONS = new Set([
@@ -55,7 +60,9 @@ export async function saveUploadedFile(file: File): Promise<SavedFile> {
   }
 }
 
-export function validateFiles(files: File[]): { ok: true } | { ok: false; error: string } {
+export function validateFiles(
+  files: File[],
+): { ok: true } | { ok: false; error: string } {
   if (files.length > MAX_FILES) {
     return { ok: false, error: `Too many files (max ${MAX_FILES})` }
   }
@@ -75,7 +82,9 @@ export function validateFiles(files: File[]): { ok: true } | { ok: false; error:
     // Allow empty or generic MIME (browser detection is unreliable for many types)
     const mime = file.type
     if (mime && mime !== 'application/octet-stream') {
-      const allowed = ALLOWED_MIME_PREFIXES.some((prefix) => mime.startsWith(prefix))
+      const allowed = ALLOWED_MIME_PREFIXES.some((prefix) =>
+        mime.startsWith(prefix),
+      )
       if (!allowed) {
         return { ok: false, error: `MIME type "${mime}" is not allowed` }
       }

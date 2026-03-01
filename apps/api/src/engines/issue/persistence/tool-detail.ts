@@ -1,7 +1,11 @@
-import type { NormalizedLogEntry, ToolAction, ToolDetail } from '@/engines/types'
 import { ulid } from 'ulid'
 import { db } from '@/db'
 import { issuesLogsToolsCall as toolsTable } from '@/db/schema'
+import type {
+  NormalizedLogEntry,
+  ToolAction,
+  ToolDetail,
+} from '@/engines/types'
 import { logger } from '@/logger'
 
 /** Persist tool detail row linked to a log entry. */
@@ -16,7 +20,9 @@ export function persistToolDetail(
         ? entry.metadata.toolName
         : (entry.toolAction?.kind ?? 'unknown')
     const toolCallId =
-      typeof entry.metadata?.toolCallId === 'string' ? entry.metadata.toolCallId : null
+      typeof entry.metadata?.toolCallId === 'string'
+        ? entry.metadata.toolCallId
+        : null
     const isResult = entry.metadata?.isResult === true
     const action = entry.toolAction
     const kind = action?.kind ?? 'other'
@@ -32,7 +38,10 @@ export function persistToolDetail(
     if (entry.metadata) rawData.metadata = entry.metadata
     if (entry.content) {
       const content = entry.content
-      rawData.content = content.length > 5000 ? `${content.slice(0, 5000)}...[truncated]` : content
+      rawData.content =
+        content.length > 5000
+          ? `${content.slice(0, 5000)}...[truncated]`
+          : content
     }
 
     const toolRecordId = ulid()
@@ -72,13 +81,18 @@ export function buildToolDetail(entry: NormalizedLogEntry): ToolDetail | null {
     kind,
     toolName,
     toolCallId:
-      typeof entry.metadata?.toolCallId === 'string' ? entry.metadata.toolCallId : undefined,
+      typeof entry.metadata?.toolCallId === 'string'
+        ? entry.metadata.toolCallId
+        : undefined,
     isResult,
   }
 }
 
 /** Reconstruct ToolAction from stored raw JSON. */
-export function rawToToolAction(kind: string, rawData: Record<string, unknown>): ToolAction {
+export function rawToToolAction(
+  kind: string,
+  rawData: Record<string, unknown>,
+): ToolAction {
   const action = rawData.toolAction as Record<string, unknown> | undefined
   switch (kind) {
     case 'file-read':
@@ -94,9 +108,13 @@ export function rawToToolAction(kind: string, rawData: Record<string, unknown>):
     case 'tool':
       return {
         kind: 'tool',
-        toolName: (action?.toolName as string) ?? (rawData.toolName as string) ?? '',
+        toolName:
+          (action?.toolName as string) ?? (rawData.toolName as string) ?? '',
       }
     default:
-      return { kind: 'other', description: (rawData.toolName as string) ?? kind }
+      return {
+        kind: 'other',
+        description: (rawData.toolName as string) ?? kind,
+      }
   }
 }

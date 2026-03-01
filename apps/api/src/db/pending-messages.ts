@@ -35,5 +35,8 @@ export async function getPendingMessages(issueId: string) {
  */
 export async function markPendingMessagesDispatched(ids: string[]) {
   if (ids.length === 0) return
-  await db.update(issueLogs).set({ visible: 0 }).where(inArray(issueLogs.id, ids))
+  await db
+    .update(issueLogs)
+    .set({ visible: 0 })
+    .where(inArray(issueLogs.id, ids))
 }

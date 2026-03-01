@@ -5,7 +5,10 @@ export function classifyCommand(command: string): CommandCategory {
   const cmd = command.trim().split(/\s+/)[0] ?? ''
   if (['cat', 'head', 'tail', 'ls', 'less', 'more'].includes(cmd)) return 'read'
   if (['grep', 'rg', 'find', 'awk', 'ag'].includes(cmd)) return 'search'
-  if (command.includes('>') || ['sed', 'rm', 'mv', 'cp', 'mkdir', 'touch'].includes(cmd))
+  if (
+    command.includes('>') ||
+    ['sed', 'rm', 'mv', 'cp', 'mkdir', 'touch'].includes(cmd)
+  )
     return 'edit'
   if (['curl', 'wget'].includes(cmd)) return 'fetch'
   return 'other'

@@ -1,7 +1,7 @@
 import { zValidator } from '@hono/zod-validator'
 import { Hono } from 'hono'
 import { upgradeWebSocket } from 'hono/bun'
-import { z } from 'zod'
+import * as z from 'zod'
 import { ProcessManager } from '@/engines/process-manager'
 import { logger } from '@/logger'
 
@@ -138,7 +138,9 @@ app.post('/terminal', (c) => {
     cwd: process.env.HOME || '/',
     env: {
       ...(Object.fromEntries(
-        Object.entries(process.env).filter(([k]) => !TERMINAL_STRIP_KEYS.has(k)),
+        Object.entries(process.env).filter(
+          ([k]) => !TERMINAL_STRIP_KEYS.has(k),
+        ),
       ) as Record<string, string>),
       TERM: 'xterm-256color',
       LANG: process.env.LANG || 'C.UTF-8',
@@ -147,14 +149,20 @@ app.post('/terminal', (c) => {
   })
 
   try {
-    terminalPM.register(id, proc, meta, { group: 'terminal', startAsRunning: true })
+    terminalPM.register(id, proc, meta, {
+      group: 'terminal',
+      startAsRunning: true,
+    })
   } catch {
     // Concurrency limit reached
     proc.kill()
     return c.json({ success: false, error: 'Session limit reached' }, 429)
   }
 
-  logger.info({ id, pid: proc.pid, shell: defaultShell }, 'terminal_session_created')
+  logger.info(
+    { id, pid: proc.pid, shell: defaultShell },
+    'terminal_session_created',
+  )
 
   return c.json({ success: true, data: { id } })
 })

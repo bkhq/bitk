@@ -26,7 +26,9 @@ export async function findProject(param: string) {
     ;[row] = await db
       .select()
       .from(projectsTable)
-      .where(and(eq(projectsTable.alias, param), eq(projectsTable.isDeleted, 0)))
+      .where(
+        and(eq(projectsTable.alias, param), eq(projectsTable.isDeleted, 0)),
+      )
   }
 
   if (row) {
@@ -40,7 +42,10 @@ export async function findProject(param: string) {
   return row
 }
 
-export async function invalidateProjectCache(id: string, alias?: string | null): Promise<void> {
+export async function invalidateProjectCache(
+  id: string,
+  alias?: string | null,
+): Promise<void> {
   await cacheDel(`project:lookup:${id}`)
   if (alias) {
     await cacheDel(`project:lookup:${alias}`)
@@ -59,7 +64,12 @@ export async function cleanupStaleSessions(): Promise<number> {
   const staleIssues = await db
     .select({ id: issuesTable.id })
     .from(issuesTable)
-    .where(and(inArray(issuesTable.sessionStatus, staleStatuses), eq(issuesTable.isDeleted, 0)))
+    .where(
+      and(
+        inArray(issuesTable.sessionStatus, staleStatuses),
+        eq(issuesTable.isDeleted, 0),
+      ),
+    )
 
   if (staleIssues.length === 0) return 0
 
@@ -80,7 +90,10 @@ const SETTINGS_CACHE_TTL = 300 // seconds
 
 export async function getAppSetting(key: string): Promise<string | null> {
   return cacheGetOrSet(`app_setting:${key}`, SETTINGS_CACHE_TTL, async () => {
-    const [row] = await db.select().from(appSettingsTable).where(eq(appSettingsTable.key, key))
+    const [row] = await db
+      .select()
+      .from(appSettingsTable)
+      .where(eq(appSettingsTable.key, key))
     return row?.value ?? null
   })
 }
@@ -89,16 +102,24 @@ export async function setAppSetting(key: string, value: string): Promise<void> {
   await db
     .insert(appSettingsTable)
     .values({ key, value })
-    .onConflictDoUpdate({ target: appSettingsTable.key, set: { value, updatedAt: new Date() } })
+    .onConflictDoUpdate({
+      target: appSettingsTable.key,
+      set: { value, updatedAt: new Date() },
+    })
 
   await cacheDel(`app_setting:${key}`)
 }
 
-export async function getEngineDefaultModel(engineType: string): Promise<string | null> {
+export async function getEngineDefaultModel(
+  engineType: string,
+): Promise<string | null> {
   return getAppSetting(`engine:${engineType}:defaultModel`)
 }
 
-export async function setEngineDefaultModel(engineType: string, modelId: string): Promise<void> {
+export async function setEngineDefaultModel(
+  engineType: string,
+  modelId: string,
+): Promise<void> {
   await setAppSetting(`engine:${engineType}:defaultModel`, modelId)
   await cacheDel('engineDefaultModels:all')
 }
@@ -111,20 +132,29 @@ export async function setDefaultEngine(engineType: string): Promise<void> {
   return setAppSetting('defaultEngine', engineType)
 }
 
-export async function getAllEngineDefaultModels(): Promise<Record<string, string>> {
-  return cacheGetOrSet('engineDefaultModels:all', SETTINGS_CACHE_TTL, async () => {
-    const rows = await db.select().from(appSettingsTable).where(eq(appSettingsTable.isDeleted, 0))
-    const result: Record<string, string> = {}
-    const prefix = 'engine:'
-    const suffix = ':defaultModel'
-    for (const row of rows) {
-      if (row.key.startsWith(prefix) && row.key.endsWith(suffix)) {
-        const engineType = row.key.slice(prefix.length, -suffix.length)
-        result[engineType] = row.value
+export async function getAllEngineDefaultModels(): Promise<
+  Record<string, string>
+> {
+  return cacheGetOrSet(
+    'engineDefaultModels:all',
+    SETTINGS_CACHE_TTL,
+    async () => {
+      const rows = await db
+        .select()
+        .from(appSettingsTable)
+        .where(eq(appSettingsTable.isDeleted, 0))
+      const result: Record<string, string> = {}
+      const prefix = 'engine:'
+      const suffix = ':defaultModel'
+      for (const row of rows) {
+        if (row.key.startsWith(prefix) && row.key.endsWith(suffix)) {
+          const engineType = row.key.slice(prefix.length, -suffix.length)
+          result[engineType] = row.value
+        }
       }
-    }
-    return result
-  })
+      return result
+    },
+  )
 }
 
 // --- Probe Results persistence ---
@@ -168,9 +198,14 @@ export async function saveProbeResults(
 // --- Write Filter default rules seeding ---
 
 export async function ensureDefaultFilterRules(): Promise<void> {
-  const { WRITE_FILTER_RULES_KEY, DEFAULT_FILTER_RULES } = await import('../engines/write-filter')
+  const { WRITE_FILTER_RULES_KEY, DEFAULT_FILTER_RULES } = await import(
+    '../engines/write-filter'
+  )
   const existing = await getAppSetting(WRITE_FILTER_RULES_KEY)
   if (!existing) {
-    await setAppSetting(WRITE_FILTER_RULES_KEY, JSON.stringify(DEFAULT_FILTER_RULES))
+    await setAppSetting(
+      WRITE_FILTER_RULES_KEY,
+      JSON.stringify(DEFAULT_FILTER_RULES),
+    )
   }
 }

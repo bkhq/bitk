@@ -1,9 +1,9 @@
-import type { EngineType, PermissionPolicy } from '@/engines/types'
 import { mkdir, stat } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { eq } from 'drizzle-orm'
 import { db } from '@/db'
 import { projects as projectsTable } from '@/db/schema'
+import type { EngineType, PermissionPolicy } from '@/engines/types'
 import { BUILT_IN_PROFILES } from '@/engines/types'
 
 // ---------- Error classification ----------

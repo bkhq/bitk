@@ -1,5 +1,3 @@
-import { useRef, useState, useEffect, useCallback, useMemo } from 'react'
-import { useParams } from 'react-router-dom'
 import {
   ChevronDown,
   ChevronsRight,
@@ -7,27 +5,29 @@ import {
   MousePointerClick,
   X,
 } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useParams } from 'react-router-dom'
+import { EngineIcon } from '@/components/EngineIcons'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import { useClickOutside } from '@/hooks/use-click-outside'
+import {
+  useCreateIssue,
+  useEngineAvailability,
+  useEngineProfiles,
+  useEngineSettings,
+} from '@/hooks/use-kanban'
+import { tPriority, tStatus } from '@/lib/i18n-utils'
+import type { StatusDefinition } from '@/lib/statuses'
+import { STATUSES } from '@/lib/statuses'
+import { usePanelStore } from '@/stores/panel-store'
 import type {
   EngineAvailability,
   EngineModel,
   EngineProfile,
   Priority,
 } from '@/types/kanban'
-import type { StatusDefinition } from '@/lib/statuses'
-import { STATUSES } from '@/lib/statuses'
-import {
-  useEngineAvailability,
-  useEngineProfiles,
-  useEngineSettings,
-  useCreateIssue,
-} from '@/hooks/use-kanban'
-import { usePanelStore } from '@/stores/panel-store'
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
-import { useClickOutside } from '@/hooks/use-click-outside'
-import { EngineIcon } from '@/components/EngineIcons'
 import { PriorityIcon } from './PriorityIcon'
-import { tStatus, tPriority } from '@/lib/i18n-utils'
 
 // ── Data ──────────────────────────────────────────────
 

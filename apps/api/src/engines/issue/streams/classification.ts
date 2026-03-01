@@ -4,7 +4,10 @@ import type { NormalizedLogEntry } from '@/engines/types'
 
 export function isTurnCompletionEntry(entry: NormalizedLogEntry): boolean {
   if (entry.metadata?.turnCompleted === true) return true
-  if (entry.metadata && Object.prototype.hasOwnProperty.call(entry.metadata, 'resultSubtype')) {
+  if (
+    entry.metadata &&
+    Object.prototype.hasOwnProperty.call(entry.metadata, 'resultSubtype')
+  ) {
     return true
   }
   return (
@@ -16,8 +19,10 @@ export function isTurnCompletionEntry(entry: NormalizedLogEntry): boolean {
 
 export function isCancelledNoiseEntry(entry: NormalizedLogEntry): boolean {
   const subtype = entry.metadata?.resultSubtype
-  if (typeof subtype !== 'string' || subtype !== 'error_during_execution') return false
-  const raw = `${entry.content ?? ''} ${String(entry.metadata?.error ?? '')}`.toLowerCase()
+  if (typeof subtype !== 'string' || subtype !== 'error_during_execution')
+    return false
+  const raw =
+    `${entry.content ?? ''} ${String(entry.metadata?.error ?? '')}`.toLowerCase()
   return (
     raw.includes('request was aborted') ||
     raw.includes('request interrupted by user') ||

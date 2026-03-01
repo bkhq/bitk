@@ -148,7 +148,8 @@ apiRoutes.get('/runtime', (c) => {
   const info = getRuntimeInfo()
   // Remove execPath from signals to avoid leaking binary path
   if (info.signals) {
-    delete (info.signals as Record<string, unknown>).execPath
+    const { execPath: _, ...rest } = info.signals as Record<string, unknown>
+    info.signals = rest
   }
   return c.json(info)
 })

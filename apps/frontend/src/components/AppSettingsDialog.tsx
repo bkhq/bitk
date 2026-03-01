@@ -1,5 +1,3 @@
-import { useRef, useMemo, useState } from 'react'
-import { useTranslation } from 'react-i18next'
 import {
   Check,
   ChevronDown,
@@ -8,6 +6,10 @@ import {
   Loader2,
   RefreshCw,
 } from 'lucide-react'
+import { useMemo, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { DirectoryPicker } from '@/components/DirectoryPicker'
+import { EngineIcon } from '@/components/EngineIcons'
 import {
   Dialog,
   DialogCloseButton,
@@ -15,6 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { useClickOutside } from '@/hooks/use-click-outside'
 import {
   useEngineAvailability,
   useEngineProfiles,
@@ -25,17 +28,14 @@ import {
   useUpdateWorkspacePath,
   useWorkspacePath,
 } from '@/hooks/use-kanban'
+import { useTheme } from '@/hooks/use-theme'
+import { LANGUAGES } from '@/lib/constants'
+import { cn } from '@/lib/utils'
 import type {
   EngineAvailability,
   EngineModel,
   EngineProfile,
 } from '@/types/kanban'
-import { cn } from '@/lib/utils'
-import { LANGUAGES } from '@/lib/constants'
-import { useTheme } from '@/hooks/use-theme'
-import { useClickOutside } from '@/hooks/use-click-outside'
-import { DirectoryPicker } from '@/components/DirectoryPicker'
-import { EngineIcon } from '@/components/EngineIcons'
 
 const THEME_OPTIONS = [
   { id: 'system' as const, labelKey: 'theme.system' },

@@ -1,13 +1,21 @@
-import type { EngineType } from '@/engines/types'
 import { zValidator } from '@hono/zod-validator'
 import { and, eq, max } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { cacheDel, cacheDelByPrefix } from '@/cache'
 import { db } from '@/db'
-import { findProject, getDefaultEngine, getEngineDefaultModel } from '@/db/helpers'
+import {
+  findProject,
+  getDefaultEngine,
+  getEngineDefaultModel,
+} from '@/db/helpers'
 import { issues as issuesTable } from '@/db/schema'
 import { engineRegistry } from '@/engines/executors'
-import { createIssueSchema, serializeIssue, triggerIssueExecution } from './_shared'
+import type { EngineType } from '@/engines/types'
+import {
+  createIssueSchema,
+  serializeIssue,
+  triggerIssueExecution,
+} from './_shared'
 
 const create = new Hono()
 
@@ -17,7 +25,10 @@ create.post(
   zValidator('json', createIssueSchema, (result, c) => {
     if (!result.success) {
       return c.json(
-        { success: false, error: result.error.issues.map((i) => i.message).join(', ') },
+        {
+          success: false,
+          error: result.error.issues.map((i) => i.message).join(', '),
+        },
         400,
       )
     }
@@ -44,16 +55,21 @@ create.post(
       if (savedModel) {
         resolvedModel = savedModel
       } else {
-        const models = await engineRegistry.getModels(resolvedEngine as EngineType)
-        resolvedModel = models.find((m) => m.isDefault)?.id ?? models[0]?.id ?? 'auto'
+        const models = await engineRegistry.getModels(
+          resolvedEngine as EngineType,
+        )
+        resolvedModel =
+          models.find((m) => m.isDefault)?.id ?? models[0]?.id ?? 'auto'
       }
     }
 
     try {
       const issuePrompt = body.title
-      const shouldExecute = body.statusId === 'working' || body.statusId === 'review'
+      const shouldExecute =
+        body.statusId === 'working' || body.statusId === 'review'
       // review → working: auto-downgrade so the execution engine picks it up
-      const effectiveStatusId = body.statusId === 'review' ? 'working' : body.statusId
+      const effectiveStatusId =
+        body.statusId === 'review' ? 'working' : body.statusId
 
       const [newIssue] = await db.transaction(async (tx) => {
         // Validate parentIssueId if provided
@@ -73,7 +89,9 @@ create.post(
           }
           // Depth=1 only: parent must not itself be a sub-issue
           if (parent.parentIssueId) {
-            throw new Error('Cannot create sub-issue of a sub-issue (max depth is 1)')
+            throw new Error(
+              'Cannot create sub-issue of a sub-issue (max depth is 1)',
+            )
           }
         }
 
@@ -134,12 +152,16 @@ create.post(
         )
       }
 
-      return c.json({ success: true, data: serializeIssue(newIssue!) }, shouldExecute ? 202 : 201)
+      return c.json(
+        { success: true, data: serializeIssue(newIssue!) },
+        shouldExecute ? 202 : 201,
+      )
     } catch (error) {
       return c.json(
         {
           success: false,
-          error: error instanceof Error ? error.message : 'Failed to create issue',
+          error:
+            error instanceof Error ? error.message : 'Failed to create issue',
         },
         400,
       )

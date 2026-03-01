@@ -1,5 +1,12 @@
 import { beforeAll, describe, expect, test } from 'bun:test'
-import { createTestIssue, createTestProject, expectSuccess, get, post, waitFor } from './helpers'
+import {
+  createTestIssue,
+  createTestProject,
+  expectSuccess,
+  get,
+  post,
+  waitFor,
+} from './helpers'
 /**
  * Issue execution & session API tests.
  * Tests the auto-execute flow, follow-up, restart, cancel, and SSE streaming.
@@ -59,13 +66,17 @@ describe('Auto-execute on issue creation', () => {
 
     // Wait for the echo engine to complete (~200ms)
     await waitFor(async () => {
-      const result = await get<Issue>(`/api/projects/${projectId}/issues/${issueId}`)
+      const result = await get<Issue>(
+        `/api/projects/${projectId}/issues/${issueId}`,
+      )
       const issue = expectSuccess(result)
       return issue.sessionStatus === 'completed'
     }, 5000)
 
     // Verify final state
-    const final = expectSuccess(await get<Issue>(`/api/projects/${projectId}/issues/${issueId}`))
+    const final = expectSuccess(
+      await get<Issue>(`/api/projects/${projectId}/issues/${issueId}`),
+    )
     expect(final.sessionStatus).toBe('completed')
   })
 
@@ -80,7 +91,9 @@ describe('Auto-execute on issue creation', () => {
 
     // Wait for completion
     await waitFor(async () => {
-      const result = await get<Issue>(`/api/projects/${projectId}/issues/${data.id}`)
+      const result = await get<Issue>(
+        `/api/projects/${projectId}/issues/${data.id}`,
+      )
       return expectSuccess(result).sessionStatus === 'completed'
     }, 5000)
 
@@ -120,7 +133,9 @@ describe('POST /api/projects/:projectId/issues/:id/execute', () => {
 
     // Wait for auto-exec to complete
     await waitFor(async () => {
-      const r = await get<Issue>(`/api/projects/${projectId}/issues/${issue.id}`)
+      const r = await get<Issue>(
+        `/api/projects/${projectId}/issues/${issue.id}`,
+      )
       return expectSuccess(r).sessionStatus === 'completed'
     }, 5000)
 
@@ -148,7 +163,9 @@ describe('POST /api/projects/:projectId/issues/:id/follow-up', () => {
 
     // Wait for initial execution to complete
     await waitFor(async () => {
-      const r = await get<Issue>(`/api/projects/${projectId}/issues/${issue.id}`)
+      const r = await get<Issue>(
+        `/api/projects/${projectId}/issues/${issue.id}`,
+      )
       return expectSuccess(r).sessionStatus === 'completed'
     }, 5000)
 
@@ -173,7 +190,9 @@ describe('POST /api/projects/:projectId/issues/:id/follow-up', () => {
     ) as Issue
 
     await waitFor(async () => {
-      const r = await get<Issue>(`/api/projects/${projectId}/issues/${issue.id}`)
+      const r = await get<Issue>(
+        `/api/projects/${projectId}/issues/${issue.id}`,
+      )
       return expectSuccess(r).sessionStatus === 'completed'
     }, 5000)
 
@@ -195,13 +214,18 @@ describe('POST /api/projects/:projectId/issues/:id/follow-up', () => {
     ) as Issue
 
     await waitFor(async () => {
-      const r = await get<Issue>(`/api/projects/${projectId}/issues/${issue.id}`)
+      const r = await get<Issue>(
+        `/api/projects/${projectId}/issues/${issue.id}`,
+      )
       return expectSuccess(r).sessionStatus === 'completed'
     }, 5000)
 
-    const result = await post<unknown>(`/api/projects/${projectId}/issues/${issue.id}/follow-up`, {
-      prompt: '',
-    })
+    const result = await post<unknown>(
+      `/api/projects/${projectId}/issues/${issue.id}/follow-up`,
+      {
+        prompt: '',
+      },
+    )
     expect(result.status).toBe(400)
   })
 })
@@ -238,13 +262,18 @@ describe('POST /api/projects/:projectId/issues/:id/restart', () => {
 
     // Wait for completion
     await waitFor(async () => {
-      const r = await get<Issue>(`/api/projects/${projectId}/issues/${issue.id}`)
+      const r = await get<Issue>(
+        `/api/projects/${projectId}/issues/${issue.id}`,
+      )
       const s = expectSuccess(r).sessionStatus
       return s === 'completed' || s === 'failed' || s === 'cancelled'
     }, 5000)
 
     // Cancel first (to put it in a restartable state)
-    await post<unknown>(`/api/projects/${projectId}/issues/${issue.id}/cancel`, {})
+    await post<unknown>(
+      `/api/projects/${projectId}/issues/${issue.id}/cancel`,
+      {},
+    )
 
     // Restart
     const result = await post<{ executionId: string; issueId: string }>(
@@ -273,7 +302,9 @@ describe('GET /api/projects/:projectId/issues/:id/logs (after execution)', () =>
     ) as Issue
 
     await waitFor(async () => {
-      const r = await get<Issue>(`/api/projects/${projectId}/issues/${issue.id}`)
+      const r = await get<Issue>(
+        `/api/projects/${projectId}/issues/${issue.id}`,
+      )
       return expectSuccess(r).sessionStatus === 'completed'
     }, 5000)
 
@@ -298,7 +329,9 @@ describe('GET /api/projects/:projectId/issues/:id/logs', () => {
     ) as Issue
 
     await waitFor(async () => {
-      const r = await get<Issue>(`/api/projects/${projectId}/issues/${issue.id}`)
+      const r = await get<Issue>(
+        `/api/projects/${projectId}/issues/${issue.id}`,
+      )
       return expectSuccess(r).sessionStatus === 'completed'
     }, 5000)
 
@@ -340,7 +373,9 @@ describe('Cross-project ownership', () => {
       }),
     ) as Issue
 
-    const result = await get<Issue>(`/api/projects/${project2}/issues/${issue.id}`)
+    const result = await get<Issue>(
+      `/api/projects/${project2}/issues/${issue.id}`,
+    )
     expect(result.status).toBe(404)
   })
 })

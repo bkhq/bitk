@@ -1,10 +1,10 @@
-import type { EngineType, SessionStatus } from './types'
 import { and, eq } from 'drizzle-orm'
 import { cacheDel } from '@/cache'
 import { db } from '@/db'
 import { issues as issuesTable } from '@/db/schema'
 import { emitIssueUpdated } from '@/events/issue-events'
 import { logger } from '@/logger'
+import type { EngineType, SessionStatus } from './types'
 
 // ---------- Row type inference ----------
 type IssueRow = typeof issuesTable.$inferSelect
@@ -52,13 +52,18 @@ export async function updateIssueSession(
 ): Promise<IssueRow | undefined> {
   const updates: Record<string, unknown> = {}
   if (changes.engineType !== undefined) updates.engineType = changes.engineType
-  if (changes.sessionStatus !== undefined) updates.sessionStatus = changes.sessionStatus
+  if (changes.sessionStatus !== undefined)
+    updates.sessionStatus = changes.sessionStatus
   if (changes.prompt !== undefined) updates.prompt = changes.prompt
-  if (changes.externalSessionId !== undefined) updates.externalSessionId = changes.externalSessionId
+  if (changes.externalSessionId !== undefined)
+    updates.externalSessionId = changes.externalSessionId
   if (changes.model !== undefined) updates.model = changes.model
 
   if (Object.keys(updates).length === 0) {
-    const [row] = await db.select().from(issuesTable).where(eq(issuesTable.id, issueId))
+    const [row] = await db
+      .select()
+      .from(issuesTable)
+      .where(eq(issuesTable.id, issueId))
     return row
   }
 

@@ -56,7 +56,10 @@ function sanitizeResultLine(line: string): string {
 
 function shouldSkipStdoutIoLog(line: string): boolean {
   // Filter noisy thinking payloads from API logs.
-  if (line.includes('"type":"system"') && line.includes('"hook_name":"SessionStart:startup"')) {
+  if (
+    line.includes('"type":"system"') &&
+    line.includes('"hook_name":"SessionStart:startup"')
+  ) {
     return true
   }
   return (
@@ -95,7 +98,9 @@ export class ClaudeProtocolHandler {
    * Wraps the raw stdout stream, intercepting control_request messages
    * and passing everything else through to the downstream consumer.
    */
-  wrapStdout(rawStdout: ReadableStream<Uint8Array>): ReadableStream<Uint8Array> {
+  wrapStdout(
+    rawStdout: ReadableStream<Uint8Array>,
+  ): ReadableStream<Uint8Array> {
     const reader = rawStdout.getReader()
     const decoder = new TextDecoder()
     const encoder = new TextEncoder()
@@ -117,7 +122,10 @@ export class ClaudeProtocolHandler {
 
             if (IO_LOG_ENABLED && !shouldSkipStdoutIoLog(line)) {
               logger.debug(
-                { stream: 'stdout', line: clipForLog(sanitizeResultLine(line)) },
+                {
+                  stream: 'stdout',
+                  line: clipForLog(sanitizeResultLine(line)),
+                },
                 'claude_protocol_io',
               )
             }
@@ -192,7 +200,10 @@ export class ClaudeProtocolHandler {
     }
   }
 
-  private handleControlRequest(requestId: string, request: ControlRequest): void {
+  private handleControlRequest(
+    requestId: string,
+    request: ControlRequest,
+  ): void {
     switch (request.subtype) {
       case 'can_use_tool':
         this.sendResponse(requestId, {
@@ -211,8 +222,14 @@ export class ClaudeProtocolHandler {
         break
 
       default:
-        logger.warn({ subtype: request.subtype, requestId }, 'Unknown control request subtype')
-        this.sendError(requestId, `Unknown control request subtype: ${request.subtype}`)
+        logger.warn(
+          { subtype: request.subtype, requestId },
+          'Unknown control request subtype',
+        )
+        this.sendError(
+          requestId,
+          `Unknown control request subtype: ${request.subtype}`,
+        )
     }
   }
 
@@ -268,7 +285,10 @@ export class ClaudeProtocolHandler {
     try {
       const json = JSON.stringify(data)
       if (IO_LOG_ENABLED) {
-        logger.debug({ stream: 'stdin', line: clipForLog(json) }, 'claude_protocol_io')
+        logger.debug(
+          { stream: 'stdin', line: clipForLog(json) },
+          'claude_protocol_io',
+        )
       }
       this.stdin.write(`${json}\n`)
       this.stdin.flush?.()

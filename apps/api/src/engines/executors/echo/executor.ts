@@ -16,7 +16,9 @@ import type {
  * into in-memory ReadableStreams, useful for UI dev and testing.
  */
 
-const ECHO_MODELS: EngineModel[] = [{ id: 'auto', name: 'Auto', isDefault: true }]
+const ECHO_MODELS: EngineModel[] = [
+  { id: 'auto', name: 'Auto', isDefault: true },
+]
 
 const encoder = new TextEncoder()
 
@@ -36,7 +38,11 @@ function createMockProcess(prompt: string): SpawnedProcess {
   const stdout = new ReadableStream<Uint8Array>({
     async start(controller) {
       controller.enqueue(
-        jsonLine({ type: 'system', message: 'Echo engine ready', timestamp: ts() }),
+        jsonLine({
+          type: 'system',
+          message: 'Echo engine ready',
+          timestamp: ts(),
+        }),
       )
 
       await Bun.sleep(100)
@@ -49,7 +55,10 @@ function createMockProcess(prompt: string): SpawnedProcess {
       controller.enqueue(
         jsonLine({
           type: 'assistant',
-          message: { id: `echo-${Date.now()}`, content: [{ type: 'text', text: prompt }] },
+          message: {
+            id: `echo-${Date.now()}`,
+            content: [{ type: 'text', text: prompt }],
+          },
           timestamp: ts(),
         }),
       )
@@ -105,11 +114,17 @@ export class EchoExecutor implements EngineExecutor {
   readonly protocol = 'stream-json' as const
   readonly capabilities: EngineCapability[] = ['session-fork']
 
-  async spawn(options: SpawnOptions, _env: ExecutionEnv): Promise<SpawnedProcess> {
+  async spawn(
+    options: SpawnOptions,
+    _env: ExecutionEnv,
+  ): Promise<SpawnedProcess> {
     return createMockProcess(options.prompt)
   }
 
-  async spawnFollowUp(options: FollowUpOptions, _env: ExecutionEnv): Promise<SpawnedProcess> {
+  async spawnFollowUp(
+    options: FollowUpOptions,
+    _env: ExecutionEnv,
+  ): Promise<SpawnedProcess> {
     return createMockProcess(options.prompt)
   }
 

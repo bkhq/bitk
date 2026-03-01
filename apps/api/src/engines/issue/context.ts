@@ -1,11 +1,11 @@
+import type { ProcessManager } from '@/engines/process-manager'
+import type { PermissionPolicy } from '@/engines/types'
 import type {
   IssueSettledCallback,
   LogCallback,
   ManagedProcess,
   StateChangeCallback,
 } from './types'
-import type { ProcessManager } from '@/engines/process-manager'
-import type { PermissionPolicy } from '@/engines/types'
 
 // ---------- EngineContext ----------
 

@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { eventBus } from '@/lib/event-bus'
+import { useEffect, useState } from 'react'
 import type { ChangesSummaryData } from '@/lib/event-bus'
+import { eventBus } from '@/lib/event-bus'
 import { kanbanApi } from '@/lib/kanban-api'
 import { queryKeys } from './use-kanban'
 

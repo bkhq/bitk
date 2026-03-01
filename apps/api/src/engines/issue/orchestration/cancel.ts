@@ -1,5 +1,5 @@
-import type { EngineContext } from '@/engines/issue/context'
 import { updateIssueSession } from '@/engines/engine-store'
+import type { EngineContext } from '@/engines/issue/context'
 import { cancel } from '@/engines/issue/process/cancel'
 import { withIssueLock } from '@/engines/issue/process/lock'
 import { getActiveProcesses } from '@/engines/issue/process/state'
@@ -21,13 +21,19 @@ export async function cancelIssue(
       )
       dispatch(p, { type: 'CLEAR_PENDING_INPUTS' })
       p.queueCancelRequested = false
-      await cancel(ctx, p.executionId, { emitCancelledState: false, hard: false })
+      await cancel(ctx, p.executionId, {
+        emitCancelledState: false,
+        hard: false,
+      })
     }
     if (active.length > 0) {
       // Persist cancelled immediately so process restarts/stale cleanup
       // cannot flip this user-initiated cancel into failed.
       await updateIssueSession(issueId, { sessionStatus: 'cancelled' })
-      logger.info({ issueId, interruptedCount: active.length }, 'issue_cancel_soft_interrupted')
+      logger.info(
+        { issueId, interruptedCount: active.length },
+        'issue_cancel_soft_interrupted',
+      )
       return 'interrupted'
     }
     await updateIssueSession(issueId, { sessionStatus: 'cancelled' })
