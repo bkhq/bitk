@@ -85,7 +85,7 @@ describe('Follow-up queuing on todo issues', () => {
     expect(logsResult.status).toBe(200)
     const logs = expectSuccess(logsResult)
     const pendingMsgs = logs.logs.filter(
-      (l) => l.entryType === 'user-message' && l.metadata?.pending === true,
+      (l) => l.entryType === 'user-message' && l.metadata?.type === 'pending',
     )
     expect(pendingMsgs.length).toBeGreaterThanOrEqual(1)
     expect(pendingMsgs[0]!.content).toBe('pending log check')
@@ -114,7 +114,7 @@ describe('Follow-up queuing on todo issues', () => {
     const logsResult = await get<LogsResponse>(`/api/projects/${projectId}/issues/${issue.id}/logs`)
     const logs = expectSuccess(logsResult)
     const pendingMsgs = logs.logs.filter(
-      (l) => l.entryType === 'user-message' && l.metadata?.pending === true,
+      (l) => l.entryType === 'user-message' && l.metadata?.type === 'pending',
     )
     expect(pendingMsgs.length).toBe(3)
     expect(pendingMsgs.map((m) => m.content)).toEqual([
@@ -164,7 +164,7 @@ describe('Pending messages consumed on transition to working', () => {
     const logsResult = await get<LogsResponse>(`/api/projects/${projectId}/issues/${issue.id}/logs`)
     const logs = expectSuccess(logsResult)
     const pendingMsgs = logs.logs.filter(
-      (l) => l.entryType === 'user-message' && l.metadata?.pending === true,
+      (l) => l.entryType === 'user-message' && l.metadata?.type === 'pending',
     )
     expect(pendingMsgs.length).toBe(0)
   })
@@ -199,7 +199,7 @@ describe('Pending messages consumed on transition to working', () => {
     const logsResult = await get<LogsResponse>(`/api/projects/${projectId}/issues/${issue.id}/logs`)
     const logs = expectSuccess(logsResult)
     const pendingMsgs = logs.logs.filter(
-      (l) => l.entryType === 'user-message' && l.metadata?.pending === true,
+      (l) => l.entryType === 'user-message' && l.metadata?.type === 'pending',
     )
     expect(pendingMsgs.length).toBe(0)
   })
@@ -247,7 +247,7 @@ describe('No message duplication after pending consumption', () => {
     expect(matchingMsgs.length).toBeGreaterThanOrEqual(1)
     // None should still be marked as pending=true (all dispatched)
     for (const msg of matchingMsgs) {
-      expect(msg.metadata?.pending).not.toBe(true)
+      expect(msg.metadata?.type).not.toBe('pending')
     }
   })
 })
@@ -291,20 +291,18 @@ describe('Flush pending messages for existing sessions', () => {
       statusId: 'working',
     })
 
-    // Wait for the flush follow-up to complete
+    // Wait for the flush follow-up to consume pending messages
+    // (flushPendingAsFollowUp is fire-and-forget, so we wait on the actual effect)
     await waitFor(async () => {
-      const r = await get<Issue>(`/api/projects/${projectId}/issues/${issue.id}`)
-      const s = expectSuccess(r).sessionStatus
-      return s === 'completed'
+      const logsResult = await get<LogsResponse>(
+        `/api/projects/${projectId}/issues/${issue.id}/logs`,
+      )
+      const logs = expectSuccess(logsResult)
+      const pending = logs.logs.filter(
+        (l) => l.entryType === 'user-message' && l.metadata?.type === 'pending',
+      )
+      return pending.length === 0
     }, 5000)
-
-    // Verify no pending messages remain
-    const logsResult = await get<LogsResponse>(`/api/projects/${projectId}/issues/${issue.id}/logs`)
-    const logs = expectSuccess(logsResult)
-    const pendingMsgs = logs.logs.filter(
-      (l) => l.entryType === 'user-message' && l.metadata?.pending === true,
-    )
-    expect(pendingMsgs.length).toBe(0)
   })
 
   test('running session is NOT flushed (shouldFlush guard)', async () => {
@@ -372,7 +370,7 @@ describe('Execute endpoint consumes pending messages', () => {
     const logsResult = await get<LogsResponse>(`/api/projects/${projectId}/issues/${issue.id}/logs`)
     const logs = expectSuccess(logsResult)
     const pendingMsgs = logs.logs.filter(
-      (l) => l.entryType === 'user-message' && l.metadata?.pending === true,
+      (l) => l.entryType === 'user-message' && l.metadata?.type === 'pending',
     )
     expect(pendingMsgs.length).toBe(0)
   })

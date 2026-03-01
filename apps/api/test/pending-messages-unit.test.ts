@@ -52,7 +52,7 @@ async function insertPendingMessage(issueId: string, content: string) {
     entryIndex: Date.now(), // unique
     entryType: 'user-message',
     content,
-    metadata: JSON.stringify({ pending: true }),
+    metadata: JSON.stringify({ type: 'pending' }),
     timestamp: new Date().toISOString(),
   })
 }
@@ -67,7 +67,7 @@ async function insertDispatchedMessage(issueId: string, content: string) {
     entryIndex: Date.now(),
     entryType: 'user-message',
     content,
-    metadata: JSON.stringify({ pending: false }),
+    metadata: JSON.stringify({ type: 'dispatched' }),
     timestamp: new Date().toISOString(),
   })
 }
@@ -99,7 +99,7 @@ describe('getPendingMessages', () => {
     expect(pending[1]!.content).toBe('another pending')
   })
 
-  test('returns only messages with metadata.pending=true', async () => {
+  test('returns only messages with metadata.type=pending', async () => {
     const issue = await createTestIssue()
     await insertPendingMessage(issue.id, 'pending one')
     await insertDispatchedMessage(issue.id, 'dispatched one')
@@ -143,7 +143,7 @@ describe('getPendingMessages', () => {
       entryIndex: 0,
       entryType: 'system-message',
       content: 'system with pending',
-      metadata: JSON.stringify({ pending: true }),
+      metadata: JSON.stringify({ type: 'pending' }),
       timestamp: new Date().toISOString(),
     })
 
@@ -268,7 +268,7 @@ describe('Pending message lifecycle', () => {
 
     // Verify the metadata is valid JSON with pending=true
     const metadata = JSON.parse(pending[0]!.metadata!)
-    expect(metadata.pending).toBe(true)
+    expect(metadata.type).toBe('pending')
   })
 
   test('collectPendingMessages-style merge with empty base prompt', async () => {

@@ -9,3 +9,4 @@
 - [x] **ENG-004 Move legacy task.md from repository root to docs/task.md** `P2` - owner: codex - file: `docs/task/ENG-004.md`
 - [x] **ENG-003 Migrate task workflow from /ptask to /pma** `P1` - owner: codex - file: `docs/task/ENG-003.md`
 - [x] **ENG-007 将 Drizzle 迁移目录和配置移入 apps/api** `P2` - owner: claude - file: `docs/task/ENG-007.md`
+- [x] **TEST-001 修复 API 后端测试失败 (23 个测试)** `P1` - owner: claude - file: `docs/task/TEST-001.md`

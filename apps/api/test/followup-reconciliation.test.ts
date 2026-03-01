@@ -2,6 +2,7 @@ import { beforeAll, describe, expect, test } from 'bun:test'
 import { eq } from 'drizzle-orm'
 import { db } from '@/db'
 import { issues as issuesTable } from '@/db/schema'
+import { invalidateIssueCache } from '@/routes/issues/_shared'
 import { createTestProject, expectSuccess, get, patch, post, waitFor } from './helpers'
 /**
  * Integration/route tests for follow-up and reconciliation flows:
@@ -73,7 +74,7 @@ describe('Follow-up queuing behavior', () => {
     const logsResult = await get<LogsResponse>(`/api/projects/${projectId}/issues/${issue.id}/logs`)
     const logs = expectSuccess(logsResult)
     const pendingMsgs = logs.logs.filter(
-      (l) => l.entryType === 'user-message' && l.metadata?.pending === true,
+      (l) => l.entryType === 'user-message' && l.metadata?.type === 'pending',
     )
     expect(pendingMsgs.length).toBeGreaterThanOrEqual(1)
     expect(pendingMsgs[0]!.content).toBe('queued follow-up message')
@@ -105,7 +106,7 @@ describe('Follow-up queuing behavior', () => {
     const logsResult = await get<LogsResponse>(`/api/projects/${projectId}/issues/${issue.id}/logs`)
     const logs = expectSuccess(logsResult)
     const pendingMsgs = logs.logs.filter(
-      (l) => l.entryType === 'user-message' && l.metadata?.pending === true,
+      (l) => l.entryType === 'user-message' && l.metadata?.type === 'pending',
     )
     expect(pendingMsgs.length).toBe(3)
     expect(pendingMsgs.map((m) => m.content)).toEqual(['first', 'second', 'third'])
@@ -136,7 +137,7 @@ describe('Pending messages are consumed on transition to working', () => {
     let logsResult = await get<LogsResponse>(`/api/projects/${projectId}/issues/${issue.id}/logs`)
     let logs = expectSuccess(logsResult)
     const pendingBefore = logs.logs.filter(
-      (l) => l.entryType === 'user-message' && l.metadata?.pending === true,
+      (l) => l.entryType === 'user-message' && l.metadata?.type === 'pending',
     )
     expect(pendingBefore.length).toBe(1)
 
@@ -156,7 +157,7 @@ describe('Pending messages are consumed on transition to working', () => {
     logsResult = await get<LogsResponse>(`/api/projects/${projectId}/issues/${issue.id}/logs`)
     logs = expectSuccess(logsResult)
     const pendingAfter = logs.logs.filter(
-      (l) => l.entryType === 'user-message' && l.metadata?.pending === true,
+      (l) => l.entryType === 'user-message' && l.metadata?.type === 'pending',
     )
     expect(pendingAfter.length).toBe(0)
   })
@@ -248,6 +249,7 @@ describe('Stale working issue auto-correction', () => {
 
     // Force the statusId back to working via direct DB update (simulate stuck state)
     await db.update(issuesTable).set({ statusId: 'working' }).where(eq(issuesTable.id, issue.id))
+    await invalidateIssueCache(projectId, issue.id)
 
     // Verify it's stuck
     let current = expectSuccess(await get<Issue>(`/api/projects/${projectId}/issues/${issue.id}`))
@@ -288,6 +290,7 @@ describe('Stale working issue auto-correction', () => {
       .update(issuesTable)
       .set({ sessionStatus: 'running', statusId: 'working' })
       .where(eq(issuesTable.id, issue.id))
+    await invalidateIssueCache(projectId, issue.id)
 
     // Run startup reconciliation
     const { startupReconciliation } = await import('../src/engines/reconciler')
@@ -340,7 +343,7 @@ describe('Follow-up collects and merges pending messages', () => {
     const logsResult = await get<LogsResponse>(`/api/projects/${projectId}/issues/${issue.id}/logs`)
     const logs = expectSuccess(logsResult)
     const pendingMsgs = logs.logs.filter(
-      (l) => l.entryType === 'user-message' && l.metadata?.pending === true,
+      (l) => l.entryType === 'user-message' && l.metadata?.type === 'pending',
     )
     expect(pendingMsgs.length).toBe(0)
   })

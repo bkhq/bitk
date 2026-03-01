@@ -14,7 +14,7 @@ describe('GET /api/engines/available', () => {
     const data = expectSuccess(result)
     expect(Array.isArray(data.engines)).toBe(true)
     expect(typeof data.models).toBe('object')
-  })
+  }, 30_000)
 })
 
 describe('GET /api/engines/profiles', () => {

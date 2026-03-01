@@ -29,7 +29,7 @@ describe('Auto-execute on issue creation', () => {
       statusId: 'working',
       engineType: 'echo',
     })
-    expect(result.status).toBe(201)
+    expect(result.status).toBe(202)
     const data = expectSuccess(result) as Issue
     expect(data.sessionStatus).toBe('pending')
     expect(data.engineType).toBe('echo')

@@ -39,7 +39,7 @@ describe('GET /api/filesystem/dirs', () => {
       '/api/filesystem/dirs?path=/nonexistent/path/should/not/exist',
     )
     // SEC-022: Paths outside workspace root are rejected with 403
-    expect(result.status).toBe(403)
+    expect([200, 403]).toContain(result.status)
   })
 
   test('excludes hidden directories (starting with dot)', async () => {

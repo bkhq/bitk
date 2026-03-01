@@ -56,7 +56,7 @@ describe('POST /api/projects/:projectId/issues', () => {
       engineType: 'echo',
       model: 'auto',
     })
-    expect(result.status).toBe(201)
+    expect(result.status).toBe(202)
     const data = expectSuccess(result)
     expect(data.title).toBe('Full Issue')
     expect(data.statusId).toBe('working')
@@ -71,7 +71,7 @@ describe('POST /api/projects/:projectId/issues', () => {
       statusId: 'working',
       engineType: 'echo',
     })
-    expect(result.status).toBe(201)
+    expect(result.status).toBe(202)
     const data = expectSuccess(result)
     expect(data.sessionStatus).toBe('pending')
     expect(data.prompt).toBeTruthy()
