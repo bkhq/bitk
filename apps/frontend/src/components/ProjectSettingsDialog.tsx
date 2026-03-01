@@ -19,9 +19,6 @@ import { Textarea } from '@/components/ui/textarea'
 import { useDeleteProject, useUpdateProject } from '@/hooks/use-kanban'
 import type { Project } from '@/types/kanban'
 
-const inputClass =
-  'w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring'
-
 function DeleteProjectDialog({
   open,
   onOpenChange,
@@ -52,9 +49,7 @@ function DeleteProjectDialog({
           <DialogTitle className="text-destructive">
             {t('project.delete')}
           </DialogTitle>
-          <DialogDescription className="mt-1">
-            {t('project.deleteConfirm')}
-          </DialogDescription>
+          <DialogDescription>{t('project.deleteConfirm')}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3">
@@ -66,7 +61,7 @@ function DeleteProjectDialog({
             value={confirmName}
             onChange={(e) => setConfirmName(e.target.value)}
             placeholder={t('project.deleteConfirmPlaceholder')}
-            className={inputClass}
+            className="w-full"
           />
           {error ? <p className="text-sm text-destructive">{error}</p> : null}
         </div>
@@ -77,8 +72,12 @@ function DeleteProjectDialog({
           </Button>
           <Button
             variant="destructive"
-            disabled={confirmName !== project.name || deleteProject.isPending}
+            disabled={
+              confirmName.trim() !== project.name.trim() ||
+              deleteProject.isPending
+            }
             onClick={() => {
+              setError('')
               deleteProject.mutate(project.id, {
                 onSuccess: onDeleted,
                 onError: (err) => setError(err.message),
@@ -165,7 +164,7 @@ export function ProjectSettingsDialog({
           <DialogHeader>
             <div>
               <DialogTitle>{t('project.settings')}</DialogTitle>
-              <DialogDescription className="mt-1">
+              <DialogDescription>
                 {t('project.settingsDescription')}
               </DialogDescription>
             </div>
@@ -174,8 +173,7 @@ export function ProjectSettingsDialog({
           <FieldGroup>
             <Field>
               <Label>
-                <span className="text-destructive">*</span>
-                {t('project.name')}
+                {t('project.name')} <span className="text-destructive">*</span>
               </Label>
               <Input
                 type="text"
@@ -183,7 +181,7 @@ export function ProjectSettingsDialog({
                 onChange={(e) => setName(e.target.value)}
                 placeholder={t('project.namePlaceholder')}
                 autoFocus
-                className={inputClass}
+                className="w-full"
               />
             </Field>
 
@@ -194,7 +192,7 @@ export function ProjectSettingsDialog({
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder={t('project.descriptionPlaceholder')}
                 rows={3}
-                className={`${inputClass} resize-none`}
+                className="w-full resize-none"
               />
             </Field>
 
@@ -206,7 +204,7 @@ export function ProjectSettingsDialog({
                   value={directory}
                   onChange={(e) => setDirectory(e.target.value)}
                   placeholder={t('project.directoryPlaceholder')}
-                  className={inputClass}
+                  className="w-full"
                 />
                 <Button
                   onClick={() => setDirPickerOpen(true)}
@@ -214,7 +212,7 @@ export function ProjectSettingsDialog({
                   size="icon"
                   title={t('project.browseDirectories')}
                 >
-                  <FolderOpen className="h-4 w-4 text-muted-foreground" />
+                  <FolderOpen className="size-4 text-muted-foreground" />
                 </Button>
               </div>
               <DirectoryPicker
@@ -232,7 +230,7 @@ export function ProjectSettingsDialog({
                 value={repositoryUrl}
                 onChange={(e) => setRepositoryUrl(e.target.value)}
                 placeholder={t('project.repositoryUrlPlaceholder')}
-                className={inputClass}
+                className="w-full"
               />
             </Field>
 

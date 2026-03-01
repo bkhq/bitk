@@ -54,11 +54,6 @@ const config = defineConfig({
     tailwindcss(),
     viteReact(),
   ],
-  resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
-    },
-  },
   build: {
     rollupOptions: {
       output: {
@@ -73,7 +68,11 @@ const config = defineConfig({
             return 'vendor-router'
           if (pkg === '@tanstack/react-query') return 'vendor-query'
           if (pkg.startsWith('@dnd-kit/')) return 'vendor-dnd'
-          if (pkg === 'radix-ui' || pkg === 'lucide-react' || pkg === 'shadcn')
+          if (
+            pkg === 'radix-ui' ||
+            pkg.startsWith('@radix-ui/') ||
+            pkg === 'lucide-react'
+          )
             return 'vendor-ui'
           if (pkg === '@pierre/diffs') return 'vendor-diff'
           if (pkg === 'shiki' || pkg.startsWith('@shikijs/'))

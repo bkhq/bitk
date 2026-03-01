@@ -84,9 +84,6 @@ export function CreateProjectDialog({
     )
   }
 
-  const inputClass =
-    'w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring'
-
   return (
     <Dialog
       open={open}
@@ -106,8 +103,7 @@ export function CreateProjectDialog({
         <FieldGroup>
           <Field>
             <Label>
-              <span className="text-destructive">*</span>
-              {t('project.name')}
+              {t('project.name')} <span className="text-destructive">*</span>
             </Label>
             <Input
               type="text"
@@ -115,7 +111,7 @@ export function CreateProjectDialog({
               onChange={(e) => setName(e.target.value)}
               placeholder={t('project.namePlaceholder')}
               autoFocus
-              className={inputClass}
+              className="w-full"
             />
           </Field>
 
@@ -128,7 +124,7 @@ export function CreateProjectDialog({
                 setAlias(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ''))
               }
               placeholder={t('project.aliasPlaceholder')}
-              className={inputClass}
+              className="w-full"
             />
             <p className="text-[11px] text-muted-foreground">
               {t('project.aliasHint')}
@@ -142,7 +138,7 @@ export function CreateProjectDialog({
               onChange={(e) => setDescription(e.target.value)}
               placeholder={t('project.descriptionPlaceholder')}
               rows={3}
-              className={`${inputClass} resize-none`}
+              className="w-full resize-none"
             />
           </Field>
 
@@ -154,7 +150,7 @@ export function CreateProjectDialog({
                 value={directory}
                 onChange={(e) => setDirectory(e.target.value)}
                 placeholder={t('project.directoryPlaceholder')}
-                className={inputClass}
+                className="w-full"
               />
               <Button
                 onClick={() => setDirPickerOpen(true)}
@@ -180,7 +176,7 @@ export function CreateProjectDialog({
               value={repositoryUrl}
               onChange={(e) => setRepositoryUrl(e.target.value)}
               placeholder={t('project.repositoryUrlPlaceholder')}
-              className={inputClass}
+              className="w-full"
             />
           </Field>
 

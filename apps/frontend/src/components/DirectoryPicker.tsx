@@ -109,13 +109,13 @@ export function DirectoryPicker({
         <DialogHeader>
           <div>
             <DialogTitle>{t('directory.browse')}</DialogTitle>
-            <DialogDescription className="mt-1">
+            <DialogDescription>
               {t('directory.browseDescription')}
             </DialogDescription>
           </div>
         </DialogHeader>
 
-        <div className="">
+        <div>
           {/* Current path */}
           <div className="mb-3 flex items-center gap-2">
             <div className="flex-1 rounded-md border bg-muted/50 px-3 py-2 text-xs font-mono text-muted-foreground break-all">
