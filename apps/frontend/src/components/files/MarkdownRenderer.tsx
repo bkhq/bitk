@@ -40,7 +40,7 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
   )
 
   return (
-    <div className="prose prose-sm dark:prose-invert max-w-none px-6 py-5 prose-headings:font-semibold prose-headings:tracking-tight prose-a:text-primary prose-a:underline-offset-2 prose-pre:p-0 prose-pre:m-0 prose-img:rounded-md prose-table:text-sm prose-th:text-left prose-th:font-medium prose-td:align-top">
+    <div className="prose prose-sm dark:prose-invert max-w-none px-6 py-5 prose-headings:font-semibold prose-headings:tracking-tight prose-a:text-primary prose-a:underline-offset-2 prose-pre:p-0 prose-pre:m-0 prose-img:rounded-md prose-table:text-xs prose-th:text-left prose-th:font-medium prose-td:align-top prose-code:text-xs prose-code:before:content-none prose-code:after:content-none">
       <Markdown
         remarkPlugins={[remarkGfm]}
         components={{
