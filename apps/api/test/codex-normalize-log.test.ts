@@ -35,9 +35,9 @@ describe('CodexExecutor.normalizeLog', () => {
       })
       expect(entry).not.toBeNull()
       expect(entry!.entryType).toBe('tool-use')
-      expect(entry!.content).toBe('Tool: command')
-      expect(entry!.metadata?.toolName).toBe('command')
-      expect(entry!.metadata?.itemId).toBe('cmd-1')
+      expect(entry!.content).toBe('Tool: Bash')
+      expect(entry!.metadata?.toolName).toBe('Bash')
+      expect(entry!.metadata?.toolCallId).toBe('cmd-1')
     })
 
     test('fileChange returns tool-use with path', () => {
@@ -46,7 +46,7 @@ describe('CodexExecutor.normalizeLog', () => {
       })
       expect(entry).not.toBeNull()
       expect(entry!.entryType).toBe('tool-use')
-      expect(entry!.content).toBe('Tool: fileChange')
+      expect(entry!.content).toBe('Tool: Edit')
       expect(entry!.metadata?.path).toBe('/tmp/test.ts')
     })
 
