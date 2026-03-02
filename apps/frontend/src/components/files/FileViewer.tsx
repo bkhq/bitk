@@ -1,3 +1,4 @@
+import DOMPurify from 'dompurify'
 import { ArrowLeft, Code, Eye, FileWarning } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -186,8 +187,8 @@ export function FileViewer({ file, onBack }: FileViewerProps) {
         ) : (
           <div
             className="shiki-line-numbers text-xs [&_pre]:!bg-transparent [&_pre]:px-2 [&_pre]:py-1.5 [&_pre]:overflow-x-auto [&_code]:leading-snug"
-            // biome-ignore lint/security/noDangerouslySetInnerHtml: Shiki generates safe HTML
-            dangerouslySetInnerHTML={{ __html: html }}
+            // biome-ignore lint/security/noDangerouslySetInnerHtml: sanitized by DOMPurify
+            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(html) }}
           />
         )}
       </div>

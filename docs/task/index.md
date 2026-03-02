@@ -2,11 +2,11 @@
 
 > Updated: 2026-03-02 17:00 UTC
 
-- [-] **WT-001 重构 Worktree 系统** `P1` - owner: claude - file: `docs/task/WT-001.md`
+- [x] **WT-001 重构 Worktree 系统** `P1` - owner: claude - file: `docs/task/WT-001.md`
 - [x] **FILE-001 添加 GitHub 风格的项目文件浏览器** `P1` - owner: claude - file: `docs/task/FILE-001.md`
 
 - [x] **ENG-006 Optimize frontend bundle size and heavy chunks** `P1` - owner: codex - file: `docs/task/ENG-006.md`
-- [-] **FEAT-005 Add global web terminal (xterm.js + Bun native PTY)** `P1` - owner: claude - file: `docs/task/FEAT-005.md`
+- [x] **FEAT-005 Add global web terminal (xterm.js + Bun native PTY)** `P1` - owner: claude - file: `docs/task/FEAT-005.md`
 - [x] **BUG-080 Fix duplicate Claude process spawning for same session** `P0` - owner: claude - file: `docs/task/BUG-080.md`
 - [x] **ENG-005 Add docs/tmp directory to git ignore rules** `P3` - owner: codex - file: `docs/task/ENG-005.md`
 - [x] **ENG-004 Move legacy task.md from repository root to docs/task.md** `P2` - owner: codex - file: `docs/task/ENG-004.md`

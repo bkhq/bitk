@@ -1,6 +1,6 @@
 # FEAT-005 Add global web terminal (xterm.js + Bun native PTY)
 
-- status: in_progress
+- status: completed
 - priority: P1
 - owner: claude
 - createdAt: 2026-02-26 21:28 UTC

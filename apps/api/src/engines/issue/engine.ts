@@ -64,6 +64,7 @@ export class IssueEngine {
       issueSettledCallbacks: new Map(),
       nextCallbackId: 0,
       lastErrors: new Map(),
+      lockDepth: new Map(),
       // Placeholder — injected below after ctx is created
       followUpIssue: null,
     }

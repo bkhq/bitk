@@ -20,6 +20,8 @@ export interface EngineContext {
   readonly issueSettledCallbacks: Map<number, IssueSettledCallback>
   nextCallbackId: number
   readonly lastErrors: Map<string, string>
+  /** Per-issue lock queue depth tracking. */
+  readonly lockDepth: Map<string, number>
   /** Injected function reference — breaks lifecycle → orchestration cycle. */
   followUpIssue:
     | ((

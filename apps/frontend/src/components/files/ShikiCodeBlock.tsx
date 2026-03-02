@@ -1,3 +1,4 @@
+import DOMPurify from 'dompurify'
 import { useEffect, useState } from 'react'
 import { codeToHtml } from '@/lib/shiki'
 
@@ -31,8 +32,8 @@ export function ShikiCodeBlock({ code, lang }: ShikiCodeBlockProps) {
   return (
     <div
       className="rounded-md bg-popover overflow-hidden [&_.shiki]:!bg-transparent [&_.shiki]:p-3 [&_.shiki]:text-xs [&_.shiki]:overflow-x-auto [&_code]:leading-snug"
-      // biome-ignore lint/security/noDangerouslySetInnerHtml: Shiki generates safe HTML
-      dangerouslySetInnerHTML={{ __html: html }}
+      // biome-ignore lint/security/noDangerouslySetInnerHtml: sanitized by DOMPurify
+      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(html) }}
     />
   )
 }

@@ -15,7 +15,7 @@ export async function withIssueLock<T>(
   // Count current queue depth for this issue
   const currentTail = ctx.issueOpLocks.get(issueId)
   if (currentTail) {
-    const depth = (ctx as any).__lockDepth?.get(issueId) ?? 0
+    const depth = ctx.lockDepth.get(issueId) ?? 0
     if (depth >= MAX_QUEUE_DEPTH) {
       throw new Error(
         `Lock queue full for issue ${issueId} (max ${MAX_QUEUE_DEPTH})`,
@@ -24,11 +24,7 @@ export async function withIssueLock<T>(
   }
 
   // Track queue depth
-  if (!(ctx as any).__lockDepth) {
-    ;(ctx as any).__lockDepth = new Map<string, number>()
-  }
-  const depthMap = (ctx as any).__lockDepth as Map<string, number>
-  depthMap.set(issueId, (depthMap.get(issueId) ?? 0) + 1)
+  ctx.lockDepth.set(issueId, (ctx.lockDepth.get(issueId) ?? 0) + 1)
 
   const tail = currentTail ?? Promise.resolve()
   let release!: () => void
@@ -40,16 +36,21 @@ export async function withIssueLock<T>(
 
   // Acquire lock with timeout
   const acquireStart = Date.now()
+  let acquireTimer: ReturnType<typeof setTimeout> | undefined
   const acquired = await Promise.race([
     tail.then(() => true as const),
-    new Promise<'timeout'>((resolve) =>
-      setTimeout(() => resolve('timeout'), LOCK_ACQUIRE_TIMEOUT_MS),
-    ),
+    new Promise<'timeout'>((resolve) => {
+      acquireTimer = setTimeout(
+        () => resolve('timeout'),
+        LOCK_ACQUIRE_TIMEOUT_MS,
+      )
+    }),
   ])
+  if (acquireTimer !== undefined) clearTimeout(acquireTimer)
 
   if (acquired === 'timeout') {
     release()
-    depthMap.set(issueId, (depthMap.get(issueId) ?? 1) - 1)
+    ctx.lockDepth.set(issueId, (ctx.lockDepth.get(issueId) ?? 1) - 1)
     if (ctx.issueOpLocks.get(issueId) === newTail) {
       ctx.issueOpLocks.delete(issueId)
     }
@@ -63,12 +64,13 @@ export async function withIssueLock<T>(
     logger.warn({ issueId, waitMs }, 'issue_lock_slow_acquire')
   }
 
+  let execTimer: ReturnType<typeof setTimeout> | undefined
   try {
     // Execute with timeout
     const result = await Promise.race([
       fn(),
-      new Promise<never>((_, reject) =>
-        setTimeout(
+      new Promise<never>((_, reject) => {
+        execTimer = setTimeout(
           () =>
             reject(
               new Error(
@@ -76,15 +78,16 @@ export async function withIssueLock<T>(
               ),
             ),
           LOCK_EXECUTION_TIMEOUT_MS,
-        ),
-      ),
+        )
+      }),
     ])
     return result
   } finally {
+    if (execTimer !== undefined) clearTimeout(execTimer)
     release()
-    depthMap.set(issueId, (depthMap.get(issueId) ?? 1) - 1)
-    if ((depthMap.get(issueId) ?? 0) <= 0) {
-      depthMap.delete(issueId)
+    ctx.lockDepth.set(issueId, (ctx.lockDepth.get(issueId) ?? 1) - 1)
+    if ((ctx.lockDepth.get(issueId) ?? 0) <= 0) {
+      ctx.lockDepth.delete(issueId)
     }
     if (ctx.issueOpLocks.get(issueId) === newTail) {
       ctx.issueOpLocks.delete(issueId)

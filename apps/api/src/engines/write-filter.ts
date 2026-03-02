@@ -1,3 +1,4 @@
+import { z } from 'zod'
 import { getAppSetting } from '@/db/helpers'
 
 export interface WriteFilterRule {
@@ -6,6 +7,15 @@ export interface WriteFilterRule {
   match: string
   enabled: boolean
 }
+
+const writeFilterRuleSchema = z.object({
+  id: z.string(),
+  type: z.literal('tool-name'),
+  match: z.string(),
+  enabled: z.boolean(),
+})
+
+const writeFilterRulesSchema = z.array(writeFilterRuleSchema)
 
 export const WRITE_FILTER_RULES_KEY = 'write-filter:rules'
 
@@ -19,7 +29,8 @@ export async function loadFilterRules(): Promise<WriteFilterRule[]> {
   const raw = await getAppSetting(WRITE_FILTER_RULES_KEY)
   if (!raw) return DEFAULT_FILTER_RULES
   try {
-    return JSON.parse(raw) as WriteFilterRule[]
+    const parsed = writeFilterRulesSchema.safeParse(JSON.parse(raw))
+    return parsed.success ? parsed.data : DEFAULT_FILTER_RULES
   } catch {
     return DEFAULT_FILTER_RULES
   }

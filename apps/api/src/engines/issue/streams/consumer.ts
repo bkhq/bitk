@@ -108,8 +108,8 @@ export async function consumeStderr(
   stream: ReadableStream<Uint8Array>,
   callbacks: Pick<StreamCallbacks, 'getManaged' | 'getTurnIndex' | 'onEntry'>,
 ): Promise<void> {
+  const reader = stream.getReader()
   try {
-    const reader = stream.getReader()
     const decoder = new TextDecoder()
     let buffer = ''
 
@@ -124,10 +124,7 @@ export async function consumeStderr(
       for (const line of lines) {
         if (!line.trim()) continue
         const managed = callbacks.getManaged()
-        if (!managed) {
-          reader.releaseLock()
-          return
-        }
+        if (!managed) return
         pushStderrEntry(
           managed,
           line,
@@ -150,5 +147,7 @@ export async function consumeStderr(
     }
   } catch {
     // Stderr stream closed or error — ignore
+  } finally {
+    reader.releaseLock()
   }
 }

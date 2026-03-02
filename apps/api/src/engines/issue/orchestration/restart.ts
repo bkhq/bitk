@@ -101,6 +101,7 @@ export async function restartIssue(
       ctx,
       executionId,
       issueId,
+      engineType,
       spawned,
       (line) => normalizer.parse(line),
       turnIndex,

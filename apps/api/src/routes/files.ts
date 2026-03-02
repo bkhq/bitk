@@ -2,7 +2,7 @@ import { readdir, stat } from 'node:fs/promises'
 import { basename, resolve } from 'node:path'
 import type { Context } from 'hono'
 import { Hono } from 'hono'
-import { findProject } from '@/db/helpers'
+import { findProject, getAppSetting } from '@/db/helpers'
 
 interface FileEntry {
   name: string
@@ -76,6 +76,21 @@ async function resolveProjectPath(c: Context, relativePath: string) {
   }
 
   const root = resolve(project.directory)
+
+  // SEC: Validate project directory is within configured workspace root
+  const workspaceRoot = await getAppSetting('workspace:defaultPath')
+  if (workspaceRoot && workspaceRoot !== '/') {
+    const resolvedWs = resolve(workspaceRoot)
+    if (!root.startsWith(`${resolvedWs}/`) && root !== resolvedWs) {
+      return {
+        error: c.json(
+          { success: false, error: 'Project directory is outside workspace' },
+          403,
+        ),
+      }
+    }
+  }
+
   const target = resolve(root, relativePath)
 
   if (!isInsideRoot(target, root)) {
