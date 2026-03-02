@@ -149,6 +149,8 @@ export interface SpawnedProcess {
   }
   /** Override the caller-provided externalSessionId (used by engines that generate their own session IDs, e.g. Codex thread IDs). */
   externalSessionId?: string
+  /** The full spawn command for display in the process manager */
+  spawnCommand?: string
 }
 
 // Structured tool detail (persisted in issue_logs_tools_call)

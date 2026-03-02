@@ -251,6 +251,32 @@ message.post('/:id/follow-up', async (c) => {
     return c.json({ success: true, data: { issueId, messageId, queued: true } })
   }
 
+  // When issue is in review and the session is completed/failed/cancelled,
+  // queue message as pending. It will be auto-processed on next execute/restart.
+  if (
+    issue.statusId === 'review' &&
+    issue.sessionStatus &&
+    ['completed', 'failed', 'cancelled'].includes(issue.sessionStatus) &&
+    !issueEngine.hasActiveProcessForIssue(issueId)
+  ) {
+    const messageId = await persistPendingMessage(
+      issueId,
+      prompt,
+      pendingMeta('pending'),
+    )
+    if (savedFiles.length > 0)
+      await insertAttachmentRecords(issueId, messageId, savedFiles)
+    logger.debug(
+      {
+        issueId,
+        sessionStatus: issue.sessionStatus,
+        promptChars: prompt.length,
+      },
+      'followup_queued_review_completed',
+    )
+    return c.json({ success: true, data: { issueId, messageId, queued: true } })
+  }
+
   try {
     const guard = await ensureWorking(issue)
     if (!guard.ok) {
@@ -294,6 +320,34 @@ message.post('/:id/follow-up', async (c) => {
       },
     })
   } catch (error) {
+    // When follow-up fails (e.g. process failed to start), save the current
+    // message as pending so it won't be lost. It will be auto-processed on
+    // the next execute/restart.
+    logger.warn(
+      {
+        issueId,
+        error: error instanceof Error ? error.message : String(error),
+      },
+      'followup_failed_saving_as_pending',
+    )
+    try {
+      const messageId = await persistPendingMessage(
+        issueId,
+        prompt,
+        pendingMeta('pending'),
+      )
+      if (savedFiles.length > 0)
+        await insertAttachmentRecords(issueId, messageId, savedFiles)
+      return c.json({
+        success: true,
+        data: { issueId, messageId, queued: true },
+      })
+    } catch (persistError) {
+      logger.error(
+        { issueId, error: persistError },
+        'followup_failed_persist_pending_failed',
+      )
+    }
     return c.json(
       {
         success: false,

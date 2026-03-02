@@ -557,3 +557,16 @@ export function useProjectProcesses(projectId: string, enabled = true) {
     refetchInterval: 5000,
   })
 }
+
+export function useTerminateProcess(projectId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (issueId: string) =>
+      kanbanApi.terminateProcess(projectId, issueId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.projectProcesses(projectId),
+      })
+    },
+  })
+}

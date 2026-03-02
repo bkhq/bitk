@@ -20,6 +20,7 @@ import {
   restartIssue,
   restartStaleSessions,
 } from './orchestration'
+import { terminateProcess } from './process/cancel'
 import {
   cancelAll,
   getActiveProcessesList,
@@ -195,6 +196,10 @@ export class IssueEngine {
 
   async cancelAll(): Promise<void> {
     return cancelAll(this.ctx)
+  }
+
+  async terminateProcess(issueId: string): Promise<void> {
+    return terminateProcess(this.ctx, issueId)
   }
 
   // ---- Error tracking ----

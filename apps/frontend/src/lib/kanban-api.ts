@@ -330,6 +330,12 @@ export const kanbanApi = {
   getProjectProcesses: (projectId: string) =>
     get<ProjectProcessesResponse>(`/api/projects/${projectId}/processes`),
 
+  terminateProcess: (projectId: string, issueId: string) =>
+    post<{ issueId: string; status: string }>(
+      `/api/projects/${projectId}/processes/${issueId}/terminate`,
+      {},
+    ),
+
   rawFileUrl: (projectId: string, path: string) => {
     const encodedPath = path.split('/').map(encodeURIComponent).join('/')
     return `/api/projects/${projectId}/files/raw/${encodedPath}`

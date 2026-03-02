@@ -330,6 +330,9 @@
     "cancelling": "取消中...",
     "restart": "重启",
     "restarting": "重启中...",
+    "terminate": "强制终止",
+    "terminating": "终止中...",
+    "command": "启动命令",
     "turnInFlight": "处理中",
     "idle": "空闲",
     "stale": "异常"

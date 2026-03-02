@@ -174,10 +174,10 @@ command.post('/:id/restart', async (c) => {
     if (!guard.ok) {
       return c.json({ success: false, error: guard.reason! }, 400)
     }
-    // Discard queued messages — restart means fresh start
+    // Collect pending messages so they are processed by the restarted session
     const { pendingIds } = await collectPendingMessages(issueId, '')
-    await markPendingMessagesDispatched(pendingIds)
     const result = await issueEngine.restartIssue(issueId)
+    await markPendingMessagesDispatched(pendingIds)
     return c.json({
       success: true,
       data: { executionId: result.executionId, issueId },

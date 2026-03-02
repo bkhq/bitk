@@ -330,6 +330,9 @@
     "cancelling": "Cancelling...",
     "restart": "Restart",
     "restarting": "Restarting...",
+    "terminate": "Terminate",
+    "terminating": "Terminating...",
+    "command": "Command",
     "turnInFlight": "Processing",
     "idle": "Idle",
     "stale": "Stale"

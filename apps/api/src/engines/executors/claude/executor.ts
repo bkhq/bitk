@@ -152,6 +152,7 @@ export class ClaudeCodeExecutor implements EngineExecutor {
       stderr: proc.stderr as ReadableStream<Uint8Array>,
       cancel: () => handler.interrupt(),
       protocolHandler: handler,
+      spawnCommand: [cmd.program, ...cmd.args].join(' '),
     }
   }
 
@@ -230,6 +231,7 @@ export class ClaudeCodeExecutor implements EngineExecutor {
       stderr: proc.stderr as ReadableStream<Uint8Array>,
       cancel: () => handler.interrupt(),
       protocolHandler: handler,
+      spawnCommand: [cmd.program, ...cmd.args].join(' '),
     }
   }
 

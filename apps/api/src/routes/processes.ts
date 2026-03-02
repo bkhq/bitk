@@ -4,6 +4,7 @@ import { db } from '@/db'
 import { findProject } from '@/db/helpers'
 import { issues as issuesTable } from '@/db/schema'
 import { issueEngine } from '@/engines/issue'
+import { logger } from '@/logger'
 import { toISO } from '@/utils/date'
 
 const processes = new Hono()
@@ -29,6 +30,8 @@ processes.get('/', async (c) => {
     model: string | null
     startedAt: string | null
     turnInFlight: boolean
+    spawnCommand: string | null
+    lastIdleAt: string | null
   }> = []
 
   if (issueIds.length > 0) {
@@ -58,6 +61,8 @@ processes.get('/', async (c) => {
         model: issue.model ?? null,
         startedAt: p.startedAt.toISOString(),
         turnInFlight: p.turnInFlight,
+        spawnCommand: p.spawnCommand ?? null,
+        lastIdleAt: p.lastIdleAt?.toISOString() ?? null,
       })
     }
   }
@@ -87,10 +92,54 @@ processes.get('/', async (c) => {
       model: issue.model ?? null,
       startedAt: toISO(issue.updatedAt),
       turnInFlight: false,
+      spawnCommand: null,
+      lastIdleAt: null,
     })
   }
 
   return c.json({ success: true, data: { processes: result } })
+})
+
+// POST /api/projects/:projectId/processes/:issueId/terminate
+processes.post('/:issueId/terminate', async (c) => {
+  const projectId = c.req.param('projectId')
+  const project = await findProject(projectId)
+  if (!project) {
+    return c.json({ success: false, error: 'Project not found' }, 404)
+  }
+
+  const issueId = c.req.param('issueId')!
+  const [issue] = await db
+    .select()
+    .from(issuesTable)
+    .where(
+      and(
+        eq(issuesTable.id, issueId),
+        eq(issuesTable.projectId, project.id),
+        eq(issuesTable.isDeleted, 0),
+      ),
+    )
+
+  if (!issue) {
+    return c.json({ success: false, error: 'Issue not found' }, 404)
+  }
+
+  try {
+    await issueEngine.terminateProcess(issueId)
+    return c.json({ success: true, data: { issueId, status: 'terminated' } })
+  } catch (error) {
+    logger.error(
+      { issueId, error },
+      'terminate_process_failed',
+    )
+    return c.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Terminate failed',
+      },
+      400,
+    )
+  }
 })
 
 export default processes

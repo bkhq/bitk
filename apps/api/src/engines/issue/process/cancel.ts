@@ -1,5 +1,8 @@
+import { autoMoveToReview, updateIssueSession } from '@/engines/engine-store'
 import type { EngineContext } from '@/engines/issue/context'
-import { emitStateChange } from '@/engines/issue/events'
+import { emitIssueSettled, emitStateChange } from '@/engines/issue/events'
+import { cleanupDomainData } from '@/engines/issue/process/state'
+import { dispatch } from '@/engines/issue/state'
 import { getPidFromManaged } from '@/engines/issue/utils/pid'
 import { logger } from '@/logger'
 
@@ -54,4 +57,41 @@ export async function cancel(
     { issueId: managed.issueId, executionId, pid: getPidFromManaged(managed) },
     'issue_process_cancel_finished',
   )
+}
+
+// ---------- Force terminate ----------
+
+/**
+ * Force-terminate a process regardless of its current state.
+ * Works on running, spawning, completed, failed, or cancelled processes.
+ * Updates DB session status and moves the issue to review.
+ */
+export async function terminateProcess(
+  ctx: EngineContext,
+  issueId: string,
+): Promise<void> {
+  // Kill active processes (spawning or running)
+  const active = ctx.pm.getActiveInGroup(issueId)
+  for (const entry of active) {
+    const managed = entry.meta
+    logger.info(
+      {
+        issueId,
+        executionId: entry.id,
+        pid: getPidFromManaged(managed),
+        state: entry.state,
+      },
+      'force_terminate_active_process',
+    )
+    dispatch(managed, { type: 'CLEAR_PENDING_INPUTS' })
+    managed.state = 'cancelled'
+    emitStateChange(ctx, issueId, entry.id, 'cancelled')
+    ctx.pm.forceKill(entry.id)
+    cleanupDomainData(ctx, entry.id)
+  }
+
+  await updateIssueSession(issueId, { sessionStatus: 'cancelled' })
+  await autoMoveToReview(issueId)
+  emitIssueSettled(ctx, issueId, '', 'cancelled')
+  logger.info({ issueId }, 'force_terminate_completed')
 }

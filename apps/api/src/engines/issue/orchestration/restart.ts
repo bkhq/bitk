@@ -1,4 +1,8 @@
 import { cleanupStaleSessions } from '@/db/helpers'
+import {
+  collectPendingWithAttachments,
+  markPendingMessagesDispatched,
+} from '@/db/pending-messages'
 import { getIssueWithSession, updateIssueSession } from '@/engines/engine-store'
 import { engineRegistry } from '@/engines/executors'
 import type { EngineContext } from '@/engines/issue/context'
@@ -39,6 +43,10 @@ export async function restartIssue(
     const executor = engineRegistry.get(engineType)
     if (!executor) throw new Error(`No executor for engine type: ${engineType}`)
 
+    // Collect pending messages to merge into the restart prompt
+    const { prompt: pendingPrompt, pendingIds } =
+      await collectPendingWithAttachments(issueId)
+
     await updateIssueSession(issueId, { sessionStatus: 'running' })
 
     const baseDir = await resolveWorkingDir(issue.projectId)
@@ -61,9 +69,14 @@ export async function restartIssue(
     const permOptions = getPermissionOptions(engineType)
     const executionId = crypto.randomUUID()
 
+    // Merge pending messages with the original prompt
+    const effectivePrompt = pendingPrompt
+      ? [issue.sessionFields.prompt, pendingPrompt].filter(Boolean).join('\n\n')
+      : issue.sessionFields.prompt
+
     const spawnOpts = {
       workingDir,
-      prompt: issue.sessionFields.prompt,
+      prompt: effectivePrompt,
       model: issue.sessionFields.model ?? undefined,
       permissionMode: permOptions.permissionMode,
       projectId: issue.projectId,
@@ -96,6 +109,15 @@ export async function restartIssue(
       () => handleTurnCompleted(ctx, issueId, executionId),
     )
     monitorCompletion(ctx, executionId, issueId, engineType, false)
+
+    // Mark pending messages as dispatched after successful spawn
+    if (pendingIds.length > 0) {
+      await markPendingMessagesDispatched(pendingIds)
+      logger.info(
+        { issueId, pendingCount: pendingIds.length },
+        'restart_pending_messages_dispatched',
+      )
+    }
 
     return { executionId }
   })

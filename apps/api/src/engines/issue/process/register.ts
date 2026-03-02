@@ -42,6 +42,7 @@ export function register(
     turnSettled: false,
     metaTurn,
     slashCommands: [],
+    spawnCommand: process.spawnCommand,
     worktreePath,
     pendingInputs: [],
   }

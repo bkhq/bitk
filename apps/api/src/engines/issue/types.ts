@@ -29,6 +29,10 @@ export interface ManagedProcess {
    *  All log entries in this turn will be tagged with `type: 'system'` and hidden by isVisibleForMode(). */
   metaTurn: boolean
   slashCommands: string[]
+  /** The full command used to spawn this process (e.g. "claude -p --output-format=stream-json ...") */
+  spawnCommand?: string
+  /** Timestamp when the last turn completed and the process became idle */
+  lastIdleAt?: Date
   worktreePath?: string
   pendingInputs: Array<{
     prompt: string

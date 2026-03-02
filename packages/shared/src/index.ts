@@ -230,6 +230,8 @@ export interface ProcessInfo {
   model: string | null
   startedAt: string | null
   turnInFlight: boolean
+  spawnCommand: string | null
+  lastIdleAt: string | null
 }
 
 export interface ProjectProcessesResponse {

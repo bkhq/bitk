@@ -44,6 +44,10 @@ export function handleTurnCompleted(
   // and can receive follow-up input. Keeping state as 'running' ensures
   // getActiveProcessForIssue() can find it, preventing duplicate process spawns.
   // The turnSettled flag tells monitorCompletion() to just clean up on exit.
+
+  // Track when the process became idle for idle timeout cleanup
+  managed.lastIdleAt = new Date()
+
   const finalStatus = managed.logicalFailure ? 'failed' : 'completed'
   emitStateChange(ctx, issueId, executionId, finalStatus as ProcessStatus)
 

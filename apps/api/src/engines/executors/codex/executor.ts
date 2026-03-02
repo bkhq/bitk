@@ -393,6 +393,7 @@ export class CodexExecutor implements EngineExecutor {
       // Expose the real Codex thread ID so the issue engine stores it
       // instead of the pre-generated UUID (needed for follow-up/resume).
       externalSessionId: handler.threadId,
+      spawnCommand: cmd.join(' '),
     }
   }
 
@@ -456,6 +457,7 @@ export class CodexExecutor implements EngineExecutor {
         },
       },
       externalSessionId: handler.threadId,
+      spawnCommand: cmd.join(' '),
     }
   }
 
