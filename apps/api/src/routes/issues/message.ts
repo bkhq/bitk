@@ -251,46 +251,16 @@ message.post('/:id/follow-up', async (c) => {
     return c.json({ success: true, data: { issueId, messageId, queued: true } })
   }
 
-  // When issue is in review and the session is completed/failed/cancelled,
-  // save message as pending then start a follow-up process to handle it.
-  let savedAsPending = false
-  if (
-    issue.statusId === 'review' &&
-    issue.sessionStatus &&
-    ['completed', 'failed', 'cancelled'].includes(issue.sessionStatus) &&
-    !issueEngine.hasActiveProcessForIssue(issueId)
-  ) {
-    const messageId = await persistPendingMessage(
-      issueId,
-      prompt,
-      pendingMeta('pending'),
-    )
-    if (savedFiles.length > 0)
-      await insertAttachmentRecords(issueId, messageId, savedFiles)
-    savedAsPending = true
-    logger.debug(
-      {
-        issueId,
-        sessionStatus: issue.sessionStatus,
-        promptChars: prompt.length,
-      },
-      'followup_review_pending_triggering_process',
-    )
-    // Fall through to start a process that picks up the pending message
-  }
-
   try {
     const guard = await ensureWorking(issue)
     if (!guard.ok) {
       return c.json({ success: false, error: guard.reason! }, 400)
     }
-    // When message was already saved as pending, use empty base so
-    // collectPendingMessages picks it up without duplication.
     const { prompt: effectivePrompt, pendingIds } =
-      await collectPendingMessages(issueId, savedAsPending ? '' : fullPrompt)
+      await collectPendingMessages(issueId, fullPrompt)
     const isCommand = prompt.startsWith('/')
     const followUpMeta: Record<string, unknown> = {
-      ...(savedAsPending ? {} : attachmentsMeta),
+      ...attachmentsMeta,
       ...(parsed.meta
         ? { type: 'system' }
         : isCommand
@@ -304,10 +274,8 @@ message.post('/:id/follow-up', async (c) => {
       parsed.model,
       parsed.permissionMode as 'auto' | 'supervised' | 'plan' | undefined,
       parsed.busyAction as 'queue' | 'cancel' | undefined,
-      savedAsPending
-        ? undefined
-        : (parsed.displayPrompt ??
-          (savedFiles.length > 0 ? prompt || undefined : undefined)),
+      parsed.displayPrompt ??
+        (savedFiles.length > 0 ? prompt || undefined : undefined),
       hasFollowUpMeta ? followUpMeta : undefined,
     )
     await markPendingMessagesDispatched(pendingIds)
@@ -332,18 +300,10 @@ message.post('/:id/follow-up', async (c) => {
     logger.warn(
       {
         issueId,
-        savedAsPending,
         error: error instanceof Error ? error.message : String(error),
       },
       'followup_failed_saving_as_pending',
     )
-    // If already saved as pending (review path), just return queued status
-    if (savedAsPending) {
-      return c.json({
-        success: true,
-        data: { issueId, queued: true },
-      })
-    }
     try {
       const messageId = await persistPendingMessage(
         issueId,
