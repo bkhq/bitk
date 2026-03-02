@@ -1,4 +1,8 @@
-import { autoMoveToReview, updateIssueSession } from '@/engines/engine-store'
+import {
+  autoMoveToReview,
+  getIssueWithSession,
+  updateIssueSession,
+} from '@/engines/engine-store'
 import { logger } from '@/logger'
 import { IDLE_TIMEOUT_MS } from './constants'
 import type { EngineContext } from './context'
@@ -46,24 +50,27 @@ export function gcSweep(ctx: EngineContext): void {
         'idle_timeout_terminate',
       )
       ctx.pm.forceKill(entry.id)
-      emitStateChange(ctx, managed.issueId, managed.executionId, 'completed')
       cleanupDomainData(ctx, managed.executionId)
-      // Fire-and-forget DB update
+      // Fire-and-forget DB update — preserve prior terminal status if already set
+      const { issueId: gcIssueId, executionId: gcExecutionId } = managed
       void (async () => {
         try {
-          await updateIssueSession(managed.issueId, {
-            sessionStatus: 'completed',
-          })
-          await autoMoveToReview(managed.issueId)
-          emitIssueSettled(
-            ctx,
-            managed.issueId,
-            managed.executionId,
-            'completed',
-          )
+          const existing = await getIssueWithSession(gcIssueId)
+          const priorStatus = existing?.sessionFields.sessionStatus
+          const isTerminal =
+            priorStatus === 'failed' || priorStatus === 'cancelled'
+          const finalStatus = isTerminal ? priorStatus : 'completed'
+          emitStateChange(ctx, gcIssueId, gcExecutionId, finalStatus)
+          if (!isTerminal) {
+            await updateIssueSession(gcIssueId, {
+              sessionStatus: finalStatus,
+            })
+          }
+          await autoMoveToReview(gcIssueId)
+          emitIssueSettled(ctx, gcIssueId, gcExecutionId, finalStatus)
         } catch (err) {
           logger.error(
-            { issueId: managed.issueId, err },
+            { issueId: gcIssueId, err },
             'idle_timeout_settle_failed',
           )
         }

@@ -258,7 +258,13 @@ message.post('/:id/follow-up', async (c) => {
     }
     const { prompt: effectivePrompt, pendingIds } =
       await collectPendingMessages(issueId, fullPrompt)
-    const isCommand = prompt.startsWith('/')
+    const firstWord = prompt.split(/\s/)[0] ?? ''
+    const knownCommands = issueEngine
+      .getSlashCommands(issueId)
+      .map((cmd) => (cmd.startsWith('/') ? cmd : `/${cmd}`))
+    const isCommand =
+      firstWord.startsWith('/') &&
+      knownCommands.some((cmd) => cmd === firstWord)
     const followUpMeta: Record<string, unknown> = {
       ...attachmentsMeta,
       ...(parsed.meta

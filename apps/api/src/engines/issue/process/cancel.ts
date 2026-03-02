@@ -1,6 +1,7 @@
 import { autoMoveToReview, updateIssueSession } from '@/engines/engine-store'
 import type { EngineContext } from '@/engines/issue/context'
 import { emitIssueSettled, emitStateChange } from '@/engines/issue/events'
+import { withIssueLock } from '@/engines/issue/process/lock'
 import { cleanupDomainData } from '@/engines/issue/process/state'
 import { dispatch } from '@/engines/issue/state'
 import { getPidFromManaged } from '@/engines/issue/utils/pid'
@@ -70,28 +71,32 @@ export async function terminateProcess(
   ctx: EngineContext,
   issueId: string,
 ): Promise<void> {
-  // Kill active processes (spawning or running)
-  const active = ctx.pm.getActiveInGroup(issueId)
-  for (const entry of active) {
-    const managed = entry.meta
-    logger.info(
-      {
-        issueId,
-        executionId: entry.id,
-        pid: getPidFromManaged(managed),
-        state: entry.state,
-      },
-      'force_terminate_active_process',
-    )
-    dispatch(managed, { type: 'CLEAR_PENDING_INPUTS' })
-    managed.state = 'cancelled'
-    emitStateChange(ctx, issueId, entry.id, 'cancelled')
-    ctx.pm.forceKill(entry.id)
-    cleanupDomainData(ctx, entry.id)
-  }
+  return withIssueLock(ctx, issueId, async () => {
+    // Kill active processes (spawning or running)
+    const active = ctx.pm.getActiveInGroup(issueId)
+    let lastExecutionId = ''
+    for (const entry of active) {
+      const managed = entry.meta
+      logger.info(
+        {
+          issueId,
+          executionId: entry.id,
+          pid: getPidFromManaged(managed),
+          state: entry.state,
+        },
+        'force_terminate_active_process',
+      )
+      dispatch(managed, { type: 'CLEAR_PENDING_INPUTS' })
+      managed.state = 'cancelled'
+      emitStateChange(ctx, issueId, entry.id, 'cancelled')
+      ctx.pm.forceKill(entry.id)
+      cleanupDomainData(ctx, entry.id)
+      lastExecutionId = entry.id
+    }
 
-  await updateIssueSession(issueId, { sessionStatus: 'cancelled' })
-  await autoMoveToReview(issueId)
-  emitIssueSettled(ctx, issueId, '', 'cancelled')
-  logger.info({ issueId }, 'force_terminate_completed')
+    await updateIssueSession(issueId, { sessionStatus: 'cancelled' })
+    await autoMoveToReview(issueId)
+    emitIssueSettled(ctx, issueId, lastExecutionId, 'cancelled')
+    logger.info({ issueId }, 'force_terminate_completed')
+  })
 }
