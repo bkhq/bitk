@@ -141,7 +141,24 @@ export async function spawnRetry(
   const executor = engineRegistry.get(engineType)
   if (!executor) throw new Error(`No executor for engine type: ${engineType}`)
 
-  const workingDir = await resolveWorkingDir(issue.projectId)
+  const baseDir = await resolveWorkingDir(issue.projectId)
+
+  // Resolve worktree if the issue uses one
+  let workingDir = baseDir
+  let worktreePath: string | undefined
+  if (issue.useWorktree) {
+    const candidatePath = resolveWorktreePath(issue.projectId, issueId)
+    try {
+      const s = await stat(candidatePath)
+      if (s.isDirectory()) {
+        worktreePath = candidatePath
+        workingDir = candidatePath
+      }
+    } catch {
+      // Worktree doesn't exist — retry in base dir
+    }
+  }
+
   const permOptions = getPermissionOptions(engineType)
   const executionId = crypto.randomUUID()
 
@@ -169,9 +186,10 @@ export async function spawnRetry(
     spawned,
     (line) => normalizer.parse(line),
     turnIndex,
-    undefined,
+    worktreePath,
     false,
     () => handleTurnCompleted(ctx, issueId, executionId),
+    worktreePath ? baseDir : undefined,
   )
   monitorCompletion(ctx, executionId, issueId, engineType, true)
   logger.debug(
