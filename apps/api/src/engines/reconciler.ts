@@ -6,6 +6,7 @@ import {
   ensureWorktreeAutoCleanupDefault,
 } from '@/db/helpers'
 import { issues as issuesTable } from '@/db/schema'
+import { appEvents } from '@/events'
 import { emitIssueUpdated } from '@/events/issue-events'
 import { logger } from '@/logger'
 import { issueEngine } from './issue'
@@ -190,7 +191,7 @@ export function stopPeriodicReconciliation(): void {
  * sessionStatus but the statusId update was missed.
  */
 export function registerSettledReconciliation(): void {
-  issueEngine.onIssueSettled((_issueId, _executionId, _state) => {
+  appEvents.on('done', () => {
     // Run reconciliation after a short delay to allow the engine's own
     // autoMoveToReview to complete first. If it succeeded, the reconciler
     // will simply find zero stale issues.

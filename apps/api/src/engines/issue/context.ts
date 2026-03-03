@@ -1,11 +1,6 @@
 import type { ProcessManager } from '@/engines/process-manager'
 import type { PermissionPolicy } from '@/engines/types'
-import type {
-  IssueSettledCallback,
-  LogCallback,
-  ManagedProcess,
-  StateChangeCallback,
-} from './types'
+import type { ManagedProcess } from './types'
 
 // ---------- EngineContext ----------
 
@@ -15,10 +10,6 @@ export interface EngineContext {
   readonly entryCounters: Map<string, number>
   readonly turnIndexes: Map<string, number>
   readonly userMessageIds: Map<string, string>
-  readonly logCallbacks: Map<number, LogCallback>
-  readonly stateChangeCallbacks: Map<number, StateChangeCallback>
-  readonly issueSettledCallbacks: Map<number, IssueSettledCallback>
-  nextCallbackId: number
   readonly lastErrors: Map<string, string>
   /** Per-issue lock queue depth tracking. */
   readonly lockDepth: Map<string, number>

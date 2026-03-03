@@ -1,8 +1,10 @@
 import { Hono } from 'hono'
 import { streamSSE } from 'hono/streaming'
-import { issueEngine } from '@/engines/issue'
-import { onChangesSummary } from '@/events/changes-summary'
-import { onIssueUpdated } from '@/events/issue-events'
+import {
+  getIssueDevMode,
+  isVisibleForMode,
+} from '@/engines/issue/utils/visibility'
+import { appEvents } from '@/events'
 import { logger } from '@/logger'
 
 const TERMINAL = new Set(['completed', 'failed', 'cancelled'])
@@ -37,35 +39,50 @@ events.get('/', async (c) => {
         stream.writeSSE({ event, data: JSON.stringify(data) }).catch(stop)
       }
 
-      // Subscribe to log events
-      const unsubLog = issueEngine.onLog((issueId, executionId, entry) => {
-        writeEvent('log', { issueId, entry })
-      })
+      // Subscribe to log events (order 100 — runs after DB persist + ring buffer)
+      // Visibility filter applied here at the SSE boundary only, so internal
+      // stages (DB persist, failure detection) always process all entries.
+      const unsubLog = appEvents.on(
+        'log',
+        (data) => {
+          if (!isVisibleForMode(data.entry, getIssueDevMode(data.issueId)))
+            return
+          writeEvent('log', { issueId: data.issueId, entry: data.entry })
+        },
+        { order: 100 },
+      )
 
       // Non-terminal state changes
-      const unsubState = issueEngine.onStateChange(
-        (issueId, executionId, state) => {
-          if (TERMINAL.has(state)) return // handled by onIssueSettled below
-          writeEvent('state', { issueId, executionId, state })
-        },
-      )
+      const unsubState = appEvents.on('state', (data) => {
+        if (TERMINAL.has(data.state)) return // handled by 'done' below
+        writeEvent('state', {
+          issueId: data.issueId,
+          executionId: data.executionId,
+          state: data.state,
+        })
+      })
 
-      // Terminal state changes come AFTER DB is updated
-      const unsubSettled = issueEngine.onIssueSettled(
-        (issueId, executionId, state) => {
-          writeEvent('state', { issueId, executionId, state })
-          writeEvent('done', { issueId, finalStatus: state })
-        },
-      )
+      // Terminal state (done event comes AFTER DB is updated)
+      const unsubDone = appEvents.on('done', (data) => {
+        writeEvent('state', {
+          issueId: data.issueId,
+          executionId: data.executionId,
+          state: data.finalStatus,
+        })
+        writeEvent('done', {
+          issueId: data.issueId,
+          finalStatus: data.finalStatus,
+        })
+      })
 
       // Issue data mutations (status changes, etc.)
-      const unsubIssueUpdated = onIssueUpdated((data) => {
+      const unsubIssueUpdated = appEvents.on('issue-updated', (data) => {
         writeEvent('issue-updated', data)
       })
 
       // Changes summary (file count + line stats)
-      const unsubChangesSummary = onChangesSummary((summary) => {
-        writeEvent('changes-summary', summary)
+      const unsubChangesSummary = appEvents.on('changes-summary', (data) => {
+        writeEvent('changes-summary', data)
       })
 
       // Heartbeat every 15s — keeps connection alive and detects client disconnect
@@ -81,7 +98,7 @@ events.get('/', async (c) => {
         clearInterval(heartbeat)
         unsubLog()
         unsubState()
-        unsubSettled()
+        unsubDone()
         unsubIssueUpdated()
         unsubChangesSummary()
         logger.debug('global_sse_closed')

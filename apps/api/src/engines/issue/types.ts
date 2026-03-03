@@ -47,20 +47,3 @@ export interface ManagedProcess {
     metadata?: Record<string, unknown>
   }>
 }
-
-export type LogCallback = (
-  issueId: string,
-  executionId: string,
-  entry: NormalizedLogEntry,
-) => void
-export type StateChangeCallback = (
-  issueId: string,
-  executionId: string,
-  state: ProcessStatus,
-) => void
-export type IssueSettledCallback = (
-  issueId: string,
-  executionId: string,
-  state: string,
-) => void
-export type UnsubscribeFn = () => void

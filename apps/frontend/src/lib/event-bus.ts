@@ -1,3 +1,4 @@
+import type { ChangesSummary } from '@bitk/shared'
 import type { NormalizedLogEntry, SessionStatus } from '@/types/kanban'
 
 export interface IssueEventHandler {
@@ -6,12 +7,7 @@ export interface IssueEventHandler {
   onDone: (data: { finalStatus: SessionStatus }) => void
 }
 
-export interface ChangesSummaryData {
-  issueId: string
-  fileCount: number
-  additions: number
-  deletions: number
-}
+export type ChangesSummaryData = ChangesSummary
 
 type IssueUpdatedListener = (data: {
   issueId: string

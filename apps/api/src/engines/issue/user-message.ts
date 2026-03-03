@@ -1,8 +1,8 @@
 import type { NormalizedLogEntry } from '@/engines/types'
+import { appEvents } from '@/events'
 import { logger } from '@/logger'
 import type { EngineContext } from './context'
-import { emitLog, emitStateChange } from './events'
-import { persistEntry } from './persistence/entry'
+import { emitStateChange } from './events'
 import { dispatch } from './state'
 import type { ManagedProcess } from './types'
 import { getPidFromManaged } from './utils/pid'
@@ -33,19 +33,17 @@ export function persistUserMessage(
     ...(entryMeta ? { metadata: entryMeta } : {}),
   }
 
-  // Persist first, then emit (DB is source of truth)
-  const persisted = persistEntry(ctx, issueId, executionId, entry)
-  if (persisted) {
-    // Push persisted (with messageId) to in-memory logs for dedup
-    const managed = ctx.pm.get(executionId)?.meta
-    if (managed) {
-      managed.logs.push(persisted)
-    }
-    emitLog(ctx, issueId, executionId, persisted)
-  }
+  // Emit through pipeline — handles DB persist (order 10), ring buffer (order 20),
+  // and SSE broadcast (order 100).  Pipeline enriches data.entry with messageId.
+  // Keep a reference to the event data so we can read the enriched entry after
+  // the synchronous emit completes (persist stage replaces data.entry, not the
+  // local `entry` variable).
+  const eventData = { issueId, executionId, entry, streaming: false as const }
+  appEvents.emit('log', eventData)
 
   // Store user message ID so agent responses in this turn can reference it
-  const messageId = persisted?.messageId ?? null
+  const messageId =
+    (eventData.entry as { messageId?: string }).messageId ?? null
   if (messageId) {
     ctx.userMessageIds.set(`${issueId}:${turnIdx}`, messageId)
   }
@@ -82,7 +80,7 @@ export function sendInputToRunningProcess(
   })
   // Emit running state BEFORE user message so the frontend resets doneReceivedRef
   // and accepts the subsequent user message SSE event.
-  emitStateChange(ctx, issueId, managed.executionId, 'running')
+  emitStateChange(issueId, managed.executionId, 'running')
   const messageId = persistUserMessage(
     ctx,
     issueId,

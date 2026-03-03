@@ -192,6 +192,40 @@ export interface ProbeResult {
   duration: number
 }
 
+// ── Event Bus ────────────────────────────────────────────
+
+export interface ChangesSummary {
+  issueId: string
+  fileCount: number
+  additions: number
+  deletions: number
+}
+
+/** SSE wire format — what the frontend receives via EventSource. */
+export interface SSEEventMap {
+  log: { issueId: string; entry: NormalizedLogEntry }
+  state: { issueId: string; executionId: string; state: string }
+  done: { issueId: string; finalStatus: string }
+  'issue-updated': { issueId: string; changes: Record<string, unknown> }
+  'changes-summary': ChangesSummary
+  heartbeat: { ts: string }
+}
+
+/** Internal bus format — superset of SSEEventMap, carries engine context. */
+export interface AppEventMap {
+  log: {
+    issueId: string
+    executionId: string
+    entry: NormalizedLogEntry
+    streaming: boolean
+  }
+  state: { issueId: string; executionId: string; state: string }
+  done: { issueId: string; executionId: string; finalStatus: string }
+  'issue-updated': { issueId: string; changes: Record<string, unknown> }
+  'changes-summary': ChangesSummary
+  heartbeat: { ts: string }
+}
+
 // ── File Browser ──────────────────────────────────────────
 
 export interface FileEntry {

@@ -11,7 +11,6 @@ import {
   MAX_CONCURRENT_EXECUTIONS,
 } from './constants'
 import type { EngineContext } from './context'
-import { onIssueSettled, onLog, onStateChange } from './events'
 import { gcSweep } from './gc'
 import {
   cancelIssue,
@@ -20,6 +19,7 @@ import {
   restartIssue,
   restartStaleSessions,
 } from './orchestration'
+import { registerLogPipeline } from './pipeline'
 import { terminateProcess } from './process/cancel'
 import {
   cancelAll,
@@ -30,13 +30,7 @@ import {
   hasActiveProcessForIssue,
   isTurnInFlight,
 } from './queries'
-import type {
-  IssueSettledCallback,
-  LogCallback,
-  ManagedProcess,
-  StateChangeCallback,
-  UnsubscribeFn,
-} from './types'
+import type { ManagedProcess } from './types'
 
 // ---------- IssueEngine ----------
 
@@ -59,15 +53,14 @@ export class IssueEngine {
       entryCounters: new Map(),
       turnIndexes: new Map(),
       userMessageIds: new Map(),
-      logCallbacks: new Map(),
-      stateChangeCallbacks: new Map(),
-      issueSettledCallbacks: new Map(),
-      nextCallbackId: 0,
       lastErrors: new Map(),
       lockDepth: new Map(),
       // Placeholder — injected below after ctx is created
       followUpIssue: null,
     }
+
+    // Register the unified log pipeline on the global event bus
+    registerLogPipeline(this.ctx)
 
     // Inject followUpIssue to break lifecycle → orchestration cycle
     this.ctx.followUpIssue = (
@@ -211,20 +204,6 @@ export class IssueEngine {
 
   setLastError(issueId: string, message: string): void {
     this.ctx.lastErrors.set(issueId, message)
-  }
-
-  // ---- Event subscriptions ----
-
-  onLog(cb: LogCallback): UnsubscribeFn {
-    return onLog(this.ctx, cb)
-  }
-
-  onStateChange(cb: StateChangeCallback): UnsubscribeFn {
-    return onStateChange(this.ctx, cb)
-  }
-
-  onIssueSettled(cb: IssueSettledCallback): UnsubscribeFn {
-    return onIssueSettled(this.ctx, cb)
   }
 }
 
