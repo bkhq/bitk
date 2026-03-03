@@ -123,22 +123,14 @@ export async function consumeStderr(
         if (!line.trim()) continue
         const managed = callbacks.getManaged()
         if (!managed) return
-        pushStderrEntry(
-          line,
-          callbacks.getTurnIndex(),
-          callbacks.onEntry,
-        )
+        pushStderrEntry(line, callbacks.getTurnIndex(), callbacks.onEntry)
       }
     }
 
     if (buffer.trim()) {
       const managed = callbacks.getManaged()
       if (managed) {
-        pushStderrEntry(
-          buffer,
-          callbacks.getTurnIndex(),
-          callbacks.onEntry,
-        )
+        pushStderrEntry(buffer, callbacks.getTurnIndex(), callbacks.onEntry)
       }
     }
   } catch {

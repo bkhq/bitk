@@ -1,6 +1,6 @@
-import { appEvents } from '@/events'
 import type { EngineContext } from '@/engines/issue/context'
 import type { NormalizedLogEntry } from '@/engines/types'
+import { appEvents } from '@/events'
 
 // ---------- Stdout stream entry handler ----------
 
@@ -18,7 +18,9 @@ export function handleStreamEntry(
   const effectiveEntry = streaming
     ? (() => {
         const trimmed = entry.content.trim()
-        return trimmed === entry.content ? entry : { ...entry, content: trimmed }
+        return trimmed === entry.content
+          ? entry
+          : { ...entry, content: trimmed }
       })()
     : entry
   appEvents.emit('log', {

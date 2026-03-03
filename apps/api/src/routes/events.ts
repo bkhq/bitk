@@ -1,6 +1,10 @@
 import { Hono } from 'hono'
 import { streamSSE } from 'hono/streaming'
 import { appEvents } from '@/events'
+import {
+  getIssueDevMode,
+  isVisibleForMode,
+} from '@/engines/issue/utils/visibility'
 import { logger } from '@/logger'
 
 const TERMINAL = new Set(['completed', 'failed', 'cancelled'])
@@ -36,9 +40,13 @@ events.get('/', async (c) => {
       }
 
       // Subscribe to log events (order 100 — runs after DB persist + ring buffer)
+      // Visibility filter applied here at the SSE boundary only, so internal
+      // stages (DB persist, failure detection) always process all entries.
       const unsubLog = appEvents.on(
         'log',
         (data) => {
+          if (!isVisibleForMode(data.entry, getIssueDevMode(data.issueId)))
+            return
           writeEvent('log', { issueId: data.issueId, entry: data.entry })
         },
         { order: 100 },

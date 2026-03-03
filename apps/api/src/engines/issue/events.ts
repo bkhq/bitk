@@ -1,5 +1,5 @@
-import { appEvents } from '@/events'
 import type { ProcessStatus } from '@/engines/types'
+import { appEvents } from '@/events'
 
 // ---------- Thin event emitters ----------
 // Delegates to the unified AppEventBus. See pipeline.ts for log event handling.

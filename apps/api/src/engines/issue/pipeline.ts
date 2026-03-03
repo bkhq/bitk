@@ -4,14 +4,9 @@ import { issueLogs as logsTable } from '@/db/schema'
 import { appEvents } from '@/events'
 import type { EngineContext } from './context'
 import { persistEntry } from './persistence/entry'
-import {
-  buildToolDetail,
-  persistToolDetail,
-} from './persistence/tool-detail'
+import { buildToolDetail, persistToolDetail } from './persistence/tool-detail'
 import { dispatch } from './state'
 import { applyAutoTitle } from './title'
-import { getIssueDevMode, isVisibleForMode } from './utils/visibility'
-
 // ---------- Pipeline registration ----------
 
 /**
@@ -19,21 +14,20 @@ import { getIssueDevMode, isVisibleForMode } from './utils/visibility'
  *
  * The pipeline replaces the monolithic handleStreamEntry logic.
  * Each stage is an independent ordered subscriber:
- *   middleware  — devMode visibility filter (runs first, can suppress)
  *   order 10   — DB persistence + messageId enrichment
  *   order 20   — ring buffer push
  *   order 30   — auto-title extraction (meta turns)
  *   order 40   — logical failure detection
  *   order 100  — (reserved for SSE subscribers, registered by routes/events.ts)
  *
+ * DevMode visibility filtering is NOT a middleware — it only applies at the
+ * SSE boundary (order 100) so that DB persistence and failure detection
+ * always process all entries regardless of devMode setting.
+ *
  * Stages are isolated: a failure in one does not block subsequent stages.
  * In particular, DB persistence failure no longer prevents SSE delivery.
  */
 export function registerLogPipeline(ctx: EngineContext): void {
-  // ── Middleware: DevMode visibility filter ───────────────
-  appEvents.use('log', (data) =>
-    isVisibleForMode(data.entry, getIssueDevMode(data.issueId)),
-  )
 
   // ── Order 10: DB persistence ───────────────────────────
   appEvents.on(
@@ -97,10 +91,7 @@ export function registerLogPipeline(ctx: EngineContext): void {
     'log',
     (data) => {
       const managed = ctx.pm.get(data.executionId)?.meta
-      if (
-        managed?.metaTurn &&
-        data.entry.entryType === 'assistant-message'
-      ) {
+      if (managed?.metaTurn && data.entry.entryType === 'assistant-message') {
         applyAutoTitle(data.issueId, data.entry.content)
       }
     },
