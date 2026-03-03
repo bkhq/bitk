@@ -265,6 +265,7 @@ export function ChatBody({
       {/* Issue metadata bar — fixed above input */}
       <IssueDetail
         issue={issue}
+        projectId={projectId}
         status={STATUS_MAP.get(issue.statusId)}
         onUpdate={(fields) => updateIssue.mutate({ id: issueId, ...fields })}
         onDelete={handleDelete}
@@ -283,7 +284,6 @@ export function ChatBody({
         sessionStatus={issue.sessionStatus}
         statusId={issue.statusId}
         isThinking={isThinking}
-        useWorktree={issue.useWorktree}
         slashCommands={slashCommands}
         onMessageSent={(messageId, prompt, metadata) => {
           appendServerMessage(messageId, prompt, metadata)
