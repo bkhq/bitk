@@ -96,8 +96,28 @@ export function ChatInput({
       return ''
     }
   })
-  // Persist draft to localStorage on change
+  // Guard: skip one persist cycle after draftKey changes to avoid
+  // writing stale input (from previous issue) into the new key.
+  const skipPersistRef = useRef(false)
+  // Restore draft when switching issues
   useEffect(() => {
+    skipPersistRef.current = true
+    if (!draftKey) {
+      setInput('')
+      return
+    }
+    try {
+      setInput(localStorage.getItem(draftKey) ?? '')
+    } catch {
+      setInput('')
+    }
+  }, [draftKey])
+  // Persist draft to localStorage on input change
+  useEffect(() => {
+    if (skipPersistRef.current) {
+      skipPersistRef.current = false
+      return
+    }
     if (!draftKey) return
     try {
       if (input) {
@@ -109,15 +129,6 @@ export function ChatInput({
       /* quota exceeded — ignore */
     }
   }, [draftKey, input])
-  // Restore draft when switching issues
-  useEffect(() => {
-    if (!draftKey) return
-    try {
-      setInput(localStorage.getItem(draftKey) ?? '')
-    } catch {
-      /* ignore */
-    }
-  }, [draftKey])
   const [sendError, setSendError] = useState<string | null>(null)
   const [attachedFiles, setAttachedFiles] = useState<File[]>([])
   const [isDragOver, setIsDragOver] = useState(false)
