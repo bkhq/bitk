@@ -68,14 +68,14 @@ export function gcSweep(ctx: EngineContext): void {
         const isTerminal =
           priorStatus === 'failed' || priorStatus === 'cancelled'
         const finalStatus = isTerminal ? priorStatus : 'completed'
-        emitStateChange(ctx, gcIssueId, gcExecutionId, finalStatus)
+        emitStateChange(gcIssueId, gcExecutionId, finalStatus)
         if (!isTerminal) {
           await updateIssueSession(gcIssueId, {
             sessionStatus: finalStatus,
           })
         }
         await autoMoveToReview(gcIssueId)
-        emitIssueSettled(ctx, gcIssueId, gcExecutionId, finalStatus)
+        emitIssueSettled(gcIssueId, gcExecutionId, finalStatus)
       }).catch((err) => {
         logger.error({ issueId: gcIssueId, err }, 'idle_timeout_settle_failed')
       })

@@ -49,7 +49,7 @@ export async function cancel(
   // Hard cancel: delegate kill timeout to PM
   managed.state = 'cancelled'
   if (opts.emitCancelledState !== false) {
-    emitStateChange(ctx, managed.issueId, executionId, 'cancelled')
+    emitStateChange(managed.issueId, executionId, 'cancelled')
   }
 
   await ctx.pm.terminate(executionId, () => managed.process.cancel())
@@ -88,7 +88,7 @@ export async function terminateProcess(
       )
       dispatch(managed, { type: 'CLEAR_PENDING_INPUTS' })
       managed.state = 'cancelled'
-      emitStateChange(ctx, issueId, entry.id, 'cancelled')
+      emitStateChange(issueId, entry.id, 'cancelled')
       ctx.pm.forceKill(entry.id)
       cleanupDomainData(ctx, entry.id)
       lastExecutionId = entry.id
@@ -96,7 +96,7 @@ export async function terminateProcess(
 
     await updateIssueSession(issueId, { sessionStatus: 'cancelled' })
     await autoMoveToReview(issueId)
-    emitIssueSettled(ctx, issueId, lastExecutionId, 'cancelled')
+    emitIssueSettled(issueId, lastExecutionId, 'cancelled')
     logger.info({ issueId }, 'force_terminate_completed')
   })
 }
