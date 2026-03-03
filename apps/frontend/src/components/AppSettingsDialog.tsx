@@ -109,7 +109,7 @@ export function AppSettingsDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         aria-describedby={undefined}
-        className="sm:max-w-xl md:max-w-2xl"
+        className="sm:max-w-lg"
       >
         <DialogHeader>
           <DialogTitle>{t('settings.title')}</DialogTitle>
@@ -121,6 +121,7 @@ export function AppSettingsDialog({
               {t('settings.tabGeneral')}
             </TabsTrigger>
             <TabsTrigger value="models">{t('settings.tabModels')}</TabsTrigger>
+            <TabsTrigger value="about">{t('settings.tabAbout')}</TabsTrigger>
           </TabsList>
 
           {/* General tab */}
@@ -212,8 +213,6 @@ export function AppSettingsDialog({
                 />
               </div>
 
-              {/* About & Upgrade section */}
-              <AboutSection open={open} />
             </div>
           </TabsContent>
 
@@ -318,6 +317,13 @@ export function AppSettingsDialog({
               </div>
             </div>
           </TabsContent>
+
+          {/* About tab */}
+          <TabsContent value="about">
+            <div className="max-h-[60dvh] overflow-y-auto overflow-x-hidden pt-2">
+              <AboutSection open={open} />
+            </div>
+          </TabsContent>
         </Tabs>
       </DialogContent>
     </Dialog>
@@ -372,8 +378,7 @@ function AboutSection({ open }: { open: boolean }) {
   }
 
   return (
-    <div className="mt-4 pt-4 border-t">
-      <Label className="mb-2">{t('settings.about')}</Label>
+    <div className="space-y-3">
 
       {/* Version & Build */}
       <div className="mt-1.5 grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
