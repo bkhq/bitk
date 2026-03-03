@@ -385,10 +385,7 @@ export function ChatInput({
               />
             ) : null}
             {useWorktree && projectId && issueId ? (
-              <WorktreeIndicator
-                projectId={projectId}
-                issueId={issueId}
-              />
+              <WorktreeIndicator projectId={projectId} issueId={issueId} />
             ) : null}
           </div>
         </div>
