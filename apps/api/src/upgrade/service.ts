@@ -9,6 +9,7 @@ import {
   isNewerVersion,
   isPathWithinDir,
   parseVersionFromFileName,
+  resolveDownloadFileName,
   VALID_FILE_NAME_RE,
 } from '@/upgrade/utils'
 import { COMMIT, VERSION } from '@/version'
@@ -230,10 +231,9 @@ export async function checkForUpdates(): Promise<UpgradeCheckResult> {
   // Only report an update if a newer version exists AND a matching asset is available
   const hasUpdate = !!matchingAsset && isNewerVersion(VERSION, release.version)
 
-  const downloadFileName =
-    matchingAsset && VALID_FILE_NAME_RE.test(matchingAsset.name)
-      ? matchingAsset.name
-      : null
+  const downloadFileName = matchingAsset
+    ? resolveDownloadFileName(matchingAsset.name, release.version, isPackageMode)
+    : null
 
   const result: UpgradeCheckResult = {
     hasUpdate,

@@ -53,6 +53,28 @@ export function detectPlatformAssetSuffix(): string {
   return `${os}-${a}`
 }
 
+/**
+ * Resolve the local download filename for an asset.
+ * If the original asset name already matches the versioned pattern, use it.
+ * Otherwise construct a valid filename from the release version + platform,
+ * so downloads work even when GitHub assets lack a version suffix
+ * (e.g. "bitk-linux-x64" instead of "bitk-linux-x64-v0.0.3").
+ */
+export function resolveDownloadFileName(
+  assetName: string,
+  releaseVersion: string,
+  packageMode: boolean,
+): string {
+  if (VALID_FILE_NAME_RE.test(assetName)) {
+    return assetName
+  }
+  if (packageMode) {
+    return `bitk-app-v${releaseVersion}.tar.gz`
+  }
+  const suffix = detectPlatformAssetSuffix()
+  return `bitk-${suffix}-v${releaseVersion}`
+}
+
 /** Validate that a resolved file path is within the expected directory. */
 export function isPathWithinDir(filePath: string, dir: string): boolean {
   return filePath.startsWith(`${dir}/`)

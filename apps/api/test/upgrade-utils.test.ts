@@ -4,6 +4,7 @@ import {
   isNewerVersion,
   isPathWithinDir,
   parseVersionFromFileName,
+  resolveDownloadFileName,
   VALID_FILE_NAME_RE,
 } from '@/upgrade/utils'
 
@@ -150,6 +151,40 @@ describe('isPathWithinDir', () => {
     expect(isPathWithinDir('/data/updates-evil/file', '/data/updates')).toBe(
       false,
     )
+  })
+})
+
+describe('resolveDownloadFileName', () => {
+  it('returns original name when it already has a version suffix', () => {
+    expect(
+      resolveDownloadFileName('bitk-linux-x64-v0.0.3', '0.0.3', false),
+    ).toBe('bitk-linux-x64-v0.0.3')
+    expect(
+      resolveDownloadFileName('bitk-app-v0.0.5.tar.gz', '0.0.5', true),
+    ).toBe('bitk-app-v0.0.5.tar.gz')
+  })
+
+  it('constructs versioned filename for unversioned binary assets', () => {
+    // Asset named "bitk-linux-x64" without version → construct from platform
+    const result = resolveDownloadFileName('bitk-linux-x64', '0.0.3', false)
+    // Should match VALID_FILE_NAME_RE
+    expect(VALID_FILE_NAME_RE.test(result)).toBe(true)
+    expect(result).toContain('v0.0.3')
+  })
+
+  it('constructs versioned filename for unversioned package assets', () => {
+    const result = resolveDownloadFileName('bitk-app.tar.gz', '0.0.3', true)
+    expect(result).toBe('bitk-app-v0.0.3.tar.gz')
+    expect(VALID_FILE_NAME_RE.test(result)).toBe(true)
+  })
+
+  it('constructs filenames that pass VALID_FILE_NAME_RE', () => {
+    // Simulate the exact scenario from the bug: GitHub asset lacks version suffix
+    const binary = resolveDownloadFileName('bitk-darwin-arm64', '0.0.3', false)
+    expect(VALID_FILE_NAME_RE.test(binary)).toBe(true)
+
+    const pkg = resolveDownloadFileName('bitk-app.tar.gz', '1.2.3', true)
+    expect(VALID_FILE_NAME_RE.test(pkg)).toBe(true)
   })
 })
 
