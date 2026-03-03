@@ -13,6 +13,8 @@ import {
   listDownloadedUpdates,
   setUpgradeEnabled,
 } from '@/upgrade/service'
+import { VALID_FILE_NAME_RE } from '@/upgrade/utils'
+import { logger } from '@/logger'
 
 const ALLOWED_DOWNLOAD_HOSTS = new Set([
   'github.com',
@@ -33,13 +35,12 @@ const githubUrlSchema = z
   .url()
   .refine(isAllowedDownloadHost, 'URL must be from GitHub')
 
-// Matches: bitk-linux-x64-v0.0.5, bitk-darwin-arm64-v0.0.5, bitk-app-v0.0.5.tar.gz
 const upgradeFileNameSchema = z
   .string()
   .min(1)
   .max(255)
   .regex(
-    /^bitk-[\w-]+-v\d+\.\d+\.\d+(?:\.tar\.gz)?$/,
+    VALID_FILE_NAME_RE,
     'File name must match bitk-<type>-v<version> format',
   )
 
@@ -95,16 +96,21 @@ upgrade.post(
     const { url, fileName, checksumUrl } = c.req.valid('json')
     // Check status synchronously before starting background download
     const currentStatus = getDownloadStatus()
-    if (currentStatus.status === 'downloading') {
+    if (
+      currentStatus.status === 'downloading' ||
+      currentStatus.status === 'verifying'
+    ) {
       return c.json(
         { success: false, error: 'A download is already in progress' },
         409,
       )
     }
-    // Start download in background, log errors instead of swallowing
+    // Start download in background; errors are tracked in downloadStatus
     downloadUpdate(url, fileName, checksumUrl).catch((err) => {
-      // Download errors are tracked in downloadStatus; just log here
-      void err
+      logger.error(
+        { error: err instanceof Error ? err.message : String(err) },
+        'upgrade_download_route_error',
+      )
     })
     return c.json({ success: true, data: { status: 'started', fileName } })
   },
