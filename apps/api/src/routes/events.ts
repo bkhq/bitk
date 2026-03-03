@@ -1,10 +1,10 @@
 import { Hono } from 'hono'
 import { streamSSE } from 'hono/streaming'
-import { appEvents } from '@/events'
 import {
   getIssueDevMode,
   isVisibleForMode,
 } from '@/engines/issue/utils/visibility'
+import { appEvents } from '@/events'
 import { logger } from '@/logger'
 
 const TERMINAL = new Set(['completed', 'failed', 'cancelled'])
