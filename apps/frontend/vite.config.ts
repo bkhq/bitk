@@ -47,7 +47,7 @@ function shikiSlim(): Plugin {
   }
 }
 
-const config = defineConfig(({ mode }) => {
+const config = defineConfig(() => {
   const apiPort = Number(process.env.VITE_API_PORT) || 3010
   const devPort = Number(process.env.VITE_DEV_PORT) || 3000
   const devHost = process.env.VITE_DEV_HOST || '0.0.0.0'

@@ -155,7 +155,7 @@ export function AppSettingsDialog({
                   <Label>{t('settings.language')}</Label>
                   <Select
                     value={i18n.language}
-                    onValueChange={(value) => i18n.changeLanguage(value)}
+                    onValueChange={(value) => i18n.changeLanguage(value ?? undefined)}
                   >
                     <SelectTrigger>
                       <SelectValue />

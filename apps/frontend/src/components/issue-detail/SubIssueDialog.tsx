@@ -16,12 +16,10 @@ export function SubIssueDialog({
   const { t } = useTranslation()
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange} disablePointerDismissal>
       <DialogContent
         className="md:max-w-[580px]"
         aria-describedby={undefined}
-        onInteractOutside={(e) => e.preventDefault()}
-        onPointerDownOutside={(e) => e.preventDefault()}
       >
         <DialogTitle>{t('issue.createSubIssue')}</DialogTitle>
 

@@ -257,7 +257,6 @@ function ToolPanel({
 
 function FileToolGroup({
   actionEntry,
-  resultEntry,
 }: {
   actionEntry: NormalizedLogEntry
   resultEntry: NormalizedLogEntry
@@ -353,7 +352,6 @@ export function SessionMessages({
   workingStep,
   onCancel,
   isCancelling = false,
-  devMode = false,
   hasOlderLogs = false,
   isLoadingOlder = false,
   onLoadOlder,
@@ -364,7 +362,6 @@ export function SessionMessages({
   workingStep?: string | null
   onCancel?: () => void
   isCancelling?: boolean
-  devMode?: boolean
   hasOlderLogs?: boolean
   isLoadingOlder?: boolean
   onLoadOlder?: () => void

@@ -69,8 +69,8 @@ export const useIsPanelOpen = () =>
 // Re-clamp width on window resize (guarded to prevent duplicate listeners during HMR)
 if (typeof window !== 'undefined') {
   const RESIZE_KEY = '__panelStoreResizeAttached'
-  if (!(window as Record<string, unknown>)[RESIZE_KEY]) {
-    ;(window as Record<string, unknown>)[RESIZE_KEY] = true
+  if (!(window as unknown as Record<string, unknown>)[RESIZE_KEY]) {
+    ;(window as unknown as Record<string, unknown>)[RESIZE_KEY] = true
     window.addEventListener('resize', () => {
       const store = usePanelStore.getState()
       const clamped = clampWidth(store.width)

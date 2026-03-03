@@ -10,7 +10,6 @@ interface UseIssueStreamOptions {
   issueId: string | null
   sessionStatus?: SessionStatus | null
   enabled?: boolean
-  devMode?: boolean
 }
 
 interface UseIssueStreamReturn {
@@ -66,7 +65,6 @@ export function useIssueStream({
   issueId,
   sessionStatus: externalStatus,
   enabled = true,
-  devMode = false,
 }: UseIssueStreamOptions): UseIssueStreamReturn {
   // Live logs: initial load + SSE entries, capped at MAX_LIVE_LOGS
   const [liveLogs, setLiveLogs] = useState<NormalizedLogEntry[]>([])

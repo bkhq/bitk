@@ -57,8 +57,8 @@ export const useProcessManagerStore = create<ProcessManagerStore>((set) => ({
 // Re-clamp width on window resize
 if (typeof window !== 'undefined') {
   const KEY = '__processManagerStoreResizeAttached'
-  if (!(window as Record<string, unknown>)[KEY]) {
-    ;(window as Record<string, unknown>)[KEY] = true
+  if (!(window as unknown as Record<string, unknown>)[KEY]) {
+    ;(window as unknown as Record<string, unknown>)[KEY] = true
     window.addEventListener('resize', () => {
       const store = useProcessManagerStore.getState()
       const clamped = clampWidth(store.width)

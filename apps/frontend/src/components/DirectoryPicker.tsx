@@ -101,10 +101,9 @@ export function DirectoryPicker({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange} disablePointerDismissal>
       <DialogContent
         className="max-w-[calc(100%-2rem)] md:max-w-md"
-        onPointerDownOutside={(e) => e.preventDefault()}
       >
         <DialogHeader>
           <div>

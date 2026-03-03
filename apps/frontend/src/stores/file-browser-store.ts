@@ -93,8 +93,8 @@ export const useFileBrowserStore = create<FileBrowserStore>((set) => ({
 // Re-clamp width on window resize
 if (typeof window !== 'undefined') {
   const KEY = '__fileBrowserStoreResizeAttached'
-  if (!(window as Record<string, unknown>)[KEY]) {
-    ;(window as Record<string, unknown>)[KEY] = true
+  if (!(window as unknown as Record<string, unknown>)[KEY]) {
+    ;(window as unknown as Record<string, unknown>)[KEY] = true
     window.addEventListener('resize', () => {
       const store = useFileBrowserStore.getState()
       const clamped = clampWidth(store.width)

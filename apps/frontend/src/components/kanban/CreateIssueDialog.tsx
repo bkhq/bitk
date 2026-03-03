@@ -282,12 +282,11 @@ export function CreateIssueDialog() {
       onOpenChange={(open) => {
         if (!open) closeCreateDialog()
       }}
+      disablePointerDismissal
     >
       <DialogContent
         className="max-w-[calc(100%-2rem)] md:max-w-[580px]"
         aria-describedby={undefined}
-        onInteractOutside={(e) => e.preventDefault()}
-        onPointerDownOutside={(e) => e.preventDefault()}
       >
         <DialogTitle>{t('issue.createTask')}</DialogTitle>
         <CreateIssueForm

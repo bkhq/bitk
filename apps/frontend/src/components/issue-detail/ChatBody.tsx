@@ -79,7 +79,6 @@ export function useSessionState(
     issueId: streamEnabled ? issueId : null,
     sessionStatus: issue?.sessionStatus ?? null,
     enabled: !!(issueId && streamEnabled),
-    devMode: issue?.devMode ?? false,
   })
 
   const effectiveStatus = issue?.sessionStatus ?? null
@@ -162,8 +161,6 @@ export function ChatBody({
     logs,
     isThinking,
     workingStep,
-    isTodo,
-    isDone,
     hasOlderLogs,
     isLoadingOlder,
     loadOlderLogs,
@@ -232,7 +229,6 @@ export function ChatBody({
                 workingStep={workingStep}
                 onCancel={() => cancelIssue.mutate(issueId)}
                 isCancelling={cancelIssue.isPending}
-                devMode={issue.devMode}
                 hasOlderLogs={hasOlderLogs}
                 isLoadingOlder={isLoadingOlder}
                 onLoadOlder={loadOlderLogs}
