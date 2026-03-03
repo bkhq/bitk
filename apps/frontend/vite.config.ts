@@ -74,8 +74,7 @@ const config = defineConfig(({ mode }) => {
             if (pkg === '@tanstack/react-query') return 'vendor-query'
             if (pkg.startsWith('@dnd-kit/')) return 'vendor-dnd'
             if (
-              pkg === 'radix-ui' ||
-              pkg.startsWith('@radix-ui/') ||
+              pkg.startsWith('@base-ui/') ||
               pkg === 'lucide-react'
             )
               return 'vendor-ui'

@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Tabs as TabsPrimitive } from 'radix-ui'
+import { Tabs as TabsPrimitive } from '@base-ui/react/tabs'
 
 import { cn } from '@/lib/utils'
 
@@ -35,14 +35,14 @@ function TabsList({
 function TabsTrigger({
   className,
   ...props
-}: React.ComponentProps<typeof TabsPrimitive.Trigger>) {
+}: React.ComponentProps<typeof TabsPrimitive.Tab>) {
   return (
-    <TabsPrimitive.Trigger
+    <TabsPrimitive.Tab
       data-slot="tabs-trigger"
       className={cn(
         'relative inline-flex items-center justify-center whitespace-nowrap rounded-none border-b-2 border-transparent px-3 pb-2 pt-1.5 text-sm font-medium text-muted-foreground transition-colors',
         'hover:text-foreground',
-        'data-[state=active]:border-primary data-[state=active]:text-foreground',
+        'data-[selected]:border-primary data-[selected]:text-foreground',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
         'disabled:pointer-events-none disabled:opacity-50',
         className,
@@ -55,9 +55,9 @@ function TabsTrigger({
 function TabsContent({
   className,
   ...props
-}: React.ComponentProps<typeof TabsPrimitive.Content>) {
+}: React.ComponentProps<typeof TabsPrimitive.Panel>) {
   return (
-    <TabsPrimitive.Content
+    <TabsPrimitive.Panel
       data-slot="tabs-content"
       className={cn('flex-1 outline-none', className)}
       {...props}
