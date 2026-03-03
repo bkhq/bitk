@@ -287,6 +287,7 @@ export function ChatBody({
         sessionStatus={issue.sessionStatus}
         statusId={issue.statusId}
         isThinking={isThinking}
+        useWorktree={issue.useWorktree}
         slashCommands={slashCommands}
         onMessageSent={(messageId, prompt, metadata) => {
           appendServerMessage(messageId, prompt, metadata)

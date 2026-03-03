@@ -154,7 +154,10 @@
     "closePreview": "Close preview",
     "commands": "Commands",
     "commandSearch": "Search commands...",
-    "noCommands": "No matching commands"
+    "noCommands": "No matching commands",
+    "worktree": "Worktree",
+    "worktreeBranch": "Branch",
+    "worktreePath": "Path"
   },
   "diff": {
     "changes": "Changes",

@@ -1,5 +1,6 @@
 import {
   FileText,
+  GitBranch,
   Image as ImageIcon,
   Loader2,
   Paperclip,
@@ -66,6 +67,7 @@ export function ChatInput({
   sessionStatus,
   statusId,
   isThinking = false,
+  useWorktree = false,
   onMessageSent,
   slashCommands = [],
 }: {
@@ -79,6 +81,7 @@ export function ChatInput({
   sessionStatus?: SessionStatus | null
   statusId?: string
   isThinking?: boolean
+  useWorktree?: boolean
   onMessageSent?: (
     messageId: string,
     prompt: string,
@@ -380,6 +383,9 @@ export function ChatInput({
                 value={activeModel}
                 onChange={setSelectedModel}
               />
+            ) : null}
+            {useWorktree && projectId && issueId ? (
+              <WorktreeIndicator projectId={projectId} issueId={issueId} />
             ) : null}
           </div>
         </div>
@@ -693,6 +699,61 @@ function ModelSelect({
         ))}
       </DropdownMenuContent>
     </DropdownMenu>
+  )
+}
+
+// ─── WorktreeIndicator ────────────────────────────────────────────────────────
+
+function WorktreeIndicator({
+  projectId,
+  issueId,
+}: {
+  projectId: string
+  issueId: string
+}) {
+  const { t } = useTranslation()
+  const worktreePath = `data/worktrees/${projectId}/${issueId}`
+  const branch = `bitk/${issueId}`
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-6 px-2 text-xs text-muted-foreground gap-1"
+          title={t('chat.worktree')}
+        >
+          <GitBranch className="h-3 w-3" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent
+        side="top"
+        align="end"
+        className="w-auto max-w-[360px] px-3 py-2.5 text-xs space-y-1.5"
+      >
+        <div className="flex items-center gap-1.5 text-muted-foreground">
+          <GitBranch className="h-3 w-3 shrink-0" />
+          <span className="font-medium text-foreground">
+            {t('chat.worktree')}
+          </span>
+        </div>
+        <div className="space-y-1 text-muted-foreground">
+          <div className="flex items-start gap-2">
+            <span className="shrink-0">{t('chat.worktreeBranch')}:</span>
+            <code className="font-mono text-foreground/80 break-all">
+              {branch}
+            </code>
+          </div>
+          <div className="flex items-start gap-2">
+            <span className="shrink-0">{t('chat.worktreePath')}:</span>
+            <code className="font-mono text-foreground/80 break-all">
+              {worktreePath}
+            </code>
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
   )
 }
 
