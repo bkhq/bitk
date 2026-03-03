@@ -102,9 +102,7 @@ export function DirectoryPicker({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange} disablePointerDismissal>
-      <DialogContent
-        className="max-w-[calc(100%-2rem)] md:max-w-md"
-      >
+      <DialogContent className="max-w-[calc(100%-2rem)] md:max-w-md">
         <DialogHeader>
           <div>
             <DialogTitle>{t('directory.browse')}</DialogTitle>

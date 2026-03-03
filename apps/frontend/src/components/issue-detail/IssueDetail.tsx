@@ -46,7 +46,8 @@ export function IssueDetail({
     [worktrees, issue.id],
   )
   const worktreePath = worktreeEntry?.path ?? ''
-  const worktreeBranch = worktreeEntry?.branch ?? (issue.id ? `bitk/${issue.id}` : '')
+  const worktreeBranch =
+    worktreeEntry?.branch ?? (issue.id ? `bitk/${issue.id}` : '')
 
   return (
     <div className="shrink-0 relative z-20 flex items-center gap-1.5 px-4 py-1.5 border-t border-border/40 bg-muted/20">
@@ -109,16 +110,24 @@ export function IssueDetail({
               <div className="absolute right-0 bottom-full mb-1.5 z-50 min-w-[240px] rounded-xl border border-border/60 bg-popover/95 backdrop-blur-sm py-2 px-3 shadow-xl text-xs text-popover-foreground space-y-1.5">
                 <div className="flex items-center gap-1.5 text-muted-foreground">
                   <GitBranch className="h-3 w-3 shrink-0" />
-                  <span className="font-medium text-foreground">{t('chat.worktree')}</span>
+                  <span className="font-medium text-foreground">
+                    {t('chat.worktree')}
+                  </span>
                 </div>
                 <div className="space-y-1 text-muted-foreground">
                   <div className="flex items-start gap-2">
-                    <span className="shrink-0">{t('chat.worktreeBranch')}:</span>
-                    <code className="font-mono text-foreground/80 break-all">{worktreeBranch}</code>
+                    <span className="shrink-0">
+                      {t('chat.worktreeBranch')}:
+                    </span>
+                    <code className="font-mono text-foreground/80 break-all">
+                      {worktreeBranch}
+                    </code>
                   </div>
                   <div className="flex items-start gap-2">
                     <span className="shrink-0">{t('chat.worktreePath')}:</span>
-                    <code className="font-mono text-foreground/80 break-all">{worktreePath}</code>
+                    <code className="font-mono text-foreground/80 break-all">
+                      {worktreePath}
+                    </code>
                   </div>
                 </div>
               </div>

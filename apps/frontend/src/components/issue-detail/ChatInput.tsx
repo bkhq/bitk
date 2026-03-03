@@ -6,13 +6,7 @@ import {
   SlashSquare,
   X,
 } from 'lucide-react'
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { EngineIcon } from '@/components/EngineIcons'
 import { Button } from '@/components/ui/button'
@@ -111,14 +105,18 @@ export function ChatInput({
       } else {
         localStorage.removeItem(draftKey)
       }
-    } catch { /* quota exceeded — ignore */ }
+    } catch {
+      /* quota exceeded — ignore */
+    }
   }, [draftKey, input])
   // Restore draft when switching issues
   useEffect(() => {
     if (!draftKey) return
     try {
       setInput(localStorage.getItem(draftKey) ?? '')
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }, [draftKey])
   const [sendError, setSendError] = useState<string | null>(null)
   const [attachedFiles, setAttachedFiles] = useState<File[]>([])
@@ -226,7 +224,11 @@ export function ChatInput({
     setInput('')
     // Clear persisted draft
     if (draftKey) {
-      try { localStorage.removeItem(draftKey) } catch { /* ignore */ }
+      try {
+        localStorage.removeItem(draftKey)
+      } catch {
+        /* ignore */
+      }
     }
     setAttachedFiles([])
     setSendError(null)
@@ -367,7 +369,9 @@ export function ChatInput({
       const onMove = (ev: MouseEvent) => {
         if (!dragRef.current.active) return
         const delta = dragRef.current.startY - ev.clientY
-        setTextareaH(Math.max(36, Math.min(480, dragRef.current.startH + delta)))
+        setTextareaH(
+          Math.max(36, Math.min(480, dragRef.current.startH + delta)),
+        )
       }
       const onUp = () => {
         dragRef.current.active = false
@@ -691,7 +695,9 @@ function EngineInfo({ engineType }: { engineType: string }) {
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger render={<Button variant="ghost" size="icon" title={engineName} />}>
+      <PopoverTrigger
+        render={<Button variant="ghost" size="icon" title={engineName} />}
+      >
         <EngineIcon engineType={engineType} className="size-4" />
       </PopoverTrigger>
       <PopoverContent
@@ -774,7 +780,11 @@ function CommandPicker({
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger render={<Button variant="ghost" size="icon" title={t('chat.commands')} />}>
+      <PopoverTrigger
+        render={
+          <Button variant="ghost" size="icon" title={t('chat.commands')} />
+        }
+      >
         <SlashSquare className="size-4" />
       </PopoverTrigger>
       <PopoverContent side="top" align="start" className="w-[260px] p-0">
