@@ -49,7 +49,7 @@ export function handleTurnCompleted(
   managed.lastIdleAt = new Date()
 
   const finalStatus = managed.logicalFailure ? 'failed' : 'completed'
-  emitStateChange(ctx, issueId, executionId, finalStatus as ProcessStatus)
+  emitStateChange(issueId, executionId, finalStatus as ProcessStatus)
 
   void (async () => {
     try {
@@ -127,7 +127,7 @@ export function handleTurnCompleted(
       }
 
       await autoMoveToReview(issueId)
-      emitIssueSettled(ctx, issueId, executionId, finalStatus)
+      emitIssueSettled(issueId, executionId, finalStatus)
       logger.info({ issueId, executionId, finalStatus }, 'issue_turn_settled')
     } catch (error) {
       logger.error({ issueId, executionId, error }, 'issue_turn_settle_failed')

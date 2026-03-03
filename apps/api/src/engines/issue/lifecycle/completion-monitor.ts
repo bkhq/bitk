@@ -162,12 +162,12 @@ export function monitorCompletion(
       if (exitCode === 0 && !logicalFailure) {
         dispatch(managed, { type: 'MARK_COMPLETED' })
         syncPmState(ctx, executionId, 'completed')
-        emitStateChange(ctx, issueId, executionId, 'completed')
+        emitStateChange(issueId, executionId, 'completed')
         await settleIssue(ctx, issueId, executionId, 'completed')
       } else {
         dispatch(managed, { type: 'MARK_FAILED' })
         syncPmState(ctx, executionId, 'failed')
-        emitStateChange(ctx, issueId, executionId, 'failed')
+        emitStateChange(issueId, executionId, 'failed')
         logger.warn(
           {
             issueId,
@@ -206,7 +206,7 @@ export function monitorCompletion(
     } catch {
       dispatch(managed, { type: 'MARK_FAILED' })
       syncPmState(ctx, executionId, 'failed')
-      emitStateChange(ctx, issueId, executionId, 'failed')
+      emitStateChange(issueId, executionId, 'failed')
       await settleIssue(ctx, issueId, executionId, 'failed')
     }
   })()

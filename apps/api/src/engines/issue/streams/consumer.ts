@@ -28,7 +28,6 @@ export interface StreamCallbacks {
 // ---------- Helpers ----------
 
 function pushStderrEntry(
-  managed: ManagedProcess,
   content: string,
   turnIndex: number,
   onEntry: (entry: NormalizedLogEntry) => void,
@@ -39,7 +38,6 @@ function pushStderrEntry(
     turnIndex,
     timestamp: new Date().toISOString(),
   }
-  managed.logs.push(entry)
   onEntry(entry)
 }
 
@@ -126,7 +124,6 @@ export async function consumeStderr(
         const managed = callbacks.getManaged()
         if (!managed) return
         pushStderrEntry(
-          managed,
           line,
           callbacks.getTurnIndex(),
           callbacks.onEntry,
@@ -138,7 +135,6 @@ export async function consumeStderr(
       const managed = callbacks.getManaged()
       if (managed) {
         pushStderrEntry(
-          managed,
           buffer,
           callbacks.getTurnIndex(),
           callbacks.onEntry,

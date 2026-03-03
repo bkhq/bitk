@@ -18,5 +18,5 @@ export async function settleIssue(
   await updateIssueSession(issueId, { sessionStatus: status })
   await autoMoveToReview(issueId)
   cleanupDomainData(ctx, executionId)
-  emitIssueSettled(ctx, issueId, executionId, status)
+  emitIssueSettled(issueId, executionId, status)
 }

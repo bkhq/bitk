@@ -252,7 +252,7 @@ export async function spawnFollowUpProcess(
   const turnIndex = getNextTurnIndex(issueId)
   ctx.entryCounters.set(executionId, 0)
   ctx.turnIndexes.set(executionId, turnIndex)
-  emitStateChange(ctx, issueId, executionId, 'running')
+  emitStateChange(issueId, executionId, 'running')
   const messageId = persistUserMessage(
     ctx,
     issueId,
@@ -323,7 +323,7 @@ export async function spawnFollowUpProcess(
     await updateIssueSession(issueId, { sessionStatus: 'failed' }).catch((e) =>
       logger.error({ issueId, error: e }, 'spawn_failed_revert_session_error'),
     )
-    emitStateChange(ctx, issueId, executionId, 'failed')
+    emitStateChange(issueId, executionId, 'failed')
     ctx.entryCounters.delete(executionId)
     ctx.turnIndexes.delete(executionId)
     throw spawnError

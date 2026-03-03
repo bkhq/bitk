@@ -4,36 +4,10 @@ import { eq } from 'drizzle-orm'
 import { db } from '@/db'
 import { findProject } from '@/db/helpers'
 import { issues as issuesTable } from '@/db/schema'
-import { issueEngine } from '@/engines/issue'
+import { appEvents } from '@/events'
 import { logger } from '@/logger'
 
-export interface ChangesSummary {
-  issueId: string
-  fileCount: number
-  additions: number
-  deletions: number
-}
-
-type ChangesSummaryCallback = (summary: ChangesSummary) => void
-
-const listeners = new Set<ChangesSummaryCallback>()
-
-export function onChangesSummary(cb: ChangesSummaryCallback): () => void {
-  listeners.add(cb)
-  return () => {
-    listeners.delete(cb)
-  }
-}
-
-function emit(summary: ChangesSummary): void {
-  for (const cb of listeners) {
-    try {
-      cb(summary)
-    } catch {
-      /* ignore */
-    }
-  }
-}
+export type { ChangesSummary } from '@bitk/shared'
 
 // --- Git helpers ---
 
@@ -76,7 +50,12 @@ async function computeAndEmit(issueId: string): Promise<void> {
     // Check git repo
     const gitCheck = await runGit(['rev-parse', '--is-inside-work-tree'], root)
     if (gitCheck.code !== 0 || gitCheck.stdout.trim() !== 'true') {
-      emit({ issueId, fileCount: 0, additions: 0, deletions: 0 })
+      appEvents.emit('changes-summary', {
+        issueId,
+        fileCount: 0,
+        additions: 0,
+        deletions: 0,
+      })
       return
     }
 
@@ -116,7 +95,12 @@ async function computeAndEmit(issueId: string): Promise<void> {
       }
     }
 
-    emit({ issueId, fileCount, additions, deletions })
+    appEvents.emit('changes-summary', {
+      issueId,
+      fileCount,
+      additions,
+      deletions,
+    })
   } catch (err) {
     logger.error({ err, issueId }, 'changes_summary_compute_error')
   }
@@ -126,8 +110,8 @@ async function computeAndEmit(issueId: string): Promise<void> {
 
 export function startChangesSummaryWatcher(): void {
   // Only compute when session settles (completed/failed/cancelled)
-  issueEngine.onIssueSettled((issueId) => {
-    void computeAndEmit(issueId)
+  appEvents.on('done', (data) => {
+    void computeAndEmit(data.issueId)
   })
 
   logger.debug('changes_summary_watcher_started')

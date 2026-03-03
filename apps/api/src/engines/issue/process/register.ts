@@ -70,13 +70,13 @@ export function register(
   }
   ctx.turnIndexes.set(executionId, turnIndex)
   if (!alreadyInitialised) {
-    emitStateChange(ctx, issueId, executionId, 'running')
+    emitStateChange(issueId, executionId, 'running')
   }
 
   const stdoutCallbacks: StreamCallbacks = {
     getManaged: () => ctx.pm.get(executionId)?.meta,
     getTurnIndex: () => ctx.turnIndexes.get(executionId) ?? 0,
-    onEntry: (entry) => handleStreamEntry(ctx, issueId, executionId, entry),
+    onEntry: (entry) => handleStreamEntry(issueId, executionId, entry),
     onTurnCompleted,
     onStreamError: (error) =>
       handleStreamError(ctx, issueId, executionId, error),
@@ -85,7 +85,7 @@ export function register(
     getManaged: () => ctx.pm.get(executionId)?.meta,
     getTurnIndex: () => ctx.turnIndexes.get(executionId) ?? 0,
     onEntry: (entry: NormalizedLogEntry) =>
-      handleStderrEntry(ctx, issueId, executionId, entry),
+      handleStderrEntry(issueId, executionId, entry),
   }
 
   consumeStream(

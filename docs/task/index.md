@@ -1,7 +1,8 @@
 # Task Index
 
-> Updated: 2026-03-03 02:00 UTC
+> Updated: 2026-03-03 04:00 UTC
 
+- [x] **ENG-008 重构事件引擎：统一事件总线** `P1` - owner: claude - file: `docs/task/ENG-008.md`
 - [x] **WT-001 重构 Worktree 系统** `P1` - owner: claude - file: `docs/task/WT-001.md`
 - [x] **FILE-001 添加 GitHub 风格的项目文件浏览器** `P1` - owner: claude - file: `docs/task/FILE-001.md`
 
