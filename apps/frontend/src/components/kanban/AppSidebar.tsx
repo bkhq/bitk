@@ -17,7 +17,6 @@ import { AppSettingsDialog } from '@/components/AppSettingsDialog'
 import { CreateProjectDialog } from '@/components/CreateProjectDialog'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
-import { useClickOutside } from '@/hooks/use-click-outside'
 import { useEventConnection } from '@/hooks/use-event-connection'
 import { useProjects } from '@/hooks/use-kanban'
 import { getProjectInitials } from '@/lib/format'
@@ -230,58 +229,28 @@ function ViewModeToggle({ activeProjectId }: { activeProjectId: string }) {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { mode, setMode } = useViewModeStore()
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-  useClickOutside(ref, open, () => setOpen(false))
 
+  const nextMode = mode === 'kanban' ? 'list' : 'kanban'
   const Icon = mode === 'list' ? List : LayoutGrid
-
-  const switchMode = (newMode: 'kanban' | 'list') => {
-    setMode(newMode)
-    setOpen(false)
-    const paths = {
-      kanban: `/projects/${activeProjectId}`,
-      list: `/projects/${activeProjectId}/issues`,
-    }
-    void navigate(paths[newMode])
-  }
+  const label = mode === 'kanban' ? t('viewMode.kanban') : t('viewMode.list')
 
   return (
-    <div ref={ref} className="relative">
-      <Button
-        variant="ghost"
-        size="icon"
-        className="h-9 w-9 text-muted-foreground"
-        aria-label={t('viewMode.switchView')}
-        title={mode === 'kanban' ? t('viewMode.kanban') : t('viewMode.list')}
-        onClick={() => setOpen((v) => !v)}
-      >
-        <Icon className="h-4 w-4" />
-      </Button>
-      {open ? (
-        <div className="absolute left-full bottom-0 ml-2 z-[100] min-w-[120px] rounded-md border bg-popover py-1 shadow-lg">
-          <button
-            type="button"
-            onClick={() => switchMode('kanban')}
-            className={`flex w-full items-center gap-2 px-3 py-1.5 text-sm transition-colors hover:bg-accent ${
-              mode === 'kanban' ? 'bg-accent/50 font-medium' : ''
-            }`}
-          >
-            <LayoutGrid className="h-3.5 w-3.5" />
-            {t('viewMode.kanban')}
-          </button>
-          <button
-            type="button"
-            onClick={() => switchMode('list')}
-            className={`flex w-full items-center gap-2 px-3 py-1.5 text-sm transition-colors hover:bg-accent ${
-              mode === 'list' ? 'bg-accent/50 font-medium' : ''
-            }`}
-          >
-            <List className="h-3.5 w-3.5" />
-            {t('viewMode.list')}
-          </button>
-        </div>
-      ) : null}
-    </div>
+    <Button
+      variant="ghost"
+      size="icon"
+      className="h-9 w-9 text-muted-foreground"
+      aria-label={t('viewMode.switchView')}
+      title={label}
+      onClick={() => {
+        setMode(nextMode)
+        const path =
+          nextMode === 'kanban'
+            ? `/projects/${activeProjectId}`
+            : `/projects/${activeProjectId}/issues`
+        void navigate(path)
+      }}
+    >
+      <Icon className="h-4 w-4" />
+    </Button>
   )
 }

@@ -9,7 +9,7 @@ import {
   Settings,
   TerminalSquare,
 } from 'lucide-react'
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { AppLogo } from '@/components/AppLogo'
@@ -21,11 +21,11 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
-import { useClickOutside } from '@/hooks/use-click-outside'
 import { useProjects } from '@/hooks/use-kanban'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { useProjectStats } from '@/hooks/use-project-stats'
 import { getProjectInitials } from '@/lib/format'
+import { cn } from '@/lib/utils'
 import { useTerminalStore } from '@/stores/terminal-store'
 import { useViewModeStore } from '@/stores/view-mode-store'
 import type { Project } from '@/types/kanban'
@@ -189,59 +189,39 @@ function DesktopHeaderControls({
   onOpenSettings: () => void
 }) {
   const { t } = useTranslation()
-
   const { mode, setMode } = useViewModeStore()
-  const [viewOpen, setViewOpen] = useState(false)
-  const viewRef = useRef<HTMLDivElement>(null)
-  useClickOutside(viewRef, viewOpen, () => setViewOpen(false))
-
-  const ViewIcon = mode === 'kanban' ? LayoutGrid : List
+  const isListView = mode === 'list'
 
   return (
     <div className="ml-auto flex items-center gap-2">
-      {/* View mode dropdown */}
-      <div ref={viewRef} className="relative">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-8 gap-1.5 text-muted-foreground"
-          onClick={() => setViewOpen((v) => !v)}
+      {/* View mode toggle */}
+      <div className="flex items-center rounded-md border border-border bg-muted/30 p-0.5">
+        <button
+          type="button"
+          onClick={() => setMode('kanban')}
+          className={cn(
+            'rounded-sm px-2 py-1 text-xs transition-colors',
+            !isListView
+              ? 'bg-background text-foreground shadow-sm'
+              : 'text-muted-foreground hover:text-foreground',
+          )}
+          aria-label={t('viewMode.kanban')}
         >
-          <ViewIcon className="h-4 w-4" />
-          <span className="text-xs">
-            {mode === 'kanban' ? t('viewMode.kanban') : t('viewMode.list')}
-          </span>
-        </Button>
-        {viewOpen ? (
-          <div className="absolute right-0 top-full mt-1 z-[100] min-w-[120px] rounded-md border bg-popover py-1 shadow-lg">
-            <button
-              type="button"
-              onClick={() => {
-                setMode('kanban')
-                setViewOpen(false)
-              }}
-              className={`flex w-full items-center gap-2 px-3 py-1.5 text-sm transition-colors hover:bg-accent ${
-                mode === 'kanban' ? 'bg-accent/50 font-medium' : ''
-              }`}
-            >
-              <LayoutGrid className="h-3.5 w-3.5" />
-              {t('viewMode.kanban')}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setMode('list')
-                setViewOpen(false)
-              }}
-              className={`flex w-full items-center gap-2 px-3 py-1.5 text-sm transition-colors hover:bg-accent ${
-                mode === 'list' ? 'bg-accent/50 font-medium' : ''
-              }`}
-            >
-              <List className="h-3.5 w-3.5" />
-              {t('viewMode.list')}
-            </button>
-          </div>
-        ) : null}
+          <LayoutGrid className="h-3.5 w-3.5" />
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode('list')}
+          className={cn(
+            'rounded-sm px-2 py-1 text-xs transition-colors',
+            isListView
+              ? 'bg-background text-foreground shadow-sm'
+              : 'text-muted-foreground hover:text-foreground',
+          )}
+          aria-label={t('viewMode.list')}
+        >
+          <List className="h-3.5 w-3.5" />
+        </button>
       </div>
 
       <Button
