@@ -107,10 +107,7 @@ export function AppSettingsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        aria-describedby={undefined}
-        className="sm:max-w-lg"
-      >
+      <DialogContent aria-describedby={undefined} className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{t('settings.title')}</DialogTitle>
         </DialogHeader>
@@ -212,7 +209,6 @@ export function AppSettingsDialog({
                   }
                 />
               </div>
-
             </div>
           </TabsContent>
 
@@ -379,7 +375,6 @@ function AboutSection({ open }: { open: boolean }) {
 
   return (
     <div className="space-y-3">
-
       {/* Version & Build */}
       <div className="mt-1.5 grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
         <div className="flex min-w-0 flex-wrap items-center gap-1.5">
