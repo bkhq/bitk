@@ -1,24 +1,28 @@
 import { getAppSetting, setAppSetting } from '@/db/helpers'
 import { logger } from '@/logger'
 import { COMMIT, VERSION } from '@/version'
-import { CHECK_INTERVAL_MS, isPackageMode, UPGRADE_ENABLED_KEY } from './constants'
 import { checkForUpdates } from './checker'
-import { getDownloadStatus, downloadUpdate } from './download'
+import {
+  CHECK_INTERVAL_MS,
+  isPackageMode,
+  UPGRADE_ENABLED_KEY,
+} from './constants'
+import { downloadUpdate, getDownloadStatus } from './download'
 import { cleanupTmpFiles } from './files'
 
 // --- Re-exports (preserve public API for route consumers) ---
 
-export type {
-  ReleaseInfo,
-  ReleaseAsset,
-  UpgradeCheckResult,
-  DownloadStatus,
-} from './types'
+export { applyUpgradeAndRestart, registerShutdownForUpgrade } from './apply'
 
 export { checkForUpdates, getLastCheckResult } from './checker'
-export { getDownloadStatus, downloadUpdate } from './download'
-export { applyUpgradeAndRestart, registerShutdownForUpgrade } from './apply'
-export { listDownloadedUpdates, deleteDownloadedUpdate } from './files'
+export { downloadUpdate, getDownloadStatus } from './download'
+export { deleteDownloadedUpdate, listDownloadedUpdates } from './files'
+export type {
+  DownloadStatus,
+  ReleaseAsset,
+  ReleaseInfo,
+  UpgradeCheckResult,
+} from './types'
 
 // --- Settings ---
 

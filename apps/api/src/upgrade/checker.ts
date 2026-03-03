@@ -6,7 +6,7 @@ import {
   resolveDownloadFileName,
 } from '@/upgrade/utils'
 import { COMMIT, VERSION } from '@/version'
-import { UPGRADE_CHECK_RESULT_KEY, isPackageMode } from './constants'
+import { isPackageMode, UPGRADE_CHECK_RESULT_KEY } from './constants'
 import { fetchLatestRelease } from './github'
 import type { ReleaseAsset, UpgradeCheckResult } from './types'
 
@@ -61,7 +61,11 @@ export async function checkForUpdates(): Promise<UpgradeCheckResult> {
   const hasUpdate = !!matchingAsset && isNewerVersion(VERSION, release.version)
 
   const downloadFileName = matchingAsset
-    ? resolveDownloadFileName(matchingAsset.name, release.version, isPackageMode)
+    ? resolveDownloadFileName(
+        matchingAsset.name,
+        release.version,
+        isPackageMode,
+      )
     : null
 
   const result: UpgradeCheckResult = {

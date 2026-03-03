@@ -1,24 +1,7 @@
-import {
-  afterAll,
-  afterEach,
-  beforeAll,
-  describe,
-  expect,
-  it,
-  mock,
-} from 'bun:test'
+import { afterAll, beforeAll, describe, expect, it } from 'bun:test'
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-
-// Mock UPDATES_DIR to use a temp directory
-const TMP_DIR = resolve(import.meta.dir, '.tmp-files-test')
-
-// We need to mock the constants module before importing files module
-// Instead, test the logic by calling the functions that use UPDATES_DIR indirectly
-// For now, test deleteDownloadedUpdate validation logic (which doesn't depend on FS location)
-
-import { VALID_FILE_NAME_RE } from '@/upgrade/utils'
-import { isPathWithinDir } from '@/upgrade/utils'
+import { isPathWithinDir, VALID_FILE_NAME_RE } from '@/upgrade/utils'
 
 describe('deleteDownloadedUpdate validation', () => {
   it('rejects invalid file names', () => {

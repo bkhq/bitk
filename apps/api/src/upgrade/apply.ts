@@ -28,7 +28,15 @@ async function extractArchive(
 
   try {
     const proc = Bun.spawn(
-      ['tar', '-xzf', archivePath, '-C', tmpDir, '--no-same-owner', '--no-overwrite-dir'],
+      [
+        'tar',
+        '-xzf',
+        archivePath,
+        '-C',
+        tmpDir,
+        '--no-same-owner',
+        '--no-overwrite-dir',
+      ],
       { stdio: ['ignore', 'pipe', 'pipe'] },
     )
     const exitCode = await proc.exited

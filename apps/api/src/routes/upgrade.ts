@@ -1,6 +1,7 @@
 import { zValidator } from '@hono/zod-validator'
 import { Hono } from 'hono'
 import * as z from 'zod'
+import { logger } from '@/logger'
 import {
   applyUpgradeAndRestart,
   checkForUpdates,
@@ -14,7 +15,6 @@ import {
   setUpgradeEnabled,
 } from '@/upgrade/service'
 import { VALID_FILE_NAME_RE } from '@/upgrade/utils'
-import { logger } from '@/logger'
 
 const ALLOWED_DOWNLOAD_HOSTS = new Set([
   'github.com',
