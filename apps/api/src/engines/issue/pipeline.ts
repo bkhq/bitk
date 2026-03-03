@@ -28,7 +28,6 @@ import { applyAutoTitle } from './title'
  * In particular, DB persistence failure no longer prevents SSE delivery.
  */
 export function registerLogPipeline(ctx: EngineContext): void {
-
   // ── Order 10: DB persistence ───────────────────────────
   appEvents.on(
     'log',
