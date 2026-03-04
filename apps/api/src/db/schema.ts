@@ -100,6 +100,13 @@ export const appSettings = sqliteTable('app_settings', {
   ...commonFields,
 })
 
+export const notes = sqliteTable('notes', {
+  id: id(),
+  title: text('title').notNull().default(''),
+  content: text('content').notNull().default(''),
+  ...commonFields,
+})
+
 export const issueLogs = sqliteTable(
   'issues_logs',
   {

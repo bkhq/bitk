@@ -8,6 +8,7 @@
 
 ## 已完成
 
+- [x] **FEAT-006 添加 Notes 笔记功能** `P1` - owner: claude - file: `docs/task/FEAT-006.md`
 - [x] **TEST-003 深度测试进程与状态编排并补充架构文档** `P1` - owner: codex - file: `docs/task/TEST-003.md`
 - [x] **TEST-002 补充 IssueEngine 集成测试** `P1` - owner: codex - file: `docs/task/TEST-002.md`
 - [x] **ENG-015 审计后端进程与 Issue 状态管理** `P0` - owner: codex - file: `docs/task/ENG-015.md`

@@ -4,6 +4,7 @@ import { secureHeaders } from 'hono/secure-headers'
 import { getEngineDiscovery } from './engines/startup-probe'
 import { httpLogger, logger } from './logger'
 import { apiRoutes, engineRoutes, eventRoutes, settingsRoutes } from './routes'
+import notesRoutes from './routes/notes'
 import terminalRoute from './routes/terminal'
 import upgradeRoutes from './routes/upgrade'
 
@@ -28,6 +29,7 @@ app.route('/api', apiRoutes)
 app.route('/api/engines', engineRoutes)
 app.route('/api/events', eventRoutes)
 app.route('/api/settings', settingsRoutes)
+app.route('/api/notes', notesRoutes)
 app.route('/api', terminalRoute)
 app.route('/api/upgrade', upgradeRoutes)
 

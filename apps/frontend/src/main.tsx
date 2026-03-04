@@ -7,6 +7,7 @@ import { ErrorBoundary } from './components/ErrorBoundary'
 import { Toaster } from './components/ui/sonner'
 import { eventBus } from './lib/event-bus'
 import { useFileBrowserStore } from './stores/file-browser-store'
+import { useNotesStore } from './stores/notes-store'
 import { useProcessManagerStore } from './stores/process-manager-store'
 import { useTerminalStore } from './stores/terminal-store'
 import './i18n'
@@ -66,6 +67,11 @@ const LazyProcessManagerDrawer = lazy(() =>
     default: m.ProcessManagerDrawer,
   })),
 )
+const LazyNotesDrawer = lazy(() =>
+  import('./components/notes/NotesDrawer').then((m) => ({
+    default: m.NotesDrawer,
+  })),
+)
 
 function AppShell({ children }: { children: React.ReactNode }) {
   return (
@@ -107,6 +113,18 @@ function ProcessManagerDrawerMount() {
   return (
     <Suspense fallback={null}>
       <LazyProcessManagerDrawer />
+    </Suspense>
+  )
+}
+
+function NotesDrawerMount() {
+  const isOpen = useNotesStore((s) => s.isOpen)
+
+  if (!isOpen) return null
+
+  return (
+    <Suspense fallback={null}>
+      <LazyNotesDrawer />
     </Suspense>
   )
 }
@@ -175,6 +193,7 @@ if (!rootElement.innerHTML) {
           <TerminalDrawerMount />
           <FileBrowserDrawerMount />
           <ProcessManagerDrawerMount />
+          <NotesDrawerMount />
           <Toaster position="top-center" />
         </ErrorBoundary>
       </BrowserRouter>

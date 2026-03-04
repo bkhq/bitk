@@ -25,6 +25,7 @@ export type {
   IssueLogsResponse,
   LogEntryType,
   NormalizedLogEntry,
+  Note,
   PermissionMode,
   Priority,
   ProbeResult,
