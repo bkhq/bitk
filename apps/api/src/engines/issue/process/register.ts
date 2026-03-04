@@ -93,15 +93,14 @@ export function register(
   // (filtered from the downstream stdout stream) still update lastActivityAt.
   // This prevents false stall detection during long-running tool executions
   // where the process is alive but not producing normal log entries.
-  if (process.protocolHandler?.onActivity === undefined) {
+  // Wire once — guard prevents overwriting if register() is called multiple times.
+  if (process.protocolHandler && !process.protocolHandler.onActivity) {
     const getManagedRef = stdoutCallbacks.getManaged
-    if (process.protocolHandler) {
-      process.protocolHandler.onActivity = () => {
-        const m = getManagedRef()
-        if (m) {
-          m.lastActivityAt = new Date()
-          if (m.stallProbeAt) m.stallProbeAt = undefined
-        }
+    process.protocolHandler.onActivity = () => {
+      const m = getManagedRef()
+      if (m) {
+        m.lastActivityAt = new Date()
+        if (m.stallProbeAt) m.stallProbeAt = undefined
       }
     }
   }

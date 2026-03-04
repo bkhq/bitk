@@ -303,7 +303,8 @@ export class ClaudeProtocolHandler {
     })
   }
 
-  async interrupt(): Promise<void> {
+  /** Fire-and-forget: writes the interrupt request to stdin synchronously. */
+  interrupt(): void {
     this.writeJson({
       type: 'control_request',
       request_id: ulid(),

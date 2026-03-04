@@ -97,9 +97,9 @@ export class ClaudeCodeExecutor implements EngineExecutor {
       { pid: (spawnedProcess.subprocess as { pid?: number }).pid },
       'claude_cancel_requested',
     )
-    // Send graceful interrupt via protocol handler first
+    // Send graceful interrupt via protocol handler (fire-and-forget write to stdin)
     if (spawnedProcess.protocolHandler) {
-      await spawnedProcess.protocolHandler.interrupt()
+      spawnedProcess.protocolHandler.interrupt()
     } else {
       spawnedProcess.cancel()
     }
@@ -324,9 +324,7 @@ export class ClaudeCodeExecutor implements EngineExecutor {
       subprocess: proc,
       stdout: filteredStdout,
       stderr: proc.stderr as ReadableStream<Uint8Array>,
-      cancel: () => {
-        void handler.interrupt().catch(() => {})
-      },
+      cancel: () => handler.interrupt(),
       protocolHandler: handler,
       spawnCommand: [cmd.program, ...cmd.args].join(' '),
     }
