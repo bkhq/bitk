@@ -181,12 +181,24 @@ export function ChatBody({
     appendServerMessage,
   } = useSessionState(projectId, issueId, issue)
 
-  // Reset cancelling state when the session settles (terminal or no longer thinking)
+  // Reset cancelling state when the session settles or a new turn starts.
+  // Without the sessionStatus check, a follow-up that keeps isThinking=true
+  // would leave isCancelling stuck, blocking the user from cancelling the new turn.
+  const prevSessionStatusRef = useRef(issue.sessionStatus)
   useEffect(() => {
-    if (isCancelling && !isThinking) {
+    const prev = prevSessionStatusRef.current
+    prevSessionStatusRef.current = issue.sessionStatus
+    if (!isCancelling) return
+    // Session settled
+    if (!isThinking) {
+      setIsCancelling(false)
+      return
+    }
+    // New turn started (e.g. follow-up reactivated while cancel was in progress)
+    if (issue.sessionStatus === 'running' && prev !== 'running') {
       setIsCancelling(false)
     }
-  }, [isCancelling, isThinking])
+  }, [isCancelling, isThinking, issue.sessionStatus])
 
   // Show toast when execution transitions to failed
   const prevStatusRef = useRef(issue.sessionStatus)
