@@ -128,7 +128,7 @@ export function IssueListPanel({
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7 text-muted-foreground hover:text-foreground md:hidden"
+              className="h-7 w-7 text-muted-foreground hover:text-foreground"
               onClick={() => toggleFileBrowser(projectId)}
               aria-label={t('viewMode.files')}
               title={t('viewMode.files')}
@@ -139,7 +139,7 @@ export function IssueListPanel({
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 text-muted-foreground hover:text-foreground md:hidden"
+            className="h-7 w-7 text-muted-foreground hover:text-foreground"
             onClick={() => toggleProcessManager(projectId)}
             aria-label={t('processManager.title')}
             title={t('processManager.title')}

@@ -6,14 +6,12 @@ import {
   Plus,
   Search,
   Settings,
-  SlidersHorizontal,
 } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { ProjectSettingsDialog } from '@/components/ProjectSettingsDialog'
 import { Button } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
 import { useFileBrowserStore } from '@/stores/file-browser-store'
 import { usePanelStore } from '@/stores/panel-store'
@@ -67,7 +65,7 @@ export function KanbanHeader({
             <button
               type="button"
               onClick={() => toggleFileBrowser(project.alias)}
-              className="rounded-md p-1 text-muted-foreground hover:text-foreground hover:bg-foreground/[0.07] transition-colors shrink-0 md:hidden"
+              className="rounded-md p-1 text-muted-foreground hover:text-foreground hover:bg-foreground/[0.07] transition-colors shrink-0"
               aria-label={t('viewMode.files')}
               title={t('viewMode.files')}
             >
@@ -77,7 +75,7 @@ export function KanbanHeader({
           <button
             type="button"
             onClick={() => toggleProcessManager(project.alias)}
-            className="rounded-md p-1 text-muted-foreground hover:text-foreground hover:bg-foreground/[0.07] transition-colors shrink-0 md:hidden"
+            className="rounded-md p-1 text-muted-foreground hover:text-foreground hover:bg-foreground/[0.07] transition-colors shrink-0"
             aria-label={t('processManager.title')}
             title={t('processManager.title')}
           >
@@ -136,18 +134,6 @@ export function KanbanHeader({
               className="w-28 bg-transparent text-xs outline-none placeholder:text-muted-foreground"
             />
           </div>
-
-          {/* Filter — icon only on mobile */}
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8 text-xs text-muted-foreground md:gap-1.5"
-          >
-            <SlidersHorizontal className="h-3.5 w-3.5" />
-            <span className="hidden md:inline">{t('kanban.filter')}</span>
-          </Button>
-
-          <Separator orientation="vertical" className="h-5 hidden md:block" />
 
           {/* New issue button — icon only on mobile */}
           <Button

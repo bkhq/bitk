@@ -1,6 +1,4 @@
 import {
-  Activity,
-  FolderOpen,
   LayoutGrid,
   List,
   Plus,
@@ -20,8 +18,6 @@ import { Separator } from '@/components/ui/separator'
 import { useEventConnection } from '@/hooks/use-event-connection'
 import { useProjects } from '@/hooks/use-kanban'
 import { getProjectInitials } from '@/lib/format'
-import { useFileBrowserStore } from '@/stores/file-browser-store'
-import { useProcessManagerStore } from '@/stores/process-manager-store'
 import { useTerminalStore } from '@/stores/terminal-store'
 import { useViewModeStore } from '@/stores/view-mode-store'
 import type { Project } from '@/types/kanban'
@@ -93,12 +89,6 @@ export function AppSidebar({ activeProjectId }: { activeProjectId: string }) {
   const connected = useEventConnection()
   const toggleTerminal = useTerminalStore((s) => s.toggle)
   const isTerminalMinimized = useTerminalStore((s) => s.isMinimized)
-  const toggleFileBrowser = useFileBrowserStore((s) => s.toggle)
-  const isFileBrowserMinimized = useFileBrowserStore((s) => s.isMinimized)
-  const isFileBrowserOpen = useFileBrowserStore((s) => s.isOpen)
-  const toggleProcessManager = useProcessManagerStore((s) => s.toggle)
-  const isProcessManagerMinimized = useProcessManagerStore((s) => s.isMinimized)
-  const isProcessManagerOpen = useProcessManagerStore((s) => s.isOpen)
 
   const handleProjectCreated = useCallback(
     (project: Project) => {
@@ -179,32 +169,6 @@ export function AppSidebar({ activeProjectId }: { activeProjectId: string }) {
         >
           <TerminalSquare className="h-4 w-4" />
           {isTerminalMinimized && (
-            <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-primary" />
-          )}
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => toggleFileBrowser(activeProjectId)}
-          className={`relative h-9 w-9 ${isFileBrowserOpen ? 'text-primary' : 'text-muted-foreground'}`}
-          aria-label={t('viewMode.files')}
-          title={t('viewMode.files')}
-        >
-          <FolderOpen className="h-4 w-4" />
-          {isFileBrowserMinimized && (
-            <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-primary" />
-          )}
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => toggleProcessManager(activeProjectId)}
-          className={`relative h-9 w-9 ${isProcessManagerOpen ? 'text-primary' : 'text-muted-foreground'}`}
-          aria-label={t('processManager.title')}
-          title={t('processManager.title')}
-        >
-          <Activity className="h-4 w-4" />
-          {isProcessManagerMinimized && (
             <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-primary" />
           )}
         </Button>
