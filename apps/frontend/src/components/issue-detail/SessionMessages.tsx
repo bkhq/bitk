@@ -650,9 +650,9 @@ export function SessionMessages({
             <span />
           </span>
           <span className="font-medium text-violet-500/70 dark:text-violet-400/70">
-            {t('session.thinking')}
+            {isCancelling ? t('session.cancelling') : t('session.thinking')}
           </span>
-          {workingStep ? (
+          {!isCancelling && workingStep ? (
             <span className="truncate text-[11px] text-muted-foreground/60 italic">
               {workingStep}
             </span>
@@ -664,7 +664,7 @@ export function SessionMessages({
               disabled={isCancelling}
               className="ml-auto rounded-md border border-border/40 bg-background/80 px-2 py-0.5 text-[11px] text-foreground/70 transition-colors hover:bg-accent hover:border-border disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {t('common.cancel')}
+              {isCancelling ? t('session.cancellingBtn') : t('common.cancel')}
             </button>
           ) : null}
         </div>

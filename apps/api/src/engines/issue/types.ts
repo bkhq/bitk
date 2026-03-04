@@ -44,6 +44,11 @@ export interface ManagedProcess {
    *  If activity resumes after the probe, this is cleared in consumeStream.
    *  If still no activity after STALL_PROBE_GRACE_MS, the process is force-killed. */
   stallProbeAt?: Date
+  /** Unique ID for the current cancel escalation. Set when cancelIssue fires
+   *  the async escalation loop, cleared when a new turn starts (START_TURN).
+   *  Allows the escalation to detect that a follow-up has reactivated the
+   *  process and abort instead of hard-killing a legitimate turn. */
+  cancelEscalationId?: string
   /** Git repo directory that owns this worktree (needed for `git worktree remove`) */
   worktreeBaseDir?: string
   worktreePath?: string

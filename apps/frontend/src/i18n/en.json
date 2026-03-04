@@ -181,6 +181,8 @@
     "sending": "Sending...",
     "starting": "Starting...",
     "thinking": "AI is thinking...",
+    "cancelling": "Cancelling...",
+    "cancellingBtn": "Cancelling...",
     "loadMore": "Load earlier messages",
     "scrollToTop": "Scroll to top",
     "scrollToBottom": "Scroll to bottom",

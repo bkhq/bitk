@@ -150,6 +150,7 @@ export function ChatBody({
   const cancelIssue = useCancelIssue(projectId)
   const deleteIssueMutation = useDeleteIssue(projectId)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [isCancelling, setIsCancelling] = useState(false)
 
   const handleDelete = useCallback(() => {
     setDeleteDialogOpen(true)
@@ -179,6 +180,25 @@ export function ChatBody({
     loadOlderLogs,
     appendServerMessage,
   } = useSessionState(projectId, issueId, issue)
+
+  // Reset cancelling state when the session settles or a new turn starts.
+  // Without the sessionStatus check, a follow-up that keeps isThinking=true
+  // would leave isCancelling stuck, blocking the user from cancelling the new turn.
+  const prevSessionStatusRef = useRef(issue.sessionStatus)
+  useEffect(() => {
+    const prev = prevSessionStatusRef.current
+    prevSessionStatusRef.current = issue.sessionStatus
+    if (!isCancelling) return
+    // Session settled
+    if (!isThinking) {
+      setIsCancelling(false)
+      return
+    }
+    // New turn started (e.g. follow-up reactivated while cancel was in progress)
+    if (issue.sessionStatus === 'running' && prev !== 'running') {
+      setIsCancelling(false)
+    }
+  }, [isCancelling, isThinking, issue.sessionStatus])
 
   // Show toast when execution transitions to failed
   const prevStatusRef = useRef(issue.sessionStatus)
@@ -240,8 +260,13 @@ export function ChatBody({
                 scrollRef={scrollRef}
                 isRunning={isThinking}
                 workingStep={workingStep}
-                onCancel={() => cancelIssue.mutate(issueId)}
-                isCancelling={cancelIssue.isPending}
+                onCancel={() => {
+                  setIsCancelling(true)
+                  cancelIssue.mutate(issueId, {
+                    onError: () => setIsCancelling(false),
+                  })
+                }}
+                isCancelling={isCancelling}
                 hasOlderLogs={hasOlderLogs}
                 isLoadingOlder={isLoadingOlder}
                 onLoadOlder={loadOlderLogs}
