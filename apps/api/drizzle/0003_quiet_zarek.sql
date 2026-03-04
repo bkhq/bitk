@@ -1,0 +1,1 @@
+ALTER TABLE `notes` ADD `is_pinned` integer DEFAULT 0 NOT NULL;

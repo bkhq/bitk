@@ -3,6 +3,7 @@ import {
   List,
   Plus,
   Settings,
+  StickyNote,
   TerminalSquare,
   Wifi,
   WifiOff,
@@ -18,6 +19,7 @@ import { Separator } from '@/components/ui/separator'
 import { useEventConnection } from '@/hooks/use-event-connection'
 import { useProjects } from '@/hooks/use-kanban'
 import { getProjectInitials } from '@/lib/format'
+import { useNotesStore } from '@/stores/notes-store'
 import { useTerminalStore } from '@/stores/terminal-store'
 import { useViewModeStore } from '@/stores/view-mode-store'
 import type { Project } from '@/types/kanban'
@@ -89,6 +91,7 @@ export function AppSidebar({ activeProjectId }: { activeProjectId: string }) {
   const connected = useEventConnection()
   const toggleTerminal = useTerminalStore((s) => s.toggle)
   const isTerminalMinimized = useTerminalStore((s) => s.isMinimized)
+  const toggleNotes = useNotesStore((s) => s.toggle)
 
   const handleProjectCreated = useCallback(
     (project: Project) => {
@@ -171,6 +174,16 @@ export function AppSidebar({ activeProjectId }: { activeProjectId: string }) {
           {isTerminalMinimized && (
             <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-primary" />
           )}
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={toggleNotes}
+          className="h-9 w-9 text-muted-foreground"
+          aria-label={t('notes.title')}
+          title={t('notes.title')}
+        >
+          <StickyNote className="h-4 w-4" />
         </Button>
         <ViewModeToggle activeProjectId={activeProjectId} />
         <Button

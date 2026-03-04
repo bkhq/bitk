@@ -363,5 +363,25 @@
     "resizePanel": "Resize terminal",
     "back": "Back",
     "kill": "Kill terminal"
+  },
+  "notes": {
+    "title": "Notes",
+    "close": "Close notes",
+    "create": "New note",
+    "delete": "Delete note",
+    "empty": "No notes yet",
+    "selectOrCreate": "Select or create a note",
+    "untitled": "Untitled",
+    "titlePlaceholder": "Note title...",
+    "contentPlaceholder": "Write something...",
+    "resizePanel": "Resize notes panel",
+    "searchPlaceholder": "Search your notes",
+    "back": "Back",
+    "lastEdited": "Last edited: {{time}}",
+    "pin": "Pin note",
+    "unpin": "Unpin note",
+    "pinned": "Pinned",
+    "other": "Other",
+    "loadError": "Failed to load notes"
   }
 }

@@ -363,5 +363,25 @@
     "resizePanel": "调整终端大小",
     "back": "返回",
     "kill": "终止终端"
+  },
+  "notes": {
+    "title": "笔记",
+    "close": "关闭笔记",
+    "create": "新建笔记",
+    "delete": "删除笔记",
+    "empty": "暂无笔记",
+    "selectOrCreate": "选择或创建一条笔记",
+    "untitled": "无标题",
+    "titlePlaceholder": "笔记标题...",
+    "contentPlaceholder": "写点什么...",
+    "resizePanel": "调整笔记面板大小",
+    "searchPlaceholder": "搜索您的笔记",
+    "back": "返回",
+    "lastEdited": "上次编辑时间: {{time}}",
+    "pin": "置顶笔记",
+    "unpin": "取消置顶",
+    "pinned": "已置顶",
+    "other": "其他",
+    "loadError": "加载笔记失败"
   }
 }

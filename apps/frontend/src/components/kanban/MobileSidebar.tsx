@@ -3,6 +3,7 @@ import {
   Menu,
   Plus,
   Settings,
+  StickyNote,
   TerminalSquare,
 } from 'lucide-react'
 import { useCallback, useState } from 'react'
@@ -16,6 +17,7 @@ import { Separator } from '@/components/ui/separator'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { useProjects } from '@/hooks/use-kanban'
 import { getProjectInitials } from '@/lib/format'
+import { useNotesStore } from '@/stores/notes-store'
 import { useTerminalStore } from '@/stores/terminal-store'
 import type { Project } from '@/types/kanban'
 
@@ -155,6 +157,17 @@ export function MobileSidebar({
               >
                 <TerminalSquare className="h-4 w-4 text-muted-foreground" />
                 {t('terminal.title')}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false)
+                  useNotesStore.getState().open()
+                }}
+                className="flex items-center gap-3 w-full px-4 min-h-[44px] text-sm text-foreground/80 hover:bg-accent/50 active:bg-accent transition-colors"
+              >
+                <StickyNote className="h-4 w-4 text-muted-foreground" />
+                {t('notes.title')}
               </button>
               <button
                 type="button"
