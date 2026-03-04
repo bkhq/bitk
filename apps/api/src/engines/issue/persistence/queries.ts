@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gt, lt, max, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, gt, inArray, lt, max, sql } from 'drizzle-orm'
 import { db } from '@/db'
 import {
   issueLogs as logsTable,
