@@ -1,6 +1,6 @@
 import {
   collectPendingWithAttachments,
-  markPendingMessagesDispatched,
+  promotePendingMessages,
 } from '@/db/pending-messages'
 import {
   autoMoveToReview,
@@ -92,12 +92,20 @@ export function handleTurnCompleted(
         )
         try {
           const issue = await getIssueWithSession(issueId)
+          // Promote pending rows (remove type:'pending') BEFORE the follow-up
+          // so they appear as regular user messages. Pass skipPersistMessage to
+          // avoid creating a duplicate user-message log entry.
+          await promotePendingMessages(pendingIds)
           await ctx.followUpIssue?.(
             issueId,
             pendingPrompt,
             issue?.model ?? undefined,
+            undefined, // permissionMode
+            undefined, // busyAction
+            undefined, // displayPrompt
+            undefined, // metadata
+            { skipPersistMessage: true },
           )
-          await markPendingMessagesDispatched(pendingIds)
           return
         } catch (flushErr) {
           logger.error({ issueId, err: flushErr }, 'auto_flush_pending_failed')

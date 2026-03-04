@@ -21,6 +21,7 @@ export async function followUpIssue(
   busyAction: 'queue' | 'cancel' = 'queue',
   displayPrompt?: string,
   metadata?: Record<string, unknown>,
+  opts?: { skipPersistMessage?: boolean },
 ): Promise<{ executionId: string; messageId?: string | null }> {
   return withIssueLock(ctx, issueId, async () => {
     logger.debug(
@@ -143,6 +144,7 @@ export async function followUpIssue(
           prompt,
           displayPrompt,
           metadata,
+          opts,
         )
         return { executionId: active.executionId, messageId: msgId }
       } catch (error) {
@@ -163,6 +165,7 @@ export async function followUpIssue(
           permissionMode,
           displayPrompt,
           metadata,
+          opts,
         )
       }
     }
@@ -179,6 +182,7 @@ export async function followUpIssue(
       permissionMode,
       displayPrompt,
       metadata,
+      opts,
     )
   })
 }

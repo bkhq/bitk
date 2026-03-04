@@ -43,6 +43,38 @@ export async function markPendingMessagesDispatched(ids: string[]) {
     .where(inArray(issueLogs.id, ids))
 }
 
+/**
+ * Promote pending messages: remove the `type: 'pending'` metadata flag so they
+ * appear as regular user messages.  The rows stay visible (visible = 1).
+ *
+ * Use this instead of `markPendingMessagesDispatched` when the engine will NOT
+ * persist a new user-message entry for the same content (skipPersistMessage),
+ * avoiding duplicate messages in the frontend.
+ */
+export async function promotePendingMessages(ids: string[]) {
+  if (ids.length === 0) return
+  // Update each row: parse metadata JSON, remove `type`, write back
+  const rows = await db
+    .select({ id: issueLogs.id, metadata: issueLogs.metadata })
+    .from(issueLogs)
+    .where(inArray(issueLogs.id, ids))
+  for (const row of rows) {
+    let meta: Record<string, unknown> = {}
+    try {
+      meta = row.metadata ? JSON.parse(row.metadata) : {}
+    } catch {
+      continue
+    }
+    const { type: _type, ...rest } = meta
+    await db
+      .update(issueLogs)
+      .set({
+        metadata: Object.keys(rest).length > 0 ? JSON.stringify(rest) : null,
+      })
+      .where(eq(issueLogs.id, row.id))
+  }
+}
+
 // ---------- Attachment context ----------
 
 /**

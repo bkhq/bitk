@@ -9,6 +9,7 @@ import { getAppSetting } from '@/db/helpers'
 import {
   collectPendingWithAttachments,
   markPendingMessagesDispatched,
+  promotePendingMessages,
 } from '@/db/pending-messages'
 import { issues as issuesTable } from '@/db/schema'
 import { issueEngine } from '@/engines/issue'
@@ -148,11 +149,21 @@ export function flushPendingAsFollowUp(
       const { prompt, pendingIds } =
         await collectPendingWithAttachments(issueId)
       if (pendingIds.length === 0) return
+      // Promote pending rows (remove type:'pending') so they appear as regular
+      // user messages. Pass skipPersistMessage to avoid a duplicate log entry.
+      await promotePendingMessages(pendingIds)
       // Emit SSE so frontend shows "AI thinking" indicator
       emitIssueUpdated(issueId, { sessionStatus: 'pending' })
-      await issueEngine.followUpIssue(issueId, prompt, issue.model ?? undefined)
-      // Delete pending rows only AFTER successful follow-up to prevent message loss
-      await markPendingMessagesDispatched(pendingIds)
+      await issueEngine.followUpIssue(
+        issueId,
+        prompt,
+        issue.model ?? undefined,
+        undefined, // permissionMode
+        'queue', // busyAction
+        undefined, // displayPrompt
+        undefined, // metadata
+        { skipPersistMessage: true },
+      )
       logger.debug(
         { issueId, pendingCount: pendingIds.length },
         'pending_flushed_as_followup',

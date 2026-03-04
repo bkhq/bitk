@@ -71,6 +71,7 @@ export class IssueEngine {
       busyAction?: 'queue' | 'cancel',
       displayPrompt?: string,
       metadata?: Record<string, unknown>,
+      opts?: { skipPersistMessage?: boolean },
     ) =>
       followUpIssue(
         this.ctx,
@@ -81,6 +82,7 @@ export class IssueEngine {
         busyAction,
         displayPrompt,
         metadata,
+        opts,
       )
 
     this.gcTimer = setInterval(() => gcSweep(this.ctx), GC_INTERVAL_MS)
@@ -129,6 +131,7 @@ export class IssueEngine {
     busyAction: 'queue' | 'cancel' = 'queue',
     displayPrompt?: string,
     metadata?: Record<string, unknown>,
+    opts?: { skipPersistMessage?: boolean },
   ): Promise<{ executionId: string; messageId?: string | null }> {
     return followUpIssue(
       this.ctx,
@@ -139,6 +142,7 @@ export class IssueEngine {
       busyAction,
       displayPrompt,
       metadata,
+      opts,
     )
   }
 

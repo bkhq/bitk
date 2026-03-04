@@ -216,6 +216,7 @@ export async function spawnFollowUpProcess(
   permissionMode?: PermissionPolicy,
   displayPrompt?: string,
   metadata?: Record<string, unknown>,
+  opts?: { skipPersistMessage?: boolean },
 ): Promise<{ executionId: string; messageId?: string | null }> {
   logger.debug(
     { issueId, model, permissionMode, promptChars: prompt.length },
@@ -253,14 +254,18 @@ export async function spawnFollowUpProcess(
   ctx.entryCounters.set(executionId, 0)
   ctx.turnIndexes.set(executionId, turnIndex)
   emitStateChange(issueId, executionId, 'running')
-  const messageId = persistUserMessage(
-    ctx,
-    issueId,
-    executionId,
-    prompt,
-    displayPrompt,
-    metadata,
-  )
+  // When flushing pending messages, the user message is already persisted in the
+  // DB. Skip creating a duplicate entry.
+  const messageId = opts?.skipPersistMessage
+    ? null
+    : persistUserMessage(
+        ctx,
+        issueId,
+        executionId,
+        prompt,
+        displayPrompt,
+        metadata,
+      )
 
   const baseDir = await resolveWorkingDir(issue.projectId)
 

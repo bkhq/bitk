@@ -59,6 +59,7 @@ export function sendInputToRunningProcess(
   prompt: string,
   displayPrompt?: string,
   metadata?: Record<string, unknown>,
+  opts?: { skipPersistMessage?: boolean },
 ): string | null {
   if (managed.state !== 'running') {
     throw new Error('Cannot send input to a non-running process')
@@ -81,14 +82,18 @@ export function sendInputToRunningProcess(
   // Emit running state BEFORE user message so the frontend resets doneReceivedRef
   // and accepts the subsequent user message SSE event.
   emitStateChange(issueId, managed.executionId, 'running')
-  const messageId = persistUserMessage(
-    ctx,
-    issueId,
-    managed.executionId,
-    prompt,
-    displayPrompt,
-    metadata,
-  )
+  // When flushing pending messages, the user message is already persisted in the
+  // DB. Skip creating a duplicate entry.
+  const messageId = opts?.skipPersistMessage
+    ? null
+    : persistUserMessage(
+        ctx,
+        issueId,
+        managed.executionId,
+        prompt,
+        displayPrompt,
+        metadata,
+      )
   logger.debug(
     {
       issueId,

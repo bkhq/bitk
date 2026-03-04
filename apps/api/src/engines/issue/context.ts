@@ -23,6 +23,7 @@ export interface EngineContext {
         busyAction?: 'queue' | 'cancel',
         displayPrompt?: string,
         metadata?: Record<string, unknown>,
+        opts?: { skipPersistMessage?: boolean },
       ) => Promise<{ executionId: string; messageId?: string | null }>)
     | null
 }
