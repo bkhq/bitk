@@ -374,6 +374,9 @@
     "untitled": "Untitled",
     "titlePlaceholder": "Note title...",
     "contentPlaceholder": "Write something...",
-    "resizePanel": "Resize notes panel"
+    "resizePanel": "Resize notes panel",
+    "searchPlaceholder": "Search your notes",
+    "back": "Back",
+    "lastEdited": "Last edited: {{time}}"
   }
 }

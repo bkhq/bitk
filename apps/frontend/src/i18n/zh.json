@@ -374,6 +374,9 @@
     "untitled": "无标题",
     "titlePlaceholder": "笔记标题...",
     "contentPlaceholder": "写点什么...",
-    "resizePanel": "调整笔记面板大小"
+    "resizePanel": "调整笔记面板大小",
+    "searchPlaceholder": "搜索您的笔记",
+    "back": "返回",
+    "lastEdited": "上次编辑时间: {{time}}"
   }
 }
