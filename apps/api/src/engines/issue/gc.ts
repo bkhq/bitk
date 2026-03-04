@@ -21,6 +21,10 @@ function terminateAndSettle(
   defaultStatus: ProcessStatus,
 ): void {
   ctx.pm.forceKill(pmEntryId)
+  // forceKill transitions PM state to 'cancelled'. Override to the intended
+  // status so monitorCompletion (racing on subprocess.exited) sees 'failed'
+  // instead of 'cancelled' for stalled processes.
+  syncPmState(ctx, managed.executionId, defaultStatus)
   cleanupDomainData(ctx, managed.executionId)
   const { issueId, executionId } = managed
   // Track the resolved status so the catch block can use it instead of
