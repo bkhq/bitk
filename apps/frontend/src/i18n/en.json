@@ -381,6 +381,7 @@
     "pin": "Pin note",
     "unpin": "Unpin note",
     "pinned": "Pinned",
-    "other": "Other"
+    "other": "Other",
+    "loadError": "Failed to load notes"
   }
 }

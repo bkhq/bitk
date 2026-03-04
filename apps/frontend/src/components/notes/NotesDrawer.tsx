@@ -1,11 +1,13 @@
 import {
   ArrowLeft,
+  Loader2,
   Pin,
   PinOff,
   Plus,
   Search,
   StickyNote,
   Trash2,
+  TriangleAlert,
   X,
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -47,7 +49,7 @@ function MobileNotesDrawer() {
   const { isOpen, selectedNoteId, close, selectNote } = useNotesStore()
   const [searchQuery, setSearchQuery] = useState('')
 
-  const { data: notes } = useNotes()
+  const { data: notes, isLoading, isError } = useNotes()
   const createNote = useCreateNote()
   const updateNote = useUpdateNote()
   const deleteNote = useDeleteNote()
@@ -149,7 +151,16 @@ function MobileNotesDrawer() {
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 pb-24">
-        {filteredNotes.length > 0 ? (
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+            <Loader2 className="h-8 w-8 animate-spin opacity-40" />
+          </div>
+        ) : isError ? (
+          <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+            <TriangleAlert className="h-8 w-8 mb-2 opacity-40" />
+            <p className="text-sm">{t('notes.loadError')}</p>
+          </div>
+        ) : filteredNotes.length > 0 ? (
           <div className="flex flex-col gap-2">
             {pinnedNotes.length > 0 && (
               <>
@@ -290,6 +301,11 @@ function MobileNoteEditor({
   const [title, setTitle] = useState(note.title)
   const [content, setContent] = useState(note.content)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const pendingRef = useRef<{ title?: string; content?: string } | null>(null)
+  const noteIdRef = useRef(note.id)
+  const onUpdateRef = useRef(onUpdate)
+  onUpdateRef.current = onUpdate
+  noteIdRef.current = note.id
 
   useEffect(() => {
     setTitle(note.title)
@@ -298,8 +314,10 @@ function MobileNoteEditor({
 
   const scheduleUpdate = useCallback(
     (data: { title?: string; content?: string }) => {
+      pendingRef.current = data
       if (debounceRef.current) clearTimeout(debounceRef.current)
       debounceRef.current = setTimeout(() => {
+        pendingRef.current = null
         onUpdate({ id: note.id, ...data })
       }, 800)
     },
@@ -309,6 +327,9 @@ function MobileNoteEditor({
   useEffect(() => {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current)
+      if (pendingRef.current) {
+        onUpdateRef.current({ id: noteIdRef.current, ...pendingRef.current })
+      }
     }
   }, [])
 
@@ -417,7 +438,7 @@ function DesktopNotesDrawer() {
   )
   const setWidth = useCallback((w: number) => setWidthRaw(clampWidth(w)), [])
 
-  const { data: notes } = useNotes()
+  const { data: notes, isLoading, isError } = useNotes()
   const createNote = useCreateNote()
   const updateNote = useUpdateNote()
   const deleteNote = useDeleteNote()
@@ -579,7 +600,16 @@ function DesktopNotesDrawer() {
 
             {/* List */}
             <div className="flex-1 overflow-y-auto">
-              {filteredNotes.length > 0 ? (
+              {isLoading ? (
+                <div className="flex items-center justify-center p-6">
+                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground/40" />
+                </div>
+              ) : isError ? (
+                <div className="flex flex-col items-center p-6 text-muted-foreground">
+                  <TriangleAlert className="h-5 w-5 mb-1 opacity-40" />
+                  <p className="text-xs">{t('notes.loadError')}</p>
+                </div>
+              ) : filteredNotes.length > 0 ? (
                 <>
                   {pinnedNotes.length > 0 && (
                     <>
@@ -762,6 +792,11 @@ function DesktopNoteEditor({
   const [title, setTitle] = useState(note.title)
   const [content, setContent] = useState(note.content)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const pendingRef = useRef<{ title?: string; content?: string } | null>(null)
+  const noteIdRef = useRef(note.id)
+  const onUpdateRef = useRef(onUpdate)
+  onUpdateRef.current = onUpdate
+  noteIdRef.current = note.id
 
   useEffect(() => {
     setTitle(note.title)
@@ -770,8 +805,10 @@ function DesktopNoteEditor({
 
   const scheduleUpdate = useCallback(
     (data: { title?: string; content?: string }) => {
+      pendingRef.current = data
       if (debounceRef.current) clearTimeout(debounceRef.current)
       debounceRef.current = setTimeout(() => {
+        pendingRef.current = null
         onUpdate({ id: note.id, ...data })
       }, 800)
     },
@@ -781,6 +818,9 @@ function DesktopNoteEditor({
   useEffect(() => {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current)
+      if (pendingRef.current) {
+        onUpdateRef.current({ id: noteIdRef.current, ...pendingRef.current })
+      }
     }
   }, [])
 

@@ -1,5 +1,5 @@
 import { zValidator } from '@hono/zod-validator'
-import { desc, eq } from 'drizzle-orm'
+import { and, desc, eq } from 'drizzle-orm'
 import { Hono } from 'hono'
 import * as z from 'zod'
 import { db } from '@/db'
@@ -7,24 +7,14 @@ import { notes } from '@/db/schema'
 
 const notesRoutes = new Hono()
 
-const validationError = (
-  result: { success: false; error: z.ZodError },
-  c: any,
-) =>
-  c.json(
-    {
-      success: false,
-      error: result.error.issues.map((i: z.ZodIssue) => i.message).join(', '),
-    },
-    400,
-  )
+const notDeleted = eq(notes.isDeleted, 0)
 
 // GET /api/notes
 notesRoutes.get('/', async (c) => {
   const rows = await db
     .select()
     .from(notes)
-    .where(eq(notes.isDeleted, 0))
+    .where(notDeleted)
     .orderBy(desc(notes.isPinned), desc(notes.updatedAt))
   return c.json({ success: true, data: rows })
 })
@@ -38,9 +28,6 @@ notesRoutes.post(
       title: z.string().max(500).optional().default(''),
       content: z.string().max(100_000).optional().default(''),
     }),
-    (result, c) => {
-      if (!result.success) return validationError(result, c)
-    },
   ),
   async (c) => {
     const { title, content } = c.req.valid('json')
@@ -59,19 +46,14 @@ notesRoutes.patch(
       content: z.string().max(100_000).optional(),
       isPinned: z.boolean().optional(),
     }),
-    (result, c) => {
-      if (!result.success) return validationError(result, c)
-    },
   ),
   async (c) => {
     const id = c.req.param('id')
-    const { isPinned, ...rest } = c.req.valid('json')
-    const data: Record<string, unknown> = { ...rest, updatedAt: new Date() }
-    if (isPinned !== undefined) data.isPinned = isPinned ? 1 : 0
+    const data = c.req.valid('json')
     const [row] = await db
       .update(notes)
-      .set(data)
-      .where(eq(notes.id, id))
+      .set({ ...data, updatedAt: new Date() })
+      .where(and(eq(notes.id, id), notDeleted))
       .returning()
     if (!row) {
       return c.json({ success: false, error: 'Note not found' }, 404)
@@ -86,7 +68,7 @@ notesRoutes.delete('/:id', async (c) => {
   const [row] = await db
     .update(notes)
     .set({ isDeleted: 1, updatedAt: new Date() })
-    .where(eq(notes.id, id))
+    .where(and(eq(notes.id, id), notDeleted))
     .returning()
   if (!row) {
     return c.json({ success: false, error: 'Note not found' }, 404)
