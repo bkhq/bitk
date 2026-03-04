@@ -127,6 +127,7 @@ export async function consumeStderr(
         const managed = callbacks.getManaged()
         if (!managed) return
         managed.lastActivityAt = new Date()
+        if (managed.stallProbeAt) managed.stallProbeAt = undefined
         pushStderrEntry(line, callbacks.getTurnIndex(), callbacks.onEntry)
       }
     }
