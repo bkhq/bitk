@@ -183,7 +183,17 @@ command.post('/:id/restart', async (c) => {
       data: { executionId: result.executionId, issueId },
     })
   } catch (error) {
-    logger.warn({ projectId: project.id, issueId, error: error instanceof Error ? { message: error.message, stack: error.stack } : error }, 'issue_restart_failed')
+    logger.warn(
+      {
+        projectId: project.id,
+        issueId,
+        error:
+          error instanceof Error
+            ? { message: error.message, stack: error.stack }
+            : error,
+      },
+      'issue_restart_failed',
+    )
     return c.json(
       {
         success: false,
@@ -212,7 +222,17 @@ command.post('/:id/cancel', async (c) => {
     const status = await issueEngine.cancelIssue(issueId)
     return c.json({ success: true, data: { issueId, status } })
   } catch (error) {
-    logger.warn({ projectId: project.id, issueId, error: error instanceof Error ? { message: error.message, stack: error.stack } : error }, 'issue_cancel_failed')
+    logger.warn(
+      {
+        projectId: project.id,
+        issueId,
+        error:
+          error instanceof Error
+            ? { message: error.message, stack: error.stack }
+            : error,
+      },
+      'issue_cancel_failed',
+    )
     return c.json(
       {
         success: false,

@@ -139,9 +139,7 @@ export async function getAllEngineDefaultModels(): Promise<
       const rows = await db
         .select({ key: appSettingsTable.key, value: appSettingsTable.value })
         .from(appSettingsTable)
-        .where(
-          sql`${appSettingsTable.key} LIKE 'engine:%:defaultModel'`,
-        )
+        .where(sql`${appSettingsTable.key} LIKE 'engine:%:defaultModel'`)
       const result: Record<string, string> = {}
       const prefix = 'engine:'
       const suffix = ':defaultModel'

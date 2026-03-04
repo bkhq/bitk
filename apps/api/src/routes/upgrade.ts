@@ -63,7 +63,13 @@ upgrade.patch(
   '/enabled',
   zValidator('json', z.object({ enabled: z.boolean() }), (result, c) => {
     if (!result.success) {
-      return c.json({ success: false, error: result.error.issues.map(i => i.message).join(', ') }, 400)
+      return c.json(
+        {
+          success: false,
+          error: result.error.issues.map((i) => i.message).join(', '),
+        },
+        400,
+      )
     }
   }),
   async (c) => {
@@ -97,7 +103,13 @@ upgrade.post(
     }),
     (result, c) => {
       if (!result.success) {
-        return c.json({ success: false, error: result.error.issues.map(i => i.message).join(', ') }, 400)
+        return c.json(
+          {
+            success: false,
+            error: result.error.issues.map((i) => i.message).join(', '),
+          },
+          400,
+        )
       }
     },
   ),
@@ -167,7 +179,13 @@ upgrade.delete(
     }),
     (result, c) => {
       if (!result.success) {
-        return c.json({ success: false, error: result.error.issues.map(i => i.message).join(', ') }, 400)
+        return c.json(
+          {
+            success: false,
+            error: result.error.issues.map((i) => i.message).join(', '),
+          },
+          400,
+        )
       }
     },
   ),

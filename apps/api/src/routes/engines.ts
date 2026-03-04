@@ -48,11 +48,21 @@ engines.get('/settings', async (c) => {
 // PATCH /api/engines/default-engine — Update global default engine
 engines.patch(
   '/default-engine',
-  zValidator('json', z.object({ defaultEngine: engineTypeEnum }), (result, c) => {
-    if (!result.success) {
-      return c.json({ success: false, error: result.error.issues.map(i => i.message).join(', ') }, 400)
-    }
-  }),
+  zValidator(
+    'json',
+    z.object({ defaultEngine: engineTypeEnum }),
+    (result, c) => {
+      if (!result.success) {
+        return c.json(
+          {
+            success: false,
+            error: result.error.issues.map((i) => i.message).join(', '),
+          },
+          400,
+        )
+      }
+    },
+  ),
   async (c) => {
     const { defaultEngine } = c.req.valid('json')
     await setDefaultEngine(defaultEngine)
@@ -63,11 +73,21 @@ engines.patch(
 // PATCH /api/engines/:engineType/settings — Upsert default model for an engine type
 engines.patch(
   '/:engineType/settings',
-  zValidator('json', z.object({ defaultModel: z.string().min(1) }), (result, c) => {
-    if (!result.success) {
-      return c.json({ success: false, error: result.error.issues.map(i => i.message).join(', ') }, 400)
-    }
-  }),
+  zValidator(
+    'json',
+    z.object({ defaultModel: z.string().min(1) }),
+    (result, c) => {
+      if (!result.success) {
+        return c.json(
+          {
+            success: false,
+            error: result.error.issues.map((i) => i.message).join(', '),
+          },
+          400,
+        )
+      }
+    },
+  ),
   async (c) => {
     const rawType = c.req.param('engineType')
     const parsed = engineTypeEnum.safeParse(rawType)

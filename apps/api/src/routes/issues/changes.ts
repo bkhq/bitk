@@ -189,7 +189,10 @@ changes.get('/:id/changes', async (c) => {
 
   const projectRoot = await resolveProjectDir(project.id)
   if (!projectRoot) {
-    return c.json({ success: false, error: 'Project directory is not configured' }, 400)
+    return c.json(
+      { success: false, error: 'Project directory is not configured' },
+      400,
+    )
   }
   const root = await resolveChangesDir(
     project.id,
@@ -257,7 +260,10 @@ changes.get('/:id/changes/file', async (c) => {
 
   const projectRoot = await resolveProjectDir(project.id)
   if (!projectRoot) {
-    return c.json({ success: false, error: 'Project directory is not configured' }, 400)
+    return c.json(
+      { success: false, error: 'Project directory is not configured' },
+      400,
+    )
   }
   const root = await resolveChangesDir(
     project.id,

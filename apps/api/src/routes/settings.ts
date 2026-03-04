@@ -25,11 +25,21 @@ settings.get('/workspace-path', async (c) => {
 // PATCH /api/settings/workspace-path
 settings.patch(
   '/workspace-path',
-  zValidator('json', z.object({ path: z.string().min(1).max(1024) }), (result, c) => {
-    if (!result.success) {
-      return c.json({ success: false, error: result.error.issues.map(i => i.message).join(', ') }, 400)
-    }
-  }),
+  zValidator(
+    'json',
+    z.object({ path: z.string().min(1).max(1024) }),
+    (result, c) => {
+      if (!result.success) {
+        return c.json(
+          {
+            success: false,
+            error: result.error.issues.map((i) => i.message).join(', '),
+          },
+          400,
+        )
+      }
+    },
+  ),
   async (c) => {
     const { path } = c.req.valid('json')
     const resolved = resolve(path)
@@ -77,11 +87,21 @@ settings.get('/write-filter-rules', async (c) => {
 // PUT /api/settings/write-filter-rules
 settings.put(
   '/write-filter-rules',
-  zValidator('json', z.object({ rules: z.array(writeFilterRuleSchema) }), (result, c) => {
-    if (!result.success) {
-      return c.json({ success: false, error: result.error.issues.map(i => i.message).join(', ') }, 400)
-    }
-  }),
+  zValidator(
+    'json',
+    z.object({ rules: z.array(writeFilterRuleSchema) }),
+    (result, c) => {
+      if (!result.success) {
+        return c.json(
+          {
+            success: false,
+            error: result.error.issues.map((i) => i.message).join(', '),
+          },
+          400,
+        )
+      }
+    },
+  ),
   async (c) => {
     const { rules } = c.req.valid('json')
     await setAppSetting(WRITE_FILTER_RULES_KEY, JSON.stringify(rules))
@@ -94,7 +114,13 @@ settings.patch(
   '/write-filter-rules/:id',
   zValidator('json', z.object({ enabled: z.boolean() }), (result, c) => {
     if (!result.success) {
-      return c.json({ success: false, error: result.error.issues.map(i => i.message).join(', ') }, 400)
+      return c.json(
+        {
+          success: false,
+          error: result.error.issues.map((i) => i.message).join(', '),
+        },
+        400,
+      )
     }
   }),
   async (c) => {
@@ -142,7 +168,13 @@ settings.patch(
   '/worktree-auto-cleanup',
   zValidator('json', z.object({ enabled: z.boolean() }), (result, c) => {
     if (!result.success) {
-      return c.json({ success: false, error: result.error.issues.map(i => i.message).join(', ') }, 400)
+      return c.json(
+        {
+          success: false,
+          error: result.error.issues.map((i) => i.message).join(', '),
+        },
+        400,
+      )
     }
   }),
   async (c) => {
@@ -159,11 +191,12 @@ settings.get('/slash-commands', async (c) => {
   const validEngines = ['claude-code', 'codex', 'gemini', 'echo']
   const rawEngine = c.req.query('engine')
   if (rawEngine && !validEngines.includes(rawEngine)) {
-    return c.json({ success: false, error: `Invalid engine type: ${rawEngine}` }, 400)
+    return c.json(
+      { success: false, error: `Invalid engine type: ${rawEngine}` },
+      400,
+    )
   }
-  const engine = rawEngine as
-    | import('@/engines/types').EngineType
-    | undefined
+  const engine = rawEngine as import('@/engines/types').EngineType | undefined
   const key = engine ? `engine:slashCommands:${engine}` : undefined
 
   let commands: string[] = []

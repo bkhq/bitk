@@ -11,8 +11,8 @@ import {
   attachments as attachmentsTable,
   issueLogs as issueLogsTable,
   issues as issuesTable,
-  issuesLogsToolsCall as toolsCallTable,
   projects as projectsTable,
+  issuesLogsToolsCall as toolsCallTable,
 } from '@/db/schema'
 import { issueEngine } from '@/engines/issue'
 import { logger } from '@/logger'
