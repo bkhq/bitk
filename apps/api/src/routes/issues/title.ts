@@ -2,7 +2,8 @@ import { Hono } from 'hono'
 import { findProject } from '@/db/helpers'
 import { issueEngine } from '@/engines/issue'
 import { AUTO_TITLE_PROMPT } from '@/engines/issue/title'
-import { getProjectOwnedIssue } from './_shared'
+import { logger } from '@/logger'
+import { ensureWorking, getProjectOwnedIssue } from './_shared'
 
 const title = new Hono()
 
@@ -20,20 +21,48 @@ title.post('/:id/auto-title', async (c) => {
     return c.json({ success: false, error: 'Issue not found' }, 404)
   }
 
-  const result = await issueEngine.followUpIssue(
-    issueId,
-    AUTO_TITLE_PROMPT,
-    undefined,
-    undefined,
-    undefined,
-    undefined,
-    { type: 'system' },
-  )
+  const guard = await ensureWorking(issue)
+  if (!guard.ok) {
+    return c.json({ success: false, error: guard.reason! }, 400)
+  }
 
-  return c.json({
-    success: true,
-    data: { executionId: result.executionId, issueId },
-  })
+  try {
+    const result = await issueEngine.followUpIssue(
+      issueId,
+      AUTO_TITLE_PROMPT,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      { type: 'system' },
+    )
+
+    return c.json({
+      success: true,
+      data: { executionId: result.executionId, issueId },
+    })
+  } catch (error) {
+    logger.warn(
+      {
+        projectId: project.id,
+        issueId,
+        error:
+          error instanceof Error
+            ? { message: error.message, stack: error.stack }
+            : error,
+      },
+      'auto_title_generation_failed',
+    )
+    return c.json(
+      {
+        success: false,
+        error: error instanceof Error
+          ? error.message
+          : 'Auto-title generation failed',
+      },
+      500,
+    )
+  }
 })
 
 export default title
