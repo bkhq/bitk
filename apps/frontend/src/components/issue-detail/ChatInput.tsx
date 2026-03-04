@@ -138,6 +138,7 @@ export function ChatInput({
   const isSendingRef = useRef(false)
   const [textareaH, setTextareaH] = useState(36)
   const dragRef = useRef({ active: false, startY: 0, startH: 0 })
+  const dragCleanupRef = useRef<(() => void) | null>(null)
 
   const followUp = useFollowUpIssue(projectId ?? '')
   const changesSummary = useChangesSummary(projectId, issueId ?? undefined)
@@ -293,9 +294,12 @@ export function ChatInput({
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
       setSendError(msg)
-      // Restore input and files on failure
-      setInput(prompt)
-      setAttachedFiles(filesToSend)
+      // Restore input and files on failure — only if still on the same issue
+      const currentKey = issueId ? `bitk:draft:${issueId}` : null
+      if (currentKey === draftKey) {
+        setInput(prompt)
+        setAttachedFiles(filesToSend)
+      }
       setTimeout(() => setSendError(null), 5000)
     } finally {
       isSendingRef.current = false
@@ -372,6 +376,8 @@ export function ChatInput({
   const handleResizeStart = useCallback(
     (e: React.MouseEvent) => {
       e.preventDefault()
+      // Clean up any previous drag listeners (shouldn't happen, but be safe)
+      dragCleanupRef.current?.()
       dragRef.current = {
         active: true,
         startY: e.clientY,
@@ -384,16 +390,24 @@ export function ChatInput({
           Math.max(36, Math.min(480, dragRef.current.startH + delta)),
         )
       }
-      const onUp = () => {
+      const cleanup = () => {
         dragRef.current.active = false
         document.removeEventListener('mousemove', onMove)
-        document.removeEventListener('mouseup', onUp)
+        document.removeEventListener('mouseup', cleanup)
+        dragCleanupRef.current = null
       }
+      dragCleanupRef.current = cleanup
       document.addEventListener('mousemove', onMove)
-      document.addEventListener('mouseup', onUp)
+      document.addEventListener('mouseup', cleanup)
     },
     [textareaH],
   )
+  // Clean up drag listeners on unmount
+  useEffect(() => {
+    return () => {
+      dragCleanupRef.current?.()
+    }
+  }, [])
 
   return (
     <div className="shrink-0 w-full min-w-0 px-2 pb-2 relative z-30">
