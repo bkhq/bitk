@@ -5,6 +5,7 @@ export function dispatch(managed: ManagedProcess, action: ManagedAction): void {
   switch (action.type) {
     case 'START_TURN':
       managed.turnInFlight = true
+      managed.lastActivityAt = new Date()
       managed.queueCancelRequested = false
       managed.turnSettled = false
       managed.logicalFailure = false

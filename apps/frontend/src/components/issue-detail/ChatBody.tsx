@@ -29,6 +29,8 @@ const LazySessionMessages = lazy(() =>
   import('./SessionMessages').then((m) => ({ default: m.SessionMessages })),
 )
 
+const TERMINAL_STATUSES: ReadonlySet<string> = new Set(['completed', 'failed', 'cancelled'])
+
 // ---------- shared session-state helpers ----------
 
 function deriveWorkingStep(logs: NormalizedLogEntry[]): string | null {
@@ -70,6 +72,7 @@ export function useSessionState(
 
   const {
     logs,
+    sessionStatus: streamStatus,
     hasOlderLogs,
     isLoadingOlder,
     loadOlderLogs,
@@ -81,7 +84,13 @@ export function useSessionState(
     enabled: !!(issueId && streamEnabled),
   })
 
-  const effectiveStatus = issue?.sessionStatus ?? null
+  // Merge SSE-derived status with React Query status for resilience.
+  // If EITHER source reports a terminal state, stop thinking immediately.
+  // SSE updates are instant; React Query may lag behind due to invalidation
+  // + refetch cycles, but can also recover via window focus or staleTime.
+  const streamIsTerminal = !!streamStatus && TERMINAL_STATUSES.has(streamStatus)
+  const queryStatus = issue?.sessionStatus ?? null
+  const effectiveStatus = streamIsTerminal ? streamStatus : queryStatus
   const isSessionActive =
     effectiveStatus === 'running' || effectiveStatus === 'pending'
 

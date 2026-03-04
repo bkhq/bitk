@@ -48,6 +48,7 @@ export function register(
     cancelledByUser: false,
     turnSettled: false,
     metaTurn,
+    lastActivityAt: new Date(),
     slashCommands: [],
     spawnCommand: process.spawnCommand,
     worktreeBaseDir,

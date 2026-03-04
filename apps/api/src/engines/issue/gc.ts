@@ -4,11 +4,55 @@ import {
   updateIssueSession,
 } from '@/engines/engine-store'
 import { logger } from '@/logger'
-import { IDLE_TIMEOUT_MS } from './constants'
+import type { ProcessStatus } from '@/engines/types'
+import { IDLE_TIMEOUT_MS, STREAM_STALL_TIMEOUT_MS } from './constants'
 import type { EngineContext } from './context'
 import { emitIssueSettled, emitStateChange } from './events'
 import { withIssueLock } from './process/lock'
-import { cleanupDomainData } from './process/state'
+import { cleanupDomainData, syncPmState } from './process/state'
+import type { ManagedProcess } from './types'
+
+// ---------- Helpers ----------
+
+function terminateAndSettle(
+  ctx: EngineContext,
+  pmEntryId: string,
+  managed: ManagedProcess,
+  defaultStatus: ProcessStatus,
+): void {
+  ctx.pm.forceKill(pmEntryId)
+  cleanupDomainData(ctx, managed.executionId)
+  const { issueId, executionId } = managed
+  void withIssueLock(ctx, issueId, async () => {
+    const existing = await getIssueWithSession(issueId)
+    const priorStatus = existing?.sessionFields.sessionStatus
+    if (priorStatus === 'running' || priorStatus === 'pending') {
+      logger.debug(
+        { issueId, priorStatus },
+        'gc_settle_skipped_reactivated',
+      )
+      return
+    }
+    const isTerminal = priorStatus === 'failed' || priorStatus === 'cancelled'
+    const finalStatus = isTerminal ? priorStatus : defaultStatus
+    syncPmState(ctx, executionId, finalStatus as ProcessStatus)
+    emitStateChange(issueId, executionId, finalStatus)
+    if (!isTerminal) {
+      await updateIssueSession(issueId, { sessionStatus: finalStatus })
+    }
+    try {
+      await autoMoveToReview(issueId)
+    } catch (err) {
+      logger.error({ issueId, err }, 'gc_auto_move_failed')
+    }
+    emitIssueSettled(issueId, executionId, finalStatus)
+  }).catch((err) => {
+    logger.error({ issueId, err }, 'gc_settle_failed')
+    // Safety net: ensure frontend is always notified even if settlement
+    // partially failed. Without this, the frontend stays stuck in "thinking".
+    emitIssueSettled(issueId, executionId, defaultStatus)
+  })
+}
 
 // ---------- Domain GC sweep ----------
 
@@ -37,6 +81,8 @@ export function gcSweep(ctx: EngineContext): void {
   const now = Date.now()
   for (const entry of ctx.pm.getActive()) {
     const managed = entry.meta
+
+    // --- Check 1: Idle timeout (turn completed, process still alive) ---
     if (
       managed.lastIdleAt &&
       !managed.turnInFlight &&
@@ -50,35 +96,32 @@ export function gcSweep(ctx: EngineContext): void {
         },
         'idle_timeout_terminate',
       )
-      ctx.pm.forceKill(entry.id)
-      cleanupDomainData(ctx, managed.executionId)
-      // Fire-and-forget DB update — use issue lock to prevent racing with follow-up
-      const { issueId: gcIssueId, executionId: gcExecutionId } = managed
-      void withIssueLock(ctx, gcIssueId, async () => {
-        const existing = await getIssueWithSession(gcIssueId)
-        const priorStatus = existing?.sessionFields.sessionStatus
-        // If a follow-up already reactivated the issue, skip settlement
-        if (priorStatus === 'running' || priorStatus === 'pending') {
-          logger.debug(
-            { issueId: gcIssueId, priorStatus },
-            'idle_timeout_settle_skipped_reactivated',
-          )
-          return
-        }
-        const isTerminal =
-          priorStatus === 'failed' || priorStatus === 'cancelled'
-        const finalStatus = isTerminal ? priorStatus : 'completed'
-        emitStateChange(gcIssueId, gcExecutionId, finalStatus)
-        if (!isTerminal) {
-          await updateIssueSession(gcIssueId, {
-            sessionStatus: finalStatus,
-          })
-        }
-        await autoMoveToReview(gcIssueId)
-        emitIssueSettled(gcIssueId, gcExecutionId, finalStatus)
-      }).catch((err) => {
-        logger.error({ issueId: gcIssueId, err }, 'idle_timeout_settle_failed')
-      })
+      terminateAndSettle(ctx, entry.id, managed, 'completed')
+      cleaned++
+      continue
+    }
+
+    // --- Check 2: Stream stall detection (turn in-flight but no output) ---
+    // Catches processes stuck in "thinking" state where the engine never emits
+    // a completion entry: turnInFlight stays true, lastIdleAt is never set,
+    // and monitorCompletion() waits forever on subprocess.exited.
+    if (
+      managed.turnInFlight &&
+      now - managed.lastActivityAt.getTime() > STREAM_STALL_TIMEOUT_MS
+    ) {
+      const stallMinutes = Math.round(
+        (now - managed.lastActivityAt.getTime()) / 60000,
+      )
+      logger.warn(
+        {
+          issueId: managed.issueId,
+          executionId: managed.executionId,
+          stallMinutes,
+          lastActivityAt: managed.lastActivityAt.toISOString(),
+        },
+        'stream_stall_terminate',
+      )
+      terminateAndSettle(ctx, entry.id, managed, 'failed')
       cleaned++
     }
   }

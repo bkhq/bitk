@@ -35,6 +35,8 @@ export interface ManagedProcess {
   spawnCommand?: string
   /** Timestamp when the last turn completed and the process became idle */
   lastIdleAt?: Date
+  /** Timestamp of the last stdout/stderr activity (updated on every stream entry) */
+  lastActivityAt: Date
   /** Git repo directory that owns this worktree (needed for `git worktree remove`) */
   worktreeBaseDir?: string
   worktreePath?: string

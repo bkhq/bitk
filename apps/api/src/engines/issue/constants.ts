@@ -5,4 +5,5 @@ export const GC_INTERVAL_MS = 10 * 60 * 1000 // 10 minutes
 export const MAX_CONCURRENT_EXECUTIONS =
   Number(process.env.MAX_CONCURRENT_EXECUTIONS) || 5
 export const IDLE_TIMEOUT_MS = 30 * 60 * 1000 // 30 minutes
+export const STREAM_STALL_TIMEOUT_MS = 10 * 60 * 1000 // 10 minutes — kill process if no stdout/stderr activity
 export const WORKTREE_DIR = 'data/worktrees'
