@@ -1,6 +1,10 @@
 # Task Index
 
-> Updated: 2026-03-05 18:30 UTC
+> Updated: 2026-03-05 19:00 UTC
+
+## 前端回归 (2026-03-05)
+
+- [ ] **BUG-090 历史记录无法显示回归 Bug** `P0` - owner: - file: `docs/task/BUG-090.md`
 
 ## 取消流程重构 (2026-03-05)
 

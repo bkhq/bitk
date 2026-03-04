@@ -29,10 +29,9 @@ logs.get('/:id/logs', async (c) => {
     : undefined
   const effectiveLimit = limit ?? 30
 
-  // Overfetch to compensate for JS isVisibleForMode filter removing entries
-  // after the SQL limit is applied (e.g. system-messages without the right subtype).
-  const overfetchFactor = issue.devMode ? 1 : 2
-  const fetchLimit = effectiveLimit * overfetchFactor + 1
+  // Fetch one extra to detect hasMore. SQL-level filtering now matches
+  // isVisibleForMode() rules exactly, so no overfetch multiplier is needed.
+  const fetchLimit = effectiveLimit + 1
 
   const issueLogs = issueEngine.getLogs(issueId, issue.devMode, {
     cursor,

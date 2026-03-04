@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gt, inArray, lt, max } from 'drizzle-orm'
+import { and, asc, desc, eq, gt, lt, max, sql } from 'drizzle-orm'
 import { db } from '@/db'
 import {
   issueLogs as logsTable,
@@ -27,15 +27,19 @@ export function getLogsFromDb(
   },
 ): NormalizedLogEntry[] {
   // visible=1 filter preserves pending-message dedup (dispatched entries set visible=0).
-  // Non-devMode pre-filters by entryType for performance (skips thinking, error-message, etc.).
+  // Non-devMode pre-filters at SQL level to match isVisibleForMode() rules exactly,
+  // so the SQL LIMIT accurately reflects visible entries (fixes hasMore pagination).
   const conditions = [eq(logsTable.issueId, issueId), eq(logsTable.visible, 1)]
   if (!devMode) {
     conditions.push(
-      inArray(logsTable.entryType, [
-        'user-message',
-        'assistant-message',
-        'system-message',
-      ]),
+      sql`(
+        (${logsTable.entryType} = 'user-message'
+          AND (json_extract(${logsTable.metadata}, '$.type') IS NULL
+               OR json_extract(${logsTable.metadata}, '$.type') != 'system'))
+        OR ${logsTable.entryType} = 'assistant-message'
+        OR (${logsTable.entryType} = 'system-message'
+          AND json_extract(${logsTable.metadata}, '$.subtype') IN ('command_output', 'compact_boundary'))
+      )`,
     )
   }
 
