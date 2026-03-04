@@ -7,6 +7,7 @@ import {
   MoreVertical,
   Plus,
   Settings,
+  StickyNote,
   TerminalSquare,
 } from 'lucide-react'
 import { useCallback, useState } from 'react'
@@ -26,6 +27,7 @@ import { useIsMobile } from '@/hooks/use-mobile'
 import { useProjectStats } from '@/hooks/use-project-stats'
 import { getProjectInitials } from '@/lib/format'
 import { cn } from '@/lib/utils'
+import { useNotesStore } from '@/stores/notes-store'
 import { useTerminalStore } from '@/stores/terminal-store'
 import { useViewModeStore } from '@/stores/view-mode-store'
 import type { Project } from '@/types/kanban'
@@ -159,6 +161,19 @@ function MobileHomeMenu({
                 {t('terminal.title')}
               </button>
 
+              {/* Notes */}
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false)
+                  useNotesStore.getState().open()
+                }}
+                className="flex items-center gap-3 w-full px-4 min-h-[48px] text-sm text-foreground/80 hover:bg-accent/50 active:bg-accent transition-colors"
+              >
+                <StickyNote className="h-4.5 w-4.5 text-muted-foreground" />
+                {t('notes.title')}
+              </button>
+
               {/* Settings */}
               <button
                 type="button"
@@ -232,6 +247,15 @@ function DesktopHeaderControls({
         aria-label={t('terminal.title')}
       >
         <TerminalSquare className="h-4 w-4" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8 text-muted-foreground"
+        onClick={useNotesStore.getState().toggle}
+        aria-label={t('notes.title')}
+      >
+        <StickyNote className="h-4 w-4" />
       </Button>
       <Button
         variant="ghost"
