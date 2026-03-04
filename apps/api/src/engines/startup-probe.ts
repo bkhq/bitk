@@ -185,7 +185,7 @@ export async function getEngineDiscovery(): Promise<EngineDiscovery> {
   }
 
   // 3. Live probe (deduped: concurrent callers share the same in-flight probe)
-  if (probeInFlight) return probeInFlight
+  if (probeInFlight !== null) return probeInFlight
 
   probeInFlight = (async () => {
     logger.info('probe_started')
