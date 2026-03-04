@@ -3,7 +3,10 @@ import { getIssueWithSession, updateIssueSession } from '@/engines/engine-store'
 import { engineRegistry } from '@/engines/executors'
 import type { EngineContext } from '@/engines/issue/context'
 import { emitStateChange } from '@/engines/issue/events'
-import { getNextTurnIndex } from '@/engines/issue/persistence/queries'
+import {
+  getNextTurnIndex,
+  removeLogEntry,
+} from '@/engines/issue/persistence/queries'
 import {
   ensureNoActiveProcess,
   killExistingSubprocessForIssue,
@@ -325,6 +328,18 @@ export async function spawnFollowUpProcess(
       { issueId, executionId, error: spawnError },
       'spawn_failed_reverting_session',
     )
+    // Remove the user message persisted before spawn so it doesn't remain as
+    // a ghost entry visible to the frontend.
+    if (messageId) {
+      try {
+        removeLogEntry(messageId)
+      } catch (e) {
+        logger.error(
+          { issueId, messageId, error: e },
+          'spawn_failed_remove_user_message_error',
+        )
+      }
+    }
     await updateIssueSession(issueId, { sessionStatus: 'failed' }).catch((e) =>
       logger.error({ issueId, error: e }, 'spawn_failed_revert_session_error'),
     )

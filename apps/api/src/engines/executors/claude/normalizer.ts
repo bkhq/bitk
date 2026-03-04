@@ -145,22 +145,26 @@ export class ClaudeLogNormalizer {
       return kept
     }
 
-    // Slash command output
+    // Slash command output — only treat content wrapped in <local-command-stdout> tags
     const rawContent =
       typeof data.message?.content === 'string' ? data.message.content : null
     if (rawContent) {
-      const stripped = rawContent
-        .replace(/^<local-command-stdout>\s*/, '')
-        .replace(/\s*<\/local-command-stdout>\s*$/, '')
-        .trim()
-      if (stripped) {
-        return {
-          entryType: 'system-message' as NormalizedLogEntry['entryType'],
-          content: stripped,
-          timestamp: data.timestamp,
-          metadata: { subtype: 'command_output' },
+      if (rawContent.includes('<local-command-stdout>')) {
+        const stripped = rawContent
+          .replace(/^<local-command-stdout>\s*/, '')
+          .replace(/\s*<\/local-command-stdout>\s*$/, '')
+          .trim()
+        if (stripped) {
+          return {
+            entryType: 'system-message' as NormalizedLogEntry['entryType'],
+            content: stripped,
+            timestamp: data.timestamp,
+            metadata: { subtype: 'command_output' },
+          }
         }
       }
+      // Non-command user message echoes (replayed by --replay-user-messages) → discard
+      return null
     }
 
     return null

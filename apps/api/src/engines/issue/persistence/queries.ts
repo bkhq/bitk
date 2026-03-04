@@ -119,6 +119,14 @@ export function getLogsFromDb(
     .filter((entry) => isVisibleForMode(entry, devMode))
 }
 
+/** Soft-remove a log entry by marking it invisible (idempotent). */
+export function removeLogEntry(messageId: string): void {
+  db.update(logsTable)
+    .set({ visible: 0, isDeleted: 1 })
+    .where(eq(logsTable.id, messageId))
+    .run()
+}
+
 /** Get next turn index from DB for an issue. */
 export function getNextTurnIndex(issueId: string): number {
   const [row] = db

@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { db } from '@/db'
 import { issues as issuesTable } from '@/db/schema'
 import { emitIssueUpdated } from '@/events/issue-events'
@@ -27,7 +27,7 @@ export function applyAutoTitle(issueId: string, content: string): void {
   try {
     db.update(issuesTable)
       .set({ title })
-      .where(eq(issuesTable.id, issueId))
+      .where(and(eq(issuesTable.id, issueId), eq(issuesTable.isDeleted, 0)))
       .run()
     emitIssueUpdated(issueId, { title })
     logger.info({ issueId, title }, 'auto_title_updated')

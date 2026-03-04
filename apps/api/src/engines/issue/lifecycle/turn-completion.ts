@@ -191,7 +191,9 @@ export async function flushQueuedInputs(
 
   // Merge ALL queued inputs into a single message so the agent receives
   // one combined prompt instead of being sent messages one at a time.
-  const all = managed.pendingInputs.splice(0)
+  // Snapshot the array instead of splicing — if sendInputToRunningProcess
+  // throws, the messages remain in pendingInputs for the next flush attempt.
+  const all = [...managed.pendingInputs]
   const mergedPrompt = all
     .map((i) => i.prompt)
     .filter(Boolean)
@@ -221,12 +223,24 @@ export async function flushQueuedInputs(
   if (lastModel) {
     await updateIssueSession(issueId, { model: lastModel })
   }
-  sendInputToRunningProcess(
-    ctx,
-    issueId,
-    managed,
-    mergedPrompt,
-    mergedDisplay,
-    all[all.length - 1]?.metadata,
-  )
+  try {
+    sendInputToRunningProcess(
+      ctx,
+      issueId,
+      managed,
+      mergedPrompt,
+      mergedDisplay,
+      all[all.length - 1]?.metadata,
+    )
+    // Remove only the consumed messages — new inputs queued during the
+    // await above are preserved for the next flush cycle.
+    dispatch(managed, { type: 'SPLICE_PENDING_INPUTS', count: all.length })
+  } catch (err) {
+    // Messages preserved in managed.pendingInputs for next flush attempt
+    logger.error(
+      { issueId, executionId: managed.executionId, err },
+      'flush_queued_inputs_send_failed',
+    )
+    throw err
+  }
 }

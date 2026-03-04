@@ -106,6 +106,33 @@ async function parseFollowUpBody(c: {
     for (const entry of fd.getAll('files')) {
       if (entry instanceof File) files.push(entry)
     }
+
+    // Validate fields to match followUpSchema constraints
+    const validBusyActions = ['queue', 'cancel']
+    if (
+      typeof busyAction === 'string' &&
+      !validBusyActions.includes(busyAction)
+    ) {
+      return { ok: false, error: 'busyAction must be "queue" or "cancel"' }
+    }
+    const validPermissionModes = ['auto', 'supervised', 'plan']
+    if (
+      typeof permissionMode === 'string' &&
+      !validPermissionModes.includes(permissionMode)
+    ) {
+      return {
+        ok: false,
+        error: 'permissionMode must be "auto", "supervised", or "plan"',
+      }
+    }
+    const modelPattern = /^[\w.\-[\]]{1,100}$/
+    if (typeof model === 'string' && !modelPattern.test(model)) {
+      return {
+        ok: false,
+        error: 'model must match /^[\\w.\\-[\\]]{1,100}$/',
+      }
+    }
+
     return {
       ok: true,
       prompt,

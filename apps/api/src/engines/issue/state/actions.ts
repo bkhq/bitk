@@ -9,3 +9,4 @@ export type ManagedAction =
   | { type: 'QUEUE_INPUT'; input: Record<string, unknown> }
   | { type: 'REQUEST_QUEUE_CANCEL' }
   | { type: 'CLEAR_PENDING_INPUTS' }
+  | { type: 'SPLICE_PENDING_INPUTS'; count: number }

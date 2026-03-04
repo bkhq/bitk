@@ -49,9 +49,18 @@ app.onError((err, c) => {
     'unhandled_error',
   )
 
-  // JSON parse errors
-  if (err instanceof SyntaxError && err.message.includes('JSON')) {
-    return c.json({ success: false, error: 'Invalid JSON' }, 400)
+  // JSON request-body parse errors — only match errors from body parsing,
+  // not from application-level JSON.parse() of stored metadata etc.
+  // Bun/Hono body parsing produces messages like "JSON Parse error: ..."
+  // or "Unexpected token ... in JSON at position ...".
+  if (err instanceof SyntaxError) {
+    const msg = err.message
+    const isBodyParse =
+      msg.startsWith('JSON Parse error') ||
+      /^Unexpected (token|end of JSON)/.test(msg)
+    if (isBodyParse) {
+      return c.json({ success: false, error: 'Invalid JSON' }, 400)
+    }
   }
 
   // All other errors
