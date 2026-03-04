@@ -2,6 +2,7 @@ import { updateIssueSession } from '@/engines/engine-store'
 import { MAX_AUTO_RETRIES } from '@/engines/issue/constants'
 import type { EngineContext } from '@/engines/issue/context'
 import { emitStateChange } from '@/engines/issue/events'
+import { withIssueLock } from '@/engines/issue/process/lock'
 import { cleanupDomainData, syncPmState } from '@/engines/issue/process/state'
 import { dispatch } from '@/engines/issue/state'
 import type { ManagedProcess } from '@/engines/issue/types'
@@ -93,7 +94,9 @@ export function monitorCompletion(
             )
             cleanupDomainData(ctx, executionId)
             try {
-              await spawnRetry(ctx, issueId, engineType)
+              await withIssueLock(ctx, issueId, async () => {
+                await spawnRetry(ctx, issueId, engineType)
+              })
             } catch (retryErr) {
               logger.error({ issueId, err: retryErr }, 'auto_retry_failed')
             }
@@ -152,7 +155,7 @@ export function monitorCompletion(
         }
       }
 
-      if (managed.cancelledByUser || managed.state === 'cancelled') {
+      if (managed.lastInterruptAt || managed.state === 'cancelled') {
         syncPmState(ctx, executionId, 'cancelled')
         await settleIssue(ctx, issueId, executionId, 'cancelled')
         return
@@ -194,7 +197,9 @@ export function monitorCompletion(
           cleanupDomainData(ctx, executionId)
 
           try {
-            await spawnRetry(ctx, issueId, engineType)
+            await withIssueLock(ctx, issueId, async () => {
+              await spawnRetry(ctx, issueId, engineType)
+            })
           } catch (retryErr) {
             logger.error({ issueId, err: retryErr }, 'auto_retry_failed')
             await settleIssue(ctx, issueId, executionId, 'failed')

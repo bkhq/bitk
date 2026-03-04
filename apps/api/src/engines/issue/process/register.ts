@@ -45,7 +45,6 @@ export function register(
     turnInFlight: true,
     queueCancelRequested: false,
     logicalFailure: false,
-    cancelledByUser: false,
     turnSettled: false,
     metaTurn,
     lastActivityAt: new Date(),

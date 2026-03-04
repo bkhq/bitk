@@ -85,11 +85,24 @@ async function extractArchive(
 
 let isApplying = false
 
+const APPLY_TIMEOUT_MS = 30_000 // 30 seconds safety timeout
+
 export async function applyUpgradeAndRestart(): Promise<void> {
   if (isApplying) {
     throw new Error('An upgrade is already being applied')
   }
   isApplying = true
+
+  // Safety timeout: if the upgrade process stalls (e.g. shutdown hangs),
+  // reset isApplying so a retry is possible.
+  const safetyTimer = setTimeout(() => {
+    isApplying = false
+    logger.warn('upgrade_apply_timeout_reset')
+  }, APPLY_TIMEOUT_MS)
+  // Don't keep the process alive just for this timer
+  if (typeof safetyTimer === 'object' && 'unref' in safetyTimer) {
+    safetyTimer.unref()
+  }
 
   try {
     const status = getDownloadStatus()
@@ -176,8 +189,8 @@ export async function applyUpgradeAndRestart(): Promise<void> {
       logger.info('upgrade_shutting_down_for_restart')
       process.exit(0)
     }
-  } catch (err) {
+  } finally {
+    clearTimeout(safetyTimer)
     isApplying = false
-    throw err
   }
 }

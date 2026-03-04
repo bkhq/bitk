@@ -8,7 +8,7 @@ import {
   UPGRADE_ENABLED_KEY,
 } from './constants'
 import { downloadUpdate, getDownloadStatus } from './download'
-import { cleanupTmpFiles } from './files'
+import { cleanupBackupDirs, cleanupTmpFiles } from './files'
 
 // --- Re-exports (preserve public API for route consumers) ---
 
@@ -70,6 +70,15 @@ export function startPeriodicCheck(): void {
       }
     })
   }, CHECK_INTERVAL_MS)
+
+  // Allow the process to exit without waiting for this timer
+  if (
+    periodicCheckTimer &&
+    typeof periodicCheckTimer === 'object' &&
+    'unref' in periodicCheckTimer
+  ) {
+    periodicCheckTimer.unref()
+  }
 }
 
 async function checkAndAutoDownload(): Promise<void> {
@@ -111,6 +120,9 @@ export async function initUpgradeSystem(): Promise<void> {
 
   // Clean up any stale .tmp files from interrupted downloads
   await cleanupTmpFiles()
+
+  // Clean up any leftover .backup.* directories from interrupted upgrades
+  await cleanupBackupDirs()
 
   const enabled = await isUpgradeEnabled()
   if (enabled) {

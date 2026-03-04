@@ -1,9 +1,14 @@
-import { and, eq } from 'drizzle-orm'
+import { and, eq, inArray } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { cacheDel, cacheDelByPrefix } from '@/cache'
 import { db } from '@/db'
 import { findProject } from '@/db/helpers'
-import { issues as issuesTable } from '@/db/schema'
+import {
+  attachments as attachmentsTable,
+  issueLogs as issueLogsTable,
+  issues as issuesTable,
+  issuesLogsToolsCall as toolsCallTable,
+} from '@/db/schema'
 import { issueEngine } from '@/engines/issue'
 import { logger } from '@/logger'
 
@@ -43,16 +48,10 @@ del.delete('/:id', async (c) => {
   }
 
   await db.transaction(async (tx) => {
-    // Soft-delete the issue
-    await tx
-      .update(issuesTable)
-      .set({ isDeleted: 1 })
-      .where(eq(issuesTable.id, issueId))
-
-    // Soft-delete child issues
-    await tx
-      .update(issuesTable)
-      .set({ isDeleted: 1 })
+    // Collect child issue IDs before soft-deleting
+    const childIssues = await tx
+      .select({ id: issuesTable.id })
+      .from(issuesTable)
       .where(
         and(
           eq(issuesTable.parentIssueId, issueId),
@@ -60,6 +59,40 @@ del.delete('/:id', async (c) => {
           eq(issuesTable.isDeleted, 0),
         ),
       )
+    const childIds = childIssues.map((c) => c.id)
+    const allIssueIds = [issueId, ...childIds]
+
+    // Soft-delete the issue
+    await tx
+      .update(issuesTable)
+      .set({ isDeleted: 1 })
+      .where(eq(issuesTable.id, issueId))
+
+    // Soft-delete child issues
+    if (childIds.length > 0) {
+      await tx
+        .update(issuesTable)
+        .set({ isDeleted: 1 })
+        .where(inArray(issuesTable.id, childIds))
+    }
+
+    // Soft-delete related logs
+    await tx
+      .update(issueLogsTable)
+      .set({ isDeleted: 1 })
+      .where(inArray(issueLogsTable.issueId, allIssueIds))
+
+    // Soft-delete related tool calls
+    await tx
+      .update(toolsCallTable)
+      .set({ isDeleted: 1 })
+      .where(inArray(toolsCallTable.issueId, allIssueIds))
+
+    // Soft-delete related attachments
+    await tx
+      .update(attachmentsTable)
+      .set({ isDeleted: 1 })
+      .where(inArray(attachmentsTable.issueId, allIssueIds))
   })
 
   // Invalidate caches

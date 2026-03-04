@@ -48,17 +48,21 @@ export function registerPersistStage(
           // Restore content/metadata for live clients
           persisted.content = data.entry.content
           persisted.metadata = data.entry.metadata
-          const toolRecordId = persistToolDetail(
-            persisted.messageId,
-            data.issueId,
-            data.entry,
-          )
-          if (toolRecordId) {
-            db.update(logsTable)
-              .set({ toolCallRefId: toolRecordId })
-              .where(eq(logsTable.id, persisted.messageId))
-              .run()
-          }
+          // Wrap tool detail insert + log backfill in a single transaction
+          // to keep toolCallRefId consistent with the tool record
+          db.transaction((tx) => {
+            const toolRecordId = persistToolDetail(
+              persisted.messageId!,
+              data.issueId,
+              data.entry,
+            )
+            if (toolRecordId) {
+              tx.update(logsTable)
+                .set({ toolCallRefId: toolRecordId })
+                .where(eq(logsTable.id, persisted.messageId!))
+                .run()
+            }
+          })
         }
         // Replace entry so downstream stages see messageId (avoid mutating original)
         data.entry = { ...data.entry, ...persisted }

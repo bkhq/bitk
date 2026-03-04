@@ -34,7 +34,7 @@ export async function cancel(
 
   // Soft cancel: interrupt current turn only and keep process alive.
   if (!opts.hard) {
-    managed.cancelledByUser = true
+    managed.lastInterruptAt = new Date()
     logger.debug(
       {
         issueId: managed.issueId,
@@ -46,14 +46,13 @@ export async function cancel(
     return
   }
 
-  // Hard cancel: delegate kill timeout to PM
-  managed.state = 'cancelled'
+  // Hard cancel: delegate kill timeout to PM (PM.terminate handles state transition)
   if (opts.emitCancelledState !== false) {
     emitStateChange(managed.issueId, executionId, 'cancelled')
   }
 
   await ctx.pm.terminate(executionId, () => managed.process.cancel())
-  managed.finishedAt = entry.finishedAt ?? new Date()
+  dispatch(managed, { type: 'MARK_CANCELLED' })
   logger.debug(
     { issueId: managed.issueId, executionId, pid: getPidFromManaged(managed) },
     'issue_process_cancel_finished',
@@ -87,7 +86,7 @@ export async function terminateProcess(
         'force_terminate_active_process',
       )
       dispatch(managed, { type: 'CLEAR_PENDING_INPUTS' })
-      managed.state = 'cancelled'
+      dispatch(managed, { type: 'MARK_CANCELLED' })
       emitStateChange(issueId, entry.id, 'cancelled')
       ctx.pm.forceKill(entry.id)
       cleanupDomainData(ctx, entry.id)

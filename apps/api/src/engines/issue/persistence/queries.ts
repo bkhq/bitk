@@ -66,12 +66,12 @@ export function getLogsFromDb(
 
   // Batch-fetch tool details only in devMode (non-dev excludes tool-use at SQL level)
   const toolByLogId = new Map<string, (typeof toolsTable)['$inferSelect']>()
-  if (devMode) {
+  if (devMode && rows.length > 0) {
+    const logIds = rows.map((r) => r.id)
     const toolRows = db
       .select()
       .from(toolsTable)
-      .where(eq(toolsTable.issueId, issueId))
-      .limit(MAX_LOG_ENTRIES)
+      .where(inArray(toolsTable.logId, logIds))
       .all()
     for (const r of toolRows) toolByLogId.set(r.logId, r)
   }

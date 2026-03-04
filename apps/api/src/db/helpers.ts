@@ -1,4 +1,4 @@
-import { and, eq, inArray } from 'drizzle-orm'
+import { and, eq, inArray, sql } from 'drizzle-orm'
 import { cacheDel, cacheGet, cacheGetOrSet, cacheSet } from '@/cache'
 import { db } from '.'
 import {
@@ -17,19 +17,16 @@ export async function findProject(param: string) {
   const cached = await cacheGet<ProjectRow>(cacheKey)
   if (cached) return cached
 
-  // Try by ID first, then by alias
-  let [row] = await db
+  // Single query: match by ID or alias
+  const [row] = await db
     .select()
     .from(projectsTable)
-    .where(and(eq(projectsTable.id, param), eq(projectsTable.isDeleted, 0)))
-  if (!row) {
-    ;[row] = await db
-      .select()
-      .from(projectsTable)
-      .where(
-        and(eq(projectsTable.alias, param), eq(projectsTable.isDeleted, 0)),
-      )
-  }
+    .where(
+      and(
+        sql`(${projectsTable.id} = ${param} OR ${projectsTable.alias} = ${param})`,
+        eq(projectsTable.isDeleted, 0),
+      ),
+    )
 
   if (row) {
     // Cache under both ID and alias keys
@@ -140,17 +137,17 @@ export async function getAllEngineDefaultModels(): Promise<
     SETTINGS_CACHE_TTL,
     async () => {
       const rows = await db
-        .select()
+        .select({ key: appSettingsTable.key, value: appSettingsTable.value })
         .from(appSettingsTable)
-        .where(eq(appSettingsTable.isDeleted, 0))
+        .where(
+          sql`${appSettingsTable.key} LIKE 'engine:%:defaultModel'`,
+        )
       const result: Record<string, string> = {}
       const prefix = 'engine:'
       const suffix = ':defaultModel'
       for (const row of rows) {
-        if (row.key.startsWith(prefix) && row.key.endsWith(suffix)) {
-          const engineType = row.key.slice(prefix.length, -suffix.length)
-          result[engineType] = row.value
-        }
+        const engineType = row.key.slice(prefix.length, -suffix.length)
+        result[engineType] = row.value
       }
       return result
     },

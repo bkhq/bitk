@@ -1,7 +1,7 @@
 import { zValidator } from '@hono/zod-validator'
-import { and, eq } from 'drizzle-orm'
+import { and, eq, inArray } from 'drizzle-orm'
 import { Hono } from 'hono'
-import { cacheDel, cacheDelByPrefix, cacheGetOrSet } from '@/cache'
+import { cacheDel, cacheDelByPrefix } from '@/cache'
 import { db } from '@/db'
 import { findProject } from '@/db/helpers'
 import { issues as issuesTable } from '@/db/schema'
@@ -41,26 +41,22 @@ update.patch(
 
     const body = c.req.valid('json')
 
-    // Get all project issue IDs for ownership validation
-    const projectIssueIds = await cacheGetOrSet<string[]>(
-      `projectIssueIds:${project.id}`,
-      60,
-      async () => {
-        const rows = await db
-          .select({ id: issuesTable.id })
-          .from(issuesTable)
-          .where(
-            and(
-              eq(issuesTable.projectId, project.id),
-              eq(issuesTable.isDeleted, 0),
-            ),
-          )
-        return rows.map((i) => i.id)
-      },
-    )
-    const projectIssueIdSet = new Set(projectIssueIds)
+    // Validate ownership: only check requested IDs against this project
+    const requestedIds = body.updates.map((u) => u.id)
+    const ownedRows = await db
+      .select({ id: issuesTable.id })
+      .from(issuesTable)
+      .where(
+        and(
+          inArray(issuesTable.id, requestedIds),
+          eq(issuesTable.projectId, project.id),
+          eq(issuesTable.isDeleted, 0),
+        ),
+      )
+    const projectIssueIdSet = new Set(ownedRows.map((r) => r.id))
 
     const updated: ReturnType<typeof serializeIssue>[] = []
+    const skippedIds = requestedIds.filter((id) => !projectIssueIdSet.has(id))
     // Collect issues that need execution after transaction commits
     const toExecute: Array<{
       id: string
@@ -165,7 +161,11 @@ update.patch(
       await cacheDel(`issue:${project.id}:${u.id}`)
     }
 
-    return c.json({ success: true, data: updated })
+    return c.json({
+      success: true,
+      data: updated,
+      ...(skippedIds.length > 0 ? { skipped: skippedIds } : {}),
+    })
   },
 )
 

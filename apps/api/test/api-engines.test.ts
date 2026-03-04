@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { expectError, expectSuccess, get, post } from './helpers'
+import { expectError, expectSuccess, get, patch, post } from './helpers'
 /**
  * Engines API tests.
  */
@@ -47,9 +47,9 @@ describe('GET /api/engines/settings', () => {
   })
 })
 
-describe('POST /api/engines/default-engine', () => {
+describe('PATCH /api/engines/default-engine', () => {
   test('sets a valid default engine', async () => {
-    const result = await post<{ defaultEngine: string }>(
+    const result = await patch<{ defaultEngine: string }>(
       '/api/engines/default-engine',
       {
         defaultEngine: 'echo',
@@ -61,14 +61,14 @@ describe('POST /api/engines/default-engine', () => {
   })
 
   test('rejects invalid engine type', async () => {
-    const result = await post<unknown>('/api/engines/default-engine', {
+    const result = await patch<unknown>('/api/engines/default-engine', {
       defaultEngine: 'nonexistent',
     })
     expect(result.status).toBe(400)
   })
 
   test('rejects missing body', async () => {
-    const result = await post<unknown>('/api/engines/default-engine', {})
+    const result = await patch<unknown>('/api/engines/default-engine', {})
     expect(result.status).toBe(400)
   })
 })

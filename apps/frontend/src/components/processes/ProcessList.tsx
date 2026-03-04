@@ -23,11 +23,12 @@ import {
   useRestartIssue,
   useTerminateProcess,
 } from '@/hooks/use-kanban'
-import type { ProcessInfo, SessionStatus } from '@/types/kanban'
+import type { ProcessInfo } from '@/types/kanban'
 
-function StatusIcon({ status }: { status: SessionStatus | null }) {
+function StatusIcon({ status }: { status: string | null }) {
   switch (status) {
     case 'running':
+    case 'spawning':
       return <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-500" />
     case 'pending':
       return <Clock className="h-3.5 w-3.5 text-yellow-500" />
@@ -43,10 +44,11 @@ function StatusIcon({ status }: { status: SessionStatus | null }) {
 }
 
 function statusVariant(
-  status: SessionStatus | null,
+  status: string | null,
 ): 'default' | 'secondary' | 'destructive' | 'outline' {
   switch (status) {
     case 'running':
+    case 'spawning':
       return 'default'
     case 'pending':
       return 'secondary'
@@ -91,7 +93,7 @@ function ProcessCard({
     <div className="rounded-lg border border-border bg-card p-3 space-y-2">
       {/* Title row */}
       <div className="flex items-center gap-2 min-w-0">
-        <StatusIcon status={proc.sessionStatus} />
+        <StatusIcon status={proc.processState} />
         <button
           type="button"
           className="text-xs font-medium text-foreground truncate hover:underline cursor-pointer text-left min-w-0"
@@ -106,12 +108,12 @@ function ProcessCard({
 
       {/* Meta row */}
       <div className="flex flex-wrap items-center gap-1.5">
-        {proc.sessionStatus && (
+        {proc.processState && (
           <Badge
-            variant={statusVariant(proc.sessionStatus)}
+            variant={statusVariant(proc.processState)}
             className="text-[10px] px-1.5 py-0"
           >
-            {t(`session.status.${proc.sessionStatus}`)}
+            {t(`session.status.${proc.processState}`)}
           </Badge>
         )}
         {idle && (
@@ -180,8 +182,8 @@ function ProcessCard({
 
       {/* Actions */}
       <div className="flex items-center gap-1.5 pt-1">
-        {(proc.sessionStatus === 'running' ||
-          proc.sessionStatus === 'pending') && (
+        {(proc.processState === 'running' ||
+          proc.processState === 'spawning') && (
           <Button
             variant="outline"
             size="sm"
@@ -195,8 +197,8 @@ function ProcessCard({
               : t('processManager.cancel')}
           </Button>
         )}
-        {(proc.sessionStatus === 'failed' ||
-          proc.sessionStatus === 'cancelled') && (
+        {(proc.processState === 'failed' ||
+          proc.processState === 'cancelled') && (
           <Button
             variant="outline"
             size="sm"

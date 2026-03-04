@@ -61,7 +61,11 @@ upgrade.get('/enabled', async (c) => {
 // PATCH /api/upgrade/enabled — toggle upgrade on/off
 upgrade.patch(
   '/enabled',
-  zValidator('json', z.object({ enabled: z.boolean() })),
+  zValidator('json', z.object({ enabled: z.boolean() }), (result, c) => {
+    if (!result.success) {
+      return c.json({ success: false, error: result.error.issues.map(i => i.message).join(', ') }, 400)
+    }
+  }),
   async (c) => {
     const { enabled } = c.req.valid('json')
     await setUpgradeEnabled(enabled)
@@ -91,6 +95,11 @@ upgrade.post(
       fileName: upgradeFileNameSchema,
       checksumUrl: githubUrlSchema.optional(),
     }),
+    (result, c) => {
+      if (!result.success) {
+        return c.json({ success: false, error: result.error.issues.map(i => i.message).join(', ') }, 400)
+      }
+    },
   ),
   async (c) => {
     const { url, fileName, checksumUrl } = c.req.valid('json')
@@ -131,10 +140,11 @@ upgrade.post('/restart', async (c) => {
       data: { status: 'restarting' },
     })
   } catch (err) {
+    logger.error({ error: err }, 'upgrade_restart_failed')
     return c.json(
       {
         success: false,
-        error: err instanceof Error ? err.message : 'Restart failed',
+        error: 'Failed to apply upgrade and restart',
       },
       400,
     )
@@ -155,6 +165,11 @@ upgrade.delete(
     z.object({
       fileName: upgradeFileNameSchema,
     }),
+    (result, c) => {
+      if (!result.success) {
+        return c.json({ success: false, error: result.error.issues.map(i => i.message).join(', ') }, 400)
+      }
+    },
   ),
   async (c) => {
     const { fileName } = c.req.valid('param')
@@ -162,10 +177,11 @@ upgrade.delete(
       await deleteDownloadedUpdate(fileName)
       return c.json({ success: true, data: { deleted: fileName } })
     } catch (err) {
+      logger.error({ error: err, fileName }, 'upgrade_delete_failed')
       return c.json(
         {
           success: false,
-          error: err instanceof Error ? err.message : 'Delete failed',
+          error: 'Failed to delete downloaded update',
         },
         404,
       )

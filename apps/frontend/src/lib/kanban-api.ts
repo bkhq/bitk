@@ -245,7 +245,7 @@ export const kanbanApi = {
       data,
     ),
   updateDefaultEngine: (defaultEngine: string) =>
-    post<{ defaultEngine: string }>('/api/engines/default-engine', {
+    patch<{ defaultEngine: string }>('/api/engines/default-engine', {
       defaultEngine,
     }),
   probeEngines: () => post<ProbeResult>('/api/engines/probe', {}),

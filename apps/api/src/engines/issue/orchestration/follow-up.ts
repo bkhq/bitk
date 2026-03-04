@@ -53,19 +53,19 @@ export async function followUpIssue(
     }
 
     const active = getActiveProcessForIssue(ctx, issueId)
-    // Skip reuse if the active process was cancelled by the user. The old
+    // Skip reuse if the active process was interrupted by the user. The old
     // subprocess is dying (SIGTERM sent) but PM hasn't transitioned to
     // terminal yet. Spawning a fresh process avoids sending input to a
     // dead/dying stdin. spawnFollowUpProcess() calls killExistingSubprocess
     // to clean up the old entry.
-    if (active?.cancelledByUser) {
+    if (active?.lastInterruptAt) {
       // Drain queued inputs so monitorCompletion() won't try to spawn
       // competing follow-ups when the old process exits.
       if (active.pendingInputs.length > 0) {
         dispatch(active, { type: 'CLEAR_PENDING_INPUTS' })
       }
     }
-    if (active && !active.cancelledByUser) {
+    if (active && !active.lastInterruptAt) {
       await updateIssueSession(issueId, { sessionStatus: 'running' })
       logger.debug(
         {

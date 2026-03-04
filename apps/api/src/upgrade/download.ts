@@ -74,28 +74,29 @@ export async function downloadUpdate(
       throw new Error('No response body')
     }
 
-    const chunks: Uint8Array[] = []
+    // Stream directly to disk instead of buffering in memory
+    const sink = Bun.file(tmpPath).writer()
     let received = 0
     const reader = body.getReader()
 
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
+    try {
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
 
-      chunks.push(value)
-      received += value.length
+        sink.write(value)
+        received += value.length
 
-      if (contentLength > 0) {
-        downloadStatus = {
-          ...downloadStatus,
-          progress: Math.round((received / contentLength) * 100),
+        if (contentLength > 0) {
+          downloadStatus = {
+            ...downloadStatus,
+            progress: Math.round((received / contentLength) * 100),
+          }
         }
       }
+    } finally {
+      await sink.end()
     }
-
-    // Write to .tmp file first, then rename atomically
-    const blob = new Blob(chunks)
-    await Bun.write(tmpPath, blob)
     // Only set executable permissions for binary downloads, not archives
     if (!isPackageMode) {
       await chmod(tmpPath, 0o755)

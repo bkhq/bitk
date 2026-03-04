@@ -125,6 +125,11 @@ export const issueLogs = sqliteTable(
       table.turnIndex,
       table.entryIndex,
     ),
+    index('issues_logs_issue_id_visible_type_idx').on(
+      table.issueId,
+      table.visible,
+      table.entryType,
+    ),
   ],
 )
 

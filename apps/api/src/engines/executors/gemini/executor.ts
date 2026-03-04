@@ -32,7 +32,7 @@ export class GeminiExecutor implements EngineExecutor {
     // 1. Start `npx -y @google/gemini-cli` with appropriate flags
     // 2. Send initial prompt via ACP protocol
     // 3. Stream stdout for responses
-    throw new Error('Gemini executor not yet implemented')
+    throw new Error('Gemini engine is not yet available')
   }
 
   async spawnFollowUp(
@@ -40,7 +40,7 @@ export class GeminiExecutor implements EngineExecutor {
     _env: ExecutionEnv,
   ): Promise<SpawnedProcess> {
     // TODO: Implement follow-up via ACP session continuation
-    throw new Error('Gemini follow-up not yet implemented')
+    throw new Error('Gemini engine is not yet available')
   }
 
   async cancel(spawnedProcess: SpawnedProcess): Promise<void> {

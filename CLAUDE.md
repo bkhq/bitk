@@ -104,7 +104,7 @@ POST           /api/projects/:projectId/issues/:id/messages
 GET            /api/projects/:projectId/issues/:id/logs
 GET/POST       /api/projects/:projectId/issues/:id/attachments
 GET            /api/projects/:projectId/issues/:id/changes
-POST           /api/projects/:projectId/issues/:id/title/generate
+POST           /api/projects/:projectId/issues/:id/auto-title
 GET            /api/projects/:projectId/issues/:id/slash-commands
 ```
 

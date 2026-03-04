@@ -84,8 +84,11 @@ export async function consumeStream(
       }
 
       // Claude may emit execution noise after interrupt (e.g. request aborted /
-      // rust-analyzer crash). If this turn was user-cancelled, suppress it.
-      if (managed.cancelledByUser && isCancelledNoiseEntry(entry)) {
+      // rust-analyzer crash). Suppress noise entries within 5s of the last interrupt.
+      const recentInterrupt =
+        managed.lastInterruptAt &&
+        Date.now() - managed.lastInterruptAt.getTime() < 5000
+      if (recentInterrupt && isCancelledNoiseEntry(entry)) {
         if (isTurnCompletionEntry(entry)) {
           callbacks.onTurnCompleted()
         }

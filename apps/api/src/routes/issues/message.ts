@@ -26,17 +26,15 @@ async function persistPendingMessage(
   const { ulid } = await import('ulid')
   const messageId = ulid()
   await db.transaction(async (tx) => {
-    const [maxEntryRow] = await tx
-      .select({ val: max(issueLogs.entryIndex) })
+    const [maxRow] = await tx
+      .select({
+        maxEntry: max(issueLogs.entryIndex),
+        maxTurn: max(issueLogs.turnIndex),
+      })
       .from(issueLogs)
       .where(eq(issueLogs.issueId, issueId))
-    const entryIndex = (maxEntryRow?.val ?? -1) + 1
-
-    const [maxTurnRow] = await tx
-      .select({ val: max(issueLogs.turnIndex) })
-      .from(issueLogs)
-      .where(eq(issueLogs.issueId, issueId))
-    const turnIndex = (maxTurnRow?.val ?? -1) + 1
+    const entryIndex = (maxRow?.maxEntry ?? -1) + 1
+    const turnIndex = (maxRow?.maxTurn ?? -1) + 1
 
     await tx.insert(issueLogs).values({
       id: messageId,
@@ -335,7 +333,7 @@ message.post('/:id/follow-up', async (c) => {
     return c.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : 'Follow-up failed',
+        error: 'Follow-up failed',
       },
       400,
     )

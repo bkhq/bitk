@@ -191,10 +191,11 @@ export class CodexProtocolHandler {
    * Send a user message for interactive follow-up on an active process.
    * Starts a new turn on the existing thread.
    */
-  sendUserMessage(prompt: string): void {
-    if (this._threadId) {
-      void this.startTurn(this._threadId, prompt)
+  async sendUserMessage(prompt: string): Promise<string> {
+    if (!this._threadId) {
+      throw new Error('Cannot send message: no active thread')
     }
+    return this.startTurn(this._threadId, prompt)
   }
 
   /** Close stdin, reject all pending requests, close notification stream. */
@@ -249,11 +250,8 @@ export class CodexProtocolHandler {
         logger.warn({ error }, 'codex_protocol_reader_error')
       } finally {
         reader.releaseLock()
-        try {
-          this.notificationController?.close()
-        } catch {
-          /* already closed */
-        }
+        // Close pending request timers and notification stream on reader exit
+        this.close()
       }
     })()
   }

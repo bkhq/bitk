@@ -14,7 +14,7 @@ export function dispatch(managed: ManagedProcess, action: ManagedAction): void {
       managed.turnSettled = false
       managed.logicalFailure = false
       managed.logicalFailureReason = undefined
-      managed.cancelledByUser = false
+      managed.lastInterruptAt = undefined
       managed.metaTurn = action.metaTurn
       break
     case 'TURN_COMPLETED':
@@ -22,7 +22,7 @@ export function dispatch(managed: ManagedProcess, action: ManagedAction): void {
       managed.queueCancelRequested = false
       managed.metaTurn = false
       managed.turnSettled = true
-      // cancelledByUser is NOT reset here — it stays true through the full
+      // lastInterruptAt is NOT reset here — it stays set through the full
       // stream drain cycle so isCancelledNoiseEntry filtering works. It is
       // reset in START_TURN when the next turn begins.
       break
@@ -42,7 +42,6 @@ export function dispatch(managed: ManagedProcess, action: ManagedAction): void {
       break
     case 'MARK_CANCELLED':
       managed.state = 'cancelled'
-      managed.cancelledByUser = action.cancelledByUser
       managed.finishedAt = action.finishedAt ?? new Date()
       break
     case 'SET_LOGICAL_FAILURE':

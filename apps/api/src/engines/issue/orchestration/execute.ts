@@ -47,6 +47,14 @@ export async function executeIssue(
     if (!executor)
       throw new Error(`No executor for engine type: ${opts.engineType}`)
 
+    // Guard: reject engines that are registered but not yet executable (e.g. Gemini stub)
+    const avail = await executor.getAvailability()
+    if (avail.executable === false) {
+      throw new Error(
+        `Engine '${opts.engineType}' is not yet executable (spawn not implemented)`,
+      )
+    }
+
     let model = opts.model
     if (!model) {
       const defaultModel = await getEngineDefaultModel(opts.engineType)

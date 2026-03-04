@@ -14,7 +14,10 @@ import {
   startupReconciliation,
   stopPeriodicReconciliation,
 } from './engines/reconciler'
-import { startChangesSummaryWatcher } from './events/changes-summary'
+import {
+  startChangesSummaryWatcher,
+  stopChangesSummaryWatcher,
+} from './events/changes-summary'
 import { startUploadCleanup } from './jobs/upload-cleanup'
 import { startWorktreeCleanup } from './jobs/worktree-cleanup'
 import { logger } from './logger'
@@ -41,7 +44,7 @@ void startupReconciliation().catch((err) => {
 })
 
 // Register event-driven reconciliation (fires after each process settles)
-registerSettledReconciliation()
+const stopSettledReconciliation = registerSettledReconciliation()
 
 // Start periodic reconciliation (fallback safety net)
 startPeriodicReconciliation()
@@ -117,6 +120,8 @@ const stopWorktreeCleanup = startWorktreeCleanup()
 
 // Register shutdown callback for upgrade restarts (stops server + cancels engines)
 registerShutdownForUpgrade(async () => {
+  stopChangesSummaryWatcher()
+  stopSettledReconciliation()
   stopPeriodicReconciliation()
   stopUploadCleanup()
   stopWorktreeCleanup()
@@ -141,7 +146,9 @@ async function shutdown(signal: string) {
 
   logger.warn({ signal }, 'server_shutdown')
 
-  // Stop periodic jobs before cancelling processes
+  // Stop SSE subscriptions and periodic jobs before cancelling processes
+  stopChangesSummaryWatcher()
+  stopSettledReconciliation()
   stopPeriodicReconciliation()
   stopUploadCleanup()
   stopWorktreeCleanup()

@@ -357,6 +357,12 @@ export function useCancelIssue(projectId: string) {
       queryClient.invalidateQueries({
         queryKey: queryKeys.issue(projectId, issueId),
       })
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.issues(projectId),
+      })
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.projectProcesses(projectId),
+      })
     },
   })
 }
@@ -611,9 +617,15 @@ export function useTerminateProcess(projectId: string) {
   return useMutation({
     mutationFn: (issueId: string) =>
       kanbanApi.terminateProcess(projectId, issueId),
-    onSuccess: () => {
+    onSuccess: (_data, issueId) => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.projectProcesses(projectId),
+      })
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.issue(projectId, issueId),
+      })
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.issues(projectId),
       })
     },
   })

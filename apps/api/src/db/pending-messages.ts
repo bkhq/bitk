@@ -53,26 +53,28 @@ export async function markPendingMessagesDispatched(ids: string[]) {
  */
 export async function promotePendingMessages(ids: string[]) {
   if (ids.length === 0) return
-  // Update each row: parse metadata JSON, remove `type`, write back
-  const rows = await db
-    .select({ id: issueLogs.id, metadata: issueLogs.metadata })
-    .from(issueLogs)
-    .where(inArray(issueLogs.id, ids))
-  for (const row of rows) {
-    let meta: Record<string, unknown> = {}
-    try {
-      meta = row.metadata ? JSON.parse(row.metadata) : {}
-    } catch {
-      continue
+  // Batch update in a single transaction to avoid N+1
+  await db.transaction(async (tx) => {
+    const rows = await tx
+      .select({ id: issueLogs.id, metadata: issueLogs.metadata })
+      .from(issueLogs)
+      .where(inArray(issueLogs.id, ids))
+    for (const row of rows) {
+      let meta: Record<string, unknown> = {}
+      try {
+        meta = row.metadata ? JSON.parse(row.metadata) : {}
+      } catch {
+        continue
+      }
+      const { type: _type, ...rest } = meta
+      await tx
+        .update(issueLogs)
+        .set({
+          metadata: Object.keys(rest).length > 0 ? JSON.stringify(rest) : null,
+        })
+        .where(eq(issueLogs.id, row.id))
     }
-    const { type: _type, ...rest } = meta
-    await db
-      .update(issueLogs)
-      .set({
-        metadata: Object.keys(rest).length > 0 ? JSON.stringify(rest) : null,
-      })
-      .where(eq(issueLogs.id, row.id))
-  }
+  })
 }
 
 // ---------- Attachment context ----------

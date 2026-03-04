@@ -39,50 +39,61 @@ export async function reconcileStaleWorkingIssues(): Promise<number> {
 
   if (staleIssues.length === 0) return 0
 
-  let reconciled = 0
+  // Partition stale issues into those needing session status fix vs just statusId fix
+  const needsSessionFix: string[] = []
+  const needsStatusOnly: string[] = []
+  const reconciledIssues: typeof staleIssues = []
 
   for (const issue of staleIssues) {
-    // Skip issues that genuinely have an active engine process
-    if (hasActiveProcess(issue.id)) {
-      continue
-    }
+    if (hasActiveProcess(issue.id)) continue
 
-    // No active process — this issue is stale. Determine the right sessionStatus.
-    const sessionStatus = issue.sessionStatus
     const isTerminal =
-      sessionStatus === 'completed' ||
-      sessionStatus === 'failed' ||
-      sessionStatus === 'cancelled'
+      issue.sessionStatus === 'completed' ||
+      issue.sessionStatus === 'failed' ||
+      issue.sessionStatus === 'cancelled'
 
-    // If sessionStatus is still running/pending, mark it as failed
-    // (the process vanished without proper settlement)
     if (!isTerminal) {
-      await db
+      needsSessionFix.push(issue.id)
+    } else {
+      needsStatusOnly.push(issue.id)
+    }
+    reconciledIssues.push(issue)
+  }
+
+  if (reconciledIssues.length === 0) return 0
+
+  // Batch update in a single transaction
+  const now = new Date()
+  await db.transaction(async (tx) => {
+    if (needsSessionFix.length > 0) {
+      await tx
         .update(issuesTable)
         .set({
           sessionStatus: 'failed',
           statusId: 'review',
-          statusUpdatedAt: new Date(),
+          statusUpdatedAt: now,
         })
-        .where(eq(issuesTable.id, issue.id))
-    } else {
-      // sessionStatus is already terminal but statusId is still working
-      await db
-        .update(issuesTable)
-        .set({ statusId: 'review', statusUpdatedAt: new Date() })
-        .where(eq(issuesTable.id, issue.id))
+        .where(inArray(issuesTable.id, needsSessionFix))
     }
+    if (needsStatusOnly.length > 0) {
+      await tx
+        .update(issuesTable)
+        .set({ statusId: 'review', statusUpdatedAt: now })
+        .where(inArray(issuesTable.id, needsStatusOnly))
+    }
+  })
 
+  // Post-commit: invalidate caches and emit events
+  for (const issue of reconciledIssues) {
     await cacheDel(`issue:${issue.projectId}:${issue.id}`)
     emitIssueUpdated(issue.id, { statusId: 'review' })
     logger.info(
-      { issueId: issue.id, previousSessionStatus: sessionStatus },
+      { issueId: issue.id, previousSessionStatus: issue.sessionStatus },
       'reconciler_moved_to_review',
     )
-    reconciled++
   }
 
-  return reconciled
+  return reconciledIssues.length
 }
 
 // ---------- Active process check ----------
@@ -189,9 +200,11 @@ export function stopPeriodicReconciliation(): void {
  * reconciliation after every process completion/failure. This catches
  * edge cases where the DB update in monitorCompletion succeeds for
  * sessionStatus but the statusId update was missed.
+ *
+ * Returns an unsubscribe function to remove the event listener.
  */
-export function registerSettledReconciliation(): void {
-  appEvents.on('done', () => {
+export function registerSettledReconciliation(): () => void {
+  const unsubscribe = appEvents.on('done', () => {
     // Run reconciliation after a short delay to allow the engine's own
     // autoMoveToReview to complete first. If it succeeded, the reconciler
     // will simply find zero stale issues.
@@ -201,4 +214,5 @@ export function registerSettledReconciliation(): void {
       })
     }, 1000)
   })
+  return unsubscribe
 }

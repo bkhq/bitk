@@ -1,13 +1,19 @@
 import { resolve } from 'node:path'
 import { zValidator } from '@hono/zod-validator'
-import { and, eq, ne } from 'drizzle-orm'
+import { and, eq, inArray, ne } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { customAlphabet } from 'nanoid'
 import * as z from 'zod'
 import { cacheDelByPrefix } from '@/cache'
 import { db } from '@/db'
 import { findProject, invalidateProjectCache } from '@/db/helpers'
-import { issues as issuesTable, projects as projectsTable } from '@/db/schema'
+import {
+  attachments as attachmentsTable,
+  issueLogs as issueLogsTable,
+  issues as issuesTable,
+  issuesLogsToolsCall as toolsCallTable,
+  projects as projectsTable,
+} from '@/db/schema'
 import { issueEngine } from '@/engines/issue'
 import { logger } from '@/logger'
 
@@ -233,16 +239,43 @@ projects.delete('/:projectId', async (c) => {
   }
 
   await db.transaction(async (tx) => {
-    // Soft-delete all issues in this project
-    await tx
-      .update(issuesTable)
-      .set({ isDeleted: 1 })
+    // Collect issue IDs before soft-deleting
+    const projectIssues = await tx
+      .select({ id: issuesTable.id })
+      .from(issuesTable)
       .where(
         and(
           eq(issuesTable.projectId, existing.id),
           eq(issuesTable.isDeleted, 0),
         ),
       )
+    const issueIds = projectIssues.map((i) => i.id)
+
+    // Soft-delete all issues in this project
+    if (issueIds.length > 0) {
+      await tx
+        .update(issuesTable)
+        .set({ isDeleted: 1 })
+        .where(inArray(issuesTable.id, issueIds))
+
+      // Soft-delete related logs
+      await tx
+        .update(issueLogsTable)
+        .set({ isDeleted: 1 })
+        .where(inArray(issueLogsTable.issueId, issueIds))
+
+      // Soft-delete related tool calls
+      await tx
+        .update(toolsCallTable)
+        .set({ isDeleted: 1 })
+        .where(inArray(toolsCallTable.issueId, issueIds))
+
+      // Soft-delete related attachments
+      await tx
+        .update(attachmentsTable)
+        .set({ isDeleted: 1 })
+        .where(inArray(attachmentsTable.issueId, issueIds))
+    }
 
     // Soft-delete the project
     await tx

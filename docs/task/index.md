@@ -1,22 +1,19 @@
 # Task Index
 
-> Updated: 2026-03-05 18:30 UTC
+> Updated: 2026-03-05 20:05 UTC
 
-## 取消流程重构 (2026-03-05)
+## 待处理
 
-- [ ] **ENG-014 重构 Issue 取消流程和进程/Issue 状态解耦** `P0` - owner: - file: `docs/task/ENG-014.md`
-
-## 后端审计发现 (2026-03-05)
-
-- [ ] **ENG-009 数据库层优化（N+1、冗余查询、索引）** `P1` - owner: - file: `docs/task/ENG-009.md`
-- [ ] **ENG-010 引擎系统健壮性改进** `P1` - owner: - file: `docs/task/ENG-010.md`
-- [ ] **ENG-011 SSE 事件、后台 Job、升级系统改进** `P1` - owner: - file: `docs/task/ENG-011.md`
-- [ ] **ENG-012 API 路由一致性修复** `P2` - owner: - file: `docs/task/ENG-012.md`
-- [ ] **ENG-013 Issue 软删除传播 + 数据库一致性** `P2` - owner: - file: `docs/task/ENG-013.md`
 - [ ] **TEST-002 补充 IssueEngine 集成测试** `P1` - owner: - file: `docs/task/TEST-002.md`
 
 ## 已完成
 
+- [x] **ENG-014 重构 Issue 取消流程和进程/Issue 状态解耦** `P0` - owner: claude - file: `docs/task/ENG-014.md`
+- [x] **ENG-009 数据库层优化（N+1、冗余查询、索引）** `P1` - owner: claude - file: `docs/task/ENG-009.md`
+- [x] **ENG-010 引擎系统健壮性改进** `P1` - owner: claude - file: `docs/task/ENG-010.md`
+- [x] **ENG-011 SSE 事件、后台 Job、升级系统改进** `P1` - owner: claude - file: `docs/task/ENG-011.md`
+- [x] **ENG-012 API 路由一致性修复** `P2` - owner: claude - file: `docs/task/ENG-012.md`
+- [x] **ENG-013 Issue 软删除传播 + 数据库一致性** `P2` - owner: claude - file: `docs/task/ENG-013.md`
 - [x] **BUG-089 修复 Pending 消息以 system-message 重复返回前端** `P0` - owner: claude - file: `docs/task/BUG-089.md`
 - [x] **BUG-082 修复 autoMoveToReview TOCTOU 竞态条件** `P0` - owner: claude - file: `docs/task/BUG-082.md`
 - [x] **BUG-083 修复引擎写入路径缺少 isDeleted 守卫** `P0` - owner: claude - file: `docs/task/BUG-083.md`

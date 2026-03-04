@@ -1,5 +1,35 @@
 import type { CommandParts, ResolvedCommand } from './types'
 
+/**
+ * Parse a command string into tokens, respecting single and double quotes.
+ * e.g. `program --flag "arg with spaces" 'another arg'` → ['program', '--flag', 'arg with spaces', 'another arg']
+ */
+function parseCommandTokens(command: string): string[] {
+  const tokens: string[] = []
+  let current = ''
+  let quote: string | null = null
+  for (const ch of command) {
+    if (quote) {
+      if (ch === quote) {
+        quote = null
+      } else {
+        current += ch
+      }
+    } else if (ch === '"' || ch === "'") {
+      quote = ch
+    } else if (/\s/.test(ch)) {
+      if (current) {
+        tokens.push(current)
+        current = ''
+      }
+    } else {
+      current += ch
+    }
+  }
+  if (current) tokens.push(current)
+  return tokens
+}
+
 export class CommandBuilder {
   private baseCommand: string
   private args: string[] = []
@@ -44,8 +74,8 @@ export class CommandBuilder {
   }
 
   build(): CommandParts {
-    // Parse base command into program + initial args
-    const parts = this.baseCommand.split(/\s+/)
+    // Parse base command into program + initial args (handles quoted strings)
+    const parts = parseCommandTokens(this.baseCommand)
     const program = parts[0]!
     const baseArgs = parts.slice(1)
 

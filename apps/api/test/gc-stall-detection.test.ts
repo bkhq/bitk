@@ -31,7 +31,6 @@ function makeManagedProcess(
     turnInFlight: true,
     queueCancelRequested: false,
     logicalFailure: false,
-    cancelledByUser: false,
     turnSettled: false,
     metaTurn: false,
     lastActivityAt: new Date(),

@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm'
+import { and, eq, ne } from 'drizzle-orm'
 import { cacheDel } from '@/cache'
 import { db } from '@/db'
 import { issues as issuesTable } from '@/db/schema'
@@ -88,23 +88,23 @@ export async function updateIssueSession(
  * Already in review is a no-op.
  */
 export async function autoMoveToReview(issueId: string): Promise<void> {
-  const [row] = await db
-    .select({ statusId: issuesTable.statusId })
-    .from(issuesTable)
-    .where(eq(issuesTable.id, issueId))
-
-  if (!row || row.statusId === 'done' || row.statusId === 'review') return
-
+  // Atomic: single UPDATE with WHERE guards to prevent TOCTOU race
   const [updated] = await db
     .update(issuesTable)
     .set({ statusId: 'review', statusUpdatedAt: new Date() })
-    .where(eq(issuesTable.id, issueId))
+    .where(
+      and(
+        eq(issuesTable.id, issueId),
+        eq(issuesTable.isDeleted, 0),
+        ne(issuesTable.statusId, 'done'),
+        ne(issuesTable.statusId, 'review'),
+      ),
+    )
     .returning()
 
   if (updated) {
     await cacheDel(`issue:${updated.projectId}:${issueId}`)
+    emitIssueUpdated(issueId, { statusId: 'review' })
+    logger.info({ issueId, from: 'working' }, 'auto_moved_to_review')
   }
-
-  emitIssueUpdated(issueId, { statusId: 'review' })
-  logger.info({ issueId, from: row.statusId }, 'auto_moved_to_review')
 }

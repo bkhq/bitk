@@ -255,14 +255,14 @@ export type FileListingResult = DirectoryListing | FileContent
 // ── Process Manager ─────────────────────────────────────
 
 export interface ProcessInfo {
-  executionId: string | null
+  executionId: string
   issueId: string
   issueTitle: string
   issueNumber: number
-  engineType: EngineType | null
-  sessionStatus: SessionStatus | null
+  engineType: string
+  processState: string
   model: string | null
-  startedAt: string | null
+  startedAt: string
   turnInFlight: boolean
   spawnCommand: string | null
   lastIdleAt: string | null

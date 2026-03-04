@@ -189,6 +189,7 @@
     "copyMessage": "Copy message",
     "status": {
       "pending": "Pending",
+      "spawning": "Spawning",
       "running": "Running",
       "completed": "Completed",
       "failed": "Failed",

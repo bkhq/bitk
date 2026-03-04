@@ -25,7 +25,7 @@ logs.get('/:id/logs', async (c) => {
   const limitParam = c.req.query('limit')
 
   const limit = limitParam
-    ? Math.min(Math.max(Number(limitParam) || 30, 1), 1000)
+    ? Math.min(Math.max(Math.floor(Number(limitParam)) || 30, 1), 1000)
     : undefined
   const effectiveLimit = limit ?? 30
 

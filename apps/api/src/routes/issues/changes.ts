@@ -44,9 +44,10 @@ function countTextLines(content: string): number {
   return trimmed ? trimmed.split('\n').length : 0
 }
 
-async function resolveProjectDir(projectId: string): Promise<string> {
+async function resolveProjectDir(projectId: string): Promise<string | null> {
   const project = await findProject(projectId)
-  const root = project?.directory ? resolve(project.directory) : process.cwd()
+  if (!project?.directory) return null
+  const root = resolve(project.directory)
   const s = await stat(root)
   if (!s.isDirectory())
     throw new Error(`Project directory is not a directory: ${root}`)
@@ -187,6 +188,9 @@ changes.get('/:id/changes', async (c) => {
   if (!issue) return c.json({ success: false, error: 'Issue not found' }, 404)
 
   const projectRoot = await resolveProjectDir(project.id)
+  if (!projectRoot) {
+    return c.json({ success: false, error: 'Project directory is not configured' }, 400)
+  }
   const root = await resolveChangesDir(
     project.id,
     issueId,
@@ -252,6 +256,9 @@ changes.get('/:id/changes/file', async (c) => {
   }
 
   const projectRoot = await resolveProjectDir(project.id)
+  if (!projectRoot) {
+    return c.json({ success: false, error: 'Project directory is not configured' }, 400)
+  }
   const root = await resolveChangesDir(
     project.id,
     issueId,

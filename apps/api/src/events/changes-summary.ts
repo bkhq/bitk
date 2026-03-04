@@ -19,6 +19,7 @@ async function runGit(
     cwd,
     stdout: 'pipe',
     stderr: 'ignore',
+    signal: AbortSignal.timeout(10_000),
   })
   const stdout = proc.stdout ? await new Response(proc.stdout).text() : ''
   const code = await proc.exited
@@ -108,11 +109,21 @@ async function computeAndEmit(issueId: string): Promise<void> {
 
 // --- Subscribe to engine events ---
 
+let unsubscribeDone: (() => void) | null = null
+
 export function startChangesSummaryWatcher(): void {
   // Only compute when session settles (completed/failed/cancelled)
-  appEvents.on('done', (data) => {
+  unsubscribeDone = appEvents.on('done', (data) => {
     void computeAndEmit(data.issueId)
   })
 
   logger.debug('changes_summary_watcher_started')
+}
+
+export function stopChangesSummaryWatcher(): void {
+  if (unsubscribeDone) {
+    unsubscribeDone()
+    unsubscribeDone = null
+    logger.debug('changes_summary_watcher_stopped')
+  }
 }

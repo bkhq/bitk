@@ -1,9 +1,9 @@
 import { existsSync, mkdirSync } from 'node:fs'
-import { readdir, stat, unlink } from 'node:fs/promises'
+import { readdir, rm, stat, unlink } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { logger } from '@/logger'
 import { isPathWithinDir, VALID_FILE_NAME_RE } from '@/upgrade/utils'
-import { UPDATES_DIR } from './constants'
+import { APP_BASE, UPDATES_DIR } from './constants'
 
 /** Ensure the updates directory exists */
 export function ensureUpdatesDir(): void {
@@ -62,6 +62,26 @@ export async function cleanupTmpFiles(): Promise<void> {
       if (name.endsWith('.tmp')) {
         await unlink(resolve(UPDATES_DIR, name)).catch(() => {})
         logger.info({ name }, 'upgrade_cleanup_tmp_file')
+      }
+    }
+  } catch {
+    // ignore
+  }
+}
+
+/** Remove leftover .backup.* directories from interrupted upgrades in data/app/ */
+export async function cleanupBackupDirs(): Promise<void> {
+  if (!existsSync(APP_BASE)) return
+  try {
+    const entries = await readdir(APP_BASE)
+    for (const name of entries) {
+      if (name.includes('.backup.')) {
+        const fullPath = resolve(APP_BASE, name)
+        const s = await stat(fullPath).catch(() => null)
+        if (s?.isDirectory()) {
+          await rm(fullPath, { recursive: true }).catch(() => {})
+          logger.info({ name }, 'upgrade_cleanup_backup_dir')
+        }
       }
     }
   } catch {

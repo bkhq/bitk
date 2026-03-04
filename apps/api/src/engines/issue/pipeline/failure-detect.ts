@@ -20,7 +20,7 @@ export function registerFailureDetectStage(
     (data) => {
       if (data.streaming) return
       const managed = ctx.pm.get(data.executionId)?.meta
-      if (!managed || managed.cancelledByUser) return
+      if (!managed || managed.lastInterruptAt) return
       const { entry } = data
       const resultSubtype = entry.metadata?.resultSubtype
       const isResultError =

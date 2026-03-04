@@ -155,6 +155,9 @@ async function runLiveProbe(): Promise<EngineDiscovery> {
   return { engines, models }
 }
 
+// In-flight probe dedup: prevents concurrent live probes from spawning duplicate processes
+let probeInFlight: Promise<EngineDiscovery> | null = null
+
 /**
  * Unified entry point for getting engine data.
  * Lookup order: memory cache → DB → live probe.
@@ -181,26 +184,34 @@ export async function getEngineDiscovery(): Promise<EngineDiscovery> {
     return dbData
   }
 
-  // 3. Live probe
-  logger.info('probe_started')
-  const start = Date.now()
-  const discovery = await runLiveProbe()
+  // 3. Live probe (deduped: concurrent callers share the same in-flight probe)
+  if (probeInFlight) return probeInFlight
 
-  await Promise.all([
-    writeToCache(discovery.engines, discovery.models),
-    saveProbeResults(discovery.engines, discovery.models),
-  ])
+  probeInFlight = (async () => {
+    logger.info('probe_started')
+    const start = Date.now()
+    const discovery = await runLiveProbe()
 
-  logger.info(
-    {
-      duration: `${Date.now() - start}ms`,
-      engines: discovery.engines.length,
-      modelsDiscovered: Object.keys(discovery.models).length,
-    },
-    'probe_completed',
-  )
+    await Promise.all([
+      writeToCache(discovery.engines, discovery.models),
+      saveProbeResults(discovery.engines, discovery.models),
+    ])
 
-  return discovery
+    logger.info(
+      {
+        duration: `${Date.now() - start}ms`,
+        engines: discovery.engines.length,
+        modelsDiscovered: Object.keys(discovery.models).length,
+      },
+      'probe_completed',
+    )
+
+    return discovery
+  })().finally(() => {
+    probeInFlight = null
+  })
+
+  return probeInFlight
 }
 
 /**
