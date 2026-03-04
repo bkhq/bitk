@@ -109,7 +109,10 @@ async function parseFollowUpBody(c: {
 
     // Validate fields to match followUpSchema constraints
     const validBusyActions = ['queue', 'cancel']
-    if (typeof busyAction === 'string' && !validBusyActions.includes(busyAction)) {
+    if (
+      typeof busyAction === 'string' &&
+      !validBusyActions.includes(busyAction)
+    ) {
       return { ok: false, error: 'busyAction must be "queue" or "cancel"' }
     }
     const validPermissionModes = ['auto', 'supervised', 'plan']
