@@ -49,9 +49,12 @@ app.onError((err, c) => {
     'unhandled_error',
   )
 
-  // JSON parse errors
-  if (err instanceof SyntaxError && err.message.includes('JSON')) {
-    return c.json({ success: false, error: 'Invalid JSON' }, 400)
+  // JSON parse errors — various runtimes produce different messages
+  if (err instanceof SyntaxError) {
+    const msg = err.message.toLowerCase()
+    if (/json|parse|unexpected|token/.test(msg)) {
+      return c.json({ success: false, error: 'Invalid JSON' }, 400)
+    }
   }
 
   // All other errors
