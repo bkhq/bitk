@@ -129,6 +129,30 @@ function NotesDrawerMount() {
   )
 }
 
+const LazyStickyNote = lazy(() =>
+  import('lucide-react').then((m) => ({ default: m.StickyNote })),
+)
+
+function GlobalNotesFab() {
+  const isOpen = useNotesStore((s) => s.isOpen)
+  const toggle = useNotesStore((s) => s.toggle)
+
+  if (isOpen) return null
+
+  return (
+    <button
+      type="button"
+      onClick={toggle}
+      className="fixed bottom-5 right-5 z-30 flex h-11 w-11 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 active:scale-95 transition-all"
+      aria-label="Notes"
+    >
+      <Suspense fallback={null}>
+        <LazyStickyNote className="h-5 w-5" />
+      </Suspense>
+    </button>
+  )
+}
+
 const rootElement = document.getElementById('app')!
 
 if (!rootElement.innerHTML) {
@@ -194,6 +218,7 @@ if (!rootElement.innerHTML) {
           <FileBrowserDrawerMount />
           <ProcessManagerDrawerMount />
           <NotesDrawerMount />
+          <GlobalNotesFab />
           <Toaster position="top-center" />
         </ErrorBoundary>
       </BrowserRouter>
