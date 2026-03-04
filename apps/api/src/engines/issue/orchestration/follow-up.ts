@@ -57,6 +57,13 @@ export async function followUpIssue(
     // terminal yet. Spawning a fresh process avoids sending input to a
     // dead/dying stdin. spawnFollowUpProcess() calls killExistingSubprocess
     // to clean up the old entry.
+    if (active?.cancelledByUser) {
+      // Drain queued inputs so monitorCompletion() won't try to spawn
+      // competing follow-ups when the old process exits.
+      if (active.pendingInputs.length > 0) {
+        dispatch(active, { type: 'CLEAR_PENDING_INPUTS' })
+      }
+    }
     if (active && !active.cancelledByUser) {
       await updateIssueSession(issueId, { sessionStatus: 'running' })
       logger.debug(

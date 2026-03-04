@@ -30,9 +30,18 @@ function terminateAndSettle(
   void withIssueLock(ctx, issueId, async () => {
     const existing = await getIssueWithSession(issueId)
     const priorStatus = existing?.sessionFields.sessionStatus
+    // Only skip if a follow-up has truly reactivated the issue (a newer
+    // process is now running). We just force-killed this process, so if
+    // DB still shows running/pending but no other active process exists,
+    // the status is stale from the process we killed — settle it.
     if (priorStatus === 'running' || priorStatus === 'pending') {
-      logger.debug({ issueId, priorStatus }, 'gc_settle_skipped_reactivated')
-      return
+      const hasActiveProcess = ctx.pm
+        .getActive()
+        .some((e) => e.meta.issueId === issueId)
+      if (hasActiveProcess) {
+        logger.debug({ issueId, priorStatus }, 'gc_settle_skipped_reactivated')
+        return
+      }
     }
     const isTerminal = priorStatus === 'failed' || priorStatus === 'cancelled'
     const finalStatus = isTerminal ? priorStatus : defaultStatus
