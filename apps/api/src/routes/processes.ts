@@ -4,6 +4,7 @@ import { db } from '@/db'
 import { findProject } from '@/db/helpers'
 import { issues as issuesTable } from '@/db/schema'
 import { issueEngine } from '@/engines/issue'
+import { getPidFromManaged } from '@/engines/issue/utils/pid'
 import { logger } from '@/logger'
 import { toISO } from '@/utils/date'
 
@@ -32,6 +33,7 @@ processes.get('/', async (c) => {
     turnInFlight: boolean
     spawnCommand: string | null
     lastIdleAt: string | null
+    pid: number | null
   }> = []
 
   if (issueIds.length > 0) {
@@ -63,6 +65,7 @@ processes.get('/', async (c) => {
         turnInFlight: p.turnInFlight,
         spawnCommand: p.spawnCommand ?? null,
         lastIdleAt: p.lastIdleAt?.toISOString() ?? null,
+        pid: getPidFromManaged(p) ?? null,
       })
     }
   }
@@ -94,6 +97,7 @@ processes.get('/', async (c) => {
       turnInFlight: false,
       spawnCommand: null,
       lastIdleAt: null,
+      pid: null,
     })
   }
 

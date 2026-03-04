@@ -395,7 +395,24 @@ export function SessionMessages({
   })
 
   // Auto-scroll to bottom on new logs appended at the end.
-  // Skip auto-scroll when older logs are prepended (first entry changes).
+  // Skip auto-scroll when older logs are prepended (first entry changes)
+  // or when the user has scrolled up to read history.
+  //
+  // Near-bottom is tracked continuously via a scroll listener so we capture
+  // the state *before* new entries change scrollHeight (useEffect runs after
+  // render, so checking inside it would see the already-expanded height).
+  const nearBottomRef = useRef(true)
+  useEffect(() => {
+    const el = scrollRef?.current
+    if (!el) return
+    const handler = () => {
+      nearBottomRef.current =
+        el.scrollHeight - el.scrollTop - el.clientHeight < 150
+    }
+    el.addEventListener('scroll', handler, { passive: true })
+    return () => el.removeEventListener('scroll', handler)
+  }, [scrollRef])
+
   const prevLenRef = useRef(visibleLogs.length)
   const prevFirstIdRef = useRef(visibleLogs[0]?.messageId)
   // biome-ignore lint/correctness/useExhaustiveDependencies: prevLenRef/prevFirstIdRef are stable refs, not needed as dependencies
@@ -408,10 +425,12 @@ export function SessionMessages({
 
     if (
       !wasOlderPrepend &&
+      nearBottomRef.current &&
       (visibleLogs.length !== prevLenRef.current || isRunning)
     ) {
-      scrollRef?.current?.scrollTo({
-        top: scrollRef.current.scrollHeight,
+      const el = scrollRef?.current
+      el?.scrollTo({
+        top: el.scrollHeight,
         behavior: 'smooth',
       })
     }

@@ -40,7 +40,9 @@ export function IssueDetail({
   const worktreeRef = useRef<HTMLDivElement>(null)
   useClickOutside(worktreeRef, showWorktree, () => setShowWorktree(false))
 
-  const { data: worktrees } = useProjectWorktrees(projectId ?? '')
+  const { data: worktrees } = useProjectWorktrees(
+    issue.useWorktree && projectId ? projectId : '',
+  )
   const worktreeEntry = useMemo(
     () => worktrees?.find((w) => w.issueId === issue.id),
     [worktrees, issue.id],

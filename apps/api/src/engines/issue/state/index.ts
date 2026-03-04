@@ -1,10 +1,15 @@
 import type { ManagedProcess } from '@/engines/issue/types'
 import type { ManagedAction } from './actions'
 
+// ManagedProcess is intentionally mutated in-place. The ProcessManager uses
+// identity-based lookups (ctx.pm.get(id)?.meta) so creating copies would
+// break reference equality across all consumers. This is a known exception
+// to the project's immutability convention.
 export function dispatch(managed: ManagedProcess, action: ManagedAction): void {
   switch (action.type) {
     case 'START_TURN':
       managed.turnInFlight = true
+      managed.lastActivityAt = new Date()
       managed.queueCancelRequested = false
       managed.turnSettled = false
       managed.logicalFailure = false

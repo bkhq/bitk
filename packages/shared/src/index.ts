@@ -266,6 +266,7 @@ export interface ProcessInfo {
   turnInFlight: boolean
   spawnCommand: string | null
   lastIdleAt: string | null
+  pid: number | null
 }
 
 export interface ProjectProcessesResponse {

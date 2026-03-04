@@ -133,6 +133,14 @@ function ProcessCard({
             {proc.model}
           </Badge>
         )}
+        {proc.pid != null && (
+          <Badge
+            variant="outline"
+            className="text-[10px] px-1.5 py-0 font-mono"
+          >
+            PID {proc.pid}
+          </Badge>
+        )}
         {proc.turnInFlight && (
           <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
             <Activity className="h-2.5 w-2.5 mr-0.5" />

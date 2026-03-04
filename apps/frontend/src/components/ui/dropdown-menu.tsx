@@ -82,12 +82,12 @@ function DropdownMenuItem({
   inset?: boolean
   variant?: "default" | "destructive"
   /** Radix-compatible onSelect — mapped to onClick for base-ui */
-  onSelect?: (() => void) | ((event: React.MouseEvent) => void)
+  onSelect?: (event?: React.MouseEvent) => void
 }) {
   const handleClick: MenuPrimitive.Item.Props['onClick'] = onSelect
     ? (e) => {
         onClick?.(e)
-        ;(onSelect as (event?: unknown) => void)(e)
+        onSelect(e)
       }
     : onClick
 

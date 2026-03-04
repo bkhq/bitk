@@ -88,6 +88,10 @@ export function ChatInput({
 }) {
   const { t } = useTranslation()
   const draftKey = issueId ? `bitk:draft:${issueId}` : null
+  // Ref tracks current issueId so async callbacks (handleSend) can compare
+  // against the live value rather than the stale closure capture.
+  const issueIdRef = useRef(issueId)
+  issueIdRef.current = issueId
   const [input, setInput] = useState(() => {
     if (!draftKey) return ''
     try {
@@ -96,12 +100,17 @@ export function ChatInput({
       return ''
     }
   })
-  // Guard: skip one persist cycle after draftKey changes to avoid
-  // writing stale input (from previous issue) into the new key.
-  const skipPersistRef = useRef(false)
+  // Track previous draftKey so the persist effect can detect a key change
+  // and skip one cycle. Without this, switching issues would write stale
+  // input (from the previous issue) into the new key — setInput from the
+  // restore effect only takes effect on the *next* render.
+  //
+  // Only the persist effect updates the ref. The restore effect deliberately
+  // does NOT touch it, so the persist effect can reliably detect the change.
+  // This pattern is StrictMode-safe (no shared boolean flag to consume).
+  const prevDraftKeyRef = useRef(draftKey)
   // Restore draft when switching issues
   useEffect(() => {
-    skipPersistRef.current = true
     if (!draftKey) {
       setInput('')
       return
@@ -112,10 +121,11 @@ export function ChatInput({
       setInput('')
     }
   }, [draftKey])
-  // Persist draft to localStorage on input change
+  // Persist draft to localStorage on input change.
+  // When draftKey changes, skip one cycle to avoid persisting stale input.
   useEffect(() => {
-    if (skipPersistRef.current) {
-      skipPersistRef.current = false
+    if (prevDraftKeyRef.current !== draftKey) {
+      prevDraftKeyRef.current = draftKey
       return
     }
     if (!draftKey) return
@@ -294,9 +304,10 @@ export function ChatInput({
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
       setSendError(msg)
-      // Restore input and files on failure — only if still on the same issue
-      const currentKey = issueId ? `bitk:draft:${issueId}` : null
-      if (currentKey === draftKey) {
+      // Restore input and files on failure — only if still on the same issue.
+      // Compare against the ref (live value) rather than the closure-captured
+      // issueId, which is always the same value as draftKey's source.
+      if (issueIdRef.current === issueId) {
         setInput(prompt)
         setAttachedFiles(filesToSend)
       }
@@ -501,7 +512,6 @@ export function ChatInput({
                 ? t('chat.placeholderTodo')
                 : t('chat.placeholder')
             }
-            rows={1}
             style={{ height: `${textareaH}px` }}
             className="w-full bg-transparent text-base md:text-sm resize-none outline-none border-none shadow-none placeholder:text-muted-foreground/40 leading-relaxed focus-visible:ring-0 overflow-y-auto"
           />
