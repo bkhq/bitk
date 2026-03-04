@@ -17,10 +17,7 @@ export function SubIssueDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange} disablePointerDismissal>
-      <DialogContent
-        className="md:max-w-[580px]"
-        aria-describedby={undefined}
-      >
+      <DialogContent className="md:max-w-[580px]" aria-describedby={undefined}>
         <DialogTitle>{t('issue.createSubIssue')}</DialogTitle>
 
         <CreateIssueForm

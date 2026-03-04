@@ -73,10 +73,7 @@ const config = defineConfig(() => {
               return 'vendor-router'
             if (pkg === '@tanstack/react-query') return 'vendor-query'
             if (pkg.startsWith('@dnd-kit/')) return 'vendor-dnd'
-            if (
-              pkg.startsWith('@base-ui/') ||
-              pkg === 'lucide-react'
-            )
+            if (pkg.startsWith('@base-ui/') || pkg === 'lucide-react')
               return 'vendor-ui'
             if (pkg === '@pierre/diffs') return 'vendor-diff'
             if (pkg === 'shiki' || pkg.startsWith('@shikijs/'))

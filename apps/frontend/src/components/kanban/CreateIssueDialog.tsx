@@ -591,9 +591,7 @@ function PermissionSelect({
         }
       >
         <Icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-        <span className="truncate">
-          {t(`createIssue.perm.${current.id}`)}
-        </span>
+        <span className="truncate">{t(`createIssue.perm.${current.id}`)}</span>
         <ChevronDown className="h-3 w-3 text-muted-foreground ml-auto shrink-0" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="min-w-[140px]">

@@ -1,9 +1,10 @@
-import { Bug, Calendar, ChevronDown, Trash2 } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { Bug, ChevronDown, GitBranch, Trash2 } from 'lucide-react'
+import { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { PriorityIcon } from '@/components/kanban/PriorityIcon'
 import { Button } from '@/components/ui/button'
 import { useClickOutside } from '@/hooks/use-click-outside'
+import { useProjectWorktrees } from '@/hooks/use-kanban'
 import { tPriority, tStatus } from '@/lib/i18n-utils'
 import type { StatusDefinition, StatusId } from '@/lib/statuses'
 import { STATUSES } from '@/lib/statuses'
@@ -17,24 +18,16 @@ export const badgeBase =
 const badgeButtonBase =
   'h-[22px] rounded-full px-2 text-[11px] leading-none font-medium gap-1'
 
-function formatDate(iso: string, lang: string) {
-  const d = new Date(iso)
-  return d.toLocaleDateString(lang === 'zh' ? 'zh-CN' : 'en-US', {
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
-
 export function IssueDetail({
   issue,
+  projectId,
   status,
   onUpdate,
   onDelete,
   isDeleting = false,
 }: {
   issue: Issue
+  projectId?: string
   status?: StatusDefinition
   onUpdate?: (
     fields: Partial<Pick<Issue, 'statusId' | 'priority' | 'devMode'>>,
@@ -42,7 +35,19 @@ export function IssueDetail({
   onDelete?: () => void
   isDeleting?: boolean
 }) {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
+  const [showWorktree, setShowWorktree] = useState(false)
+  const worktreeRef = useRef<HTMLDivElement>(null)
+  useClickOutside(worktreeRef, showWorktree, () => setShowWorktree(false))
+
+  const { data: worktrees } = useProjectWorktrees(projectId ?? '')
+  const worktreeEntry = useMemo(
+    () => worktrees?.find((w) => w.issueId === issue.id),
+    [worktrees, issue.id],
+  )
+  const worktreePath = worktreeEntry?.path ?? ''
+  const worktreeBranch =
+    worktreeEntry?.branch ?? (issue.id ? `bitk/${issue.id}` : '')
 
   return (
     <div className="shrink-0 relative z-20 flex items-center gap-1.5 px-4 py-1.5 border-t border-border/40 bg-muted/20">
@@ -74,7 +79,7 @@ export function IssueDetail({
         </Button>
       ) : null}
 
-      {/* Dev mode toggle + Created (right side) */}
+      {/* Dev mode toggle + Worktree (right side) */}
       <div className="ml-auto flex items-center gap-1.5">
         <Button
           type="button"
@@ -91,12 +96,44 @@ export function IssueDetail({
           <Bug className="h-3 w-3" />
           <span>{t('issue.dev')}</span>
         </Button>
-        <span
-          className={`${badgeBase} border-border/50 bg-muted/20 text-muted-foreground/80`}
-        >
-          <Calendar className="h-3 w-3" />
-          {formatDate(issue.createdAt, i18n.language)}
-        </span>
+        {issue.useWorktree ? (
+          <div ref={worktreeRef} className="relative flex">
+            <button
+              type="button"
+              onClick={() => setShowWorktree((v) => !v)}
+              className={`${badgeBase} cursor-pointer transition-colors border-emerald-400/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:opacity-80`}
+            >
+              <GitBranch className="h-3 w-3" />
+              {t('chat.worktree')}
+            </button>
+            {showWorktree ? (
+              <div className="absolute right-0 bottom-full mb-1.5 z-50 min-w-[240px] rounded-xl border border-border/60 bg-popover/95 backdrop-blur-sm py-2 px-3 shadow-xl text-xs text-popover-foreground space-y-1.5">
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <GitBranch className="h-3 w-3 shrink-0" />
+                  <span className="font-medium text-foreground">
+                    {t('chat.worktree')}
+                  </span>
+                </div>
+                <div className="space-y-1 text-muted-foreground">
+                  <div className="flex items-start gap-2">
+                    <span className="shrink-0">
+                      {t('chat.worktreeBranch')}:
+                    </span>
+                    <code className="font-mono text-foreground/80 break-all">
+                      {worktreeBranch}
+                    </code>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="shrink-0">{t('chat.worktreePath')}:</span>
+                    <code className="font-mono text-foreground/80 break-all">
+                      {worktreePath}
+                    </code>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
       </div>
     </div>
   )

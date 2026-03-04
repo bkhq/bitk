@@ -1,6 +1,5 @@
 import {
   FileText,
-  GitBranch,
   Image as ImageIcon,
   Loader2,
   Paperclip,
@@ -67,7 +66,6 @@ export function ChatInput({
   sessionStatus,
   statusId,
   isThinking = false,
-  useWorktree = false,
   onMessageSent,
   slashCommands = [],
 }: {
@@ -81,7 +79,6 @@ export function ChatInput({
   sessionStatus?: SessionStatus | null
   statusId?: string
   isThinking?: boolean
-  useWorktree?: boolean
   onMessageSent?: (
     messageId: string,
     prompt: string,
@@ -90,7 +87,48 @@ export function ChatInput({
   slashCommands?: string[]
 }) {
   const { t } = useTranslation()
-  const [input, setInput] = useState('')
+  const draftKey = issueId ? `bitk:draft:${issueId}` : null
+  const [input, setInput] = useState(() => {
+    if (!draftKey) return ''
+    try {
+      return localStorage.getItem(draftKey) ?? ''
+    } catch {
+      return ''
+    }
+  })
+  // Guard: skip one persist cycle after draftKey changes to avoid
+  // writing stale input (from previous issue) into the new key.
+  const skipPersistRef = useRef(false)
+  // Restore draft when switching issues
+  useEffect(() => {
+    skipPersistRef.current = true
+    if (!draftKey) {
+      setInput('')
+      return
+    }
+    try {
+      setInput(localStorage.getItem(draftKey) ?? '')
+    } catch {
+      setInput('')
+    }
+  }, [draftKey])
+  // Persist draft to localStorage on input change
+  useEffect(() => {
+    if (skipPersistRef.current) {
+      skipPersistRef.current = false
+      return
+    }
+    if (!draftKey) return
+    try {
+      if (input) {
+        localStorage.setItem(draftKey, input)
+      } else {
+        localStorage.removeItem(draftKey)
+      }
+    } catch {
+      /* quota exceeded — ignore */
+    }
+  }, [draftKey, input])
   const [sendError, setSendError] = useState<string | null>(null)
   const [attachedFiles, setAttachedFiles] = useState<File[]>([])
   const [isDragOver, setIsDragOver] = useState(false)
@@ -98,6 +136,9 @@ export function ChatInput({
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const isSendingRef = useRef(false)
+  const [textareaH, setTextareaH] = useState(36)
+  const dragRef = useRef({ active: false, startY: 0, startH: 0 })
+  const dragCleanupRef = useRef<(() => void) | null>(null)
 
   const followUp = useFollowUpIssue(projectId ?? '')
   const changesSummary = useChangesSummary(projectId, issueId ?? undefined)
@@ -193,11 +234,15 @@ export function ChatInput({
     const prompt = normalizedPrompt
     const filesToSend = [...attachedFiles]
     setInput('')
-    setAttachedFiles([])
-    // Reset textarea height
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto'
+    // Clear persisted draft
+    if (draftKey) {
+      try {
+        localStorage.removeItem(draftKey)
+      } catch {
+        /* ignore */
+      }
     }
+    setAttachedFiles([])
     setSendError(null)
     try {
       const isTodo = statusId === 'todo'
@@ -249,8 +294,12 @@ export function ChatInput({
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
       setSendError(msg)
-      // Restore files on failure
-      setAttachedFiles(filesToSend)
+      // Restore input and files on failure — only if still on the same issue
+      const currentKey = issueId ? `bitk:draft:${issueId}` : null
+      if (currentKey === draftKey) {
+        setInput(prompt)
+        setAttachedFiles(filesToSend)
+      }
       setTimeout(() => setSendError(null), 5000)
     } finally {
       isSendingRef.current = false
@@ -259,10 +308,7 @@ export function ChatInput({
 
   const selectSlashCommand = useCallback((cmd: string) => {
     setInput(cmd)
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto'
-      textareaRef.current.focus()
-    }
+    textareaRef.current?.focus()
   }, [])
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -274,11 +320,7 @@ export function ChatInput({
 
   const handleInput = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      const val = e.target.value
-      setInput(val)
-      const el = e.target
-      el.style.height = 'auto'
-      el.style.height = `${Math.min(el.scrollHeight, 120)}px`
+      setInput(e.target.value)
     },
     [],
   )
@@ -331,8 +373,44 @@ export function ChatInput({
     [addFiles],
   )
 
+  const handleResizeStart = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault()
+      // Clean up any previous drag listeners (shouldn't happen, but be safe)
+      dragCleanupRef.current?.()
+      dragRef.current = {
+        active: true,
+        startY: e.clientY,
+        startH: textareaH,
+      }
+      const onMove = (ev: MouseEvent) => {
+        if (!dragRef.current.active) return
+        const delta = dragRef.current.startY - ev.clientY
+        setTextareaH(
+          Math.max(36, Math.min(480, dragRef.current.startH + delta)),
+        )
+      }
+      const cleanup = () => {
+        dragRef.current.active = false
+        document.removeEventListener('mousemove', onMove)
+        document.removeEventListener('mouseup', cleanup)
+        dragCleanupRef.current = null
+      }
+      dragCleanupRef.current = cleanup
+      document.addEventListener('mousemove', onMove)
+      document.addEventListener('mouseup', cleanup)
+    },
+    [textareaH],
+  )
+  // Clean up drag listeners on unmount
+  useEffect(() => {
+    return () => {
+      dragCleanupRef.current?.()
+    }
+  }, [])
+
   return (
-    <div className="shrink-0 w-full min-w-0 px-4 pb-2 relative z-30">
+    <div className="shrink-0 w-full min-w-0 px-2 pb-2 relative z-30">
       <div
         className={`rounded-xl border bg-card/80 backdrop-blur-sm shadow-sm transition-all duration-200 focus-within:border-border focus-within:shadow-md ${
           isDragOver
@@ -343,6 +421,14 @@ export function ChatInput({
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
+        {/* Resize handle */}
+        <div
+          onMouseDown={handleResizeStart}
+          className="flex items-center justify-center h-2 cursor-ns-resize group/resize"
+        >
+          <div className="w-8 h-0.5 rounded-full bg-border/30 group-hover/resize:bg-border/60 transition-colors" />
+        </div>
+
         {/* Drag overlay hint */}
         {isDragOver ? (
           <div className="flex items-center justify-center py-4 text-xs text-primary font-medium">
@@ -351,7 +437,7 @@ export function ChatInput({
         ) : null}
 
         {/* Status bar */}
-        <div className="flex items-center gap-2 px-3 py-1.5 border-b border-border/30">
+        <div className="flex items-center gap-1.5 px-2 py-1.5 border-b border-border/30">
           <button
             type="button"
             onClick={onToggleDiff}
@@ -384,21 +470,18 @@ export function ChatInput({
                 onChange={setSelectedModel}
               />
             ) : null}
-            {useWorktree && projectId && issueId ? (
-              <WorktreeIndicator projectId={projectId} issueId={issueId} />
-            ) : null}
           </div>
         </div>
 
         {/* Error banner */}
         {sendError ? (
-          <div className="mx-3 mt-2 rounded-lg bg-destructive/10 border border-destructive/20 px-3 py-2 text-xs text-destructive">
+          <div className="mx-2 mt-2 rounded-lg bg-destructive/10 border border-destructive/20 px-2 py-2 text-xs text-destructive">
             {sendError}
           </div>
         ) : null}
 
         {/* Textarea — shadcn Textarea, style overrides to match original */}
-        <div className="px-3 py-2.5">
+        <div className="px-2 py-2">
           <Textarea
             ref={textareaRef}
             value={input}
@@ -419,13 +502,14 @@ export function ChatInput({
                 : t('chat.placeholder')
             }
             rows={1}
-            className="w-full bg-transparent text-base md:text-sm resize-none outline-none border-none shadow-none placeholder:text-muted-foreground/40 leading-relaxed focus-visible:ring-0"
+            style={{ height: `${textareaH}px` }}
+            className="w-full bg-transparent text-base md:text-sm resize-none outline-none border-none shadow-none placeholder:text-muted-foreground/40 leading-relaxed focus-visible:ring-0 overflow-y-auto"
           />
         </div>
 
         {/* File preview bar — below textarea */}
         {attachedFiles.length > 0 ? (
-          <div className="flex flex-wrap gap-1.5 px-3 pb-1.5">
+          <div className="flex flex-wrap gap-1.5 px-2 pb-1.5">
             {attachedFiles.map((file, idx) => (
               <div
                 key={`${file.name}-${file.size}`}
@@ -467,7 +551,7 @@ export function ChatInput({
         />
 
         {/* Toolbar */}
-        <div className="flex items-center justify-between px-2.5 pb-2.5 pt-0.5">
+        <div className="flex items-center justify-between px-2 pb-2 pt-0.5">
           <div className="flex items-center gap-0.5">
             {engineType ? <EngineInfo engineType={engineType} /> : null}
             <Button
@@ -636,7 +720,9 @@ function EngineInfo({ engineType }: { engineType: string }) {
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger render={<Button variant="ghost" size="icon" title={engineName} />}>
+      <PopoverTrigger
+        render={<Button variant="ghost" size="icon" title={engineName} />}
+      >
         <EngineIcon engineType={engineType} className="size-4" />
       </PopoverTrigger>
       <PopoverContent
@@ -704,63 +790,6 @@ function ModelSelect({
   )
 }
 
-// ─── WorktreeIndicator ────────────────────────────────────────────────────────
-
-function WorktreeIndicator({
-  projectId,
-  issueId,
-}: {
-  projectId: string
-  issueId: string
-}) {
-  const { t } = useTranslation()
-  const worktreePath = `data/worktrees/${projectId}/${issueId}`
-  const branch = `bitk/${issueId}`
-
-  return (
-    <Popover>
-      <PopoverTrigger
-        render={
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 px-2 text-xs text-muted-foreground gap-1"
-            title={t('chat.worktree')}
-          />
-        }
-      >
-        <GitBranch className="h-3 w-3" />
-      </PopoverTrigger>
-      <PopoverContent
-        side="top"
-        align="end"
-        className="w-auto max-w-[360px] px-3 py-2.5 text-xs space-y-1.5"
-      >
-        <div className="flex items-center gap-1.5 text-muted-foreground">
-          <GitBranch className="h-3 w-3 shrink-0" />
-          <span className="font-medium text-foreground">
-            {t('chat.worktree')}
-          </span>
-        </div>
-        <div className="space-y-1 text-muted-foreground">
-          <div className="flex items-start gap-2">
-            <span className="shrink-0">{t('chat.worktreeBranch')}:</span>
-            <code className="font-mono text-foreground/80 break-all">
-              {branch}
-            </code>
-          </div>
-          <div className="flex items-start gap-2">
-            <span className="shrink-0">{t('chat.worktreePath')}:</span>
-            <code className="font-mono text-foreground/80 break-all">
-              {worktreePath}
-            </code>
-          </div>
-        </div>
-      </PopoverContent>
-    </Popover>
-  )
-}
-
 // ─── CommandPicker ────────────────────────────────────────────────────────────
 // Replaced custom popover + search with shadcn Popover + Command
 
@@ -776,7 +805,11 @@ function CommandPicker({
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger render={<Button variant="ghost" size="icon" title={t('chat.commands')} />}>
+      <PopoverTrigger
+        render={
+          <Button variant="ghost" size="icon" title={t('chat.commands')} />
+        }
+      >
         <SlashSquare className="size-4" />
       </PopoverTrigger>
       <PopoverContent side="top" align="start" className="w-[260px] p-0">
