@@ -1,0 +1,1 @@
+CREATE INDEX `issues_logs_issue_id_visible_type_idx` ON `issues_logs` (`issue_id`,`visible`,`entry_type`);
