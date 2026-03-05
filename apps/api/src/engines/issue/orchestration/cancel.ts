@@ -4,6 +4,7 @@ import {
   CANCEL_RESPONSE_TIMEOUT_MS,
 } from '@/engines/issue/constants'
 import type { EngineContext } from '@/engines/issue/context'
+import { emitIssueSettled } from '@/engines/issue/events'
 import { cancel } from '@/engines/issue/process/cancel'
 import { withIssueLock } from '@/engines/issue/process/lock'
 import { getActiveProcesses } from '@/engines/issue/process/state'
@@ -210,8 +211,9 @@ export async function cancelIssue(
       )
       return 'interrupted' as const
     }
-    // No active processes — mark as cancelled in DB
+    // No active processes — mark as cancelled in DB and notify frontend
     await updateIssueSession(issueId, { sessionStatus: 'cancelled' })
+    emitIssueSettled(issueId, '', 'cancelled')
     logger.info({ issueId, cancelledCount: 0 }, 'issue_cancel_completed')
     return 'cancelled' as const
   })
