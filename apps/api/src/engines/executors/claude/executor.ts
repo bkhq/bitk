@@ -17,8 +17,42 @@ import { logger } from '@/logger'
 import { ClaudeLogNormalizer } from './normalizer'
 import { ClaudeProtocolHandler } from './protocol'
 
-// Prefer local `claude` binary; fall back to npx for environments without it.
-const BASE_COMMAND = Bun.which('claude') ?? 'npx -y @anthropic-ai/claude-code'
+const NPX_FALLBACK = 'npx -y @anthropic-ai/claude-code'
+
+/**
+ * Find the `claude` binary, checking PATH and common install locations.
+ * Falls back to npx for environments without a standalone binary.
+ * Result is cached after first call.
+ */
+let _cachedBaseCommand: string | undefined
+function getBaseCommand(): string {
+  if (_cachedBaseCommand) return _cachedBaseCommand
+  // 1. Check PATH
+  const fromPath = Bun.which('claude')
+  if (fromPath) {
+    _cachedBaseCommand = fromPath
+    return _cachedBaseCommand
+  }
+  // 2. Check common install locations (not always in PATH inside containers)
+  const home = process.env.HOME ?? ''
+  if (home) {
+    const { existsSync } = require('node:fs')
+    const { join } = require('node:path')
+    const candidates = [
+      join(home, '.local/bin/claude'),
+      join(home, '.bun/bin/claude'),
+      '/usr/local/bin/claude',
+    ]
+    const found = candidates.find((p: string) => existsSync(p))
+    if (found) {
+      _cachedBaseCommand = found
+      return _cachedBaseCommand
+    }
+  }
+  // 3. Fall back to npx
+  _cachedBaseCommand = NPX_FALLBACK
+  return _cachedBaseCommand
+}
 
 // Known Claude models — Claude Code CLI has no `models` subcommand
 // [1m] variants use 1 million context token window
@@ -98,7 +132,7 @@ export class ClaudeCodeExecutor implements EngineExecutor {
 
   async getAvailability(): Promise<EngineAvailability> {
     try {
-      const resolved = await CommandBuilder.create(BASE_COMMAND)
+      const resolved = await CommandBuilder.create(getBaseCommand())
         .param('--version')
         .env('NPM_CONFIG_LOGLEVEL', 'error')
         .resolve()
@@ -184,7 +218,7 @@ export class ClaudeCodeExecutor implements EngineExecutor {
   async discoverSlashCommandsAndAgents(
     workingDir: string,
   ): Promise<DiscoveryResult> {
-    const resolved = await CommandBuilder.create(BASE_COMMAND)
+    const resolved = await CommandBuilder.create(getBaseCommand())
       .params(['-p', '--verbose', '--output-format=stream-json'])
       .param('--max-turns', '1')
       .params(['--', '/'])
@@ -286,7 +320,7 @@ export class ClaudeCodeExecutor implements EngineExecutor {
     const permissionMode = options.permissionMode ?? 'auto'
     const isPlanMode = permissionMode === 'plan'
 
-    const builder = CommandBuilder.create(BASE_COMMAND)
+    const builder = CommandBuilder.create(getBaseCommand())
       .params(['-p', '--output-format=stream-json', '--verbose', '--no-chrome'])
       .param('--input-format', 'stream-json')
       // Enable SDK-based permission handling via stdin/stdout control protocol
