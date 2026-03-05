@@ -1,71 +1,101 @@
-import type { Components } from 'react-markdown'
-import Markdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
-import 'github-markdown-css/github-markdown.css'
-import { useTheme } from '@/hooks/use-theme'
-import { ShikiCodeBlock } from '../files/ShikiCodeBlock'
+import DOMPurify from 'dompurify'
+import { useEffect, useMemo, useState } from 'react'
+import { codeToHtml } from '@/lib/shiki'
 
-const HEADING_PREFIX: Record<string, string> = {
-  h1: '#',
-  h2: '##',
-  h3: '###',
-  h4: '####',
-  h5: '#####',
-  h6: '######',
-}
-
-/** Render headings as plain bold text with original markdown prefix. */
-function FlatHeading({
-  node,
-  children,
-}: {
-  node?: { tagName?: string }
-  children?: React.ReactNode
-}) {
-  const prefix = HEADING_PREFIX[node?.tagName ?? ''] ?? '#'
-  return (
-    <p className="font-semibold my-1">
-      {prefix} {children}
-    </p>
-  )
-}
-
-/** Render links as plain text — no clickable <a> tags. */
-function PlainLink({ children, href }: { children?: React.ReactNode; href?: string }) {
-  if (href) {
-    return <span>{children} ({href})</span>
-  }
-  return <span>{children}</span>
-}
-
-const components: Components = {
-  h1: FlatHeading as Components['h1'],
-  h2: FlatHeading as Components['h2'],
-  h3: FlatHeading as Components['h3'],
-  h4: FlatHeading as Components['h4'],
-  h5: FlatHeading as Components['h5'],
-  h6: FlatHeading as Components['h6'],
-  a: PlainLink as Components['a'],
-  pre: ({ children }) => <>{children}</>,
-  code: ({ className, children, ...rest }) => {
-    const text = String(children ?? '')
-    const isBlock = className || text.includes('\n')
-
-    if (isBlock) {
-      const code = text.replace(/\n$/, '')
-      const lang = className?.replace('language-', '') ?? 'text'
-      return <ShikiCodeBlock code={code} lang={lang} />
+/** Calculate display width accounting for CJK characters (width 2). */
+function displayWidth(str: string): number {
+  let w = 0
+  for (const ch of str) {
+    const code = ch.codePointAt(0) ?? 0
+    // CJK Unified Ideographs, CJK Compatibility, Fullwidth forms, etc.
+    if (
+      (code >= 0x2e80 && code <= 0x9fff) ||
+      (code >= 0xf900 && code <= 0xfaff) ||
+      (code >= 0xfe30 && code <= 0xfe4f) ||
+      (code >= 0xff00 && code <= 0xff60) ||
+      (code >= 0xffe0 && code <= 0xffe6) ||
+      (code >= 0x20000 && code <= 0x2fa1f)
+    ) {
+      w += 2
+    } else {
+      w += 1
     }
+  }
+  return w
+}
 
-    return (
-      <code
-        className="rounded bg-muted/70 px-1.5 py-0.5 text-[0.875em] font-mono"
-        {...rest}
-      >
-        {children}
-      </code>
+/** Pad string with spaces to reach target display width. */
+function padEnd(str: string, targetWidth: number): string {
+  const diff = targetWidth - displayWidth(str)
+  return diff > 0 ? str + ' '.repeat(diff) : str
+}
+
+/** Reformat a markdown table block with space-padded columns. */
+function formatTable(block: string): string {
+  const lines = block.split('\n').filter((l) => l.trim())
+  if (lines.length < 2) return block
+
+  const parseCells = (line: string) =>
+    line.replace(/^\|/, '').replace(/\|$/, '').split('|').map((c) => c.trim())
+
+  const isSep = (line: string) =>
+    /^\|?[\s:]*-+[\s:]*(\|[\s:]*-+[\s:]*)*\|?$/.test(line.trim())
+
+  if (!isSep(lines[1])) return block
+
+  const allCells = lines.filter((l) => !isSep(l)).map(parseCells)
+  const colCount = Math.max(...allCells.map((r) => r.length))
+
+  // Calculate max display width per column
+  const colWidths: number[] = Array(colCount).fill(0)
+  for (const row of allCells) {
+    for (let i = 0; i < colCount; i++) {
+      const w = displayWidth(row[i] ?? '')
+      if (w > colWidths[i]) colWidths[i] = w
+    }
+  }
+
+  const formatRow = (cells: string[]) => {
+    const padded = Array.from({ length: colCount }, (_, i) =>
+      padEnd(cells[i] ?? '', colWidths[i]),
     )
-  },
+    return `| ${padded.join(' | ')} |`
+  }
+
+  const sepLine = `| ${colWidths.map((w) => '-'.repeat(w)).join(' | ')} |`
+
+  const header = parseCells(lines[0])
+  const dataRows = lines.slice(2).filter((l) => !isSep(l)).map(parseCells)
+
+  return [formatRow(header), sepLine, ...dataRows.map(formatRow)].join('\n')
+}
+
+/** Pre-process content: format tables with space padding for monospace alignment. */
+function preprocessContent(text: string): string {
+  const lines = text.split('\n')
+  const result: string[] = []
+  let tableBuf: string[] = []
+
+  const flushTable = () => {
+    if (tableBuf.length > 0) {
+      result.push(formatTable(tableBuf.join('\n')))
+      tableBuf = []
+    }
+  }
+
+  for (const line of lines) {
+    const trimmed = line.trim()
+    const isTableLine =
+      trimmed.startsWith('|') && trimmed.endsWith('|') && trimmed.length > 1
+    if (isTableLine) {
+      tableBuf.push(line)
+    } else {
+      flushTable()
+      result.push(line)
+    }
+  }
+  flushTable()
+  return result.join('\n')
 }
 
 export function MarkdownContent({
@@ -75,16 +105,33 @@ export function MarkdownContent({
   content: string
   className?: string
 }) {
-  const { resolved } = useTheme()
+  const formatted = useMemo(() => preprocessContent(content), [content])
+  const [html, setHtml] = useState('')
+
+  useEffect(() => {
+    setHtml('')
+    let cancelled = false
+    void codeToHtml(formatted, 'markdown').then((result) => {
+      if (!cancelled) setHtml(result)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [formatted])
+
+  if (!html) {
+    return (
+      <div className={`markdown-shiki ${containerClassName}`}>
+        <pre className="whitespace-pre-wrap break-words">{formatted}</pre>
+      </div>
+    )
+  }
 
   return (
     <div
-      className={`markdown-body !bg-transparent !font-[inherit] !text-[inherit] ${containerClassName}`}
-      data-theme={resolved}
-    >
-      <Markdown remarkPlugins={[remarkGfm]} components={components}>
-        {content}
-      </Markdown>
-    </div>
+      className={`markdown-shiki ${containerClassName}`}
+      // biome-ignore lint/security/noDangerouslySetInnerHtml: content is sanitized via DOMPurify.sanitize()
+      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(html) }}
+    />
   )
 }

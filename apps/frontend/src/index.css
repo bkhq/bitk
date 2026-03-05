@@ -343,7 +343,7 @@
 }
 
 .markdown-shiki .shiki {
-  padding: 0;
+  padding: 0.5rem;
   overflow-x: auto;
   font-family: var(--font-mono);
   font-size: inherit;
