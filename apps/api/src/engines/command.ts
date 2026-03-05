@@ -89,7 +89,40 @@ export class CommandBuilder {
 
   async resolve(): Promise<ResolvedCommand> {
     const parts = this.build()
-    const resolvedPath = Bun.which(parts.program) ?? parts.program
+    const resolvedPath = await resolveExecutablePath(parts.program)
     return { ...parts, resolvedPath }
   }
+}
+
+// ---------- Executable resolution ----------
+
+/**
+ * Resolve a program name to its absolute path.
+ * Checks `Bun.which()` first, then common install locations.
+ * Throws if the executable cannot be found.
+ */
+async function resolveExecutablePath(program: string): Promise<string> {
+  // 1. Check PATH via Bun.which
+  const fromPath = Bun.which(program)
+  if (fromPath) return fromPath
+
+  // 2. Check common install locations (not always in PATH inside containers)
+  const home = process.env.HOME ?? ''
+  if (home) {
+    const { existsSync } = await import('node:fs')
+    const { join } = await import('node:path')
+    const candidates = [
+      join(home, '.local/bin', program),
+      join(home, '.bun/bin', program),
+      `/usr/local/bin/${program}`,
+    ]
+    const found = candidates.find((p) => existsSync(p))
+    if (found) return found
+  }
+
+  // 3. For npx-based commands, fall back to the original program name
+  // (npx will download and resolve the package at runtime)
+  if (program === 'npx') return 'npx'
+
+  throw new Error(`Executable '${program}' not found in PATH`)
 }

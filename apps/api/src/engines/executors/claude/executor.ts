@@ -1,5 +1,3 @@
-import { existsSync } from 'node:fs'
-import { join } from 'node:path'
 import { CommandBuilder } from '@/engines/command'
 import { safeEnv } from '@/engines/safe-env'
 import type {
@@ -19,21 +17,7 @@ import { logger } from '@/logger'
 import { ClaudeLogNormalizer } from './normalizer'
 import { ClaudeProtocolHandler } from './protocol'
 
-function findClaude(): string | null {
-  const fromPath = Bun.which('claude')
-  if (fromPath) return fromPath
-  // Common install locations not always in PATH
-  const home = process.env.HOME ?? ''
-  const candidates = [
-    join(home, '.local/bin/claude'),
-    join(home, '.bun/bin/claude'),
-    '/usr/local/bin/claude',
-  ]
-  return candidates.find((p) => existsSync(p)) ?? null
-}
-
-const CLAUDE_BINARY = findClaude()
-const BASE_COMMAND = CLAUDE_BINARY ?? 'npx -y @anthropic-ai/claude-code'
+const BASE_COMMAND = 'npx -y @anthropic-ai/claude-code'
 
 // Known Claude models — Claude Code CLI has no `models` subcommand
 // [1m] variants use 1 million context token window
@@ -128,15 +112,15 @@ export class ClaudeCodeExecutor implements EngineExecutor {
 
   async getAvailability(): Promise<EngineAvailability> {
     try {
-      const cmd = CommandBuilder.create(BASE_COMMAND)
+      const resolved = await CommandBuilder.create(BASE_COMMAND)
         .param('--version')
         .env('NPM_CONFIG_LOGLEVEL', 'error')
-        .build()
+        .resolve()
 
-      const proc = Bun.spawn([cmd.program, ...cmd.args], {
+      const proc = Bun.spawn([resolved.resolvedPath, ...resolved.args], {
         stdout: 'pipe',
         stderr: 'pipe',
-        env: safeEnv(cmd.env),
+        env: safeEnv(resolved.env),
       })
 
       const timer = setTimeout(() => proc.kill(), 10000)
@@ -173,7 +157,7 @@ export class ClaudeCodeExecutor implements EngineExecutor {
         engineType: 'claude-code',
         installed: true,
         version,
-        binaryPath: CLAUDE_BINARY ?? undefined,
+        binaryPath: resolved.resolvedPath,
         authStatus,
       }
     } catch (error) {
@@ -202,6 +186,94 @@ export class ClaudeCodeExecutor implements EngineExecutor {
 
   createNormalizer(filterRules: WriteFilterRule[]) {
     return new ClaudeLogNormalizer(filterRules)
+  }
+
+  /**
+   * Discover available slash commands, agents, and plugins by launching
+   * Claude Code with `--max-turns 1 -- /` and reading the system init message.
+   *
+   * This is the same approach as the reference Rust implementation's
+   * `discover_available_command_and_plugins`.
+   */
+  async discoverSlashCommandsAndAgents(
+    workingDir: string,
+  ): Promise<DiscoveryResult> {
+    const resolved = await CommandBuilder.create(BASE_COMMAND)
+      .params(['-p', '--verbose', '--output-format=stream-json'])
+      .param('--max-turns', '1')
+      .params(['--', '/'])
+      .env('NPM_CONFIG_LOGLEVEL', 'error')
+      .cwd(workingDir)
+      .resolve()
+
+    const proc = Bun.spawn([resolved.resolvedPath, ...resolved.args], {
+      cwd: resolved.cwd ?? workingDir,
+      stdin: 'ignore',
+      stdout: 'pipe',
+      stderr: 'ignore',
+      env: safeEnv(resolved.env),
+    })
+
+    const result: DiscoveryResult = {
+      slashCommands: [],
+      agents: [],
+      plugins: [],
+    }
+
+    try {
+      const stdout = proc.stdout as ReadableStream<Uint8Array>
+      const reader = stdout.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ''
+      const deadline = Date.now() + DISCOVERY_TIMEOUT_MS
+
+      while (Date.now() < deadline) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        buffer += decoder.decode(value, { stream: true })
+
+        // Process complete lines
+        let newlineIdx: number
+        while ((newlineIdx = buffer.indexOf('\n')) !== -1) {
+          const line = buffer.slice(0, newlineIdx).trim()
+          buffer = buffer.slice(newlineIdx + 1)
+
+          if (!line) continue
+
+          try {
+            const data = JSON.parse(line) as {
+              type?: string
+              subtype?: string
+              slash_commands?: string[]
+              plugins?: Array<{ name: string; path: string }>
+              agents?: string[]
+            }
+            if (data.type === 'system' && data.subtype === 'init') {
+              result.slashCommands = data.slash_commands ?? []
+              result.plugins = data.plugins ?? []
+              result.agents = data.agents ?? []
+              // Got what we need, stop reading
+              reader.releaseLock()
+              proc.kill()
+              return result
+            }
+          } catch {
+            // Not JSON or not the message we want — skip
+          }
+        }
+      }
+
+      reader.releaseLock()
+    } finally {
+      try {
+        proc.kill()
+      } catch {
+        /* already dead */
+      }
+    }
+
+    return result
   }
 
   // ---------- Private ----------
@@ -263,19 +335,19 @@ export class ClaudeCodeExecutor implements EngineExecutor {
    * init handshake (initialize → set_permission_mode → send_user_message),
    * and return the SpawnedProcess.
    */
-  private spawnProcess(
+  private async spawnProcess(
     builder: CommandBuilder,
     options: SpawnOptions,
     env: ExecutionEnv,
     mode: 'spawn' | 'followup',
-  ): SpawnedProcess {
-    const cmd = builder.build()
+  ): Promise<SpawnedProcess> {
+    const resolved = await builder.resolve()
     logger.debug(
       {
         issueId: env.issueId,
-        cwd: cmd.cwd ?? options.workingDir,
-        program: cmd.program,
-        args: cmd.args,
+        cwd: resolved.cwd ?? options.workingDir,
+        program: resolved.resolvedPath,
+        args: resolved.args,
         ...(mode === 'followup' && 'sessionId' in options
           ? { resumeSessionId: (options as FollowUpOptions).sessionId }
           : {}),
@@ -283,12 +355,12 @@ export class ClaudeCodeExecutor implements EngineExecutor {
       `claude_${mode}_command`,
     )
 
-    const proc = Bun.spawn([cmd.program, ...cmd.args], {
-      cwd: cmd.cwd ?? options.workingDir,
+    const proc = Bun.spawn([resolved.resolvedPath, ...resolved.args], {
+      cwd: resolved.cwd ?? options.workingDir,
       stdin: 'pipe',
       stdout: 'pipe',
       stderr: 'pipe',
-      env: safeEnv(cmd.env),
+      env: safeEnv(resolved.env),
     })
 
     // Create protocol handler to manage bidirectional control protocol
@@ -323,10 +395,22 @@ export class ClaudeCodeExecutor implements EngineExecutor {
       stderr: proc.stderr as ReadableStream<Uint8Array>,
       cancel: () => handler.interrupt(),
       protocolHandler: handler,
-      spawnCommand: [cmd.program, ...cmd.args].join(' '),
+      spawnCommand: [resolved.resolvedPath, ...resolved.args].join(' '),
     }
   }
 }
+
+// ---------- Types ----------
+
+export interface DiscoveryResult {
+  slashCommands: string[]
+  agents: string[]
+  plugins: Array<{ name: string; path: string }>
+}
+
+// ---------- Constants ----------
+
+const DISCOVERY_TIMEOUT_MS = 120_000
 
 // ---------- Helpers ----------
 
