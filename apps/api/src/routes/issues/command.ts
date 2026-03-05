@@ -12,6 +12,7 @@ import {
   getProjectOwnedIssue,
   markPendingMessagesDispatched,
   normalizePrompt,
+  parseProjectEnvVars,
 } from './_shared'
 
 const command = new Hono()
@@ -112,14 +113,20 @@ command.post(
       if (!guard.ok) {
         return c.json({ success: false, error: guard.reason! }, 400)
       }
+      // Prepend project-level system prompt if configured
+      const basePrompt = project.systemPrompt
+        ? `${project.systemPrompt}\n\n${prompt}`
+        : prompt
       const { prompt: effectivePrompt, pendingIds } =
-        await collectPendingMessages(issueId, prompt)
+        await collectPendingMessages(issueId, basePrompt)
+      const envVars = parseProjectEnvVars(project.envVars)
       const result = await issueEngine.executeIssue(issueId, {
         engineType: body.engineType,
         prompt: effectivePrompt,
         workingDir: effectiveWorkingDir,
         model: body.model,
         permissionMode: body.permissionMode,
+        envVars,
       })
       await markPendingMessagesDispatched(pendingIds)
       return c.json({

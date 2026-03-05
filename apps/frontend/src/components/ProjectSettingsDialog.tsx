@@ -176,6 +176,26 @@ function WorktreeTab({ project }: { project: Project }) {
   )
 }
 
+function envVarsToText(vars: Record<string, string>): string {
+  return Object.entries(vars)
+    .map(([k, v]) => `${k}=${v}`)
+    .join('\n')
+}
+
+function textToEnvVars(text: string): Record<string, string> {
+  const result: Record<string, string> = {}
+  for (const line of text.split('\n')) {
+    const trimmed = line.trim()
+    if (!trimmed || trimmed.startsWith('#')) continue
+    const eqIdx = trimmed.indexOf('=')
+    if (eqIdx <= 0) continue
+    const key = trimmed.slice(0, eqIdx).trim()
+    const val = trimmed.slice(eqIdx + 1).trim()
+    if (key) result[key] = val
+  }
+  return result
+}
+
 export function ProjectSettingsDialog({
   open,
   onOpenChange,
@@ -192,6 +212,10 @@ export function ProjectSettingsDialog({
   const [repositoryUrl, setRepositoryUrl] = useState(
     project.repositoryUrl ?? '',
   )
+  const [systemPrompt, setSystemPrompt] = useState(project.systemPrompt ?? '')
+  const [envVarsText, setEnvVarsText] = useState(
+    envVarsToText(project.envVars ?? {}),
+  )
   const [dirPickerOpen, setDirPickerOpen] = useState(false)
   const [detectingRemote, setDetectingRemote] = useState(false)
   const [error, setError] = useState('')
@@ -205,6 +229,8 @@ export function ProjectSettingsDialog({
       setDescription(project.description ?? '')
       setDirectory(project.directory ?? '')
       setRepositoryUrl(project.repositoryUrl ?? '')
+      setSystemPrompt(project.systemPrompt ?? '')
+      setEnvVarsText(envVarsToText(project.envVars ?? {}))
       setError('')
     }
   }, [open, project])
@@ -213,12 +239,15 @@ export function ProjectSettingsDialog({
     name.trim() !== project.name ||
     description.trim() !== (project.description ?? '') ||
     directory.trim() !== (project.directory ?? '') ||
-    repositoryUrl.trim() !== (project.repositoryUrl ?? '')
+    repositoryUrl.trim() !== (project.repositoryUrl ?? '') ||
+    systemPrompt !== (project.systemPrompt ?? '') ||
+    envVarsText !== envVarsToText(project.envVars ?? {})
 
   const handleSave = () => {
     const trimmedName = name.trim()
     if (!trimmedName) return
     setError('')
+    const cleanedEnvVars = textToEnvVars(envVarsText)
     updateProject.mutate(
       {
         id: project.id,
@@ -226,6 +255,8 @@ export function ProjectSettingsDialog({
         description: description.trim() || undefined,
         directory: directory.trim() || undefined,
         repositoryUrl: repositoryUrl.trim() || undefined,
+        systemPrompt: systemPrompt || undefined,
+        envVars: cleanedEnvVars,
       },
       {
         onSuccess: () => onOpenChange(false),
@@ -257,6 +288,12 @@ export function ProjectSettingsDialog({
             <TabsList>
               <TabsTrigger value="general">
                 {t('project.tabGeneral')}
+              </TabsTrigger>
+              <TabsTrigger value="prompt">
+                {t('project.tabPrompt')}
+              </TabsTrigger>
+              <TabsTrigger value="envvars">
+                {t('project.tabEnvVars')}
               </TabsTrigger>
               <TabsTrigger value="worktrees">
                 {t('project.tabWorktrees')}
@@ -369,6 +406,74 @@ export function ProjectSettingsDialog({
                 >
                   {t('project.delete')}
                 </Button>
+                <Button variant="outline" onClick={() => onOpenChange(false)}>
+                  {t('common.cancel')}
+                </Button>
+                <Button
+                  onClick={handleSave}
+                  disabled={
+                    updateProject.isPending || !name.trim() || !hasChanges
+                  }
+                >
+                  {updateProject.isPending
+                    ? t('project.saving')
+                    : t('project.saveChanges')}
+                </Button>
+              </DialogFooter>
+            </TabsContent>
+
+            <TabsContent value="prompt">
+              <FieldGroup>
+                <Field>
+                  <Label>{t('project.systemPrompt')}</Label>
+                  <Textarea
+                    value={systemPrompt}
+                    onChange={(e) => setSystemPrompt(e.target.value)}
+                    placeholder={t('project.systemPromptPlaceholder')}
+                    rows={8}
+                    className="w-full resize-y font-mono text-xs"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {t('project.systemPromptHint')}
+                  </p>
+                </Field>
+              </FieldGroup>
+
+              <DialogFooter className="mt-4">
+                <Button variant="outline" onClick={() => onOpenChange(false)}>
+                  {t('common.cancel')}
+                </Button>
+                <Button
+                  onClick={handleSave}
+                  disabled={
+                    updateProject.isPending || !name.trim() || !hasChanges
+                  }
+                >
+                  {updateProject.isPending
+                    ? t('project.saving')
+                    : t('project.saveChanges')}
+                </Button>
+              </DialogFooter>
+            </TabsContent>
+
+            <TabsContent value="envvars">
+              <FieldGroup>
+                <Field>
+                  <Label>{t('project.envVars')}</Label>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    {t('project.envVarsHint')}
+                  </p>
+                  <Textarea
+                    value={envVarsText}
+                    onChange={(e) => setEnvVarsText(e.target.value)}
+                    placeholder={t('project.envVarsPlaceholder')}
+                    rows={8}
+                    className="w-full resize-y font-mono text-xs"
+                  />
+                </Field>
+              </FieldGroup>
+
+              <DialogFooter className="mt-4">
                 <Button variant="outline" onClick={() => onOpenChange(false)}>
                   {t('common.cancel')}
                 </Button>

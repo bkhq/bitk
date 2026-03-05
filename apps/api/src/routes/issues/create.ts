@@ -14,6 +14,7 @@ import type { EngineType } from '@/engines/types'
 import { logger } from '@/logger'
 import {
   createIssueSchema,
+  parseProjectEnvVars,
   serializeIssue,
   triggerIssueExecution,
 } from './_shared'
@@ -150,6 +151,8 @@ create.post(
             permissionMode: body.permissionMode,
           },
           project.directory || undefined,
+          project.systemPrompt,
+          parseProjectEnvVars(project.envVars),
         )
       }
 

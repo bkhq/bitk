@@ -118,6 +118,7 @@ export class IssueEngine {
       workingDir?: string
       model?: string
       permissionMode?: PermissionPolicy
+      envVars?: Record<string, string>
     },
   ): Promise<{ executionId: string; messageId?: string | null }> {
     return executeIssue(this.ctx, issueId, opts)

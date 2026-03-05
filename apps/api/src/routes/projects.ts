@@ -23,12 +23,16 @@ const aliasId = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 8)
 
 const aliasRegex = /^[a-z0-9]+$/
 
+const envVarsSchema = z.record(z.string().max(10000)).optional()
+
 const createProjectSchema = z.object({
   name: z.string().min(1).max(200),
   alias: z.string().min(1).max(200).regex(aliasRegex).optional(),
   description: z.string().max(5000).optional(),
   directory: z.string().max(1000).optional(),
   repositoryUrl: z.string().url().optional().or(z.literal('')),
+  systemPrompt: z.string().max(32768).optional(),
+  envVars: envVarsSchema,
 })
 
 const updateProjectSchema = z.object({
@@ -37,6 +41,8 @@ const updateProjectSchema = z.object({
   description: z.string().max(5000).optional(),
   directory: z.string().max(1000).optional(),
   repositoryUrl: z.string().url().optional().or(z.literal('')),
+  systemPrompt: z.string().max(32768).optional(),
+  envVars: envVarsSchema,
 })
 
 type ProjectRow = typeof projectsTable.$inferSelect
@@ -49,6 +55,8 @@ function serializeProject(row: ProjectRow) {
     description: row.description ?? undefined,
     directory: row.directory ?? undefined,
     repositoryUrl: row.repositoryUrl ?? undefined,
+    systemPrompt: row.systemPrompt ?? undefined,
+    envVars: row.envVars ? (JSON.parse(row.envVars) as Record<string, string>) : undefined,
     createdAt: toISO(row.createdAt),
     updatedAt: toISO(row.updatedAt),
   }
@@ -140,6 +148,8 @@ projects.post(
         description: body.description ?? null,
         directory: dir,
         repositoryUrl: body.repositoryUrl || null,
+        systemPrompt: body.systemPrompt ?? null,
+        envVars: body.envVars ? JSON.stringify(body.envVars) : null,
       })
       .returning()
 
@@ -192,6 +202,14 @@ projects.patch(
     if (body.repositoryUrl !== undefined) {
       updates.repositoryUrl =
         body.repositoryUrl === '' ? null : body.repositoryUrl
+    }
+    if (body.systemPrompt !== undefined) {
+      updates.systemPrompt = body.systemPrompt || null
+    }
+    if (body.envVars !== undefined) {
+      updates.envVars = Object.keys(body.envVars).length > 0
+        ? JSON.stringify(body.envVars)
+        : null
     }
 
     if (Object.keys(updates).length === 0) {
