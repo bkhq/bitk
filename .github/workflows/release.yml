@@ -33,57 +33,6 @@ jobs:
           fi
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
 
-  build-full:
-    name: Full ${{ matrix.label }}
-    needs: validate
-    if: ${{ !cancelled() && (needs.validate.result == 'success' || needs.validate.result == 'skipped') }}
-    runs-on: ${{ matrix.runner }}
-    timeout-minutes: 15
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - target: bun-linux-x64
-            runner: ubuntu-latest
-            label: linux-x64
-            suffix: linux-x64
-          - target: bun-linux-arm64
-            runner: ubuntu-24.04-arm
-            label: linux-arm64
-            suffix: linux-arm64
-          - target: bun-darwin-arm64
-            runner: macos-latest
-            label: darwin-arm64
-            suffix: darwin-arm64
-
-    steps:
-      - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v2
-      - uses: actions/cache@v4
-        with:
-          path: ~/.bun/install/cache
-          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
-          restore-keys: ${{ runner.os }}-bun-
-
-      - name: Build full binary
-        env:
-          MATRIX_TARGET: ${{ matrix.target }}
-          MATRIX_SUFFIX: ${{ matrix.suffix }}
-        run: |
-          bun install
-          ARTIFACT="bitk-${MATRIX_SUFFIX}-${VERSION}"
-          echo "ARTIFACT=${ARTIFACT}" >> "$GITHUB_ENV"
-          bun scripts/compile.ts --target "${MATRIX_TARGET}" --outfile "${ARTIFACT}" --version "${VERSION}"
-          ls -lh "dist/${ARTIFACT}" && file "dist/${ARTIFACT}" && cat "dist/checksums.txt"
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: bitk-${{ matrix.suffix }}
-          path: |
-            dist/bitk-${{ matrix.suffix }}-${{ env.VERSION }}
-            dist/checksums.txt
-          retention-days: 7
-
   package:
     name: Build app package
     needs: validate
@@ -116,7 +65,7 @@ jobs:
 
   release:
     name: Create Release
-    needs: [build-full, package]
+    needs: [package]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -130,17 +79,9 @@ jobs:
       - name: Prepare assets
         run: |
           mkdir -p release/
-          # Copy build outputs (binaries + archives only)
-          cp artifacts/bitk-linux-x64/bitk-* release/
-          cp artifacts/bitk-linux-arm64/bitk-* release/
-          cp artifacts/bitk-darwin-arm64/bitk-* release/
+          # Copy app package
           cp artifacts/bitk-app-package/bitk-* release/
-          # Set executable on binaries (skip .tar.gz)
-          for f in release/bitk-*; do
-            [[ "$f" == *.tar.gz ]] && continue
-            chmod +x "$f"
-          done
-          # Merge checksums from all build jobs
+          # Merge checksums
           cat artifacts/*/checksums.txt > release/checksums.txt
           # Verify checksums before publishing
           cd release
