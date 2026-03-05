@@ -15,6 +15,7 @@ import { register } from '@/engines/issue/process/register'
 import { persistUserMessage } from '@/engines/issue/user-message'
 import {
   getPermissionOptions,
+  getProjectEnvVars,
   isMissingExternalSessionError,
   resolveWorkingDir,
 } from '@/engines/issue/utils/helpers'
@@ -50,10 +51,11 @@ export async function spawnWithSessionFallback(
     model?: string
     permissionMode: PermissionPolicy
     projectId: string
+    envVars?: Record<string, string>
   },
 ): Promise<SpawnedProcess> {
   const spawnCtx = {
-    vars: {},
+    vars: opts.envVars ?? {},
     workingDir: opts.workingDir,
     projectId: opts.projectId,
     issueId,
@@ -107,6 +109,7 @@ export async function spawnFresh(
     model?: string
     permissionMode: PermissionPolicy
     projectId: string
+    envVars?: Record<string, string>
   },
 ): Promise<SpawnedProcess> {
   const externalSessionId = crypto.randomUUID()
@@ -119,7 +122,7 @@ export async function spawnFresh(
       externalSessionId,
     },
     {
-      vars: {},
+      vars: opts.envVars ?? {},
       workingDir: opts.workingDir,
       projectId: opts.projectId,
       issueId,
@@ -173,6 +176,7 @@ export async function spawnRetry(
 
   const permOptions = getPermissionOptions(engineType)
   const executionId = crypto.randomUUID()
+  const envVars = await getProjectEnvVars(issue.projectId)
 
   const spawnOpts = {
     workingDir,
@@ -180,6 +184,7 @@ export async function spawnRetry(
     model: issue.sessionFields.model ?? undefined,
     permissionMode: permOptions.permissionMode,
     projectId: issue.projectId,
+    envVars,
   }
   const spawned = issue.sessionFields.externalSessionId
     ? await spawnWithSessionFallback(executor, issueId, {
@@ -309,6 +314,7 @@ export async function spawnFollowUpProcess(
   }
 
   const permOptions = getPermissionOptions(engineType, permissionMode)
+  const envVars = await getProjectEnvVars(issue.projectId)
 
   let spawned: SpawnedProcess
   try {
@@ -319,6 +325,7 @@ export async function spawnFollowUpProcess(
       model: effectiveModel,
       permissionMode: permOptions.permissionMode,
       projectId: issue.projectId,
+      envVars,
     })
   } catch (spawnError) {
     // Spawn failed after we already emitted 'running' and persisted the user

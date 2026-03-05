@@ -255,7 +255,7 @@ export function ProjectSettingsDialog({
         description: description.trim() || undefined,
         directory: directory.trim() || undefined,
         repositoryUrl: repositoryUrl.trim() || undefined,
-        systemPrompt: systemPrompt || undefined,
+        systemPrompt,
         envVars: cleanedEnvVars,
       },
       {
