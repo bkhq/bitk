@@ -287,6 +287,7 @@ export class ClaudeLogNormalizer {
         }
 
         const info = toolUseId ? this.toolMap.get(toolUseId) : undefined
+        if (info && toolUseId) this.toolMap.delete(toolUseId)
         const resultContent = normalizeToolResultContent(tr.content)
 
         kept.push({
@@ -381,6 +382,7 @@ export class ClaudeLogNormalizer {
     }
 
     const info = toolUseId ? this.toolMap.get(toolUseId) : undefined
+    if (info && toolUseId) this.toolMap.delete(toolUseId)
     const resultContent = normalizeToolResultContent(data.content)
 
     return {

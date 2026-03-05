@@ -299,6 +299,27 @@ export class ClaudeCodeExecutor implements EngineExecutor {
         }
       }
 
+      // Process remaining buffer (final line without trailing newline)
+      if (buffer.trim()) {
+        try {
+          const data = JSON.parse(buffer.trim()) as {
+            type?: string
+            subtype?: string
+            slash_commands?: string[]
+            plugins?: Array<{ name: string; path: string }>
+            agents?: string[]
+          }
+          if (data.type === 'system' && data.subtype === 'init') {
+            result.slashCommands = data.slash_commands ?? []
+            result.plugins = data.plugins ?? []
+            result.agents = data.agents ?? []
+            result.initReceived = true
+          }
+        } catch {
+          // Not JSON — ignore
+        }
+      }
+
       reader.releaseLock()
     } finally {
       clearTimeout(killTimer)
