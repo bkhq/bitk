@@ -31,9 +31,19 @@ function FlatHeading({
 }
 
 /** Render links as plain text — no clickable <a> tags. */
-function PlainLink({ children, href }: { children?: React.ReactNode; href?: string }) {
+function PlainLink({
+  children,
+  href,
+}: {
+  children?: React.ReactNode
+  href?: string
+}) {
   if (href) {
-    return <span>{children} ({href})</span>
+    return (
+      <span>
+        {children} ({href})
+      </span>
+    )
   }
   return <span>{children}</span>
 }

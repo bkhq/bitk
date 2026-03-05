@@ -289,9 +289,7 @@ export function ProjectSettingsDialog({
               <TabsTrigger value="general">
                 {t('project.tabGeneral')}
               </TabsTrigger>
-              <TabsTrigger value="prompt">
-                {t('project.tabPrompt')}
-              </TabsTrigger>
+              <TabsTrigger value="prompt">{t('project.tabPrompt')}</TabsTrigger>
               <TabsTrigger value="envvars">
                 {t('project.tabEnvVars')}
               </TabsTrigger>

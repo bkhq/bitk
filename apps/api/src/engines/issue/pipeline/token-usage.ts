@@ -32,8 +32,7 @@ export function registerTokenUsageStage(
         typeof meta.inputTokens === 'number' ? meta.inputTokens : 0
       const outputTokens =
         typeof meta.outputTokens === 'number' ? meta.outputTokens : 0
-      const costUsd =
-        typeof meta.costUsd === 'number' ? meta.costUsd : 0
+      const costUsd = typeof meta.costUsd === 'number' ? meta.costUsd : 0
 
       if (inputTokens === 0 && outputTokens === 0 && costUsd === 0) return
 

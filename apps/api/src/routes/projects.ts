@@ -56,7 +56,9 @@ function serializeProject(row: ProjectRow) {
     directory: row.directory ?? undefined,
     repositoryUrl: row.repositoryUrl ?? undefined,
     systemPrompt: row.systemPrompt ?? undefined,
-    envVars: row.envVars ? (JSON.parse(row.envVars) as Record<string, string>) : undefined,
+    envVars: row.envVars
+      ? (JSON.parse(row.envVars) as Record<string, string>)
+      : undefined,
     createdAt: toISO(row.createdAt),
     updatedAt: toISO(row.updatedAt),
   }
@@ -207,9 +209,10 @@ projects.patch(
       updates.systemPrompt = body.systemPrompt || null
     }
     if (body.envVars !== undefined) {
-      updates.envVars = Object.keys(body.envVars).length > 0
-        ? JSON.stringify(body.envVars)
-        : null
+      updates.envVars =
+        Object.keys(body.envVars).length > 0
+          ? JSON.stringify(body.envVars)
+          : null
     }
 
     if (Object.keys(updates).length === 0) {
