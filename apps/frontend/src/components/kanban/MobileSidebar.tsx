@@ -162,7 +162,7 @@ export function MobileSidebar({
                 type="button"
                 onClick={() => {
                   setOpen(false)
-                  useNotesStore.getState().open()
+                  useNotesStore.getState().openFullscreen()
                 }}
                 className="flex items-center gap-3 w-full px-4 min-h-[44px] text-sm text-foreground/80 hover:bg-accent/50 active:bg-accent transition-colors"
               >

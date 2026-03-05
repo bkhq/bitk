@@ -382,6 +382,9 @@
     "unpin": "Unpin note",
     "pinned": "Pinned",
     "other": "Other",
-    "loadError": "Failed to load notes"
+    "loadError": "Failed to load notes",
+    "minimize": "Minimize",
+    "maximize": "Maximize",
+    "restore": "Restore"
   }
 }

@@ -2,7 +2,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { lazy, Suspense } from 'react'
 import ReactDOM from 'react-dom/client'
-import { useTranslation } from 'react-i18next'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { Toaster } from './components/ui/sonner'
@@ -130,31 +129,6 @@ function NotesDrawerMount() {
   )
 }
 
-const LazyStickyNote = lazy(() =>
-  import('lucide-react').then((m) => ({ default: m.StickyNote })),
-)
-
-function GlobalNotesFab() {
-  const { t } = useTranslation()
-  const isOpen = useNotesStore((s) => s.isOpen)
-  const toggle = useNotesStore((s) => s.toggle)
-
-  if (isOpen) return null
-
-  return (
-    <button
-      type="button"
-      onClick={toggle}
-      className="fixed bottom-5 right-5 z-30 flex h-11 w-11 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 active:scale-95 transition-all"
-      aria-label={t('notes.title')}
-    >
-      <Suspense fallback={null}>
-        <LazyStickyNote className="h-5 w-5" />
-      </Suspense>
-    </button>
-  )
-}
-
 const rootElement = document.getElementById('app')!
 
 if (!rootElement.innerHTML) {
@@ -220,7 +194,6 @@ if (!rootElement.innerHTML) {
           <FileBrowserDrawerMount />
           <ProcessManagerDrawerMount />
           <NotesDrawerMount />
-          <GlobalNotesFab />
           <Toaster position="top-center" />
         </ErrorBoundary>
       </BrowserRouter>

@@ -47,9 +47,9 @@ export function FileList({ entries, onNavigate }: FileListProps) {
   }
 
   return (
-    <div className="border border-border rounded-lg overflow-hidden">
+    <div className="border border-border rounded-lg overflow-auto flex-1 min-h-0">
       <table className="w-full text-sm">
-        <thead>
+        <thead className="sticky top-0 z-[1]">
           <tr className="bg-muted/50 border-b border-border">
             <th className="text-left font-medium text-muted-foreground px-4 py-2">
               {t('fileBrowser.name')}

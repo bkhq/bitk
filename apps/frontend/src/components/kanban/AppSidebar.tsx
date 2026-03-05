@@ -92,6 +92,7 @@ export function AppSidebar({ activeProjectId }: { activeProjectId: string }) {
   const toggleTerminal = useTerminalStore((s) => s.toggle)
   const isTerminalMinimized = useTerminalStore((s) => s.isMinimized)
   const toggleNotes = useNotesStore((s) => s.toggle)
+  const isNotesMinimized = useNotesStore((s) => s.isMinimized)
 
   const handleProjectCreated = useCallback(
     (project: Project) => {
@@ -179,11 +180,14 @@ export function AppSidebar({ activeProjectId }: { activeProjectId: string }) {
           variant="ghost"
           size="icon"
           onClick={toggleNotes}
-          className="h-9 w-9 text-muted-foreground"
+          className="relative h-9 w-9 text-muted-foreground"
           aria-label={t('notes.title')}
           title={t('notes.title')}
         >
           <StickyNote className="h-4 w-4" />
+          {isNotesMinimized && (
+            <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-primary" />
+          )}
         </Button>
         <ViewModeToggle activeProjectId={activeProjectId} />
         <Button

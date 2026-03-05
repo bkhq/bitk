@@ -382,6 +382,9 @@
     "unpin": "取消置顶",
     "pinned": "已置顶",
     "other": "其他",
-    "loadError": "加载笔记失败"
+    "loadError": "加载笔记失败",
+    "minimize": "最小化",
+    "maximize": "最大化",
+    "restore": "还原"
   }
 }
