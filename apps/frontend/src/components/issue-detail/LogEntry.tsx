@@ -406,24 +406,26 @@ function AssistantMessage({
   }
 
   return (
-    <div className="group relative px-5 py-1.5 animate-message-enter">
-      <button
-        type="button"
-        onClick={handleCopy}
-        className="absolute right-3 top-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150 rounded-md p-1 text-muted-foreground/50 hover:text-muted-foreground hover:bg-muted/50"
-        title={t('session.copyMessage')}
-      >
-        {copied ? (
-          <Check className="h-3.5 w-3.5 text-emerald-500" />
-        ) : (
-          <Copy className="h-3.5 w-3.5" />
-        )}
-      </button>
-      <div className="min-w-0 max-w-[72ch]">
-        <MarkdownContent
-          content={content}
-          className="text-[14px] leading-[1.75]"
-        />
+    <div className="group px-5 py-1.5 animate-message-enter">
+      <div className="relative rounded-lg bg-muted/40 px-4 py-3 max-w-[72ch]">
+        <button
+          type="button"
+          onClick={handleCopy}
+          className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity duration-150 rounded-md p-1 text-muted-foreground/50 hover:text-muted-foreground hover:bg-muted/50"
+          title={t('session.copyMessage')}
+        >
+          {copied ? (
+            <Check className="h-3.5 w-3.5 text-emerald-500" />
+          ) : (
+            <Copy className="h-3.5 w-3.5" />
+          )}
+        </button>
+        <div className="min-w-0 pr-6">
+          <MarkdownContent
+            content={content}
+            className="text-[14px] leading-[1.75]"
+          />
+        </div>
       </div>
       <div className="flex items-center gap-2 mt-1">
         {timestamp ? (
