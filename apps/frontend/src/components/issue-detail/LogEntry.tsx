@@ -121,38 +121,38 @@ function TaskPlanEntry({ entry }: { entry: NormalizedLogEntry }) {
   return (
     <div className="py-1.5">
       <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
-          <ListTodo className="h-3 w-3 shrink-0 text-indigo-500" />
-          <span className="font-medium">Task Plan</span>
-          <span className="text-muted-foreground/50">
-            ({completedCount}/{items.length})
-          </span>
-        </div>
-        <div className="ml-4 space-y-0.5">
-          {items.map((item) => (
-            <div key={item.content} className="flex items-start gap-1.5 text-xs">
-              {item.status === 'completed' ? (
-                <CheckCircle2 className="h-3 w-3 shrink-0 text-emerald-500 mt-0.5" />
-              ) : item.status === 'in_progress' ? (
-                <Loader2 className="h-3 w-3 shrink-0 text-blue-500 animate-spin mt-0.5" />
-              ) : (
-                <Circle className="h-3 w-3 shrink-0 text-muted-foreground/40 mt-0.5" />
-              )}
-              <span
-                className={
-                  item.status === 'completed'
-                    ? 'text-muted-foreground/60 line-through'
-                    : item.status === 'in_progress'
-                      ? 'text-blue-600 dark:text-blue-400'
-                      : ''
-                }
-              >
-                {item.status === 'in_progress'
-                  ? item.activeForm || item.content
-                  : item.content}
-              </span>
-            </div>
-          ))}
-        </div>
+        <ListTodo className="h-3 w-3 shrink-0 text-indigo-500" />
+        <span className="font-medium">Task Plan</span>
+        <span className="text-muted-foreground/50">
+          ({completedCount}/{items.length})
+        </span>
+      </div>
+      <div className="ml-4 space-y-0.5">
+        {items.map((item) => (
+          <div key={item.content} className="flex items-start gap-1.5 text-xs">
+            {item.status === 'completed' ? (
+              <CheckCircle2 className="h-3 w-3 shrink-0 text-emerald-500 mt-0.5" />
+            ) : item.status === 'in_progress' ? (
+              <Loader2 className="h-3 w-3 shrink-0 text-blue-500 animate-spin mt-0.5" />
+            ) : (
+              <Circle className="h-3 w-3 shrink-0 text-muted-foreground/40 mt-0.5" />
+            )}
+            <span
+              className={
+                item.status === 'completed'
+                  ? 'text-muted-foreground/60 line-through'
+                  : item.status === 'in_progress'
+                    ? 'text-blue-600 dark:text-blue-400'
+                    : ''
+              }
+            >
+              {item.status === 'in_progress'
+                ? item.activeForm || item.content
+                : item.content}
+            </span>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
@@ -189,9 +189,7 @@ export function LogEntry({
           : 'border-foreground/70'
       return (
         <div className="group py-2 animate-message-enter">
-          <div
-            className={`bg-muted/70 px-3 py-2.5 border-l-[3px] ${barColor}`}
-          >
+          <div className={`bg-muted/70 px-3 py-2.5 border-l-[3px] ${barColor}`}>
             {entry.content.trim() ? (
               <div className="text-[15px] whitespace-pre-wrap break-words text-foreground leading-[1.75]">
                 {entry.content}

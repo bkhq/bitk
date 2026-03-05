@@ -36,6 +36,13 @@
       "when": 1772684674288,
       "tag": "0004_uneven_deathstrike",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1772870400000,
+      "tag": "0005_add_system_prompt",
+      "breakpoints": true
     }
   ]
 }

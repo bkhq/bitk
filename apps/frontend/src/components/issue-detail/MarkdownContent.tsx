@@ -36,7 +36,11 @@ function formatTable(block: string): string {
   if (lines.length < 2) return block
 
   const parseCells = (line: string) =>
-    line.replace(/^\|/, '').replace(/\|$/, '').split('|').map((c) => c.trim())
+    line
+      .replace(/^\|/, '')
+      .replace(/\|$/, '')
+      .split('|')
+      .map((c) => c.trim())
 
   const isSep = (line: string) =>
     /^\|?[\s:]*-+[\s:]*(\|[\s:]*-+[\s:]*)*\|?$/.test(line.trim())
@@ -65,7 +69,10 @@ function formatTable(block: string): string {
   const sepLine = `| ${colWidths.map((w) => '-'.repeat(w)).join(' | ')} |`
 
   const header = parseCells(lines[0])
-  const dataRows = lines.slice(2).filter((l) => !isSep(l)).map(parseCells)
+  const dataRows = lines
+    .slice(2)
+    .filter((l) => !isSep(l))
+    .map(parseCells)
 
   return [formatRow(header), sepLine, ...dataRows.map(formatRow)].join('\n')
 }

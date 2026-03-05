@@ -11,6 +11,7 @@ import { logger } from '@/logger'
 import {
   bulkUpdateSchema,
   flushPendingAsFollowUp,
+  parseProjectEnvVars,
   serializeIssue,
   triggerIssueExecution,
   updateIssueSchema,
@@ -143,7 +144,13 @@ update.patch(
         statusId: 'working',
         sessionStatus: 'pending',
       })
-      triggerIssueExecution(issue.id, issue, project.directory || undefined)
+      triggerIssueExecution(
+        issue.id,
+        issue,
+        project.directory || undefined,
+        project.systemPrompt,
+        parseProjectEnvVars(project.envVars),
+      )
     }
     // Flush pending messages for issues with existing sessions
     for (const issue of toFlush) {
@@ -316,6 +323,8 @@ update.patch(
           model: existing.model,
         },
         project.directory || undefined,
+        project.systemPrompt,
+        parseProjectEnvVars(project.envVars),
       )
     } else if (shouldFlush) {
       flushPendingAsFollowUp(issueId, { model: existing.model })

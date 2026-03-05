@@ -16,6 +16,7 @@ import { withIssueLock } from '@/engines/issue/process/lock'
 import { register } from '@/engines/issue/process/register'
 import {
   getPermissionOptions,
+  getProjectExecContext,
   resolveWorkingDir,
 } from '@/engines/issue/utils/helpers'
 import { createLogNormalizer } from '@/engines/issue/utils/normalizer'
@@ -70,11 +71,15 @@ export async function restartIssue(
 
     const permOptions = getPermissionOptions(engineType)
     const executionId = crypto.randomUUID()
+    const projCtx = await getProjectExecContext(issue.projectId)
 
-    // Merge pending messages with the original prompt
+    // Prepend project system prompt + merge pending messages
+    const basePrompt = projCtx.systemPrompt
+      ? `${projCtx.systemPrompt}\n\n${issue.sessionFields.prompt ?? ''}`
+      : (issue.sessionFields.prompt ?? '')
     const effectivePrompt = pendingPrompt
-      ? [issue.sessionFields.prompt, pendingPrompt].filter(Boolean).join('\n\n')
-      : issue.sessionFields.prompt
+      ? [basePrompt, pendingPrompt].filter(Boolean).join('\n\n')
+      : basePrompt
 
     const spawnOpts = {
       workingDir,
@@ -82,6 +87,7 @@ export async function restartIssue(
       model: issue.sessionFields.model ?? undefined,
       permissionMode: permOptions.permissionMode,
       projectId: issue.projectId,
+      envVars: projCtx.envVars,
     }
     let spawned: SpawnedProcess
     try {
@@ -94,7 +100,12 @@ export async function restartIssue(
               model: spawnOpts.model,
               permissionMode: spawnOpts.permissionMode,
             },
-            { vars: {}, workingDir, projectId: issue.projectId, issueId },
+            {
+              vars: projCtx.envVars ?? {},
+              workingDir,
+              projectId: issue.projectId,
+              issueId,
+            },
           )
         : await spawnFresh(executor, issueId, spawnOpts)
     } catch (spawnError) {

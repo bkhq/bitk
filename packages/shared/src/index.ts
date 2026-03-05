@@ -10,6 +10,8 @@ export type Project = {
   description?: string
   directory?: string
   repositoryUrl?: string
+  systemPrompt?: string
+  envVars?: Record<string, string>
   createdAt: string
   updatedAt: string
 }

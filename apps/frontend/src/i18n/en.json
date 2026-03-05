@@ -46,7 +46,15 @@
     "worktreeDelete": "Delete",
     "worktreeDeleting": "Deleting...",
     "worktreeDeleteConfirm": "Delete worktree for issue {{issueId}}?",
-    "worktreeLoading": "Loading worktrees..."
+    "worktreeLoading": "Loading worktrees...",
+    "tabPrompt": "Prompt",
+    "tabEnvVars": "Env Vars",
+    "systemPrompt": "System Prompt",
+    "systemPromptPlaceholder": "Additional instructions prepended to every new session prompt...",
+    "systemPromptHint": "This prompt will be automatically prepended when starting a new session for any issue in this project.",
+    "envVars": "Environment Variables",
+    "envVarsHint": "One variable per line in KEY=VALUE format. Lines starting with # are ignored.",
+    "envVarsPlaceholder": "API_KEY=your-key\nNODE_ENV=production\n# Comments are ignored"
   },
   "kanban": {
     "newIssue": "New Issue",

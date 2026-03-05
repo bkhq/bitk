@@ -135,6 +135,19 @@ export async function invalidateIssueCache(
 
 export { toISO } from '@/utils/date'
 
+/** Parse project envVars JSON string into Record<string, string>, or undefined if empty/null. */
+export function parseProjectEnvVars(
+  raw: string | null | undefined,
+): Record<string, string> | undefined {
+  if (!raw) return undefined
+  try {
+    const parsed = JSON.parse(raw) as Record<string, string>
+    return Object.keys(parsed).length > 0 ? parsed : undefined
+  } catch {
+    return undefined
+  }
+}
+
 /**
  * Fire-and-forget: flush pending queued messages as a follow-up to an
  * existing session.  Called when an issue transitions to working but
@@ -250,6 +263,8 @@ export function triggerIssueExecution(
     permissionMode?: string
   },
   projectDirectory: string | undefined,
+  systemPrompt?: string | null,
+  envVars?: Record<string, string> | null,
 ): void {
   void (async () => {
     try {
@@ -296,7 +311,10 @@ export function triggerIssueExecution(
 
       const { prompt: pendingPrompt, pendingIds } =
         await collectPendingWithAttachments(issueId)
-      const effectivePrompt = [issue.prompt ?? '', pendingPrompt]
+      const basePrompt = systemPrompt
+        ? `${systemPrompt}\n\n${issue.prompt ?? ''}`
+        : (issue.prompt ?? '')
+      const effectivePrompt = [basePrompt, pendingPrompt]
         .filter(Boolean)
         .join('\n\n')
 
@@ -306,6 +324,7 @@ export function triggerIssueExecution(
         workingDir: effectiveWorkingDir,
         model: issue.model ?? undefined,
         permissionMode: issue.permissionMode as 'plan' | 'auto' | undefined,
+        envVars: envVars ?? undefined,
       })
       // Delete pending rows only AFTER successful execution to prevent message loss
       if (pendingIds.length > 0) {

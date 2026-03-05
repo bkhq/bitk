@@ -42,6 +42,8 @@ export const projects = sqliteTable('projects', {
   description: text('description'),
   directory: text('directory'),
   repositoryUrl: text('repository_url'),
+  systemPrompt: text('system_prompt'),
+  envVars: text('env_vars'), // JSON: Record<string, string>
   ...commonFields,
 })
 

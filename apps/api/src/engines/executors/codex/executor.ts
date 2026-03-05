@@ -335,7 +335,7 @@ export class CodexExecutor implements EngineExecutor {
       stdin: 'pipe',
       stdout: 'pipe',
       stderr: 'pipe',
-      env: safeEnv({ NPM_CONFIG_LOGLEVEL: 'error' }),
+      env: safeEnv({ NPM_CONFIG_LOGLEVEL: 'error', ...env.vars }),
     })
 
     // Create protocol handler — starts reading stdout immediately
@@ -409,7 +409,7 @@ export class CodexExecutor implements EngineExecutor {
       stdin: 'pipe',
       stdout: 'pipe',
       stderr: 'pipe',
-      env: safeEnv({ NPM_CONFIG_LOGLEVEL: 'error' }),
+      env: safeEnv({ NPM_CONFIG_LOGLEVEL: 'error', ...env.vars }),
     })
 
     const handler = new CodexProtocolHandler(

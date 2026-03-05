@@ -30,6 +30,7 @@ export async function executeIssue(
     workingDir?: string
     model?: string
     permissionMode?: PermissionPolicy
+    envVars?: Record<string, string>
   },
 ): Promise<{ executionId: string; messageId?: string | null }> {
   return withIssueLock(ctx, issueId, async () => {
@@ -107,7 +108,7 @@ export async function executeIssue(
           externalSessionId,
         },
         {
-          vars: {},
+          vars: opts.envVars ?? {},
           workingDir,
           projectId: issue.projectId,
           issueId,

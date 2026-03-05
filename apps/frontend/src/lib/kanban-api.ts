@@ -79,6 +79,8 @@ export const kanbanApi = {
     description?: string
     directory?: string
     repositoryUrl?: string
+    systemPrompt?: string
+    envVars?: Record<string, string>
   }) => post<Project>('/api/projects', data),
   updateProject: (
     id: string,
@@ -87,6 +89,8 @@ export const kanbanApi = {
       description?: string
       directory?: string
       repositoryUrl?: string
+      systemPrompt?: string
+      envVars?: Record<string, string>
     },
   ) => patch<Project>(`/api/projects/${id}`, data),
   deleteProject: (id: string) => del<{ id: string }>(`/api/projects/${id}`),
