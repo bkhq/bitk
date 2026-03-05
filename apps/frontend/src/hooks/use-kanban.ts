@@ -75,6 +75,8 @@ export function useUpdateProject() {
       description?: string
       directory?: string
       repositoryUrl?: string
+      systemPrompt?: string
+      envVars?: Record<string, string>
     }) => {
       const { id, ...rest } = data
       return kanbanApi.updateProject(id, rest)

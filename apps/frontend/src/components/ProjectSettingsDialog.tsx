@@ -1,5 +1,14 @@
-import { FolderOpen, GitBranch, Loader2, Trash2 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import {
+  FileText,
+  FolderOpen,
+  GitBranch,
+  GitFork,
+  Loader2,
+  Settings,
+  Terminal,
+  Trash2,
+} from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { DirectoryPicker } from '@/components/DirectoryPicker'
@@ -15,7 +24,8 @@ import {
 import { Field, FieldGroup } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import type { SettingsNavItem } from '@/components/ui/settings-layout'
+import { SettingsLayout } from '@/components/ui/settings-layout'
 import { Textarea } from '@/components/ui/textarea'
 import {
   useDeleteProject,
@@ -101,7 +111,7 @@ function DeleteProjectDialog({
   )
 }
 
-function WorktreeTab({ project }: { project: Project }) {
+function WorktreeSection({ project }: { project: Project }) {
   const { t } = useTranslation()
   const { data: worktrees, isLoading } = useProjectWorktrees(project.id)
   const deleteWorktree = useDeleteWorktree()
@@ -271,229 +281,93 @@ export function ProjectSettingsDialog({
     )
   }
 
+  const navItems: SettingsNavItem[] = useMemo(
+    () => [
+      { id: 'general', label: t('project.tabGeneral'), icon: Settings },
+      { id: 'prompt', label: t('project.tabPrompt'), icon: FileText },
+      { id: 'envvars', label: t('project.tabEnvVars'), icon: Terminal },
+      { id: 'worktrees', label: t('project.tabWorktrees'), icon: GitFork },
+    ],
+    [t],
+  )
+
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="md:max-w-lg">
-          <DialogHeader>
-            <div>
-              <DialogTitle>{t('project.settings')}</DialogTitle>
-              <DialogDescription>
-                {t('project.settingsDescription')}
-              </DialogDescription>
+      <SettingsLayout
+        open={open}
+        onOpenChange={onOpenChange}
+        title={t('project.settings')}
+        items={navItems}
+        defaultItem="general"
+        footer={(active) =>
+          active !== 'worktrees' ? (
+            <div className="flex items-center justify-between border-t px-5 py-3">
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => setDeleteDialogOpen(true)}
+              >
+                {t('project.delete')}
+              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onOpenChange(false)}
+                >
+                  {t('common.cancel')}
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleSave}
+                  disabled={
+                    updateProject.isPending || !name.trim() || !hasChanges
+                  }
+                >
+                  {updateProject.isPending
+                    ? t('project.saving')
+                    : t('project.saveChanges')}
+                </Button>
+              </div>
             </div>
-          </DialogHeader>
-
-          <Tabs defaultValue="general">
-            <TabsList>
-              <TabsTrigger value="general">
-                {t('project.tabGeneral')}
-              </TabsTrigger>
-              <TabsTrigger value="prompt">{t('project.tabPrompt')}</TabsTrigger>
-              <TabsTrigger value="envvars">
-                {t('project.tabEnvVars')}
-              </TabsTrigger>
-              <TabsTrigger value="worktrees">
-                {t('project.tabWorktrees')}
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="general">
-              <FieldGroup>
-                <Field>
-                  <Label>
-                    {t('project.name')}{' '}
-                    <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder={t('project.namePlaceholder')}
-                    autoFocus
-                    className="w-full"
-                  />
-                </Field>
-
-                <Field>
-                  <Label>{t('project.description')}</Label>
-                  <Textarea
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder={t('project.descriptionPlaceholder')}
-                    rows={3}
-                    className="w-full resize-none"
-                  />
-                </Field>
-
-                <Field>
-                  <Label>{t('project.directory')}</Label>
-                  <div className="flex gap-1.5">
-                    <Input
-                      type="text"
-                      value={directory}
-                      onChange={(e) => setDirectory(e.target.value)}
-                      placeholder={t('project.directoryPlaceholder')}
-                      className="w-full"
-                    />
-                    <Button
-                      onClick={() => setDirPickerOpen(true)}
-                      variant="outline"
-                      size="icon"
-                      title={t('project.browseDirectories')}
-                    >
-                      <FolderOpen className="size-4 text-muted-foreground" />
-                    </Button>
-                  </div>
-                  <DirectoryPicker
-                    open={dirPickerOpen}
-                    onOpenChange={setDirPickerOpen}
-                    initialPath={directory || undefined}
-                    onSelect={setDirectory}
-                  />
-                </Field>
-
-                <Field className="space-y-1.5">
-                  <Label>{t('project.repositoryUrl')}</Label>
-                  <div className="flex gap-1.5">
-                    <Input
-                      type="text"
-                      value={repositoryUrl}
-                      onChange={(e) => setRepositoryUrl(e.target.value)}
-                      placeholder={t('project.repositoryUrlPlaceholder')}
-                      className="w-full"
-                    />
-                    <Button
-                      onClick={async () => {
-                        const dir = directory.trim()
-                        if (!dir) return
-                        setDetectingRemote(true)
-                        try {
-                          const result = await kanbanApi.detectGitRemote(dir)
-                          setRepositoryUrl(result.url)
-                        } catch {
-                          // silently ignore — directory may not be a git repo
-                        } finally {
-                          setDetectingRemote(false)
-                        }
-                      }}
-                      variant="outline"
-                      type="button"
-                      disabled={!directory.trim() || detectingRemote}
-                      title={t('project.detectGitRemote')}
-                      className="shrink-0"
-                    >
-                      {detectingRemote ? (
-                        <Loader2 className="size-4 animate-spin" />
-                      ) : (
-                        'Auto'
-                      )}
-                    </Button>
-                  </div>
-                </Field>
-
-                {error ? (
-                  <p className="text-sm text-destructive">{error}</p>
-                ) : null}
-              </FieldGroup>
-
-              <DialogFooter className="mt-4">
-                <Button
-                  variant="destructive"
-                  onClick={() => setDeleteDialogOpen(true)}
-                >
-                  {t('project.delete')}
-                </Button>
-                <Button variant="outline" onClick={() => onOpenChange(false)}>
-                  {t('common.cancel')}
-                </Button>
-                <Button
-                  onClick={handleSave}
-                  disabled={
-                    updateProject.isPending || !name.trim() || !hasChanges
-                  }
-                >
-                  {updateProject.isPending
-                    ? t('project.saving')
-                    : t('project.saveChanges')}
-                </Button>
-              </DialogFooter>
-            </TabsContent>
-
-            <TabsContent value="prompt">
-              <FieldGroup>
-                <Field>
-                  <Label>{t('project.systemPrompt')}</Label>
-                  <Textarea
-                    value={systemPrompt}
-                    onChange={(e) => setSystemPrompt(e.target.value)}
-                    placeholder={t('project.systemPromptPlaceholder')}
-                    rows={8}
-                    className="w-full resize-y font-mono text-xs"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    {t('project.systemPromptHint')}
-                  </p>
-                </Field>
-              </FieldGroup>
-
-              <DialogFooter className="mt-4">
-                <Button variant="outline" onClick={() => onOpenChange(false)}>
-                  {t('common.cancel')}
-                </Button>
-                <Button
-                  onClick={handleSave}
-                  disabled={
-                    updateProject.isPending || !name.trim() || !hasChanges
-                  }
-                >
-                  {updateProject.isPending
-                    ? t('project.saving')
-                    : t('project.saveChanges')}
-                </Button>
-              </DialogFooter>
-            </TabsContent>
-
-            <TabsContent value="envvars">
-              <FieldGroup>
-                <Field>
-                  <Label>{t('project.envVars')}</Label>
-                  <p className="text-xs text-muted-foreground mb-2">
-                    {t('project.envVarsHint')}
-                  </p>
-                  <Textarea
-                    value={envVarsText}
-                    onChange={(e) => setEnvVarsText(e.target.value)}
-                    placeholder={t('project.envVarsPlaceholder')}
-                    rows={8}
-                    className="w-full resize-y font-mono text-xs"
-                  />
-                </Field>
-              </FieldGroup>
-
-              <DialogFooter className="mt-4">
-                <Button variant="outline" onClick={() => onOpenChange(false)}>
-                  {t('common.cancel')}
-                </Button>
-                <Button
-                  onClick={handleSave}
-                  disabled={
-                    updateProject.isPending || !name.trim() || !hasChanges
-                  }
-                >
-                  {updateProject.isPending
-                    ? t('project.saving')
-                    : t('project.saveChanges')}
-                </Button>
-              </DialogFooter>
-            </TabsContent>
-
-            <TabsContent value="worktrees">
-              <WorktreeTab project={project} />
-            </TabsContent>
-          </Tabs>
-        </DialogContent>
-      </Dialog>
+          ) : null
+        }
+      >
+        {(active) => (
+          <>
+            {active === 'general' && (
+              <GeneralSection
+                name={name}
+                setName={setName}
+                description={description}
+                setDescription={setDescription}
+                directory={directory}
+                setDirectory={setDirectory}
+                repositoryUrl={repositoryUrl}
+                setRepositoryUrl={setRepositoryUrl}
+                dirPickerOpen={dirPickerOpen}
+                setDirPickerOpen={setDirPickerOpen}
+                detectingRemote={detectingRemote}
+                setDetectingRemote={setDetectingRemote}
+                error={error}
+              />
+            )}
+            {active === 'prompt' && (
+              <PromptSection
+                systemPrompt={systemPrompt}
+                setSystemPrompt={setSystemPrompt}
+              />
+            )}
+            {active === 'envvars' && (
+              <EnvVarsSection
+                envVarsText={envVarsText}
+                setEnvVarsText={setEnvVarsText}
+              />
+            )}
+            {active === 'worktrees' && <WorktreeSection project={project} />}
+          </>
+        )}
+      </SettingsLayout>
 
       <DeleteProjectDialog
         open={deleteDialogOpen}
@@ -506,5 +380,188 @@ export function ProjectSettingsDialog({
         }}
       />
     </>
+  )
+}
+
+function GeneralSection({
+  name,
+  setName,
+  description,
+  setDescription,
+  directory,
+  setDirectory,
+  repositoryUrl,
+  setRepositoryUrl,
+  dirPickerOpen,
+  setDirPickerOpen,
+  detectingRemote,
+  setDetectingRemote,
+  error,
+}: {
+  name: string
+  setName: (v: string) => void
+  description: string
+  setDescription: (v: string) => void
+  directory: string
+  setDirectory: (v: string) => void
+  repositoryUrl: string
+  setRepositoryUrl: (v: string) => void
+  dirPickerOpen: boolean
+  setDirPickerOpen: (v: boolean) => void
+  detectingRemote: boolean
+  setDetectingRemote: (v: boolean) => void
+  error: string
+}) {
+  const { t } = useTranslation()
+
+  return (
+    <FieldGroup>
+      <Field>
+        <Label>
+          {t('project.name')} <span className="text-destructive">*</span>
+        </Label>
+        <Input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder={t('project.namePlaceholder')}
+          autoFocus
+          className="w-full"
+        />
+      </Field>
+
+      <Field>
+        <Label>{t('project.description')}</Label>
+        <Textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder={t('project.descriptionPlaceholder')}
+          rows={3}
+          className="w-full resize-none"
+        />
+      </Field>
+
+      <Field>
+        <Label>{t('project.directory')}</Label>
+        <div className="flex gap-1.5">
+          <Input
+            type="text"
+            value={directory}
+            onChange={(e) => setDirectory(e.target.value)}
+            placeholder={t('project.directoryPlaceholder')}
+            className="w-full"
+          />
+          <Button
+            onClick={() => setDirPickerOpen(true)}
+            variant="outline"
+            size="icon"
+            title={t('project.browseDirectories')}
+          >
+            <FolderOpen className="size-4 text-muted-foreground" />
+          </Button>
+        </div>
+        <DirectoryPicker
+          open={dirPickerOpen}
+          onOpenChange={setDirPickerOpen}
+          initialPath={directory || undefined}
+          onSelect={setDirectory}
+        />
+      </Field>
+
+      <Field className="space-y-1.5">
+        <Label>{t('project.repositoryUrl')}</Label>
+        <div className="flex gap-1.5">
+          <Input
+            type="text"
+            value={repositoryUrl}
+            onChange={(e) => setRepositoryUrl(e.target.value)}
+            placeholder={t('project.repositoryUrlPlaceholder')}
+            className="w-full"
+          />
+          <Button
+            onClick={async () => {
+              const dir = directory.trim()
+              if (!dir) return
+              setDetectingRemote(true)
+              try {
+                const result = await kanbanApi.detectGitRemote(dir)
+                setRepositoryUrl(result.url)
+              } catch {
+                // silently ignore — directory may not be a git repo
+              } finally {
+                setDetectingRemote(false)
+              }
+            }}
+            variant="outline"
+            type="button"
+            disabled={!directory.trim() || detectingRemote}
+            title={t('project.detectGitRemote')}
+            className="shrink-0"
+          >
+            {detectingRemote ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              'Auto'
+            )}
+          </Button>
+        </div>
+      </Field>
+
+      {error ? <p className="text-sm text-destructive">{error}</p> : null}
+    </FieldGroup>
+  )
+}
+
+function PromptSection({
+  systemPrompt,
+  setSystemPrompt,
+}: {
+  systemPrompt: string
+  setSystemPrompt: (v: string) => void
+}) {
+  const { t } = useTranslation()
+
+  return (
+    <FieldGroup className="h-full">
+      <Field className="flex-1">
+        <Label>{t('project.systemPrompt')}</Label>
+        <Textarea
+          value={systemPrompt}
+          onChange={(e) => setSystemPrompt(e.target.value)}
+          placeholder={t('project.systemPromptPlaceholder')}
+          className="w-full flex-1 resize-none font-mono text-xs"
+        />
+        <p className="text-xs text-muted-foreground">
+          {t('project.systemPromptHint')}
+        </p>
+      </Field>
+    </FieldGroup>
+  )
+}
+
+function EnvVarsSection({
+  envVarsText,
+  setEnvVarsText,
+}: {
+  envVarsText: string
+  setEnvVarsText: (v: string) => void
+}) {
+  const { t } = useTranslation()
+
+  return (
+    <FieldGroup className="h-full">
+      <Field className="flex-1">
+        <Label>{t('project.envVars')}</Label>
+        <p className="text-xs text-muted-foreground mb-2">
+          {t('project.envVarsHint')}
+        </p>
+        <Textarea
+          value={envVarsText}
+          onChange={(e) => setEnvVarsText(e.target.value)}
+          placeholder={t('project.envVarsPlaceholder')}
+          className="w-full flex-1 resize-none font-mono text-xs"
+        />
+      </Field>
+    </FieldGroup>
   )
 }

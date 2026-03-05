@@ -1,12 +1,15 @@
 import {
   ArrowDownToLine,
+  Box,
   Check,
   ChevronDown,
   CircleAlert,
   CircleCheck,
   FolderOpen,
+  Info,
   Loader2,
   RefreshCw,
+  Settings,
 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -14,12 +17,6 @@ import { DirectoryPicker } from '@/components/DirectoryPicker'
 import { EngineIcon } from '@/components/EngineIcons'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
 import { Field } from '@/components/ui/field'
 import { Label } from '@/components/ui/label'
 import {
@@ -29,8 +26,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import type { SettingsNavItem } from '@/components/ui/settings-layout'
+import { SettingsLayout } from '@/components/ui/settings-layout'
 import { Switch } from '@/components/ui/switch'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   useCheckForUpdates,
   useDownloadStatus,
@@ -73,8 +71,138 @@ export function AppSettingsDialog({
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
+  const { t } = useTranslation()
+
+  const navItems: SettingsNavItem[] = useMemo(
+    () => [
+      { id: 'general', label: t('settings.tabGeneral'), icon: Settings },
+      { id: 'models', label: t('settings.tabModels'), icon: Box },
+      { id: 'about', label: t('settings.tabAbout'), icon: Info },
+    ],
+    [t],
+  )
+
+  return (
+    <SettingsLayout
+      open={open}
+      onOpenChange={onOpenChange}
+      title={t('settings.title')}
+      items={navItems}
+      defaultItem="general"
+    >
+      {(active) => (
+        <>
+          {active === 'general' && <GeneralSection open={open} />}
+          {active === 'models' && <ModelsSection open={open} />}
+          {active === 'about' && <AboutSection open={open} />}
+        </>
+      )}
+    </SettingsLayout>
+  )
+}
+
+function GeneralSection({ open }: { open: boolean }) {
   const { t, i18n } = useTranslation()
   const { theme, setTheme } = useTheme()
+  const { data: wsData } = useWorkspacePath(open)
+  const updateWsPath = useUpdateWorkspacePath()
+  const [dirPickerOpen, setDirPickerOpen] = useState(false)
+  const { data: worktreeCleanupData } = useWorktreeAutoCleanup(open)
+  const setWorktreeAutoCleanup = useSetWorktreeAutoCleanup()
+
+  const handleSelectWorkspace = (path: string) => {
+    updateWsPath.mutate(path)
+  }
+
+  return (
+    <div className="space-y-4">
+      <Field>
+        <Label>{t('settings.workspacePath')}</Label>
+        <div className="mt-1.5 flex items-center gap-1.5">
+          <div className="flex-1 rounded-md border bg-muted/50 px-2 py-1.5 text-sm font-mono text-muted-foreground truncate">
+            {wsData?.path ?? '/'}
+          </div>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setDirPickerOpen(true)}
+          >
+            <FolderOpen className="size-4 text-muted-foreground" />
+          </Button>
+        </div>
+        <p className="text-[11px] text-muted-foreground">
+          {t('settings.workspacePathHint')}
+        </p>
+        <DirectoryPicker
+          open={dirPickerOpen}
+          onOpenChange={setDirPickerOpen}
+          initialPath={wsData?.path ?? '/'}
+          onSelect={handleSelectWorkspace}
+        />
+      </Field>
+
+      <div className="grid grid-cols-2 gap-4">
+        <Field>
+          <Label>{t('settings.language')}</Label>
+          <Select
+            value={i18n.language}
+            onValueChange={(value) => i18n.changeLanguage(value ?? undefined)}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {LANGUAGES.map((lang) => (
+                <SelectItem key={lang.id} value={lang.id}>
+                  {lang.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
+        <Field>
+          <Label>{t('settings.appearance')}</Label>
+          <Select
+            value={theme}
+            onValueChange={(value) =>
+              setTheme(value as 'system' | 'light' | 'dark')
+            }
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {THEME_OPTIONS.map((option) => (
+                <SelectItem key={option.id} value={option.id}>
+                  {t(option.labelKey)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
+      </div>
+
+      <div className="flex items-center justify-between">
+        <div>
+          <span className="text-sm font-medium">
+            {t('settings.worktreeAutoCleanup')}
+          </span>
+          <p className="text-[11px] text-muted-foreground">
+            {t('settings.worktreeAutoCleanupHint')}
+          </p>
+        </div>
+        <Switch
+          size="sm"
+          checked={worktreeCleanupData?.enabled ?? false}
+          onCheckedChange={(checked) => setWorktreeAutoCleanup.mutate(checked)}
+        />
+      </div>
+    </div>
+  )
+}
+
+function ModelsSection({ open }: { open: boolean }) {
+  const { t } = useTranslation()
   const { data: discovery, isLoading: enginesLoading } =
     useEngineAvailability(open)
   const engines = discovery?.engines
@@ -94,237 +222,99 @@ export function AppSettingsDialog({
   const showNoAvailableEngines =
     !enginesLoading && availableEngines.length === 0
 
-  const { data: wsData } = useWorkspacePath(open)
-  const updateWsPath = useUpdateWorkspacePath()
-  const [dirPickerOpen, setDirPickerOpen] = useState(false)
-
-  const { data: worktreeCleanupData } = useWorktreeAutoCleanup(open)
-  const setWorktreeAutoCleanup = useSetWorktreeAutoCleanup()
-
-  const handleSelectWorkspace = (path: string) => {
-    updateWsPath.mutate(path)
-  }
-
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent aria-describedby={undefined} className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{t('settings.title')}</DialogTitle>
-        </DialogHeader>
-
-        <Tabs defaultValue="general">
-          <TabsList>
-            <TabsTrigger value="general">
-              {t('settings.tabGeneral')}
-            </TabsTrigger>
-            <TabsTrigger value="models">{t('settings.tabModels')}</TabsTrigger>
-            <TabsTrigger value="about">{t('settings.tabAbout')}</TabsTrigger>
-          </TabsList>
-
-          {/* General tab */}
-          <TabsContent value="general">
-            <div className="max-h-[60dvh] overflow-y-auto overflow-x-hidden space-y-4 pt-2">
-              <Field>
-                <Label>{t('settings.workspacePath')}</Label>
-                <div className="mt-1.5 flex items-center gap-1.5">
-                  <div className="flex-1 rounded-md border bg-muted/50 px-2 py-1.5 text-sm font-mono text-muted-foreground truncate">
-                    {wsData?.path ?? '/'}
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => setDirPickerOpen(true)}
-                  >
-                    <FolderOpen className="size-4 text-muted-foreground" />
-                  </Button>
-                </div>
-                <p className="text-[11px] text-muted-foreground">
-                  {t('settings.workspacePathHint')}
-                </p>
-                <DirectoryPicker
-                  open={dirPickerOpen}
-                  onOpenChange={setDirPickerOpen}
-                  initialPath={wsData?.path ?? '/'}
-                  onSelect={handleSelectWorkspace}
-                />
-              </Field>
-
-              {/* Language & Theme */}
-              <div className="grid grid-cols-2 gap-4">
-                <Field>
-                  <Label>{t('settings.language')}</Label>
-                  <Select
-                    value={i18n.language}
-                    onValueChange={(value) =>
-                      i18n.changeLanguage(value ?? undefined)
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {LANGUAGES.map((lang) => (
-                        <SelectItem key={lang.id} value={lang.id}>
-                          {lang.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </Field>
-                <Field>
-                  <Label>{t('settings.appearance')}</Label>
-                  <Select
-                    value={theme}
-                    onValueChange={(value) =>
-                      setTheme(value as 'system' | 'light' | 'dark')
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {THEME_OPTIONS.map((option) => (
-                        <SelectItem key={option.id} value={option.id}>
-                          {t(option.labelKey)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </Field>
-              </div>
-
-              {/* Worktree Auto-Cleanup */}
-              <div className="flex items-center justify-between">
-                <div>
-                  <span className="text-sm font-medium">
-                    {t('settings.worktreeAutoCleanup')}
-                  </span>
-                  <p className="text-[11px] text-muted-foreground">
-                    {t('settings.worktreeAutoCleanupHint')}
-                  </p>
-                </div>
-                <Switch
-                  size="sm"
-                  checked={worktreeCleanupData?.enabled ?? false}
-                  onCheckedChange={(checked) =>
-                    setWorktreeAutoCleanup.mutate(checked)
-                  }
-                />
-              </div>
-            </div>
-          </TabsContent>
-
-          {/* Models tab */}
-          <TabsContent value="models">
-            <div className="max-h-[60dvh] overflow-y-auto overflow-x-hidden space-y-4 pt-2">
-              {/* Default Engine */}
-              {!enginesLoading && availableEngines.length > 0 ? (
-                <Field>
-                  <Label>{t('settings.defaultEngine')}</Label>
-                  <div className="mt-1.5 flex flex-wrap gap-1.5">
-                    {availableEngines.map((eng) => {
-                      const profile = profiles?.find(
-                        (p) => p.engineType === eng.engineType,
-                      )
-                      const isSelected =
-                        eng.engineType === engineSettings?.defaultEngine ||
-                        (!engineSettings?.defaultEngine &&
-                          eng.engineType === availableEngines[0]?.engineType)
-                      return (
-                        <button
-                          key={eng.engineType}
-                          type="button"
-                          onClick={() =>
-                            updateDefaultEngine.mutate(eng.engineType)
-                          }
-                          className={cn(
-                            'inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors',
-                            isSelected
-                              ? 'border-primary bg-primary/10 text-primary'
-                              : 'text-muted-foreground hover:bg-accent/50',
-                          )}
-                        >
-                          <EngineIcon
-                            engineType={eng.engineType}
-                            className="h-3.5 w-3.5 shrink-0"
-                          />
-                          {profile?.name ?? eng.engineType}
-                        </button>
-                      )
-                    })}
-                  </div>
-                  <p className="text-[11px] text-muted-foreground">
-                    {t('settings.defaultEngineHint')}
-                  </p>
-                </Field>
-              ) : null}
-
-              {/* Engines section */}
-              <div className="flex items-center justify-between">
-                <Label>{t('settings.engines')}</Label>
-                <Button
-                  onClick={() => probe.mutate()}
-                  variant="ghost"
-                  size="sm"
-                  disabled={probe.isPending}
+    <div className="space-y-4">
+      {!enginesLoading && availableEngines.length > 0 ? (
+        <Field>
+          <Label>{t('settings.defaultEngine')}</Label>
+          <div className="mt-1.5 flex flex-wrap gap-1.5">
+            {availableEngines.map((eng) => {
+              const profile = profiles?.find(
+                (p) => p.engineType === eng.engineType,
+              )
+              const isSelected =
+                eng.engineType === engineSettings?.defaultEngine ||
+                (!engineSettings?.defaultEngine &&
+                  eng.engineType === availableEngines[0]?.engineType)
+              return (
+                <button
+                  key={eng.engineType}
+                  type="button"
+                  onClick={() => updateDefaultEngine.mutate(eng.engineType)}
+                  className={cn(
+                    'inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors',
+                    isSelected
+                      ? 'border-primary bg-primary/10 text-primary'
+                      : 'text-muted-foreground hover:bg-accent/50',
+                  )}
                 >
-                  <RefreshCw
-                    className={cn('size-3', probe.isPending && 'animate-spin')}
+                  <EngineIcon
+                    engineType={eng.engineType}
+                    className="h-3.5 w-3.5 shrink-0"
                   />
-                  {probe.isPending
-                    ? t('settings.probing')
-                    : t('settings.probe')}
-                </Button>
-              </div>
+                  {profile?.name ?? eng.engineType}
+                </button>
+              )
+            })}
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            {t('settings.defaultEngineHint')}
+          </p>
+        </Field>
+      ) : null}
 
-              <div className="flex flex-col gap-2">
-                {enginesLoading ? (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    {t('settings.detecting')}
-                  </div>
-                ) : showNoAvailableEngines ? (
-                  <div className="text-sm text-muted-foreground py-2">
-                    {t('settings.noAvailableEngines')}
-                  </div>
-                ) : (
-                  availableEngines.map((engine) => {
-                    const profile = profiles?.find(
-                      (p) => p.engineType === engine.engineType,
-                    )
-                    const engineModels = models?.[engine.engineType] ?? []
-                    const savedDefault =
-                      engineSettings?.engines[engine.engineType]?.defaultModel
-                    return (
-                      <EngineCard
-                        key={engine.engineType}
-                        engine={engine}
-                        profile={profile}
-                        models={engineModels}
-                        savedDefault={savedDefault}
-                        onChangeDefault={(modelId) =>
-                          updateModelSetting.mutate({
-                            engineType: engine.engineType,
-                            defaultModel: modelId,
-                          })
-                        }
-                      />
-                    )
+      <div className="flex items-center justify-between">
+        <Label>{t('settings.engines')}</Label>
+        <Button
+          onClick={() => probe.mutate()}
+          variant="ghost"
+          size="sm"
+          disabled={probe.isPending}
+        >
+          <RefreshCw
+            className={cn('size-3', probe.isPending && 'animate-spin')}
+          />
+          {probe.isPending ? t('settings.probing') : t('settings.probe')}
+        </Button>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        {enginesLoading ? (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            {t('settings.detecting')}
+          </div>
+        ) : showNoAvailableEngines ? (
+          <div className="text-sm text-muted-foreground py-2">
+            {t('settings.noAvailableEngines')}
+          </div>
+        ) : (
+          availableEngines.map((engine) => {
+            const profile = profiles?.find(
+              (p) => p.engineType === engine.engineType,
+            )
+            const engineModels = models?.[engine.engineType] ?? []
+            const savedDefault =
+              engineSettings?.engines[engine.engineType]?.defaultModel
+            return (
+              <EngineCard
+                key={engine.engineType}
+                engine={engine}
+                profile={profile}
+                models={engineModels}
+                savedDefault={savedDefault}
+                onChangeDefault={(modelId) =>
+                  updateModelSetting.mutate({
+                    engineType: engine.engineType,
+                    defaultModel: modelId,
                   })
-                )}
-              </div>
-            </div>
-          </TabsContent>
-
-          {/* About tab */}
-          <TabsContent value="about">
-            <div className="max-h-[60dvh] overflow-y-auto overflow-x-hidden pt-2">
-              <AboutSection open={open} />
-            </div>
-          </TabsContent>
-        </Tabs>
-      </DialogContent>
-    </Dialog>
+                }
+              />
+            )
+          })
+        )}
+      </div>
+    </div>
   )
 }
 
@@ -604,7 +594,6 @@ function EngineCard({
 
   return (
     <div className="rounded-lg border overflow-hidden">
-      {/* Header */}
       <button
         type="button"
         onClick={() => hasModels && setExpanded((v) => !v)}
@@ -670,7 +659,6 @@ function EngineCard({
         </div>
       </button>
 
-      {/* Expanded model list */}
       {expanded && hasModels ? (
         <div className="border-t px-3 py-2 flex flex-col gap-1">
           <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-0.5">
