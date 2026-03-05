@@ -74,7 +74,7 @@ describe('withIssueLock deep behavior', () => {
     if (!releaseFirst) {
       throw new Error('failed to capture releaseFirst')
     }
-    releaseFirst()
+    ;(releaseFirst as () => void)()
     await first
     await Promise.all(queued)
     expect(ctx.lockDepth.size).toBe(0)

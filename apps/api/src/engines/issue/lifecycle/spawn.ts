@@ -48,7 +48,7 @@ export async function spawnWithSessionFallback(
     prompt: string
     sessionId: string
     model?: string
-    permissionMode: string
+    permissionMode: PermissionPolicy
     projectId: string
   },
 ): Promise<SpawnedProcess> {
@@ -105,7 +105,7 @@ export async function spawnFresh(
     workingDir: string
     prompt: string
     model?: string
-    permissionMode: string
+    permissionMode: PermissionPolicy
     projectId: string
   },
 ): Promise<SpawnedProcess> {

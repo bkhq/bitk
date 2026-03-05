@@ -155,11 +155,9 @@ apiRoutes.get('/runtime', (c) => {
   // Strip sensitive process info (argv, execPath)
   const info = getRuntimeInfo()
   // Remove execPath from signals to avoid leaking binary path
-  if (info.signals) {
-    const { execPath: _, ...rest } = info.signals as Record<string, unknown>
-    info.signals = rest
-  }
-  return c.json(info)
+  const { signals, ...rest } = info
+  const { execPath: _, ...safeSignals } = signals
+  return c.json({ ...rest, signals: safeSignals })
 })
 
 export default apiRoutes

@@ -94,6 +94,8 @@ export class ClaudeProtocolHandler {
    *  Used by the engine layer to update lastActivityAt during tool execution
    *  (when no normal stdout entries are emitted). */
   onActivity?: () => void
+  /** Called when a Result message is received, signaling turn completion. */
+  onResult?: (data: unknown) => void
 
   constructor(stdin: FileSink) {
     this.stdin = stdin
@@ -113,6 +115,8 @@ export class ClaudeProtocolHandler {
 
     const isControlReq = this.isControlRequest.bind(this)
     const processControlReq = this.processControlRequest.bind(this)
+    const isResultMsg = this.isResultMessage.bind(this)
+    const onResultMsg = this.onResult
 
     return new ReadableStream<Uint8Array>({
       async pull(controller) {
@@ -139,6 +143,15 @@ export class ClaudeProtocolHandler {
             if (isControlReq(line)) {
               processControlReq(line)
               continue
+            }
+
+            // Detect Result message — signals turn completion
+            if (isResultMsg(line)) {
+              onResultMsg?.(JSON.parse(line))
+              // Pass the result through so downstream can see it, then close
+              controller.enqueue(encoder.encode(`${line}\n`))
+              controller.close()
+              return
             }
 
             // Pass through to downstream
@@ -181,6 +194,15 @@ export class ClaudeProtocolHandler {
     }
   }
 
+  private isResultMessage(line: string): boolean {
+    if (!line.includes('"type":"result"')) return false
+    try {
+      return JSON.parse(line)?.type === 'result'
+    } catch {
+      return false
+    }
+  }
+
   private processControlRequest(line: string): void {
     try {
       const data = JSON.parse(line)
@@ -215,19 +237,49 @@ export class ClaudeProtocolHandler {
   ): void {
     switch (request.subtype) {
       case 'can_use_tool':
-        this.sendResponse(requestId, {
-          behavior: 'allow',
-          updatedInput: request.input ?? {},
-        })
+        if (request.tool_name === 'ExitPlanMode') {
+          // Auto-approve ExitPlanMode and switch permission mode back to
+          // bypassPermissions so Claude can execute the plan freely.
+          this.sendResponse(requestId, {
+            behavior: 'allow',
+            updatedInput: request.input ?? {},
+            updatedPermissions: [
+              {
+                type: 'setMode',
+                mode: 'bypassPermissions',
+                destination: 'session',
+              },
+            ],
+          })
+        } else {
+          this.sendResponse(requestId, {
+            behavior: 'allow',
+            updatedInput: request.input ?? {},
+          })
+        }
         break
 
       case 'hook_callback':
-        this.sendResponse(requestId, {
-          hookSpecificOutput: {
-            hookEventName: 'PreToolUse',
-            permissionDecision: 'allow',
-          },
-        })
+        // For tool_approval callbacks (ExitPlanMode, AskUserQuestion in plan mode),
+        // respond with "ask" to route through can_use_tool where we handle
+        // the permission mode switch. All other hooks are auto-approved.
+        if (request.callback_id === 'tool_approval') {
+          this.sendResponse(requestId, {
+            hookSpecificOutput: {
+              hookEventName: 'PreToolUse',
+              permissionDecision: 'ask',
+              permissionDecisionReason:
+                'Forwarding to can_use_tool for permission handling',
+            },
+          })
+        } else {
+          this.sendResponse(requestId, {
+            hookSpecificOutput: {
+              hookEventName: 'PreToolUse',
+              permissionDecision: 'allow',
+            },
+          })
+        }
         break
 
       default:
@@ -268,13 +320,15 @@ export class ClaudeProtocolHandler {
    * Send SDK initialize control request.
    * Tells Claude Code we speak the stream-json SDK protocol and support
    * tool_approval (can_use_tool / hook_callback control requests).
+   * Optionally sends hooks configuration for PreToolUse / Stop callbacks.
    */
-  initialize(): void {
+  initialize(hooks?: Record<string, unknown>): void {
     this.writeJson({
       type: 'control_request',
       request_id: ulid(),
       request: {
         subtype: 'initialize',
+        ...(hooks && { hooks }),
       },
     })
   }

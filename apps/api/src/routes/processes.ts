@@ -10,7 +10,7 @@ import { logger } from '@/logger'
 const processes = new Hono()
 
 processes.get('/', async (c) => {
-  const projectId = c.req.param('projectId')
+  const projectId = c.req.param('projectId')!
   const project = await findProject(projectId)
   if (!project) {
     return c.json({ success: false, error: 'Project not found' }, 404)
@@ -76,7 +76,7 @@ processes.get('/', async (c) => {
 
 // POST /api/projects/:projectId/processes/:issueId/terminate
 processes.post('/:issueId/terminate', async (c) => {
-  const projectId = c.req.param('projectId')
+  const projectId = c.req.param('projectId')!
   const project = await findProject(projectId)
   if (!project) {
     return c.json({ success: false, error: 'Project not found' }, 404)

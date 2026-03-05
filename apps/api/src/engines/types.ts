@@ -143,7 +143,7 @@ export interface SpawnedProcess {
   stderr: ReadableStream<Uint8Array>
   cancel: () => void
   protocolHandler?: {
-    interrupt: () => Promise<void>
+    interrupt: () => void | Promise<void>
     close: () => void
     sendUserMessage?: (content: string) => void
     onActivity?: () => void

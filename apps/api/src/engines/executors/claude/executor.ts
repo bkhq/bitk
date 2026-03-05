@@ -10,6 +10,7 @@ import type {
   ExecutionEnv,
   FollowUpOptions,
   NormalizedLogEntry,
+  PermissionPolicy,
   SpawnedProcess,
   SpawnOptions,
 } from '@/engines/types'
@@ -83,8 +84,8 @@ export class ClaudeCodeExecutor implements EngineExecutor {
   ): Promise<SpawnedProcess> {
     const builder = this.createBaseBuilder(options, env)
       .param('--resume', options.sessionId)
-      .param('--replay-user-messages')
 
+    // Truncate conversation history to a specific message and continue from there
     if (options.resetToMessageId) {
       builder.param('--resume-session-at', options.resetToMessageId)
     }
@@ -127,39 +128,20 @@ export class ClaudeCodeExecutor implements EngineExecutor {
 
   async getAvailability(): Promise<EngineAvailability> {
     try {
-      let exitCode = -1
-      let stdout = ''
+      const cmd = CommandBuilder.create(BASE_COMMAND)
+        .param('--version')
+        .env('NPM_CONFIG_LOGLEVEL', 'error')
+        .build()
 
-      if (CLAUDE_BINARY) {
-        const proc = Bun.spawn([CLAUDE_BINARY, '--version'], {
-          stdout: 'pipe',
-          stderr: 'pipe',
-        })
-        exitCode = await proc.exited
-        if (exitCode === 0) {
-          stdout = await new Response(proc.stdout).text()
-        }
-      }
+      const proc = Bun.spawn([cmd.program, ...cmd.args], {
+        stdout: 'pipe',
+        stderr: 'pipe',
+        env: safeEnv(cmd.env),
+      })
 
-      if (exitCode !== 0) {
-        // Fall back to npx
-        const proc = Bun.spawn(
-          ['npx', '-y', '@anthropic-ai/claude-code', '--version'],
-          {
-            stdout: 'pipe',
-            stderr: 'pipe',
-            env: safeEnv({ NPM_CONFIG_LOGLEVEL: 'error' }),
-          },
-        )
-
-        const timer = setTimeout(() => proc.kill(), 10000)
-        exitCode = await proc.exited
-        clearTimeout(timer)
-
-        if (exitCode === 0) {
-          stdout = await new Response(proc.stdout).text()
-        }
-      }
+      const timer = setTimeout(() => proc.kill(), 10000)
+      const exitCode = await proc.exited
+      clearTimeout(timer)
 
       if (exitCode !== 0) {
         return {
@@ -169,9 +151,9 @@ export class ClaudeCodeExecutor implements EngineExecutor {
         }
       }
 
+      const stdout = await new Response(proc.stdout).text()
       const versionMatch = stdout.match(/(\d+\.\d+\.\d[\w.-]*)/)
       const version = versionMatch?.[1]
-      const binaryPath = CLAUDE_BINARY ?? undefined
 
       // Check auth - look for ANTHROPIC_API_KEY or ~/.claude.json
       let authStatus: EngineAvailability['authStatus'] = 'unknown'
@@ -191,7 +173,7 @@ export class ClaudeCodeExecutor implements EngineExecutor {
         engineType: 'claude-code',
         installed: true,
         version,
-        binaryPath,
+        binaryPath: CLAUDE_BINARY ?? undefined,
         authStatus,
       }
     } catch (error) {
@@ -233,6 +215,9 @@ export class ClaudeCodeExecutor implements EngineExecutor {
     options: SpawnOptions,
     env: ExecutionEnv,
   ): CommandBuilder {
+    const permissionMode = options.permissionMode ?? 'auto'
+    const isPlanMode = permissionMode === 'plan'
+
     const builder = CommandBuilder.create(BASE_COMMAND)
       .params(['-p', '--output-format=stream-json', '--verbose', '--no-chrome'])
       .param('--input-format', 'stream-json')
@@ -241,16 +226,27 @@ export class ClaudeCodeExecutor implements EngineExecutor {
       .param('--permission-prompt-tool', 'stdio')
       // Include partial messages for better streaming experience
       .param('--include-partial-messages')
+      // Replay user messages during session resume so the model sees full history
+      .param('--replay-user-messages')
       .env('NPM_CONFIG_LOGLEVEL', 'error')
       .env('IS_SANDBOX', '1')
       .cwd(options.workingDir)
+
+    // Plan mode: start CLI with bypassPermissions so we can switch back to it
+    // after ExitPlanMode. SDK protocol then sets the actual mode to "plan".
+    if (isPlanMode) {
+      builder.param('--permission-mode', 'bypassPermissions')
+    }
 
     if (options.model && options.model !== 'auto') {
       builder.param('--model', options.model)
     }
 
-    // Disable interactive questions — the web UI cannot respond to AskUserQuestion
-    builder.param('--disallowedTools', 'AskUserQuestion')
+    // In plan/supervised mode, AskUserQuestion is handled via hooks;
+    // in auto mode, disable it since the web UI cannot respond.
+    if (!isPlanMode) {
+      builder.param('--disallowedTools', 'AskUserQuestion')
+    }
 
     if (options.env) {
       builder.envs(options.env)
@@ -300,8 +296,9 @@ export class ClaudeCodeExecutor implements EngineExecutor {
     const handler = new ClaudeProtocolHandler(proc.stdin)
 
     // SDK init handshake: initialize → set_permission_mode → user message
-    handler.initialize()
-    handler.setPermissionMode(options.permissionMode ?? 'auto')
+    const permissionMode = options.permissionMode ?? 'auto'
+    handler.initialize(buildHooks(permissionMode))
+    handler.setPermissionMode(permissionMode)
     handler.sendUserMessage(options.prompt)
 
     logger.debug(
@@ -328,5 +325,49 @@ export class ClaudeCodeExecutor implements EngineExecutor {
       protocolHandler: handler,
       spawnCommand: [cmd.program, ...cmd.args].join(' '),
     }
+  }
+}
+
+// ---------- Helpers ----------
+
+const AUTO_APPROVE_CALLBACK_ID = 'AUTO_APPROVE_CALLBACK_ID'
+
+/**
+ * Build hooks configuration based on permission mode.
+ *
+ * - **plan**: ExitPlanMode/AskUserQuestion → `tool_approval` callback (routed
+ *   to can_use_tool for mode-switch handling); everything else → auto-approve.
+ * - **supervised**: Non-read tools → `tool_approval`; read tools auto-approved.
+ * - **auto**: AskUserQuestion → `tool_approval` (denied); no other hooks needed.
+ */
+function buildHooks(
+  policy: PermissionPolicy,
+): Record<string, unknown> | undefined {
+  switch (policy) {
+    case 'plan':
+      return {
+        PreToolUse: [
+          {
+            matcher: '^(ExitPlanMode|AskUserQuestion)$',
+            hookCallbackIds: ['tool_approval'],
+          },
+          {
+            matcher: '^(?!(ExitPlanMode|AskUserQuestion)$).*',
+            hookCallbackIds: [AUTO_APPROVE_CALLBACK_ID],
+          },
+        ],
+      }
+    case 'supervised':
+      return {
+        PreToolUse: [
+          {
+            matcher:
+              '^(?!(Glob|Grep|NotebookRead|Read|Task|TodoWrite)$).*',
+            hookCallbackIds: ['tool_approval'],
+          },
+        ],
+      }
+    default:
+      return undefined
   }
 }
