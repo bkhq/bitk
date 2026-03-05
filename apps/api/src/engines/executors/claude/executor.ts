@@ -84,33 +84,15 @@ export class ClaudeCodeExecutor implements EngineExecutor {
     logger.debug({ pid }, 'claude_cancel_requested')
 
     // Send graceful interrupt via protocol handler.
-    // After receiving the interrupt, Claude will finish its current operation
-    // and emit a Result message. The protocol handler's wrapStdout detects
-    // the Result and closes the stream, which causes the process to exit.
+    // Claude will stop the current operation and emit a Result message.
+    // The process stays alive and can accept new user messages.
     if (spawnedProcess.protocolHandler) {
       spawnedProcess.protocolHandler.interrupt()
     } else {
       spawnedProcess.cancel()
     }
 
-    // Wait for the process to exit naturally after emitting the Result message.
-    // Safety net: SIGKILL after 30s in case the process hangs and never responds.
-    const safetyTimeout = setTimeout(() => {
-      logger.warn({ pid }, 'claude_cancel_safety_timeout_reached')
-      try {
-        spawnedProcess.subprocess.kill(9)
-      } catch {
-        /* already dead */
-      }
-    }, 30_000)
-
-    try {
-      await spawnedProcess.subprocess.exited
-    } finally {
-      clearTimeout(safetyTimeout)
-      spawnedProcess.protocolHandler?.close()
-      logger.debug({ pid }, 'claude_cancel_completed')
-    }
+    logger.debug({ pid }, 'claude_cancel_interrupt_sent')
   }
 
   async getAvailability(): Promise<EngineAvailability> {

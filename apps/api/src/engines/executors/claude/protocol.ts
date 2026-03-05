@@ -145,12 +145,14 @@ export class ClaudeProtocolHandler {
               continue
             }
 
-            // Detect Result message — signals turn completion
+            // Detect Result message — signals turn completion.
+            // The process stays alive between turns (stream-json mode),
+            // so we pass the Result through but do NOT close the stream.
+            // The downstream consumeStream detects turnCompleted entries
+            // and handles settlement without requiring stream closure.
             if (isResultMsg(line)) {
               onResultMsg?.(JSON.parse(line))
-              // Pass the result through so downstream can see it, then close
               controller.enqueue(encoder.encode(`${line}\n`))
-              controller.close()
               return
             }
 
