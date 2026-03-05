@@ -80,35 +80,36 @@ export class ClaudeCodeExecutor implements EngineExecutor {
   }
 
   async cancel(spawnedProcess: SpawnedProcess): Promise<void> {
-    logger.debug(
-      { pid: (spawnedProcess.subprocess as { pid?: number }).pid },
-      'claude_cancel_requested',
-    )
-    // Send graceful interrupt via protocol handler (fire-and-forget write to stdin)
+    const pid = (spawnedProcess.subprocess as { pid?: number }).pid
+    logger.debug({ pid }, 'claude_cancel_requested')
+
+    // Send graceful interrupt via protocol handler.
+    // After receiving the interrupt, Claude will finish its current operation
+    // and emit a Result message. The protocol handler's wrapStdout detects
+    // the Result and closes the stream, which causes the process to exit.
     if (spawnedProcess.protocolHandler) {
       spawnedProcess.protocolHandler.interrupt()
     } else {
       spawnedProcess.cancel()
     }
 
-    // Wait for process to exit, with 5s timeout before SIGKILL
-    const timeout = setTimeout(() => {
+    // Wait for the process to exit naturally after emitting the Result message.
+    // Safety net: SIGKILL after 30s in case the process hangs and never responds.
+    const safetyTimeout = setTimeout(() => {
+      logger.warn({ pid }, 'claude_cancel_safety_timeout_reached')
       try {
         spawnedProcess.subprocess.kill(9)
       } catch {
         /* already dead */
       }
-    }, 5000)
+    }, 30_000)
 
     try {
       await spawnedProcess.subprocess.exited
     } finally {
-      clearTimeout(timeout)
+      clearTimeout(safetyTimeout)
       spawnedProcess.protocolHandler?.close()
-      logger.debug(
-        { pid: (spawnedProcess.subprocess as { pid?: number }).pid },
-        'claude_cancel_completed',
-      )
+      logger.debug({ pid }, 'claude_cancel_completed')
     }
   }
 

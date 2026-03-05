@@ -40,7 +40,9 @@ export interface ProcessManagerOptions {
   autoCleanupDelayMs?: number
   /** GC interval (ms). 0 = disabled. Default: 600_000 */
   gcIntervalMs?: number
-  /** Timeout (ms) before SIGKILL after interrupt. Default: 5_000 */
+  /** Timeout (ms) before SIGKILL after interrupt. Default: 5_000.
+   *  For engines that emit a Result message after interrupt (e.g. Claude Code),
+   *  callers should set a higher value (e.g. 30_000) to allow graceful exit. */
   killTimeoutMs?: number
   logger?: ProcessManagerLogger
 }

@@ -43,7 +43,7 @@ export class IssueEngine {
       maxConcurrent: MAX_CONCURRENT_EXECUTIONS,
       autoCleanupDelayMs: AUTO_CLEANUP_DELAY_MS,
       gcIntervalMs: 0, // IssueEngine keeps its own domain GC
-      killTimeoutMs: 5000,
+      killTimeoutMs: 30_000,
       logger,
     })
 
