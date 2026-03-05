@@ -1,7 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@plugin "@tailwindcss/typography";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -318,7 +317,7 @@
 }
 
 /* ─── Shiki dual-theme (light/dark via CSS vars) ─── */
-/* !important needed so .prose pre / dark:prose-invert cannot override */
+/* !important needed so github-markdown-css cannot override */
 .shiki {
   color: var(--shiki-light) !important;
   background-color: var(--shiki-light-bg) !important;
@@ -387,12 +386,12 @@ diffs-container {
 }
 
 /* ─── GFM task list checkboxes ─── */
-.prose ul:has(> li > input[type="checkbox"]) {
+.markdown-body ul:has(> li > input[type="checkbox"]) {
   list-style: none;
   padding-left: 0;
 }
 
-.prose li > input[type="checkbox"] {
+.markdown-body li > input[type="checkbox"] {
   margin-right: 0.5rem;
   accent-color: var(--primary);
 }

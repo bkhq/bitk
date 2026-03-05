@@ -1,6 +1,8 @@
 import { useCallback } from 'react'
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import 'github-markdown-css/github-markdown.css'
+import { useTheme } from '@/hooks/use-theme'
 import { ShikiCodeBlock } from './ShikiCodeBlock'
 
 interface MarkdownRendererProps {
@@ -8,6 +10,8 @@ interface MarkdownRendererProps {
 }
 
 export function MarkdownRenderer({ content }: MarkdownRendererProps) {
+  const { resolved } = useTheme()
+
   const renderPre = useCallback(
     ({ children }: React.HTMLAttributes<HTMLPreElement>) => <>{children}</>,
     [],
@@ -41,7 +45,10 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
   )
 
   return (
-    <div className="prose prose-sm dark:prose-invert max-w-none px-6 py-5 prose-headings:font-semibold prose-headings:tracking-tight prose-a:text-primary prose-a:underline-offset-2 prose-pre:p-0 prose-pre:m-0 prose-img:rounded-md prose-table:text-xs prose-th:text-left prose-th:font-medium prose-td:align-top prose-code:text-xs prose-code:before:content-none prose-code:after:content-none">
+    <div
+      className="markdown-body !bg-transparent px-6 py-5"
+      data-theme={resolved}
+    >
       <Markdown
         remarkPlugins={[remarkGfm]}
         components={{

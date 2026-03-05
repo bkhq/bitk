@@ -1,6 +1,8 @@
 import type { Components } from 'react-markdown'
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import 'github-markdown-css/github-markdown.css'
+import { useTheme } from '@/hooks/use-theme'
 import { ShikiCodeBlock } from '../files/ShikiCodeBlock'
 
 const HEADING_PREFIX: Record<string, string> = {
@@ -73,9 +75,12 @@ export function MarkdownContent({
   content: string
   className?: string
 }) {
+  const { resolved } = useTheme()
+
   return (
     <div
-      className={`prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-pre:p-0 prose-pre:m-0 prose-code:text-xs prose-code:before:content-none prose-code:after:content-none prose-table:text-xs prose-th:text-left prose-th:font-medium prose-td:align-top ${containerClassName}`}
+      className={`markdown-body !bg-transparent !font-[inherit] !text-[inherit] ${containerClassName}`}
+      data-theme={resolved}
     >
       <Markdown remarkPlugins={[remarkGfm]} components={components}>
         {content}
