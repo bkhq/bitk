@@ -171,7 +171,9 @@ export function gcSweep(ctx: EngineContext): void {
         // Fire-and-forget: Tier 2 will force-kill if no response after grace period.
         // Fire-and-forget: use Promise.resolve() to normalize void | Promise<void>
         // since Codex's implementation is genuinely async while Claude's is sync.
-        void Promise.resolve(managed.process.protocolHandler?.interrupt()).catch((err: unknown) => {
+        void Promise.resolve(
+          managed.process.protocolHandler?.interrupt(),
+        ).catch((err: unknown) => {
           logger.warn(
             { issueId: managed.issueId, executionId: managed.executionId, err },
             'stall_probe_interrupt_failed',

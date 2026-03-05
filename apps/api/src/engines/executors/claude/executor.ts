@@ -66,8 +66,10 @@ export class ClaudeCodeExecutor implements EngineExecutor {
     options: FollowUpOptions,
     env: ExecutionEnv,
   ): Promise<SpawnedProcess> {
-    const builder = this.createBaseBuilder(options, env)
-      .param('--resume', options.sessionId)
+    const builder = this.createBaseBuilder(options, env).param(
+      '--resume',
+      options.sessionId,
+    )
 
     // Truncate conversation history to a specific message and continue from there
     if (options.resetToMessageId) {
@@ -445,8 +447,7 @@ function buildHooks(
       return {
         PreToolUse: [
           {
-            matcher:
-              '^(?!(Glob|Grep|NotebookRead|Read|Task|TodoWrite)$).*',
+            matcher: '^(?!(Glob|Grep|NotebookRead|Read|Task|TodoWrite)$).*',
             hookCallbackIds: ['tool_approval'],
           },
         ],

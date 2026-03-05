@@ -3,7 +3,6 @@ import type {
   CommandCategory,
   NormalizedLogEntry,
   ToolAction,
-  ToolDetail,
 } from '@/engines/types'
 import type { WriteFilterRule } from '@/engines/write-filter'
 
@@ -78,8 +77,13 @@ interface ClaudeToolResult {
 }
 
 interface ClaudeStreamEvent {
-  type: 'content_block_delta' | 'content_block_start' | 'content_block_stop'
-    | 'message_start' | 'message_delta' | 'message_stop'
+  type:
+    | 'content_block_delta'
+    | 'content_block_start'
+    | 'content_block_stop'
+    | 'message_start'
+    | 'message_delta'
+    | 'message_stop'
   index?: number
   delta?: {
     type?: string
@@ -139,8 +143,18 @@ interface ClaudeMessage {
 type ClaudeContentItem =
   | { type: 'text'; text: string }
   | { type: 'thinking'; thinking: string }
-  | { type: 'tool_use'; id?: string; name?: string; input?: Record<string, unknown> }
-  | { type: 'tool_result'; tool_use_id?: string; content?: string | unknown[]; is_error?: boolean }
+  | {
+      type: 'tool_use'
+      id?: string
+      name?: string
+      input?: Record<string, unknown>
+    }
+  | {
+      type: 'tool_result'
+      tool_use_id?: string
+      content?: string | unknown[]
+      is_error?: boolean
+    }
 
 interface ClaudeUsage {
   input_tokens?: number
@@ -537,9 +551,7 @@ export class ClaudeLogNormalizer {
 
   // ---------- Streaming events ----------
 
-  private parseStreamEvent(
-    data: ClaudeStreamEvent,
-  ): NormalizedLogEntry | null {
+  private parseStreamEvent(data: ClaudeStreamEvent): NormalizedLogEntry | null {
     switch (data.type) {
       case 'content_block_delta':
         return this.parseContentBlockDelta(data)
@@ -613,7 +625,9 @@ export class ClaudeLogNormalizer {
 
   // ---------- Result ----------
 
-  private parseResult(data: ClaudeResult): NormalizedLogEntry | NormalizedLogEntry[] {
+  private parseResult(
+    data: ClaudeResult,
+  ): NormalizedLogEntry | NormalizedLogEntry[] {
     const entries: NormalizedLogEntry[] = []
     const isLogicalError = !!data.is_error || data.subtype !== 'success'
 
@@ -706,7 +720,9 @@ export class ClaudeLogNormalizer {
 
   // ---------- Unknown ----------
 
-  private parseUnknown(data: Record<string, unknown>): NormalizedLogEntry | null {
+  private parseUnknown(
+    data: Record<string, unknown>,
+  ): NormalizedLogEntry | null {
     const fallbackContent = (data.message ?? data.content ?? '') as string
     const fallbackStr =
       typeof fallbackContent === 'string'
@@ -794,9 +810,7 @@ function generateToolContent(
     case 'WebSearch':
       return String(input.query ?? toolName)
     case 'Task':
-      return input.description
-        ? `Task: ${input.description}`
-        : 'Task'
+      return input.description ? `Task: ${input.description}` : 'Task'
     case 'TodoWrite':
       return 'TODO list updated'
     case 'ExitPlanMode':
