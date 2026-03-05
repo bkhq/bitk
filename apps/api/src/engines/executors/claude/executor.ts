@@ -17,7 +17,8 @@ import { logger } from '@/logger'
 import { ClaudeLogNormalizer } from './normalizer'
 import { ClaudeProtocolHandler } from './protocol'
 
-const BASE_COMMAND = 'npx -y @anthropic-ai/claude-code'
+// Prefer local `claude` binary; fall back to npx for environments without it.
+const BASE_COMMAND = Bun.which('claude') ?? 'npx -y @anthropic-ai/claude-code'
 
 // Known Claude models — Claude Code CLI has no `models` subcommand
 // [1m] variants use 1 million context token window
@@ -205,14 +206,23 @@ export class ClaudeCodeExecutor implements EngineExecutor {
       plugins: [],
     }
 
+    // Kill the process after DISCOVERY_TIMEOUT_MS regardless of read state.
+    // This prevents orphaned processes when reader.read() hangs (e.g. auth/network).
+    const killTimer = setTimeout(() => {
+      try {
+        proc.kill()
+      } catch {
+        /* already dead */
+      }
+    }, DISCOVERY_TIMEOUT_MS)
+
     try {
       const stdout = proc.stdout as ReadableStream<Uint8Array>
       const reader = stdout.getReader()
       const decoder = new TextDecoder()
       let buffer = ''
-      const deadline = Date.now() + DISCOVERY_TIMEOUT_MS
 
-      while (Date.now() < deadline) {
+      while (true) {
         const { done, value } = await reader.read()
         if (done) break
 
@@ -251,6 +261,7 @@ export class ClaudeCodeExecutor implements EngineExecutor {
 
       reader.releaseLock()
     } finally {
+      clearTimeout(killTimer)
       try {
         proc.kill()
       } catch {
@@ -299,11 +310,11 @@ export class ClaudeCodeExecutor implements EngineExecutor {
       builder.param('--model', options.model)
     }
 
-    // In plan/supervised mode, AskUserQuestion is handled via hooks;
-    // in auto mode, disable it since the web UI cannot respond.
-    if (!isPlanMode) {
-      builder.param('--disallowedTools', 'AskUserQuestion')
-    }
+    // Disable AskUserQuestion in all modes — the web UI cannot respond
+    // to interactive questions. In plan mode, hooks route it to can_use_tool
+    // but the auto-allow would leave Claude waiting for an answer that never
+    // comes, causing the turn to hang.
+    builder.param('--disallowedTools', 'AskUserQuestion')
 
     if (options.env) {
       builder.envs(options.env)
@@ -404,10 +415,11 @@ const AUTO_APPROVE_CALLBACK_ID = 'AUTO_APPROVE_CALLBACK_ID'
 /**
  * Build hooks configuration based on permission mode.
  *
- * - **plan**: ExitPlanMode/AskUserQuestion → `tool_approval` callback (routed
- *   to can_use_tool for mode-switch handling); everything else → auto-approve.
+ * - **plan**: ExitPlanMode → `tool_approval` callback (routed to can_use_tool
+ *   for mode-switch handling); everything else → auto-approve.
+ *   AskUserQuestion is disabled via --disallowedTools, not hooks.
  * - **supervised**: Non-read tools → `tool_approval`; read tools auto-approved.
- * - **auto**: AskUserQuestion → `tool_approval` (denied); no other hooks needed.
+ * - **auto**: No hooks needed (AskUserQuestion disabled via --disallowedTools).
  */
 function buildHooks(
   policy: PermissionPolicy,
@@ -417,11 +429,11 @@ function buildHooks(
       return {
         PreToolUse: [
           {
-            matcher: '^(ExitPlanMode|AskUserQuestion)$',
+            matcher: '^ExitPlanMode$',
             hookCallbackIds: ['tool_approval'],
           },
           {
-            matcher: '^(?!(ExitPlanMode|AskUserQuestion)$).*',
+            matcher: '^(?!ExitPlanMode$).*',
             hookCallbackIds: [AUTO_APPROVE_CALLBACK_ID],
           },
         ],

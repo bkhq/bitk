@@ -188,13 +188,13 @@ async function discoverSlashCommands(
         'claude-code:discovery',
       )
 
-      if (result.slashCommands.length > 0) {
-        await setAppSetting(
-          slashCommandsKey('claude-code'),
-          JSON.stringify(result.slashCommands),
-        )
-        await refreshSlashCommandsCacheForEngine('claude-code')
-      }
+      // Always persist discovery results (including empty lists) so stale
+      // commands from a previous discovery are cleared when they no longer exist.
+      await setAppSetting(
+        slashCommandsKey('claude-code'),
+        JSON.stringify(result.slashCommands),
+      )
+      await refreshSlashCommandsCacheForEngine('claude-code')
 
       logger.info(
         {
