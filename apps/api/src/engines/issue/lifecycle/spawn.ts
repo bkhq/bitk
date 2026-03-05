@@ -15,7 +15,7 @@ import { register } from '@/engines/issue/process/register'
 import { persistUserMessage } from '@/engines/issue/user-message'
 import {
   getPermissionOptions,
-  getProjectEnvVars,
+  getProjectExecContext,
   isMissingExternalSessionError,
   resolveWorkingDir,
 } from '@/engines/issue/utils/helpers'
@@ -52,6 +52,7 @@ export async function spawnWithSessionFallback(
     permissionMode: PermissionPolicy
     projectId: string
     envVars?: Record<string, string>
+    systemPrompt?: string
   },
 ): Promise<SpawnedProcess> {
   const spawnCtx = {
@@ -82,10 +83,14 @@ export async function spawnWithSessionFallback(
       },
       'missing_external_session_recreate',
     )
+    // When recreating a session, prepend the project system prompt
+    const freshPrompt = opts.systemPrompt
+      ? `${opts.systemPrompt}\n\n${opts.prompt}`
+      : opts.prompt
     const spawned = await executor.spawn(
       {
         workingDir: opts.workingDir,
-        prompt: opts.prompt,
+        prompt: freshPrompt,
         model: opts.model,
         permissionMode: opts.permissionMode,
         externalSessionId,
@@ -176,7 +181,7 @@ export async function spawnRetry(
 
   const permOptions = getPermissionOptions(engineType)
   const executionId = crypto.randomUUID()
-  const envVars = await getProjectEnvVars(issue.projectId)
+  const projCtx = await getProjectExecContext(issue.projectId)
 
   const spawnOpts = {
     workingDir,
@@ -184,7 +189,8 @@ export async function spawnRetry(
     model: issue.sessionFields.model ?? undefined,
     permissionMode: permOptions.permissionMode,
     projectId: issue.projectId,
-    envVars,
+    envVars: projCtx.envVars,
+    systemPrompt: projCtx.systemPrompt,
   }
   const spawned = issue.sessionFields.externalSessionId
     ? await spawnWithSessionFallback(executor, issueId, {
@@ -314,7 +320,7 @@ export async function spawnFollowUpProcess(
   }
 
   const permOptions = getPermissionOptions(engineType, permissionMode)
-  const envVars = await getProjectEnvVars(issue.projectId)
+  const projCtx = await getProjectExecContext(issue.projectId)
 
   let spawned: SpawnedProcess
   try {
@@ -325,7 +331,8 @@ export async function spawnFollowUpProcess(
       model: effectiveModel,
       permissionMode: permOptions.permissionMode,
       projectId: issue.projectId,
-      envVars,
+      envVars: projCtx.envVars,
+      systemPrompt: projCtx.systemPrompt,
     })
   } catch (spawnError) {
     // Spawn failed after we already emitted 'running' and persisted the user

@@ -47,20 +47,43 @@ export async function resolveWorkingDir(projectId: string): Promise<string> {
   return dir
 }
 
-// ---------- Project env vars ----------
+// ---------- Project execution context ----------
 
+export interface ProjectExecContext {
+  systemPrompt?: string
+  envVars?: Record<string, string>
+}
+
+export async function getProjectExecContext(
+  projectId: string,
+): Promise<ProjectExecContext> {
+  const [project] = await db
+    .select({
+      systemPrompt: projectsTable.systemPrompt,
+      envVars: projectsTable.envVars,
+    })
+    .from(projectsTable)
+    .where(eq(projectsTable.id, projectId))
+  if (!project) return {}
+  let envVars: Record<string, string> | undefined
+  if (project.envVars) {
+    try {
+      const parsed = JSON.parse(project.envVars) as Record<string, string>
+      envVars = Object.keys(parsed).length > 0 ? parsed : undefined
+    } catch {
+      // ignore malformed JSON
+    }
+  }
+  return {
+    systemPrompt: project.systemPrompt ?? undefined,
+    envVars,
+  }
+}
+
+/** @deprecated Use getProjectExecContext instead */
 export async function getProjectEnvVars(
   projectId: string,
 ): Promise<Record<string, string> | undefined> {
-  const [project] = await db
-    .select({ envVars: projectsTable.envVars })
-    .from(projectsTable)
-    .where(eq(projectsTable.id, projectId))
-  if (!project?.envVars) return undefined
-  try {
-    const parsed = JSON.parse(project.envVars) as Record<string, string>
-    return Object.keys(parsed).length > 0 ? parsed : undefined
-  } catch {
-    return undefined
-  }
+  const ctx = await getProjectExecContext(projectId)
+  return ctx.envVars
 }

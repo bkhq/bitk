@@ -503,7 +503,7 @@ export function SessionMessages({
       rows.push(
         <div
           key={`cmd-group-${entry.messageId ?? `${entry.turnIndex ?? 0}-${i}`}`}
-          className="mx-5 my-1.5 animate-message-enter"
+          className="group py-1.5 animate-message-enter"
         >
           <details className="rounded-lg border border-border/30 bg-muted/10 transition-all duration-200 open:bg-muted/20">
             <summary className="cursor-pointer list-none px-3 py-2 text-xs text-muted-foreground hover:bg-muted/20 transition-colors">
@@ -546,7 +546,7 @@ export function SessionMessages({
         rows.push(
           <div
             key={`file-tool-group-${entry.messageId ?? `${entry.turnIndex ?? 0}-${i}`}`}
-            className="px-5 py-0.5 animate-message-enter"
+            className="py-0.5 animate-message-enter"
           >
             <FileToolGroup actionEntry={entry} resultEntry={matchedResult} />
           </div>,
@@ -567,7 +567,7 @@ export function SessionMessages({
         rows.push(
           <div
             key={`tool-group-${entry.messageId ?? `${entry.turnIndex ?? 0}-${i}`}`}
-            className="px-5 py-0.5 animate-message-enter"
+            className="py-0.5 animate-message-enter"
           >
             <ToolPanel
               collapsible
@@ -600,7 +600,7 @@ export function SessionMessages({
       rows.push(
         <div
           key={`tool-group-${entry.messageId ?? `${entry.turnIndex ?? 0}-${i}`}`}
-          className="px-5 py-0.5 animate-message-enter"
+          className="py-0.5 animate-message-enter"
         >
           <ToolPanel
             collapsible
@@ -628,7 +628,7 @@ export function SessionMessages({
   }
 
   return (
-    <div className="flex flex-col py-2">
+    <div className="flex flex-col py-2 px-5 max-w-[72ch]">
       {hasOlderLogs && onLoadOlder ? (
         <div className="flex justify-center py-2">
           <button
@@ -643,7 +643,7 @@ export function SessionMessages({
       ) : null}
       {rows}
       {isRunning ? (
-        <div className="flex items-center gap-2.5 mx-5 my-2 px-3 py-2 text-xs text-muted-foreground animate-message-enter">
+        <div className="flex items-center gap-2.5 my-2 px-3 py-2 text-xs text-muted-foreground animate-message-enter">
           <span className="thinking-dots flex items-center gap-[3px] text-violet-500/70 dark:text-violet-400/70">
             <span />
             <span />

@@ -119,7 +119,7 @@ function TaskPlanEntry({ entry }: { entry: NormalizedLogEntry }) {
   const completedCount = items.filter((t) => t.status === 'completed').length
 
   return (
-    <div className="px-5 py-1.5">
+    <div className="py-1.5">
       <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
         <ListTodo className="h-3 w-3 shrink-0 text-indigo-500" />
         <span className="font-medium">Task Plan</span>
@@ -188,10 +188,8 @@ export function LogEntry({
           ? 'border-emerald-400 bg-emerald-500/[0.06]'
           : 'border-foreground/70'
       return (
-        <div className="group px-5 py-2 animate-message-enter">
-          <div
-            className={`bg-muted/70 px-3 py-2.5 border-l-[3px] max-w-[72ch] ${barColor}`}
-          >
+        <div className="group py-2 animate-message-enter">
+          <div className={`bg-muted/70 px-3 py-2.5 border-l-[3px] ${barColor}`}>
             {entry.content.trim() ? (
               <div className="text-[15px] whitespace-pre-wrap break-words text-foreground leading-[1.75]">
                 {entry.content}
@@ -293,11 +291,9 @@ export function LogEntry({
         )
       }
       return (
-        <div className="px-5 py-0.5">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Icon className={`h-3 w-3 shrink-0 ${color}`} />
-            <span className="truncate font-mono">{label || entry.content}</span>
-          </div>
+        <div className="flex items-center gap-2 py-0.5 text-xs text-muted-foreground">
+          <Icon className={`h-3 w-3 shrink-0 ${color}`} />
+          <span className="truncate font-mono">{label || entry.content}</span>
         </div>
       )
     }
@@ -316,7 +312,7 @@ export function LogEntry({
         const firstLine =
           entry.content.split('\n')[0]?.trim() || 'Command output'
         return (
-          <div className="mx-5 my-1.5 animate-message-enter">
+          <div className="my-1.5 animate-message-enter">
             <details className="rounded-lg bg-muted/40 border border-border/30 transition-all duration-200 open:bg-muted/20">
               <summary className="cursor-pointer list-none px-4 py-2 text-xs text-muted-foreground hover:bg-muted/20 transition-colors">
                 <span className="font-mono">{firstLine}</span>
@@ -333,7 +329,7 @@ export function LogEntry({
       // Compact boundary: show a visual divider
       if (entry.metadata?.subtype === 'compact_boundary') {
         return (
-          <div className="flex items-center gap-3 px-5 py-2 my-1">
+          <div className="flex items-center gap-3 py-2 my-1">
             <div className="flex-1 border-t border-dashed border-border/40" />
             <span className="text-[10px] text-muted-foreground/50 font-medium whitespace-nowrap">
               {t('session.contextCompacted')}
@@ -343,14 +339,14 @@ export function LogEntry({
         )
       }
       return (
-        <div className="flex items-center gap-2 px-5 py-0.5 text-[11px] text-muted-foreground/60">
-          <span className="truncate">{entry.content}</span>
+        <div className="py-0.5 text-[11px] text-muted-foreground/60 truncate">
+          {entry.content}
         </div>
       )
 
     case 'error-message':
       return (
-        <div className="flex gap-2 mx-5 my-1.5 rounded-lg bg-destructive/[0.06] border border-destructive/20 px-3 py-2 animate-message-enter">
+        <div className="flex gap-2 my-1.5 rounded-lg bg-destructive/[0.06] border border-destructive/20 px-3 py-2 animate-message-enter">
           <AlertCircle className="h-3.5 w-3.5 shrink-0 text-destructive mt-0.5" />
           <p className="text-xs text-destructive/90 break-words leading-relaxed">
             {entry.content}
@@ -360,16 +356,14 @@ export function LogEntry({
 
     case 'thinking':
       return (
-        <div className="px-5 py-0.5">
-          <span className="text-xs text-violet-500/70 dark:text-violet-400/70 italic">
-            Thinking: {entry.content}
-          </span>
+        <div className="py-0.5 text-xs text-violet-500/70 dark:text-violet-400/70 italic">
+          Thinking: {entry.content}
         </div>
       )
 
     case 'loading':
       return (
-        <div className="flex items-center gap-2 px-5 py-0.5 text-xs text-muted-foreground">
+        <div className="flex items-center gap-2 py-0.5 text-xs text-muted-foreground">
           <Loader2 className="h-3 w-3 shrink-0 animate-spin text-primary/50" />
           <span>{entry.content}</span>
         </div>
@@ -406,12 +400,12 @@ function AssistantMessage({
   }
 
   return (
-    <div className="group px-5 py-1.5 animate-message-enter">
-      <div className="relative rounded-lg bg-muted/40 px-4 py-3 max-w-[72ch]">
+    <div className="group py-1.5 animate-message-enter">
+      <div className="relative min-w-0">
         <button
           type="button"
           onClick={handleCopy}
-          className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity duration-150 rounded-md p-1 text-muted-foreground/50 hover:text-muted-foreground hover:bg-muted/50"
+          className="absolute right-0 top-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150 rounded-md p-1 text-muted-foreground/50 hover:text-muted-foreground hover:bg-muted/50 z-10"
           title={t('session.copyMessage')}
         >
           {copied ? (
@@ -420,12 +414,10 @@ function AssistantMessage({
             <Copy className="h-3.5 w-3.5" />
           )}
         </button>
-        <div className="min-w-0 pr-6">
-          <MarkdownContent
-            content={content}
-            className="text-[14px] leading-[1.75]"
-          />
-        </div>
+        <MarkdownContent
+          content={content}
+          className="text-[14px] leading-[1.75]"
+        />
       </div>
       <div className="flex items-center gap-2 mt-1">
         {timestamp ? (
