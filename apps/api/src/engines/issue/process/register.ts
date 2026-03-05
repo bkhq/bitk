@@ -104,14 +104,29 @@ export function register(
     }
   }
 
-  consumeStream(
+  void consumeStream(
     executionId,
     issueId,
     process.stdout,
     logParser,
     stdoutCallbacks,
-  )
-  consumeStderr(executionId, issueId, process.stderr, stderrCallbacks)
+  ).catch((err) => {
+    logger.error(
+      { issueId, executionId, err },
+      'consume_stream_unhandled_error',
+    )
+  })
+  void consumeStderr(
+    executionId,
+    issueId,
+    process.stderr,
+    stderrCallbacks,
+  ).catch((err) => {
+    logger.error(
+      { issueId, executionId, err },
+      'consume_stderr_unhandled_error',
+    )
+  })
   logger.debug(
     { issueId, executionId, pid: getPidFromManaged(managed), turnIndex },
     'issue_process_registered',
