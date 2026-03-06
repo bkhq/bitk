@@ -45,6 +45,7 @@ events.get('/', async (c) => {
       const unsubLog = appEvents.on(
         'log',
         (data) => {
+          if (data.streaming) return
           if (!isVisibleForMode(data.entry, getIssueDevMode(data.issueId)))
             return
           writeEvent('log', { issueId: data.issueId, entry: data.entry })

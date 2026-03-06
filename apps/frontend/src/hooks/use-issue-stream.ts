@@ -31,10 +31,6 @@ const TERMINAL: Set<string> = new Set(['completed', 'failed', 'cancelled'])
 /** Max entries in the live logs array. Older entries are trimmed when SSE pushes beyond this. */
 const MAX_LIVE_LOGS = 500
 
-/**
- * Generate a stable dedup key for entries without a messageId
- * (e.g. streaming deltas that are never persisted).
- */
 function contentKey(entry: NormalizedLogEntry): string {
   return `${entry.turnIndex ?? 0}:${entry.timestamp ?? ''}:${entry.entryType}:${entry.content}`
 }
