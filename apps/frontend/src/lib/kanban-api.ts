@@ -269,6 +269,44 @@ export const kanbanApi = {
     patch<{ enabled: boolean }>('/api/settings/worktree-auto-cleanup', {
       enabled,
     }),
+  getCleanupStats: () =>
+    get<{
+      logs: { logCount: number; toolCallCount: number }
+      oldVersions: {
+        items: Array<{ name: string; size: number }>
+        totalSize: number
+      }
+      worktrees: { count: number; totalSize: number }
+      deletedIssues: { issueCount: number; projectCount: number }
+    }>('/api/settings/cleanup/stats'),
+  runCleanup: (
+    targets: Array<'logs' | 'oldVersions' | 'worktrees' | 'deletedIssues'>,
+  ) =>
+    post<Record<string, { cleaned: number }>>('/api/settings/cleanup', {
+      targets,
+    }),
+  getDeletedIssues: () =>
+    get<
+      Array<{
+        id: string
+        title: string
+        projectId: string
+        projectName: string
+        statusId: string
+        deletedAt: string | null
+      }>
+    >('/api/settings/deleted-issues'),
+  restoreDeletedIssue: (id: string) =>
+    post<{ id: string }>(`/api/settings/deleted-issues/${id}/restore`, {}),
+
+  // System Logs
+  getSystemLogs: (lines = 200) =>
+    get<{ lines: string[]; fileSize: number; totalLines: number }>(
+      `/api/settings/system-logs?lines=${lines}`,
+    ),
+  downloadSystemLogs: () => `/api/settings/system-logs/download`,
+  clearSystemLogs: () =>
+    post<{ cleared: boolean }>('/api/settings/system-logs/clear', {}),
 
   // Upgrade
   getVersionInfo: () =>

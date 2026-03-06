@@ -41,6 +41,9 @@ export const queryKeys = {
   upgradeEnabled: () => ['upgrade', 'enabled'] as const,
   upgradeCheck: () => ['upgrade', 'check'] as const,
   upgradeDownloadStatus: () => ['upgrade', 'downloadStatus'] as const,
+  systemLogs: () => ['settings', 'systemLogs'] as const,
+  cleanupStats: () => ['settings', 'cleanupStats'] as const,
+  deletedIssues: () => ['settings', 'deletedIssues'] as const,
 }
 
 export function useProjects() {
@@ -497,6 +500,73 @@ export function useSetWorktreeAutoCleanup() {
       queryClient.invalidateQueries({
         queryKey: queryKeys.worktreeAutoCleanup(),
       })
+    },
+  })
+}
+
+// --- System Logs hooks ---
+
+export function useSystemLogs(enabled = false, lines = 200) {
+  return useQuery({
+    queryKey: queryKeys.systemLogs(),
+    queryFn: () => kanbanApi.getSystemLogs(lines),
+    enabled,
+    staleTime: 10_000,
+  })
+}
+
+export function useClearSystemLogs() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => kanbanApi.clearSystemLogs(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.systemLogs() })
+    },
+  })
+}
+
+// --- Cleanup hooks ---
+
+export function useCleanupStats(enabled = false) {
+  return useQuery({
+    queryKey: queryKeys.cleanupStats(),
+    queryFn: () => kanbanApi.getCleanupStats(),
+    enabled,
+    staleTime: 30_000,
+  })
+}
+
+export function useRunCleanup() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (
+      targets: Array<'logs' | 'oldVersions' | 'worktrees' | 'deletedIssues'>,
+    ) => kanbanApi.runCleanup(targets),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.cleanupStats() })
+    },
+  })
+}
+
+// --- Recycle Bin hooks ---
+
+export function useDeletedIssues(enabled = false) {
+  return useQuery({
+    queryKey: queryKeys.deletedIssues(),
+    queryFn: () => kanbanApi.getDeletedIssues(),
+    enabled,
+    staleTime: 30_000,
+  })
+}
+
+export function useRestoreDeletedIssue() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => kanbanApi.restoreDeletedIssue(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.deletedIssues() })
+      queryClient.invalidateQueries({ queryKey: queryKeys.cleanupStats() })
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects() })
     },
   })
 }

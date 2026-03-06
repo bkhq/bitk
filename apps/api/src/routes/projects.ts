@@ -7,13 +7,7 @@ import * as z from 'zod'
 import { cacheDelByPrefix } from '@/cache'
 import { db } from '@/db'
 import { findProject, invalidateProjectCache } from '@/db/helpers'
-import {
-  attachments as attachmentsTable,
-  issueLogs as issueLogsTable,
-  issues as issuesTable,
-  projects as projectsTable,
-  issuesLogsToolsCall as toolsCallTable,
-} from '@/db/schema'
+import { issues as issuesTable, projects as projectsTable } from '@/db/schema'
 import { issueEngine } from '@/engines/issue'
 import { logger } from '@/logger'
 
@@ -296,30 +290,12 @@ projects.delete('/:projectId', async (c) => {
       )
     const issueIds = projectIssues.map((i) => i.id)
 
-    // Soft-delete all issues in this project
+    // Soft-delete all issues in this project — keep logs/tools/attachments intact for restore
     if (issueIds.length > 0) {
       await tx
         .update(issuesTable)
         .set({ isDeleted: 1 })
         .where(inArray(issuesTable.id, issueIds))
-
-      // Soft-delete related logs
-      await tx
-        .update(issueLogsTable)
-        .set({ isDeleted: 1 })
-        .where(inArray(issueLogsTable.issueId, issueIds))
-
-      // Soft-delete related tool calls
-      await tx
-        .update(toolsCallTable)
-        .set({ isDeleted: 1 })
-        .where(inArray(toolsCallTable.issueId, issueIds))
-
-      // Soft-delete related attachments
-      await tx
-        .update(attachmentsTable)
-        .set({ isDeleted: 1 })
-        .where(inArray(attachmentsTable.issueId, issueIds))
     }
 
     // Soft-delete the project

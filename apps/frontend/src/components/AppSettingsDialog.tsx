@@ -5,13 +5,20 @@ import {
   ChevronDown,
   CircleAlert,
   CircleCheck,
+  Download,
+  FileText,
+  Filter,
   FolderOpen,
   Info,
   Loader2,
   RefreshCw,
+  RotateCcw,
+  Search,
   Settings,
+  Trash,
+  Trash2,
 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { DirectoryPicker } from '@/components/DirectoryPicker'
 import { EngineIcon } from '@/components/EngineIcons'
@@ -31,6 +38,9 @@ import { SettingsLayout } from '@/components/ui/settings-layout'
 import { Switch } from '@/components/ui/switch'
 import {
   useCheckForUpdates,
+  useCleanupStats,
+  useClearSystemLogs,
+  useDeletedIssues,
   useDownloadStatus,
   useDownloadUpdate,
   useEngineAvailability,
@@ -38,8 +48,11 @@ import {
   useEngineSettings,
   useProbeEngines,
   useRestartWithUpgrade,
+  useRestoreDeletedIssue,
+  useRunCleanup,
   useSetUpgradeEnabled,
   useSetWorktreeAutoCleanup,
+  useSystemLogs,
   useUpdateDefaultEngine,
   useUpdateEngineModelSetting,
   useUpdateWorkspacePath,
@@ -77,6 +90,9 @@ export function AppSettingsDialog({
     () => [
       { id: 'general', label: t('settings.tabGeneral'), icon: Settings },
       { id: 'models', label: t('settings.tabModels'), icon: Box },
+      { id: 'logs', label: t('settings.tabLogs'), icon: FileText },
+      { id: 'cleanup', label: t('settings.tabCleanup'), icon: Trash2 },
+      { id: 'recycleBin', label: t('settings.tabRecycleBin'), icon: Trash },
       { id: 'about', label: t('settings.tabAbout'), icon: Info },
     ],
     [t],
@@ -94,6 +110,9 @@ export function AppSettingsDialog({
         <>
           {active === 'general' && <GeneralSection open={open} />}
           {active === 'models' && <ModelsSection open={open} />}
+          {active === 'logs' && <LogsSection open={open} />}
+          {active === 'cleanup' && <CleanupSection open={open} />}
+          {active === 'recycleBin' && <RecycleBinSection open={open} />}
           {active === 'about' && <AboutSection open={open} />}
         </>
       )}
@@ -197,6 +216,476 @@ function GeneralSection({ open }: { open: boolean }) {
           onCheckedChange={(checked) => setWorktreeAutoCleanup.mutate(checked)}
         />
       </div>
+    </div>
+  )
+}
+
+function formatSize(bytes: number): string {
+  if (bytes === 0) return '0 B'
+  const units = ['B', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(1024))
+  return `${(bytes / 1024 ** i).toFixed(i > 0 ? 1 : 0)} ${units[i]}`
+}
+
+function CleanupItem({
+  label,
+  hint,
+  count,
+  disabled,
+  loading,
+  onClean,
+}: {
+  label: string
+  hint?: string
+  count?: number
+  disabled?: boolean
+  loading: boolean
+  onClean: () => void
+}) {
+  const { t } = useTranslation()
+  return (
+    <div className="flex items-center justify-between rounded-md border px-3 py-2">
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs font-medium">{label}</span>
+          {count != null ? (
+            <Badge
+              variant={count > 0 ? 'secondary' : 'outline'}
+              className="text-[10px] px-1.5 py-0"
+            >
+              {count}
+            </Badge>
+          ) : null}
+        </div>
+        {hint ? (
+          <p className="text-[10px] text-muted-foreground">{hint}</p>
+        ) : null}
+      </div>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={onClean}
+        disabled={disabled || loading || (count != null && count === 0)}
+        className="shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+      >
+        {loading ? (
+          <Loader2 className="size-3 animate-spin" />
+        ) : (
+          <Trash2 className="size-3" />
+        )}
+        {t('settings.cleanupAction')}
+      </Button>
+    </div>
+  )
+}
+
+const LOG_LEVELS = [
+  { level: 0, label: 'ALL' },
+  { level: 20, label: 'DEBUG' },
+  { level: 30, label: 'INFO' },
+  { level: 40, label: 'WARN' },
+  { level: 50, label: 'ERROR' },
+] as const
+
+function parseLogLevel(line: string): number {
+  try {
+    const parsed = JSON.parse(line)
+    return typeof parsed.level === 'number' ? parsed.level : 30
+  } catch {
+    return 30
+  }
+}
+
+function LogsSection({ open }: { open: boolean }) {
+  const { t } = useTranslation()
+  const { data: logsData, isLoading, refetch } = useSystemLogs(open, 500)
+  const clearLogs = useClearSystemLogs()
+  const logContainerRef = useRef<HTMLDivElement>(null)
+  const [autoScroll, setAutoScroll] = useState(true)
+  const [levelFilter, setLevelFilter] = useState(0)
+  const [keyword, setKeyword] = useState('')
+
+  const filteredLines = useMemo(() => {
+    if (!logsData?.lines) return []
+    const kw = keyword.toLowerCase()
+    return logsData.lines.filter((line) => {
+      if (levelFilter > 0 && parseLogLevel(line) < levelFilter) return false
+      if (kw && !line.toLowerCase().includes(kw)) return false
+      return true
+    })
+  }, [logsData?.lines, levelFilter, keyword])
+
+  const handleScroll = useCallback(() => {
+    const el = logContainerRef.current
+    if (!el) return
+    const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 40
+    setAutoScroll(atBottom)
+  }, [])
+
+  const scrollToBottom = useCallback(() => {
+    const el = logContainerRef.current
+    if (el && autoScroll) {
+      el.scrollTop = el.scrollHeight
+    }
+  }, [autoScroll])
+
+  // Auto-scroll when new data arrives
+  const prevLinesCount = useRef(0)
+  if (filteredLines.length !== prevLinesCount.current) {
+    prevLinesCount.current = filteredLines.length
+    queueMicrotask(scrollToBottom)
+  }
+
+  const handleDownload = () => {
+    window.open('/api/settings/system-logs/download', '_blank')
+  }
+
+  const handleClear = () => {
+    if (window.confirm(t('settings.logsClearConfirm'))) {
+      clearLogs.mutate()
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-2 h-full">
+      {/* Top bar: stats + actions */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          {logsData ? (
+            <span className="text-[10px] text-muted-foreground">
+              {t('settings.logsFileSize', {
+                size: formatSize(logsData.fileSize),
+              })}
+              {' · '}
+              {t('settings.logsTotalLines', {
+                count: logsData.totalLines,
+              })}
+            </span>
+          ) : null}
+        </div>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="sm" onClick={() => refetch()}>
+            <RefreshCw className="size-3" />
+            {t('settings.logsRefresh')}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleDownload}
+            disabled={!logsData?.fileSize}
+          >
+            <Download className="size-3" />
+            {t('settings.logsDownload')}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleClear}
+            disabled={clearLogs.isPending || !logsData?.fileSize}
+            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+          >
+            {clearLogs.isPending ? (
+              <Loader2 className="size-3 animate-spin" />
+            ) : (
+              <Trash2 className="size-3" />
+            )}
+            {t('settings.logsClear')}
+          </Button>
+        </div>
+      </div>
+
+      {/* Filter bar: level buttons + keyword search */}
+      <div className="flex items-center gap-2">
+        <div className="flex items-center gap-0.5">
+          <Filter className="size-3 text-muted-foreground mr-1" />
+          {LOG_LEVELS.map((l) => (
+            <button
+              key={l.level}
+              type="button"
+              onClick={() => setLevelFilter(l.level)}
+              className={cn(
+                'rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors',
+                levelFilter === l.level
+                  ? 'bg-primary/10 text-primary'
+                  : 'text-muted-foreground hover:bg-accent/50',
+              )}
+            >
+              {l.label}
+            </button>
+          ))}
+        </div>
+        <div className="relative flex-1 max-w-[200px]">
+          <Search className="absolute left-2 top-1/2 -translate-y-1/2 size-3 text-muted-foreground" />
+          <input
+            type="text"
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+            placeholder={t('settings.logsSearchPlaceholder')}
+            className="w-full rounded-md border bg-transparent py-1 pl-7 pr-2 text-[11px] outline-none focus:ring-1 focus:ring-ring"
+          />
+        </div>
+        {(levelFilter > 0 || keyword) &&
+        filteredLines.length !== logsData?.lines.length ? (
+          <span className="text-[10px] text-muted-foreground shrink-0">
+            {t('settings.logsFiltered', {
+              shown: filteredLines.length,
+              total: logsData?.lines.length ?? 0,
+            })}
+          </span>
+        ) : null}
+      </div>
+
+      {/* Log content */}
+      {isLoading ? (
+        <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
+          <Loader2 className="size-3.5 animate-spin" />
+          {t('settings.logsLoading')}
+        </div>
+      ) : !filteredLines.length ? (
+        <div className="py-4 text-center text-sm text-muted-foreground">
+          {t('settings.logsEmpty')}
+        </div>
+      ) : (
+        <div
+          ref={logContainerRef}
+          onScroll={handleScroll}
+          className="flex-1 min-h-0 max-h-[400px] overflow-auto rounded-md border bg-muted/30 p-2 font-mono text-[11px] leading-relaxed"
+        >
+          {filteredLines.map((line, i) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: log lines are static tail output
+            <LogLine key={i} line={line} highlight={keyword} />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function HighlightText({
+  text,
+  highlight,
+}: {
+  text: string
+  highlight: string
+}) {
+  if (!highlight) return <>{text}</>
+  const parts = text.split(
+    new RegExp(`(${highlight.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'),
+  )
+  const elements: React.ReactNode[] = []
+  for (let i = 0; i < parts.length; i++) {
+    const part = parts[i]
+    if (part.toLowerCase() === highlight.toLowerCase()) {
+      elements.push(
+        <mark
+          key={`h${i}`}
+          className="bg-yellow-300/40 text-inherit rounded-sm px-px"
+        >
+          {part}
+        </mark>,
+      )
+    } else {
+      elements.push(part)
+    }
+  }
+  return <>{elements}</>
+}
+
+function LogLine({
+  line,
+  highlight = '',
+}: {
+  line: string
+  highlight?: string
+}) {
+  let parsed: { level?: number; msg?: string; time?: number } | null = null
+  try {
+    parsed = JSON.parse(line)
+  } catch {
+    // plain text line
+  }
+
+  if (!parsed) {
+    return (
+      <div className="whitespace-pre-wrap break-all py-px">
+        <HighlightText text={line} highlight={highlight} />
+      </div>
+    )
+  }
+
+  const levelName =
+    parsed.level === 60
+      ? 'FATAL'
+      : parsed.level === 50
+        ? 'ERROR'
+        : parsed.level === 40
+          ? 'WARN'
+          : parsed.level === 30
+            ? 'INFO'
+            : parsed.level === 20
+              ? 'DEBUG'
+              : 'TRACE'
+
+  const levelColor =
+    parsed.level === 60 || parsed.level === 50
+      ? 'text-red-500'
+      : parsed.level === 40
+        ? 'text-amber-500'
+        : parsed.level === 30
+          ? 'text-blue-500'
+          : 'text-muted-foreground'
+
+  const time = parsed.time ? new Date(parsed.time).toLocaleTimeString() : ''
+  const msg = parsed.msg ?? line
+
+  return (
+    <div className="whitespace-pre-wrap break-all py-px">
+      {time ? <span className="text-muted-foreground/60">{time} </span> : null}
+      <span className={levelColor}>{levelName}</span>{' '}
+      <span>
+        <HighlightText text={msg} highlight={highlight} />
+      </span>
+    </div>
+  )
+}
+
+function CleanupSection({ open }: { open: boolean }) {
+  const { t } = useTranslation()
+  const { data: cleanupStats, refetch: refetchStats } = useCleanupStats(open)
+  const runCleanup = useRunCleanup()
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-muted-foreground">{t('settings.cleanup')}</p>
+        <Button variant="ghost" size="sm" onClick={() => refetchStats()}>
+          <RefreshCw className="size-3" />
+          {t('settings.cleanupRefresh')}
+        </Button>
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <CleanupItem
+          label={t('settings.cleanupLogs')}
+          count={cleanupStats?.logs.logCount}
+          hint={
+            cleanupStats
+              ? t('settings.cleanupLogsHint', {
+                  tools: cleanupStats.logs.toolCallCount,
+                })
+              : undefined
+          }
+          loading={runCleanup.isPending}
+          onClean={() => runCleanup.mutate(['logs'])}
+        />
+        <CleanupItem
+          label={t('settings.cleanupOldVersions')}
+          count={cleanupStats?.oldVersions.items.length}
+          hint={
+            cleanupStats?.oldVersions.totalSize
+              ? formatSize(cleanupStats.oldVersions.totalSize)
+              : undefined
+          }
+          disabled={!cleanupStats?.oldVersions.items.length}
+          loading={runCleanup.isPending}
+          onClean={() => runCleanup.mutate(['oldVersions'])}
+        />
+        <CleanupItem
+          label={t('settings.cleanupWorktrees')}
+          count={cleanupStats?.worktrees.count}
+          hint={
+            cleanupStats?.worktrees.totalSize
+              ? formatSize(cleanupStats.worktrees.totalSize)
+              : undefined
+          }
+          disabled={!cleanupStats?.worktrees.count}
+          loading={runCleanup.isPending}
+          onClean={() => runCleanup.mutate(['worktrees'])}
+        />
+        <CleanupItem
+          label={t('settings.cleanupDeletedIssues')}
+          count={cleanupStats?.deletedIssues.issueCount}
+          hint={
+            cleanupStats?.deletedIssues.projectCount
+              ? t('settings.cleanupDeletedIssuesHint', {
+                  projects: cleanupStats.deletedIssues.projectCount,
+                })
+              : undefined
+          }
+          disabled={
+            !cleanupStats?.deletedIssues.issueCount &&
+            !cleanupStats?.deletedIssues.projectCount
+          }
+          loading={runCleanup.isPending}
+          onClean={() => runCleanup.mutate(['deletedIssues'])}
+        />
+      </div>
+    </div>
+  )
+}
+
+function RecycleBinSection({ open }: { open: boolean }) {
+  const { t } = useTranslation()
+  const { data: deletedIssues, isLoading } = useDeletedIssues(open)
+  const restoreIssue = useRestoreDeletedIssue()
+
+  const formatDate = (iso: string | null) => {
+    if (!iso) return ''
+    try {
+      return new Date(iso).toLocaleString()
+    } catch {
+      return iso
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      <p className="text-xs text-muted-foreground">
+        {t('settings.recycleBinHint')}
+      </p>
+
+      {isLoading ? (
+        <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
+          <Loader2 className="size-3.5 animate-spin" />
+          {t('settings.recycleBinLoading')}
+        </div>
+      ) : !deletedIssues?.length ? (
+        <div className="py-4 text-center text-sm text-muted-foreground">
+          {t('settings.recycleBinEmpty')}
+        </div>
+      ) : (
+        <div className="flex flex-col gap-1">
+          {deletedIssues.map((issue) => (
+            <div
+              key={issue.id}
+              className="flex items-center gap-3 rounded-md border px-3 py-2"
+            >
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-xs font-medium">
+                  {issue.title}
+                </div>
+                <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                  <span>{issue.projectName}</span>
+                  <span className="text-muted-foreground/50">·</span>
+                  <span>{formatDate(issue.deletedAt)}</span>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => restoreIssue.mutate(issue.id)}
+                disabled={restoreIssue.isPending}
+              >
+                {restoreIssue.isPending ? (
+                  <Loader2 className="size-3 animate-spin" />
+                ) : (
+                  <RotateCcw className="size-3" />
+                )}
+                {t('settings.recycleBinRestore')}
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

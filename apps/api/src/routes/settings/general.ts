@@ -12,18 +12,18 @@ import {
 } from '@/engines/write-filter'
 import { WORKTREE_AUTO_CLEANUP_KEY } from '@/jobs/worktree-cleanup'
 
-const settings = new Hono()
+const general = new Hono()
 
 const WORKSPACE_PATH_KEY = 'workspace:defaultPath'
 
 // GET /api/settings/workspace-path
-settings.get('/workspace-path', async (c) => {
+general.get('/workspace-path', async (c) => {
   const value = await getAppSetting(WORKSPACE_PATH_KEY)
   return c.json({ success: true, data: { path: value ?? homedir() } })
 })
 
 // PATCH /api/settings/workspace-path
-settings.patch(
+general.patch(
   '/workspace-path',
   zValidator(
     'json',
@@ -69,7 +69,7 @@ const writeFilterRuleSchema = z.object({
 })
 
 // GET /api/settings/write-filter-rules
-settings.get('/write-filter-rules', async (c) => {
+general.get('/write-filter-rules', async (c) => {
   const raw = await getAppSetting(WRITE_FILTER_RULES_KEY)
   let rules: WriteFilterRule[]
   if (raw) {
@@ -85,7 +85,7 @@ settings.get('/write-filter-rules', async (c) => {
 })
 
 // PUT /api/settings/write-filter-rules
-settings.put(
+general.put(
   '/write-filter-rules',
   zValidator(
     'json',
@@ -110,7 +110,7 @@ settings.put(
 )
 
 // PATCH /api/settings/write-filter-rules/:id
-settings.patch(
+general.patch(
   '/write-filter-rules/:id',
   zValidator('json', z.object({ enabled: z.boolean() }), (result, c) => {
     if (!result.success) {
@@ -158,13 +158,13 @@ settings.patch(
 // --- Worktree Auto-Cleanup ---
 
 // GET /api/settings/worktree-auto-cleanup
-settings.get('/worktree-auto-cleanup', async (c) => {
+general.get('/worktree-auto-cleanup', async (c) => {
   const value = await getAppSetting(WORKTREE_AUTO_CLEANUP_KEY)
   return c.json({ success: true, data: { enabled: value === 'true' } })
 })
 
 // PATCH /api/settings/worktree-auto-cleanup
-settings.patch(
+general.patch(
   '/worktree-auto-cleanup',
   zValidator('json', z.object({ enabled: z.boolean() }), (result, c) => {
     if (!result.success) {
@@ -187,7 +187,7 @@ settings.patch(
 // --- Slash Commands (cached from engine init, per-engine) ---
 
 // GET /api/settings/slash-commands?engine=claude-code
-settings.get('/slash-commands', async (c) => {
+general.get('/slash-commands', async (c) => {
   const validEngines = ['claude-code', 'codex', 'gemini', 'echo']
   const rawEngine = c.req.query('engine')
   if (rawEngine && !validEngines.includes(rawEngine)) {
@@ -213,4 +213,4 @@ settings.get('/slash-commands', async (c) => {
   return c.json({ success: true, data: { commands } })
 })
 
-export default settings
+export default general

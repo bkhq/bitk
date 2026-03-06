@@ -3,12 +3,7 @@ import { Hono } from 'hono'
 import { cacheDel, cacheDelByPrefix } from '@/cache'
 import { db } from '@/db'
 import { findProject } from '@/db/helpers'
-import {
-  attachments as attachmentsTable,
-  issueLogs as issueLogsTable,
-  issues as issuesTable,
-  issuesLogsToolsCall as toolsCallTable,
-} from '@/db/schema'
+import { issues as issuesTable } from '@/db/schema'
 import { issueEngine } from '@/engines/issue'
 import { logger } from '@/logger'
 
@@ -71,9 +66,8 @@ del.delete('/:id', async (c) => {
         ),
       )
     const childIds = childIssues.map((c) => c.id)
-    const allIssueIds = [issueId, ...childIds]
 
-    // Soft-delete the issue
+    // Soft-delete the issue only — keep logs/tools/attachments intact for restore
     await tx
       .update(issuesTable)
       .set({ isDeleted: 1 })
@@ -86,24 +80,6 @@ del.delete('/:id', async (c) => {
         .set({ isDeleted: 1 })
         .where(inArray(issuesTable.id, childIds))
     }
-
-    // Soft-delete related logs
-    await tx
-      .update(issueLogsTable)
-      .set({ isDeleted: 1 })
-      .where(inArray(issueLogsTable.issueId, allIssueIds))
-
-    // Soft-delete related tool calls
-    await tx
-      .update(toolsCallTable)
-      .set({ isDeleted: 1 })
-      .where(inArray(toolsCallTable.issueId, allIssueIds))
-
-    // Soft-delete related attachments
-    await tx
-      .update(attachmentsTable)
-      .set({ isDeleted: 1 })
-      .where(inArray(attachmentsTable.issueId, allIssueIds))
   })
 
   // Invalidate caches
