@@ -37,6 +37,16 @@ function createWrapper() {
   }
 }
 
+function deferred<T>() {
+  let resolve!: (value: T) => void
+  let reject!: (reason?: unknown) => void
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res
+    reject = rej
+  })
+  return { promise, resolve, reject }
+}
+
 describe('useIssueStream', () => {
   beforeEach(() => {
     subscribeMock.mockReset()
@@ -92,6 +102,69 @@ describe('useIssueStream', () => {
     })
 
     await waitFor(() => {
+      expect(result.current.logs[0]?.metadata?.type).toBeUndefined()
+    })
+  })
+
+  it('prefers the SSE-updated entry over a stale initial snapshot with the same messageId', async () => {
+    let handler: IssueEventHandler | null = null
+    subscribeMock.mockImplementation(
+      (_issueId: string, nextHandler: IssueEventHandler) => {
+        handler = nextHandler
+        return () => {}
+      },
+    )
+
+    const initialFetch = deferred<{
+      issue: null
+      logs: NormalizedLogEntry[]
+      nextCursor: null
+      hasMore: boolean
+    }>()
+
+    getIssueLogsMock.mockReturnValue(initialFetch.promise)
+
+    const pendingEntry: NormalizedLogEntry = {
+      messageId: '01ARZ3NDEKTSV4RRFFQ69G5FAA',
+      entryType: 'user-message',
+      content: 'queued follow-up',
+      timestamp: new Date().toISOString(),
+      metadata: { type: 'pending' },
+    }
+
+    const { result } = renderHook(
+      () =>
+        useIssueStream({
+          projectId: 'proj-1',
+          issueId: 'issue-1',
+          sessionStatus: 'running',
+        }),
+      {
+        wrapper: createWrapper(),
+      },
+    )
+
+    act(() => {
+      handler?.onLogUpdated({
+        ...pendingEntry,
+        metadata: undefined,
+      })
+    })
+
+    await waitFor(() => {
+      expect(result.current.logs).toHaveLength(1)
+      expect(result.current.logs[0]?.metadata?.type).toBeUndefined()
+    })
+
+    initialFetch.resolve({
+      issue: null,
+      logs: [pendingEntry],
+      nextCursor: null,
+      hasMore: false,
+    })
+
+    await waitFor(() => {
+      expect(result.current.logs).toHaveLength(1)
       expect(result.current.logs[0]?.metadata?.type).toBeUndefined()
     })
   })

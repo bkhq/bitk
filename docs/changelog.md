@@ -1,5 +1,8 @@
 # Changelog
 
+## 2026-03-06 19:50 [progress]
+根据 PR review 继续修复 `useIssueStream` 的竞态：当 `log-updated` 在首个 `getIssueLogs()` 返回前到达时，初始日志快照合并现在会优先保留内存中的 SSE 更新版本，不再用陈旧的 pending 元数据覆盖本地状态。新增前端 hook 回归测试覆盖该时序，验证通过。
+
 ## 2026-03-06 19:42 [progress]
 修复 pending 消息被后端消费后前端仍停留在 queued 状态的问题：新增 `log-updated` 事件，后端在 promote pending user-message 后主动广播更新，前端 `useIssueStream` 按 `messageId` 就地 upsert 已有日志项。新增前后端聚焦测试。排查过程中确认后端测试失败并非 `drizzle-orm` 版本问题，而是当前 worktree 的安装产物残缺；定向重装依赖后恢复，`bun test apps/api/test/pending-messages-unit.test.ts` 与前端 hook 测试均通过。
 

@@ -60,6 +60,33 @@ function compareByMessageId(
   return 0
 }
 
+function mergeLogsPreferLive(
+  snapshotLogs: NormalizedLogEntry[],
+  liveLogs: NormalizedLogEntry[],
+): NormalizedLogEntry[] {
+  if (liveLogs.length === 0) return snapshotLogs
+
+  const liveById = new Map(
+    liveLogs
+      .filter((entry) => entry.messageId)
+      .map((entry) => [entry.messageId!, entry]),
+  )
+
+  const mergedSnapshot = snapshotLogs.map((entry) => {
+    if (!entry.messageId) return entry
+    return liveById.get(entry.messageId) ?? entry
+  })
+
+  const snapshotIds = new Set(
+    snapshotLogs.map((entry) => entry.messageId).filter(Boolean),
+  )
+  const liveOnly = liveLogs.filter(
+    (entry) => entry.messageId && !snapshotIds.has(entry.messageId),
+  )
+
+  return [...mergedSnapshot, ...liveOnly].sort(compareByMessageId)
+}
+
 export function useIssueStream({
   projectId,
   issueId,
@@ -318,22 +345,10 @@ export function useIssueStream({
             return data.logs
           }
 
-          // Collect SSE-only entries (arrived before HTTP response, not in DB snapshot)
-          const dbIds = new Set(
-            data.logs.map((e) => e.messageId).filter(Boolean),
-          )
-          const sseOnly = prev.filter(
-            (e) => e.messageId && !dbIds.has(e.messageId),
-          )
-
-          if (sseOnly.length === 0) {
-            // All SSE entries are already in the DB snapshot
-            liveLogsRef.current = data.logs
-            return data.logs
-          }
-
-          // Merge + sort by ULID to ensure correct chronological order
-          const next = [...data.logs, ...sseOnly].sort(compareByMessageId)
+          // Prefer any in-memory SSE-updated entry when the same messageId is
+          // also present in the DB snapshot. This prevents a stale initial
+          // fetch from overwriting a newer log-updated event that arrived first.
+          const next = mergeLogsPreferLive(data.logs, prev)
           liveLogsRef.current = next
           return next
         })
