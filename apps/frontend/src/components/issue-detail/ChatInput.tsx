@@ -1,8 +1,10 @@
 import {
+  Bot,
   FileText,
   Image as ImageIcon,
   Loader2,
   Paperclip,
+  Plug,
   SlashSquare,
   X,
 } from 'lucide-react'
@@ -690,6 +692,22 @@ export function ChatInput({
                 onSelect={(cmd) => selectSlashCommand(cmd)}
               />
             ) : null}
+            {agentCommands.length > 0 ? (
+              <AgentPicker
+                agents={agentCommands}
+                onSelect={(a) =>
+                  selectSlashCommand(a.startsWith('/') ? a : `/${a}`)
+                }
+              />
+            ) : null}
+            {pluginCommands.length > 0 ? (
+              <PluginPicker
+                plugins={pluginCommands}
+                onSelect={(p) =>
+                  selectSlashCommand(p.startsWith('/') ? p : `/${p}`)
+                }
+              />
+            ) : null}
           </div>
 
           <Button
@@ -955,6 +973,113 @@ function CommandPicker({
                 className="text-xs px-3 py-1.5"
               >
                 <code className="font-mono text-foreground/80">{cmd}</code>
+              </CommandItem>
+            ))}
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  )
+}
+
+// ─── AgentPicker ─────────────────────────────────────────────────────────────
+
+function AgentPicker({
+  agents,
+  onSelect,
+}: {
+  agents: string[]
+  onSelect: (agent: string) => void
+}) {
+  const { t } = useTranslation()
+  const [open, setOpen] = useState(false)
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger
+        render={<Button variant="ghost" size="icon" title={t('chat.agents')} />}
+      >
+        <Bot className="size-4" />
+      </PopoverTrigger>
+      <PopoverContent side="top" align="start" className="w-[260px] p-0">
+        <Command>
+          <CommandInput
+            placeholder={t('chat.agentSearch')}
+            className="text-xs h-8"
+          />
+          <CommandList className="max-h-[240px]">
+            <CommandEmpty className="text-xs text-muted-foreground/50 px-3 py-2">
+              {t('chat.noAgents')}
+            </CommandEmpty>
+            {agents.map((agent) => (
+              <CommandItem
+                key={agent}
+                value={agent}
+                onSelect={() => {
+                  onSelect(agent)
+                  setOpen(false)
+                }}
+                className="text-xs px-3 py-1.5"
+              >
+                <code className="font-mono text-foreground/80">{agent}</code>
+              </CommandItem>
+            ))}
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  )
+}
+
+// ─── PluginPicker ────────────────────────────────────────────────────────────
+
+function PluginPicker({
+  plugins,
+  onSelect,
+}: {
+  plugins: Array<{ name: string; path: string }>
+  onSelect: (name: string) => void
+}) {
+  const { t } = useTranslation()
+  const [open, setOpen] = useState(false)
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger
+        render={
+          <Button variant="ghost" size="icon" title={t('chat.plugins')} />
+        }
+      >
+        <Plug className="size-4" />
+      </PopoverTrigger>
+      <PopoverContent side="top" align="start" className="w-[280px] p-0">
+        <Command>
+          <CommandInput
+            placeholder={t('chat.pluginSearch')}
+            className="text-xs h-8"
+          />
+          <CommandList className="max-h-[240px]">
+            <CommandEmpty className="text-xs text-muted-foreground/50 px-3 py-2">
+              {t('chat.noPlugins')}
+            </CommandEmpty>
+            {plugins.map((plugin) => (
+              <CommandItem
+                key={plugin.name}
+                value={plugin.name}
+                onSelect={() => {
+                  onSelect(plugin.name)
+                  setOpen(false)
+                }}
+                className="text-xs px-3 py-1.5"
+              >
+                <div className="flex flex-col gap-0.5">
+                  <code className="font-mono text-foreground/80">
+                    {plugin.name}
+                  </code>
+                  <span className="text-[10px] text-muted-foreground/50 truncate">
+                    {plugin.path}
+                  </span>
+                </div>
               </CommandItem>
             ))}
           </CommandList>

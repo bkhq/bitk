@@ -164,6 +164,12 @@
     "commands": "命令",
     "commandSearch": "搜索命令...",
     "noCommands": "没有匹配的命令",
+    "agents": "Agents",
+    "agentSearch": "搜索 Agent...",
+    "noAgents": "没有匹配的 Agent",
+    "plugins": "Plugins",
+    "pluginSearch": "搜索插件...",
+    "noPlugins": "没有匹配的插件",
     "worktree": "工作树",
     "worktreeBranch": "分支",
     "worktreePath": "路径"

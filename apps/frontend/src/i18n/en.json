@@ -164,6 +164,12 @@
     "commands": "Commands",
     "commandSearch": "Search commands...",
     "noCommands": "No matching commands",
+    "agents": "Agents",
+    "agentSearch": "Search agents...",
+    "noAgents": "No matching agents",
+    "plugins": "Plugins",
+    "pluginSearch": "Search plugins...",
+    "noPlugins": "No matching plugins",
     "worktree": "Worktree",
     "worktreeBranch": "Branch",
     "worktreePath": "Path"
