@@ -1,10 +1,10 @@
 # PLAN-011 Pending 消息消费后的前后端同步修复
 
-- status: implementing
+- status: completed
 - task: BUG-091
 - owner: codex
 - createdAt: 2026-03-06 19:15 UTC
-- updatedAt: 2026-03-06 19:31 UTC
+- updatedAt: 2026-03-06 19:42 UTC
 
 ## Context
 当前 pending 消息在后端被消费时，会走 `followUpIssue(..., { skipPersistMessage: true })`，随后通过 `promotePendingMessages()` 将原有日志行从 `metadata.type='pending'` 提升为普通 user-message。前端 `useIssueStream()` 是 append-only，并按 `messageId` 去重，无法把同一条消息 ID 的本地 pending 项就地覆盖，因此 UI 会一直显示 pending，直到页面刷新后重新拉取日志快照。
@@ -16,7 +16,8 @@
 - 共享事件类型扩展后，前后端事件名和载荷必须保持完全一致，否则会出现静默丢事件。
 - 前端本地 upsert 需要避免破坏现有 `seenIdsRef` / 排序 / 去重逻辑。
 - 后端 promote 是批量 best-effort 路径，发事件时要基于最终写入成功的内容，避免前端与 DB 再次分叉。
-- 已完成 `bun install`，前端聚焦测试通过；后端聚焦测试仍被 `drizzle-orm` 安装产物异常阻塞，需先修复依赖包缺失的 `column-builder.js` 再补跑。
+- 已完成 `bun install`，前后端聚焦测试均通过。
+- 后端测试阻塞的真实原因是当前 worktree 的 `drizzle-orm` 安装产物残缺，而非版本本身有问题；定向重装该包后问题消失。
 
 ## Scope
 - 扩展共享 SSE/App event 类型与后端事件辅助函数

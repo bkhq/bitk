@@ -1,5 +1,8 @@
 # Changelog
 
+## 2026-03-06 19:42 [progress]
+修复 pending 消息被后端消费后前端仍停留在 queued 状态的问题：新增 `log-updated` 事件，后端在 promote pending user-message 后主动广播更新，前端 `useIssueStream` 按 `messageId` 就地 upsert 已有日志项。新增前后端聚焦测试。排查过程中确认后端测试失败并非 `drizzle-orm` 版本问题，而是当前 worktree 的安装产物残缺；定向重装依赖后恢复，`bun test apps/api/test/pending-messages-unit.test.ts` 与前端 hook 测试均通过。
+
 ## 2026-03-04 20:42 [progress]
 启动修复工作并完成二轮修复：1) 修复 `handleTurnCompleted` 自动 flush pending 路径中“先 promote 再 follow-up”导致失败后 pending 语义丢失的问题（改为 follow-up 成功后再 promote）；2) 加固 `withIssueLock` 获取超时分支的 `lockDepth` 清理；3) 新增 `turn-completion-regression.test.ts` 覆盖 auto-flush 失败时 pending 可重试；4) 修复 `followup-reconciliation` 中顺序敏感断言导致的 flaky。回归结果：全仓 `bun run test` 通过，`@bitk/api` 278 pass / 0 fail。
 
