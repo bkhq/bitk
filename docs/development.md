@@ -220,7 +220,7 @@ The engine layer is the most complex part of the backend:
 | `API_PORT` | Listen port | `3000` |
 | `API_SECRET` | Bearer token for auth (unset = no auth) | — |
 | `ALLOWED_ORIGIN` | CORS allowed origin | `*` |
-| `DB_PATH` | SQLite database path | `data/bitk.db` |
+| `DB_PATH` | SQLite database path | `data/db/bitk.db` |
 | `LOG_LEVEL` | Log level | `info` (binary) / `debug` (dev) |
 | `SERVICE_NAME` | Logger name prefix | `bitk` |
 | `LOG_EXECUTOR_IO` | Log executor stdin/stdout | `1` |

@@ -57,7 +57,7 @@ export const issues = sqliteTable(
     statusId: text('status_id').notNull(),
     issueNumber: integer('issue_number').notNull(),
     title: text('title').notNull(),
-    priority: text('priority').notNull().default('medium'),
+    tag: text('tag'),
     sortOrder: integer('sort_order').notNull().default(0),
     parentIssueId: text('parent_issue_id').references((): any => issues.id),
     useWorktree: integer('use_worktree', { mode: 'boolean' })

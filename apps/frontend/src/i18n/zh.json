@@ -69,7 +69,6 @@
   },
   "issue": {
     "status": "状态",
-    "priority": "优先级",
     "noDescription": "暂无描述",
     "description": "描述",
     "created": "创建时间",
@@ -94,6 +93,8 @@
     "editTitle": "点击编辑标题",
     "addDescription": "添加描述...",
     "clickToEdit": "点击编辑",
+    "tag": "标签",
+    "tagPlaceholder": "bug, feature, docs",
     "devMode": "开发模式",
     "dev": "Dev",
     "autoTitle": "自动生成标题",
@@ -311,12 +312,6 @@
     "Working": "进行中",
     "Review": "审查中",
     "Done": "已完成"
-  },
-  "priorityName": {
-    "urgent": "紧急",
-    "high": "高",
-    "medium": "中",
-    "low": "低"
   },
   "fileBrowser": {
     "breadcrumb": "文件路径",

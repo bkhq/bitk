@@ -16,6 +16,7 @@ import {
   createIssueSchema,
   parseProjectEnvVars,
   serializeIssue,
+  serializeTags,
   triggerIssueExecution,
 } from './_shared'
 
@@ -124,7 +125,7 @@ create.post(
             statusId: effectiveStatusId,
             issueNumber,
             title: body.title,
-            priority: body.priority,
+            tag: serializeTags(body.tags),
             sortOrder,
             parentIssueId: body.parentIssueId ?? null,
             useWorktree: body.useWorktree ?? false,

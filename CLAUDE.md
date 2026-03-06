@@ -41,7 +41,7 @@ cd apps/frontend && bunx vitest run src/__tests__/lib/format.test.ts
 # Database (drizzle config lives in apps/api/)
 bun run db:generate          # drizzle-kit generate (proxies to @bitk/api)
 bun run db:migrate           # drizzle-kit migrate (proxies to @bitk/api)
-bun run db:reset             # deletes SQLite DB files (data/bitk.db)
+bun run db:reset             # deletes SQLite DB files (data/db/bitk.db)
 
 # Compile to standalone binary (full mode — embeds everything, ~105 MB)
 bun run compile              # builds frontend + embeds assets + compiles binary

@@ -10,7 +10,7 @@ import { APP_DIR, ROOT_DIR } from '@/root'
 import { embeddedMigrations } from './embedded-migrations'
 import * as schema from './schema'
 
-const rawDbPath = process.env.DB_PATH || 'data/bitk.db'
+const rawDbPath = process.env.DB_PATH || 'data/db/bitk.db'
 const dbPath = rawDbPath.startsWith('/')
   ? rawDbPath
   : resolve(ROOT_DIR, rawDbPath)

@@ -36,7 +36,7 @@ bun --filter @bitk/frontend lint  # frontend lint
 # Database
 bun run db:generate          # drizzle-kit generate (creates migration SQL)
 bun run db:migrate           # drizzle-kit migrate (applies migrations)
-bun run db:reset             # deletes SQLite DB files (data/bitk.db)
+bun run db:reset             # deletes SQLite DB files (data/db/bitk.db)
 ```
 
 ## Architecture

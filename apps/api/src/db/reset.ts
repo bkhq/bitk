@@ -2,7 +2,7 @@ import { existsSync, rmSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { ROOT_DIR } from '@/root'
 
-const rawDbPath = process.env.DB_PATH || 'data/bitk.db'
+const rawDbPath = process.env.DB_PATH || 'data/db/bitk.db'
 const dbPath = rawDbPath.startsWith('/')
   ? rawDbPath
   : resolve(ROOT_DIR, rawDbPath)

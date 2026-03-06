@@ -1,8 +1,6 @@
 // @bitk/shared — Types shared between @bitk/api and @bitk/frontend
 // Re-exported from packages/shared for cross-workspace consumption.
 
-export type Priority = 'urgent' | 'high' | 'medium' | 'low'
-
 export type Project = {
   id: string
   alias: string
@@ -32,7 +30,7 @@ export type Issue = {
   statusId: string
   issueNumber: number
   title: string
-  priority: Priority
+  tags: string[] | null
   sortOrder: number
   parentIssueId: string | null
   useWorktree: boolean

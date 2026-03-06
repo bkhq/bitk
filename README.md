@@ -87,7 +87,7 @@ All configuration is done via environment variables. Create a `.env` file in the
 |----------|-------------|---------|
 | `API_PORT` | Server port | `3000` |
 | `API_HOST` | Listen address | `0.0.0.0` |
-| `DB_PATH` | SQLite database path | `data/bitk.db` |
+| `DB_PATH` | SQLite database path | `data/db/bitk.db` |
 | `MAX_CONCURRENT_EXECUTIONS` | Max parallel agent sessions | `5` |
 | `LOG_LEVEL` | Log level (`trace` / `debug` / `info` / `warn` / `error`) | `info` |
 | `ANTHROPIC_API_KEY` | Claude API key | — |

@@ -13,6 +13,7 @@ import {
   flushPendingAsFollowUp,
   parseProjectEnvVars,
   serializeIssue,
+  serializeTags,
   triggerIssueExecution,
   updateIssueSchema,
 } from './_shared'
@@ -79,7 +80,6 @@ update.patch(
           changes.statusId = u.statusId
         }
         if (u.sortOrder !== undefined) changes.sortOrder = u.sortOrder
-        if (u.priority !== undefined) changes.priority = u.priority
 
         if (Object.keys(changes).length === 0) continue
 
@@ -215,7 +215,7 @@ update.patch(
     const body = c.req.valid('json')
     const updates: Record<string, unknown> = {}
     if (body.title !== undefined) updates.title = body.title
-    if (body.priority !== undefined) updates.priority = body.priority
+    if (body.tags !== undefined) updates.tag = serializeTags(body.tags)
     if (body.statusId !== undefined) {
       updates.statusId = body.statusId
       // Only update statusUpdatedAt on actual status change

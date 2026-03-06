@@ -92,9 +92,9 @@ afterAll(() => {
 })
 
 describe('resolveWorktreePath', () => {
-  test('returns deterministic path under ROOT_DIR/data/worktrees/', () => {
+  test('returns deterministic path under ROOT_DIR/worktrees/', () => {
     const path = resolveWorktreePath('proj-1', 'issue-abc')
-    expect(path).toBe(join(ROOT_DIR, 'data/worktrees', 'proj-1', 'issue-abc'))
+    expect(path).toBe(join(ROOT_DIR, 'worktrees', 'proj-1', 'issue-abc'))
   })
 })
 
@@ -133,7 +133,7 @@ describe('removeWorktree', () => {
   test('falls back to directory deletion for non-git worktree dirs', async () => {
     const fakeDir = join(
       ROOT_DIR,
-      'data/worktrees',
+      'worktrees',
       TEST_PROJECT_ID,
       'fake-worktree',
     )

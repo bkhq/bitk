@@ -183,8 +183,8 @@ export function useCreateIssue(projectId: string) {
   return useMutation({
     mutationFn: (data: {
       title: string
+      tags?: string[]
       statusId: string
-      priority?: string
       useWorktree?: boolean
       parentIssueId?: string
       engineType?: string
