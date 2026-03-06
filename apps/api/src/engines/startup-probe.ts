@@ -168,13 +168,25 @@ async function runLiveProbe(): Promise<EngineDiscovery> {
 
 const DISCOVERY_TIMEOUT_MS = 130_000
 
+/** Static slash commands for Codex (no discovery needed). */
+const CODEX_SLASH_COMMANDS = ['/compact', '/status', '/mcp']
+
 /**
  * Discover slash commands and agents for installed engines.
- * Currently only Claude Code supports this. Saves results to DB + memory cache.
+ * Claude Code: discovered dynamically. Codex: registered statically.
  */
 async function discoverSlashCommands(
   installed: EngineAvailability[],
 ): Promise<void> {
+  // Register static Codex slash commands if installed
+  if (installed.some((e) => e.engineType === 'codex')) {
+    await setAppSetting(
+      slashCommandsKey('codex'),
+      JSON.stringify(CODEX_SLASH_COMMANDS),
+    )
+    await refreshSlashCommandsCacheForEngine('codex')
+  }
+
   for (const engine of installed) {
     if (engine.engineType !== 'claude-code') continue
 
