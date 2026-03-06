@@ -25,7 +25,7 @@ export function CreateProjectDialog({
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onCreated: (p: Project) => void
+  onCreated?: (p: Project) => void
 }) {
   const { t } = useTranslation()
   const { data: wsData } = useWorkspacePath(true)
@@ -71,7 +71,7 @@ export function CreateProjectDialog({
       },
       {
         onSuccess: (project) => {
-          onCreated(project)
+          onCreated?.(project)
           onOpenChange(false)
           reset()
         },

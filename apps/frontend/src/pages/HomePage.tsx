@@ -320,13 +320,6 @@ export default function HomePage() {
     [isMobile, globalProjectPath],
   )
 
-  const handleProjectCreated = useCallback(
-    (project: Project) => {
-      void navigate(projectPath(project.alias))
-    },
-    [navigate, projectPath],
-  )
-
   return (
     <main className="min-h-screen text-foreground animate-page-enter">
       <section className="mx-auto max-w-6xl px-4 py-6 md:px-6 md:py-12">
@@ -399,7 +392,6 @@ export default function HomePage() {
       <CreateProjectDialog
         open={showCreate}
         onOpenChange={setShowCreate}
-        onCreated={handleProjectCreated}
       />
       <AppSettingsDialog open={showSettings} onOpenChange={setShowSettings} />
     </main>
