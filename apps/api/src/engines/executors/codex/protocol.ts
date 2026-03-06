@@ -14,6 +14,7 @@ function clipForLog(input: string): string {
 const APPROVAL_METHODS = new Set([
   'item/commandExecution/requestApproval',
   'item/fileChange/requestApproval',
+  'toolRequestUserInput',
 ])
 
 interface PendingRequest {
@@ -58,6 +59,27 @@ function classifyMessage(
   if (hasId && hasMethod) return 'server-request'
   if (hasMethod && !hasId) return 'notification'
   return 'unknown'
+}
+
+/**
+ * Thread start parameters matching the Codex app-server protocol.
+ */
+export interface ThreadStartParams {
+  model?: string
+  cwd?: string
+  approvalPolicy?: string
+  sandbox?: string
+  config?: Record<string, unknown>
+  baseInstructions?: string
+  developerInstructions?: string
+  modelProvider?: string
+}
+
+/**
+ * Thread fork parameters — creates a new thread forked from an existing one.
+ */
+export interface ThreadForkParams extends ThreadStartParams {
+  threadId: string
 }
 
 /**
@@ -113,7 +135,7 @@ export class CodexProtocolHandler {
   async initialize(): Promise<{ userAgent: string }> {
     const result = (await this.sendRequest('initialize', {
       clientInfo: { name: 'bitk', version: '0.1.0', title: 'BitK' },
-      capabilities: {},
+      capabilities: { experimental_api: true },
     })) as { userAgent?: string }
 
     this.sendNotification('initialized')
@@ -123,22 +145,48 @@ export class CodexProtocolHandler {
   }
 
   /**
+   * Read account info to check auth status before starting a thread.
+   */
+  async getAccount(): Promise<{
+    requiresOpenaiAuth: boolean
+    account: unknown | null
+  }> {
+    const result = (await this.sendRequest('account/read', {
+      refreshToken: false,
+    })) as {
+      requiresOpenaiAuth?: boolean
+      requires_openai_auth?: boolean
+      account?: unknown
+    }
+    return {
+      requiresOpenaiAuth:
+        result?.requiresOpenaiAuth ?? result?.requires_openai_auth ?? false,
+      account: result?.account ?? null,
+    }
+  }
+
+  /**
    * Create a new thread, returns the thread ID.
    */
-  async startThread(options: {
+  async startThread(params: ThreadStartParams): Promise<{
+    threadId: string
     model?: string
-    cwd?: string
-    approvalPolicy?: string
-    sandbox?: string
-  }): Promise<string> {
-    const params: Record<string, unknown> = {}
-    if (options.model) params.model = options.model
-    if (options.cwd) params.cwd = options.cwd
-    if (options.approvalPolicy) params.approvalPolicy = options.approvalPolicy
-    if (options.sandbox) params.sandbox = options.sandbox
+  }> {
+    const rpcParams: Record<string, unknown> = {}
+    if (params.model) rpcParams.model = params.model
+    if (params.cwd) rpcParams.cwd = params.cwd
+    if (params.approvalPolicy) rpcParams.approvalPolicy = params.approvalPolicy
+    if (params.sandbox) rpcParams.sandbox = params.sandbox
+    if (params.config) rpcParams.config = params.config
+    if (params.baseInstructions)
+      rpcParams.baseInstructions = params.baseInstructions
+    if (params.developerInstructions)
+      rpcParams.developerInstructions = params.developerInstructions
+    if (params.modelProvider) rpcParams.modelProvider = params.modelProvider
 
-    const result = (await this.sendRequest('thread/start', params)) as {
+    const result = (await this.sendRequest('thread/start', rpcParams)) as {
       thread?: { id?: string }
+      model?: string
     }
 
     const threadId = result?.thread?.id
@@ -147,12 +195,55 @@ export class CodexProtocolHandler {
     }
 
     this._threadId = threadId
-    logger.info({ threadId }, 'codex_protocol_thread_started')
-    return threadId
+    logger.info(
+      { threadId, model: result?.model },
+      'codex_protocol_thread_started',
+    )
+    return { threadId, model: result?.model }
   }
 
   /**
-   * Resume an existing thread.
+   * Fork an existing thread — creates a new thread with the same history.
+   * Used for follow-ups instead of thread/resume (more reliable).
+   */
+  async forkThread(params: ThreadForkParams): Promise<{
+    threadId: string
+    model?: string
+  }> {
+    const rpcParams: Record<string, unknown> = {
+      threadId: params.threadId,
+    }
+    if (params.model) rpcParams.model = params.model
+    if (params.cwd) rpcParams.cwd = params.cwd
+    if (params.approvalPolicy) rpcParams.approvalPolicy = params.approvalPolicy
+    if (params.sandbox) rpcParams.sandbox = params.sandbox
+    if (params.config) rpcParams.config = params.config
+    if (params.baseInstructions)
+      rpcParams.baseInstructions = params.baseInstructions
+    if (params.developerInstructions)
+      rpcParams.developerInstructions = params.developerInstructions
+    if (params.modelProvider) rpcParams.modelProvider = params.modelProvider
+
+    const result = (await this.sendRequest('thread/fork', rpcParams)) as {
+      thread?: { id?: string }
+      model?: string
+    }
+
+    const threadId = result?.thread?.id
+    if (!threadId) {
+      throw new Error('thread/fork response missing thread.id')
+    }
+
+    this._threadId = threadId
+    logger.info(
+      { threadId, forkedFrom: params.threadId, model: result?.model },
+      'codex_protocol_thread_forked',
+    )
+    return { threadId, model: result?.model }
+  }
+
+  /**
+   * Resume an existing thread (legacy fallback if fork fails).
    */
   async resumeThread(threadId: string): Promise<void> {
     await this.sendRequest('thread/resume', { threadId })
@@ -169,7 +260,6 @@ export class CodexProtocolHandler {
       input: [{ type: 'text', text: prompt }],
     })) as { turn?: { id?: string }; turnId?: string }
 
-    // The response structure may vary — try both shapes
     const turnId = result?.turn?.id ?? result?.turnId
     if (turnId) {
       this._turnId = turnId
@@ -203,7 +293,6 @@ export class CodexProtocolHandler {
     if (this.closed) return
     this.closed = true
 
-    // Reject all pending requests
     for (const [id, pending] of this.pending) {
       clearTimeout(pending.timer)
       pending.reject(
@@ -236,7 +325,6 @@ export class CodexProtocolHandler {
           const { done, value } = await reader.read()
           if (done) break
           buffer += decoder.decode(value, { stream: true })
-          // Split on newlines, process each complete line
           const lines = buffer.split('\n')
           buffer = lines.pop() ?? ''
           for (const line of lines) {
@@ -244,13 +332,11 @@ export class CodexProtocolHandler {
             this.processLine(line)
           }
         }
-        // Flush remaining buffer
         if (buffer.trim()) this.processLine(buffer)
       } catch (error) {
         logger.warn({ error }, 'codex_protocol_reader_error')
       } finally {
         reader.releaseLock()
-        // Close pending request timers and notification stream on reader exit
         this.close()
       }
     })()
@@ -292,7 +378,6 @@ export class CodexProtocolHandler {
 
       case 'notification':
         this.trackNotification(msg as unknown as JsonRpcNotification)
-        // Push through for downstream normalizeLog
         try {
           this.notificationController?.enqueue(encoder.encode(`${line}\n`))
         } catch {
@@ -301,7 +386,6 @@ export class CodexProtocolHandler {
         break
 
       default:
-        // Unknown structure — push through
         try {
           this.notificationController?.enqueue(encoder.encode(`${line}\n`))
         } catch {
@@ -350,6 +434,15 @@ export class CodexProtocolHandler {
     const pending = this.pending.get(response.id)
     if (!pending) {
       logger.warn({ id: response.id }, 'codex_protocol_orphan_response')
+      // Push orphan response through for downstream processing
+      const encoder = new TextEncoder()
+      try {
+        this.notificationController?.enqueue(
+          encoder.encode(`${JSON.stringify(response)}\n`),
+        )
+      } catch {
+        /* controller closed */
+      }
       return
     }
 
@@ -366,6 +459,20 @@ export class CodexProtocolHandler {
     } else {
       logger.debug({ id: response.id }, 'codex_protocol_rpc_response')
       pending.resolve(response.result)
+
+      // Push matched responses through for downstream session ID / model extraction
+      const encoder = new TextEncoder()
+      try {
+        const responseJson = JSON.stringify({
+          id: response.id,
+          result: response.result,
+        })
+        this.notificationController?.enqueue(
+          encoder.encode(`${responseJson}\n`),
+        )
+      } catch {
+        /* controller closed */
+      }
     }
   }
 
@@ -395,13 +502,22 @@ export class CodexProtocolHandler {
       this._turnId = undefined
     }
 
-    // Extract turn ID if provided in turn/started
     if (method === 'turn/started' && params) {
       const turnId = (params as Record<string, unknown>).turnId as
         | string
         | undefined
       if (turnId) {
         this._turnId = turnId
+      }
+    }
+
+    if (method === 'thread/started' && params) {
+      const thread = (params as Record<string, unknown>).thread as
+        | Record<string, unknown>
+        | undefined
+      const threadId = thread?.id as string | undefined
+      if (threadId && !this._threadId) {
+        this._threadId = threadId
       }
     }
   }

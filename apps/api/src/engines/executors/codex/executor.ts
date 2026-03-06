@@ -1,4 +1,3 @@
-import { classifyCommand } from '@/engines/logs'
 import { safeEnv } from '@/engines/safe-env'
 import type {
   EngineAvailability,
@@ -10,10 +9,12 @@ import type {
   NormalizedLogEntry,
   SpawnedProcess,
   SpawnOptions,
-  ToolAction,
 } from '@/engines/types'
+import type { WriteFilterRule } from '@/engines/write-filter'
 import { logger } from '@/logger'
+import { CodexLogNormalizer } from './normalizer'
 import { CodexProtocolHandler } from './protocol'
+import type { ThreadStartParams } from './protocol'
 
 const CODEX_CMD = ['npx', '-y', '@openai/codex']
 const JSONRPC_TIMEOUT = 15000
@@ -47,7 +48,6 @@ class JsonRpcSession {
     const deadline = Date.now() + JSONRPC_TIMEOUT
 
     while (!this.done && Date.now() < deadline) {
-      // First, drain any complete lines already in the buffer
       const parsed = this.parseLine(id)
       if (parsed !== undefined) {
         logger.debug(
@@ -57,7 +57,6 @@ class JsonRpcSession {
         return parsed
       }
 
-      // Read more data from the stream
       const { value, done } = await this.reader.read()
       if (done) {
         logger.debug(
@@ -84,7 +83,6 @@ class JsonRpcSession {
       this.buffer += chunk
     }
 
-    // Final attempt to parse remaining buffer
     const parsed = this.parseLine(id)
     if (parsed !== undefined) {
       logger.debug(
@@ -166,7 +164,6 @@ class JsonRpcSession {
 
 /**
  * Codex app-server model/list response shape.
- * @see https://github.com/openai/codex/tree/main/codex-rs/app-server
  */
 interface CodexModelListResponse {
   data: Array<{
@@ -182,9 +179,6 @@ interface CodexModelListResponse {
 /**
  * Start a short-lived Codex app-server, perform the initialize handshake,
  * then paginate through model/list. Returns flattened EngineModel[].
- *
- * Protocol: JSON-RPC lite over stdio (JSONL, no "jsonrpc":"2.0" header).
- * Lifecycle: initialize -> initialized notification -> model/list (paginated) -> kill.
  */
 async function queryCodexModels(): Promise<EngineModel[]> {
   logger.debug(
@@ -199,7 +193,6 @@ async function queryCodexModels(): Promise<EngineModel[]> {
     env: safeEnv({ NPM_CONFIG_LOGLEVEL: 'error' }),
   })
 
-  // Capture stderr for diagnostics
   const stderrReader = new Response(proc.stderr).text()
 
   const killTimer = setTimeout(() => {
@@ -212,11 +205,13 @@ async function queryCodexModels(): Promise<EngineModel[]> {
   const session = new JsonRpcSession(proc)
 
   try {
-    // 1. Initialize handshake
     logger.debug({ message: 'Sending initialize...' }, 'codex_models_init')
     const initResult = await session.call(
       'initialize',
-      { clientInfo: { name: 'bitk', title: 'BitK', version: '0.1.0' } },
+      {
+        clientInfo: { name: 'bitk', title: 'BitK', version: '0.1.0' },
+        capabilities: { experimental_api: true },
+      },
       0,
     )
     logger.debug(
@@ -224,10 +219,8 @@ async function queryCodexModels(): Promise<EngineModel[]> {
       'codex_models_init_done',
     )
 
-    // 2. Send initialized notification (required before other methods)
     session.notify('initialized', {})
 
-    // 3. Paginate through model/list
     const models: EngineModel[] = []
     let cursor: string | null | undefined = null
     let reqId = 1
@@ -283,35 +276,25 @@ async function queryCodexModels(): Promise<EngineModel[]> {
 }
 
 /**
- * Extract the command string from a Codex item.
- * Codex sends `item.command` as either a string or string[] depending on version.
- * Also checks `item.commandActions[].command` as fallback.
+ * Build the common thread start params used by both spawn and spawnFollowUp.
  */
-function extractCommandString(item: Record<string, unknown>): string {
-  const cmd = item.command
-  if (typeof cmd === 'string') return cmd
-  if (Array.isArray(cmd)) {
-    return cmd
-      .map((a: unknown) => {
-        const s = String(a)
-        return /\s/.test(s) ? `"${s.replace(/"/g, '\\"')}"` : s
-      })
-      .join(' ')
+function buildThreadParams(
+  options: SpawnOptions,
+): ThreadStartParams {
+  const params: ThreadStartParams = {
+    model: options.model,
+    cwd: options.workingDir,
+    approvalPolicy: 'never',
+    sandbox: 'danger-full-access',
   }
-  // Fallback: extract from commandActions array
-  const actions = item.commandActions as
-    | Array<{ command?: unknown }>
-    | undefined
-  const rawCmd = actions?.[0]?.command
-  if (typeof rawCmd === 'string' && rawCmd) return rawCmd
-  return ''
+  return params
 }
 
 /**
  * Codex executor — uses JSON-RPC protocol via `app-server` mode.
  *
- * Launch: `codex app-server`
- * Communication: JSON-RPC over stdio (JSONL)
+ * Protocol: JSON-RPC over stdio (JSONL), with `codex/event/*` notifications
+ * when `experimental_api: true` capability is sent during initialize.
  */
 export class CodexExecutor implements EngineExecutor {
   readonly engineType = 'codex' as const
@@ -347,17 +330,28 @@ export class CodexExecutor implements EngineExecutor {
     // Perform initialize handshake
     await handler.initialize()
 
-    // Create thread — bypass approvals and sandbox since BitK manages
-    // its own execution environment (Docker container / worktree isolation).
-    await handler.startThread({
-      model: options.model,
-      cwd: options.workingDir,
-      approvalPolicy: 'never',
-      sandbox: 'none',
-    })
+    // Auth pre-check: detect missing credentials early
+    try {
+      const account = await handler.getAccount()
+      if (account.requiresOpenaiAuth && !account.account) {
+        throw new Error(
+          'Codex authentication required. Set OPENAI_API_KEY or CODEX_API_KEY, or run `codex auth`.',
+        )
+      }
+    } catch (authErr) {
+      // account/read may not be supported on older versions — log and continue
+      const msg =
+        authErr instanceof Error ? authErr.message : String(authErr)
+      if (msg.includes('authentication required')) throw authErr
+      logger.debug({ error: msg }, 'codex_account_read_skipped')
+    }
+
+    // Create thread with full params
+    const threadParams = buildThreadParams(options)
+    const { threadId } = await handler.startThread(threadParams)
 
     // Start turn with user prompt
-    await handler.startTurn(handler.threadId!, options.prompt)
+    await handler.startTurn(threadId, options.prompt)
 
     logger.info(
       {
@@ -391,8 +385,6 @@ export class CodexExecutor implements EngineExecutor {
           void handler.sendUserMessage(content)
         },
       },
-      // Expose the real Codex thread ID so the issue engine stores it
-      // instead of the pre-generated UUID (needed for follow-up/resume).
       externalSessionId: handler.threadId,
       spawnCommand: cmd.join(' '),
     }
@@ -419,17 +411,39 @@ export class CodexExecutor implements EngineExecutor {
 
     await handler.initialize()
 
-    // Resume the existing thread (options.sessionId contains the Codex thread ID)
-    await handler.resumeThread(options.sessionId)
+    // Use thread/fork instead of thread/resume — creates a new thread
+    // forked from the existing one, which is more reliable and allows
+    // passing updated params (model, sandbox, etc.)
+    const threadParams = buildThreadParams(options)
+    let threadId: string
+
+    try {
+      const forkResult = await handler.forkThread({
+        ...threadParams,
+        threadId: options.sessionId,
+      })
+      threadId = forkResult.threadId
+    } catch (forkErr) {
+      // Fallback to thread/resume if fork fails (older codex versions)
+      const msg =
+        forkErr instanceof Error ? forkErr.message : String(forkErr)
+      logger.warn(
+        { sessionId: options.sessionId, error: msg },
+        'codex_fork_failed_fallback_to_resume',
+      )
+      await handler.resumeThread(options.sessionId)
+      threadId = handler.threadId!
+    }
 
     // Start a new turn with the follow-up prompt
-    await handler.startTurn(handler.threadId!, options.prompt)
+    await handler.startTurn(threadId, options.prompt)
 
     logger.info(
       {
         issueId: env.issueId,
         pid: (proc as { pid?: number }).pid,
         threadId: handler.threadId,
+        forkedFrom: options.sessionId,
         model: options.model,
       },
       'codex_followup_complete',
@@ -513,7 +527,6 @@ export class CodexExecutor implements EngineExecutor {
       const versionMatch = stdout.match(/(\d+\.\d+\.\d[\w.-]*)/)
       const version = versionMatch?.[1]
 
-      // Check auth — OPENAI_API_KEY, CODEX_API_KEY, or ~/.codex/config.toml
       let authStatus: EngineAvailability['authStatus'] = 'unknown'
       if (process.env.OPENAI_API_KEY || process.env.CODEX_API_KEY) {
         authStatus = 'authenticated'
@@ -558,343 +571,25 @@ export class CodexExecutor implements EngineExecutor {
     }
   }
 
-  normalizeLog(rawLine: string): NormalizedLogEntry | null {
-    const now = new Date().toISOString()
-
-    try {
-      const data = JSON.parse(rawLine) as {
-        method?: string
-        params?: Record<string, unknown>
-      }
-
-      const method = data.method
-      const params = (data.params ?? {}) as Record<string, unknown>
-
-      // No method field — not a notification we handle
-      if (!method) return null
-
-      switch (method) {
-        // ------------------------------------------------------------------
-        // 1. Streaming assistant text delta — skip
-        // The canonical full text is emitted by item/completed agentMessage,
-        // which is persisted to DB and sent via SSE. Forwarding individual
-        // character deltas causes scattered duplicate messages on the frontend.
-        // ------------------------------------------------------------------
-        case 'item/agentMessage/delta':
-          return null
-
-        // ------------------------------------------------------------------
-        // 2. Item started — dispatch on item type
-        // ------------------------------------------------------------------
-        case 'item/started': {
-          const item = (params.item ?? {}) as Record<string, unknown>
-          const itemType = item.type as string | undefined
-
-          if (itemType === 'commandExecution') {
-            const commandStr = extractCommandString(item)
-            const toolAction: ToolAction = {
-              kind: 'command-run',
-              command: commandStr,
-              category: commandStr ? classifyCommand(commandStr) : 'other',
-            }
-            // item/started is a live indicator only — mark streaming so it's
-            // emitted via SSE but NOT persisted. item/completed is the canonical record.
-            return {
-              entryType: 'tool-use',
-              content: `Tool: Bash`,
-              timestamp: now,
-              metadata: {
-                streaming: true,
-                toolName: 'Bash',
-                toolCallId: item.id as string | undefined,
-                input: commandStr ? { command: commandStr } : undefined,
-              },
-              toolAction,
-            }
-          }
-
-          if (itemType === 'fileChange') {
-            const path = item.path as string | undefined
-            const toolAction: ToolAction = {
-              kind: 'file-edit',
-              path: path ?? '',
-            }
-            // item/started is a live indicator only — see commandExecution above.
-            return {
-              entryType: 'tool-use',
-              content: `Tool: Edit`,
-              timestamp: now,
-              metadata: {
-                streaming: true,
-                toolName: 'Edit',
-                toolCallId: item.id as string | undefined,
-                path,
-                input: path ? { file_path: path } : undefined,
-              },
-              toolAction,
-            }
-          }
-
-          // item/started for agentMessage — always skip.
-          // Streaming text arrives via item/agentMessage/delta and the canonical
-          // record is emitted by item/completed. Emitting text from item/started
-          // would duplicate the message: the full text appears first, then
-          // item/agentMessage/delta replays the same content as character deltas.
-          if (itemType === 'agentMessage') {
-            return null
-          }
-
-          // reasoning items are skipped (like Claude's thinking blocks)
-          if (itemType === 'reasoning') {
-            return null
-          }
-
-          // Unknown item type — skip
-          return null
-        }
-
-        // ------------------------------------------------------------------
-        // 3. Item completed — dispatch on item type, includes results
-        // ------------------------------------------------------------------
-        case 'item/completed': {
-          const item = (params.item ?? {}) as Record<string, unknown>
-          const itemType = item.type as string | undefined
-
-          if (itemType === 'commandExecution') {
-            // Codex uses aggregatedOutput instead of stdout/stderr
-            const stdout = (item.stdout as string) ?? ''
-            const stderr = (item.stderr as string) ?? ''
-            const aggregated = (item.aggregatedOutput as string) ?? ''
-            const combined =
-              aggregated || [stdout, stderr].filter(Boolean).join('\n')
-            const exitCode = item.exitCode as number | undefined
-            const duration = (item.durationMs ?? item.duration) as
-              | number
-              | undefined
-            const commandStr = extractCommandString(item)
-
-            const toolAction: ToolAction = {
-              kind: 'command-run',
-              command: commandStr,
-              result: combined || undefined,
-              category: commandStr ? classifyCommand(commandStr) : 'other',
-            }
-
-            return {
-              entryType: 'tool-use',
-              content: combined,
-              timestamp: now,
-              metadata: {
-                toolName: 'Bash',
-                isResult: true,
-                toolCallId: item.id as string | undefined,
-                exitCode,
-                duration,
-              },
-              toolAction,
-            }
-          }
-
-          if (itemType === 'fileChange') {
-            const patches = item.patches as unknown[] | undefined
-            const path = item.path as string | undefined
-            const patchCount = patches?.length ?? 0
-            const summary = path
-              ? `File changed: ${path} (${patchCount} patch${patchCount !== 1 ? 'es' : ''})`
-              : `File changed (${patchCount} patch${patchCount !== 1 ? 'es' : ''})`
-
-            const toolAction: ToolAction = {
-              kind: 'file-edit',
-              path: path ?? '',
-            }
-
-            return {
-              entryType: 'tool-use',
-              content: summary,
-              timestamp: now,
-              metadata: {
-                toolName: 'Edit',
-                isResult: true,
-                toolCallId: item.id as string | undefined,
-                path,
-              },
-              toolAction,
-            }
-          }
-
-          if (itemType === 'agentMessage') {
-            return {
-              entryType: 'assistant-message',
-              content: (item.text as string) ?? '',
-              timestamp: now,
-            }
-          }
-
-          // Completed reasoning — skip
-          if (itemType === 'reasoning') {
-            return null
-          }
-
-          return null
-        }
-
-        // ------------------------------------------------------------------
-        // 4. Command execution streaming output delta
-        // ------------------------------------------------------------------
-        case 'item/commandExecution/outputDelta': {
-          const delta = params.delta as string | undefined
-          if (!delta) return null
-          return {
-            entryType: 'tool-use',
-            content: delta,
-            timestamp: now,
-            metadata: { isResult: true, streaming: true },
-          }
-        }
-
-        // ------------------------------------------------------------------
-        // 5. File change streaming output delta
-        // ------------------------------------------------------------------
-        case 'item/fileChange/outputDelta': {
-          const delta = params.delta as string | undefined
-          if (!delta) return null
-          return {
-            entryType: 'tool-use',
-            content: delta,
-            timestamp: now,
-            metadata: { isResult: true, streaming: true },
-          }
-        }
-
-        // ------------------------------------------------------------------
-        // 6. Turn started
-        // ------------------------------------------------------------------
-        case 'turn/started': {
-          const turn = (params.turn ?? {}) as Record<string, unknown>
-          return {
-            entryType: 'system-message',
-            content: 'Turn started',
-            timestamp: now,
-            metadata: {
-              subtype: 'turn_started',
-              turnId: turn.id as string | undefined,
-            },
-          }
-        }
-
-        // ------------------------------------------------------------------
-        // 7. Turn completed — emit usage stats
-        // ------------------------------------------------------------------
-        case 'turn/completed': {
-          const turn = (params.turn ?? {}) as Record<string, unknown>
-          const usage = (turn.usage ?? {}) as Record<string, unknown>
-          const inputTokens = usage.inputTokens as number | undefined
-          const outputTokens = usage.outputTokens as number | undefined
-
-          const parts: string[] = []
-          if (inputTokens != null) {
-            // Format large numbers with k suffix for readability
-            parts.push(
-              inputTokens >= 1000
-                ? `${(inputTokens / 1000).toFixed(1)}k input`
-                : `${inputTokens} input`,
-            )
-          }
-          if (outputTokens != null) {
-            parts.push(
-              outputTokens >= 1000
-                ? `${(outputTokens / 1000).toFixed(1)}k output`
-                : `${outputTokens} output`,
-            )
-          }
-
-          return {
-            entryType: 'system-message',
-            content: parts.length ? parts.join(' \u00B7 ') : 'Turn completed',
-            timestamp: now,
-            metadata: {
-              source: 'result',
-              turnCompleted: true,
-              turnId: turn.id as string | undefined,
-              inputTokens,
-              outputTokens,
-            },
-          }
-        }
-
-        // ------------------------------------------------------------------
-        // 8. Thread started
-        // ------------------------------------------------------------------
-        case 'thread/started': {
-          const threadId = params.threadId as string | undefined
-          return {
-            entryType: 'system-message',
-            content: 'Thread started',
-            timestamp: now,
-            metadata: {
-              subtype: 'thread_started',
-              threadId,
-            },
-          }
-        }
-
-        // ------------------------------------------------------------------
-        // 9. Thread status changed — only surface systemError
-        // ------------------------------------------------------------------
-        case 'thread/status/changed': {
-          const status = params.status as string | undefined
-          if (status === 'systemError') {
-            return {
-              entryType: 'error-message',
-              content: `Thread error: ${(params.message as string) ?? 'system error'}`,
-              timestamp: now,
-              metadata: { status },
-            }
-          }
-          // Non-error status changes are noisy — skip
-          return null
-        }
-
-        // ------------------------------------------------------------------
-        // 10. Error notification
-        // ------------------------------------------------------------------
-        case 'error': {
-          const error = (params.error ?? {}) as Record<string, unknown>
-          const willRetry = params.willRetry as boolean | undefined
-          return {
-            entryType: 'error-message',
-            content: (error.message as string) ?? 'Unknown error',
-            timestamp: now,
-            metadata: {
-              code: error.code as number | undefined,
-              willRetry,
-            },
-          }
-        }
-
-        // ------------------------------------------------------------------
-        // 11. Reasoning deltas — skip (internal model reasoning)
-        // ------------------------------------------------------------------
-        case 'item/reasoning/textDelta':
-        case 'item/reasoning/summaryTextDelta':
-          return null
-
-        // ------------------------------------------------------------------
-        // Unknown notification method — skip
-        // ------------------------------------------------------------------
-        default:
-          return null
-      }
-    } catch {
-      // Not valid JSON — treat non-empty lines as plain text system messages
-      if (rawLine.trim()) {
-        return {
-          entryType: 'system-message',
-          content: rawLine,
-          timestamp: now,
-        }
-      }
-      return null
+  /**
+   * Create a stateful normalizer that handles `codex/event/*` notifications.
+   * This replaces the stateless normalizeLog for proper streaming state tracking.
+   */
+  createNormalizer(_filterRules: WriteFilterRule[]) {
+    const normalizer = new CodexLogNormalizer()
+    return {
+      parse: (rawLine: string) => normalizer.parse(rawLine),
     }
+  }
+
+  /**
+   * Stateless normalizer (legacy fallback).
+   * Prefer createNormalizer() which maintains state for streaming events.
+   */
+  normalizeLog(rawLine: string): NormalizedLogEntry | null {
+    const normalizer = new CodexLogNormalizer()
+    const result = normalizer.parse(rawLine)
+    if (Array.isArray(result)) return result[0] ?? null
+    return result
   }
 }
