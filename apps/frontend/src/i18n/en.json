@@ -69,7 +69,6 @@
   },
   "issue": {
     "status": "Status",
-    "priority": "Priority",
     "noDescription": "No description",
     "description": "Description",
     "created": "Created",
@@ -94,6 +93,8 @@
     "editTitle": "Click to edit title",
     "addDescription": "Add a description...",
     "clickToEdit": "Click to edit",
+    "tag": "Tags",
+    "tagPlaceholder": "bug, feature, docs",
     "devMode": "Dev Mode",
     "dev": "Dev",
     "autoTitle": "Auto-generate title",
@@ -311,12 +312,6 @@
     "Working": "Working",
     "Review": "Review",
     "Done": "Done"
-  },
-  "priorityName": {
-    "urgent": "Urgent",
-    "high": "High",
-    "medium": "Medium",
-    "low": "Low"
   },
   "fileBrowser": {
     "breadcrumb": "File path",

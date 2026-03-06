@@ -18,11 +18,9 @@ import { emitIssueUpdated } from '@/events/issue-events'
 import { logger } from '@/logger'
 import { toISO } from '@/utils/date'
 
-export const priorityEnum = z.enum(['urgent', 'high', 'medium', 'low'])
-
 export const createIssueSchema = z.object({
   title: z.string().min(1).max(500),
-  priority: priorityEnum.default('medium'),
+  tags: z.array(z.string().max(50)).max(10).optional(),
   statusId: z.enum(STATUS_IDS),
   parentIssueId: z.string().optional(),
   useWorktree: z.boolean().optional(),
@@ -41,7 +39,6 @@ export const bulkUpdateSchema = z.object({
         id: z.string(),
         statusId: z.enum(STATUS_IDS).optional(),
         sortOrder: z.number().optional(),
-        priority: priorityEnum.optional(),
       }),
     )
     .max(1000),
@@ -49,7 +46,7 @@ export const bulkUpdateSchema = z.object({
 
 export const updateIssueSchema = z.object({
   title: z.string().min(1).max(500).optional(),
-  priority: priorityEnum.optional(),
+  tags: z.array(z.string().max(50)).max(10).nullable().optional(),
   statusId: z.enum(STATUS_IDS).optional(),
   sortOrder: z.number().optional(),
   parentIssueId: z.string().nullable().optional(),
@@ -92,7 +89,7 @@ export function serializeIssue(row: IssueRow, childCount?: number) {
     statusId: row.statusId,
     issueNumber: row.issueNumber,
     title: row.title,
-    priority: row.priority as 'urgent' | 'high' | 'medium' | 'low',
+    tags: parseTags(row.tag),
     sortOrder: row.sortOrder,
     parentIssueId: row.parentIssueId ?? null,
     useWorktree: row.useWorktree,
@@ -108,6 +105,30 @@ export function serializeIssue(row: IssueRow, childCount?: number) {
     createdAt: toISO(row.createdAt),
     updatedAt: toISO(row.updatedAt),
   }
+}
+
+/** Parse JSON-encoded tags from DB text column into string array. */
+function parseTags(raw: string | null | undefined): string[] | null {
+  if (!raw) return null
+  let candidates: string[]
+  try {
+    const parsed = JSON.parse(raw)
+    candidates = Array.isArray(parsed) ? parsed : [raw]
+  } catch {
+    candidates = [raw]
+  }
+  const valid = candidates.filter(
+    (s): s is string => typeof s === 'string' && s.length > 0 && s.length <= 50,
+  )
+  return valid.length > 0 ? valid : null
+}
+
+/** Serialize tags array to JSON string for DB storage, or null if empty. */
+export function serializeTags(
+  tags: string[] | null | undefined,
+): string | null {
+  if (!tags || tags.length === 0) return null
+  return JSON.stringify(tags)
 }
 
 export async function getProjectOwnedIssue(projectId: string, issueId: string) {

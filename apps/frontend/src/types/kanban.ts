@@ -27,7 +27,6 @@ export type {
   NormalizedLogEntry,
   Note,
   PermissionMode,
-  Priority,
   ProbeResult,
   ProcessInfo,
   Project,

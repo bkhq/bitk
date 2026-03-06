@@ -40,7 +40,6 @@ async function createWorkingIssue(title: string) {
       statusId: 'working',
       issueNumber,
       title,
-      priority: 'medium',
       sortOrder: 0,
       engineType: 'echo',
       sessionStatus: 'running',

@@ -2,7 +2,6 @@ import { useSortable } from '@dnd-kit/react/sortable'
 import { GitBranchPlus } from 'lucide-react'
 import { memo } from 'react'
 import type { Issue } from '@/types/kanban'
-import { PriorityIcon } from './PriorityIcon'
 
 export const KanbanCard = memo(function KanbanCard({
   issue,
@@ -40,18 +39,31 @@ export const KanbanCard = memo(function KanbanCard({
       }`}
       style={{ animationDelay: `${index * 40}ms` }}
     >
-      {/* Top row: ID + Priority */}
-      <div className="flex items-center justify-between mb-1">
+      {/* Issue number */}
+      <div className="flex items-center mb-1">
         <span className="text-[11px] font-medium text-muted-foreground font-mono">
           #{issue.issueNumber}
         </span>
-        <PriorityIcon priority={issue.priority} />
       </div>
 
       {/* Title */}
       <p className="text-sm font-medium leading-snug text-foreground">
         {issue.title}
       </p>
+
+      {/* Tags */}
+      {issue.tags && issue.tags.length > 0 ? (
+        <div className="mt-1.5 flex flex-wrap gap-1">
+          {issue.tags.map((t, i) => (
+            <span
+              key={`${i}-${t}`}
+              className="inline-flex items-center rounded-full border border-border/50 bg-muted/40 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground"
+            >
+              {t}
+            </span>
+          ))}
+        </div>
+      ) : null}
 
       {/* Sub-issue count badge */}
       {issue.childCount && issue.childCount > 0 ? (

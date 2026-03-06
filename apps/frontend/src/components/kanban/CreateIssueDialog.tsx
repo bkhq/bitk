@@ -26,7 +26,7 @@ import {
   useEngineProfiles,
   useEngineSettings,
 } from '@/hooks/use-kanban'
-import { tPriority, tStatus } from '@/lib/i18n-utils'
+import { tStatus } from '@/lib/i18n-utils'
 import type { StatusDefinition } from '@/lib/statuses'
 import { STATUSES } from '@/lib/statuses'
 import { usePanelStore } from '@/stores/panel-store'
@@ -34,9 +34,7 @@ import type {
   EngineAvailability,
   EngineModel,
   EngineProfile,
-  Priority,
 } from '@/types/kanban'
-import { PriorityIcon } from './PriorityIcon'
 
 // ── Data ──────────────────────────────────────────────
 
@@ -45,8 +43,6 @@ const PERMISSIONS = [
   { id: 'ask', icon: MousePointerClick },
 ] as const
 type PermissionId = (typeof PERMISSIONS)[number]['id']
-
-const PRIORITIES: Priority[] = ['urgent', 'high', 'medium', 'low']
 
 // ── Shared form body ─────────────────────────────────
 
@@ -85,8 +81,8 @@ export function CreateIssueForm({
 
   const firstStatusId = STATUSES[0].id
   const [input, setInput] = useState('')
+  const [tag, setTag] = useState('')
   const [statusId, setStatusId] = useState(initialStatusId ?? firstStatusId)
-  const [priority, setPriority] = useState<Priority>('medium')
   const [engineType, setEngineType] = useState('')
   const [modelId, setModelId] = useState('')
   const [permission, setPermission] = useState<PermissionId>('auto')
@@ -133,8 +129,14 @@ export function CreateIssueForm({
     createIssue.mutate(
       {
         title: trimmed,
+        tags: (() => {
+          const arr = tag
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean)
+          return arr.length > 0 ? arr : undefined
+        })(),
         statusId,
-        priority,
         useWorktree,
         parentIssueId,
         engineType: resolvedEngineType || undefined,
@@ -144,9 +146,9 @@ export function CreateIssueForm({
       {
         onSuccess: () => {
           setInput('')
+          setTag('')
           setEngineType('')
           setModelId('')
-          setPriority('medium')
           setPermission('auto')
           setUseWorktree(true)
           onCreated?.()
@@ -155,8 +157,8 @@ export function CreateIssueForm({
     )
   }, [
     input,
+    tag,
     statusId,
-    priority,
     permission,
     useWorktree,
     parentIssueId,
@@ -212,15 +214,21 @@ export function CreateIssueForm({
           {t('issue.properties')}
         </p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+          <PropertyRow label={t('issue.tag')}>
+            <input
+              type="text"
+              value={tag}
+              onChange={(e) => setTag(e.target.value)}
+              placeholder={t('issue.tagPlaceholder')}
+              className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground/50"
+            />
+          </PropertyRow>
           <PropertyRow label={t('issue.status')}>
             <StatusSelect
               statuses={STATUSES}
               value={statusId}
               onChange={setStatusId}
             />
-          </PropertyRow>
-          <PropertyRow label={t('issue.priority')}>
-            <PrioritySelect value={priority} onChange={setPriority} />
           </PropertyRow>
           <PropertyRow label={t('createIssue.worktree')}>
             <WorktreeToggle value={useWorktree} onChange={setUseWorktree} />
@@ -366,45 +374,6 @@ function StatusSelect({
               style={{ backgroundColor: s.color }}
             />
             <span>{tStatus(t, s.name)}</span>
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  )
-}
-
-function PrioritySelect({
-  value,
-  onChange,
-}: {
-  value: Priority
-  onChange: (p: Priority) => void
-}) {
-  const { t } = useTranslation()
-
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        render={
-          <button
-            type="button"
-            className="flex items-center gap-1.5 text-sm hover:text-foreground transition-colors w-full"
-          />
-        }
-      >
-        <PriorityIcon priority={value} />
-        <span className="capitalize truncate">{tPriority(t, value)}</span>
-        <ChevronDown className="h-3 w-3 text-muted-foreground ml-auto shrink-0" />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-36">
-        {PRIORITIES.map((p) => (
-          <DropdownMenuItem
-            key={p}
-            onSelect={() => onChange(p)}
-            className={p === value ? 'bg-accent/50' : ''}
-          >
-            <PriorityIcon priority={p} />
-            <span className="capitalize">{tPriority(t, p)}</span>
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>

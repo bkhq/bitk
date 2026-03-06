@@ -38,7 +38,6 @@ async function createTestIssue(title?: string) {
       statusId: 'todo',
       issueNumber: issueCounter,
       title: title ?? `Pending Test Issue ${issueCounter}`,
-      priority: 'medium',
       sortOrder: 0,
       engineType: 'echo',
       model: 'auto',

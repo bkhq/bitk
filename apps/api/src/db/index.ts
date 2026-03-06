@@ -48,11 +48,14 @@ function runMigrations(folder: string) {
     const errObj = err as { message?: string; cause?: { message?: string } }
     const msg =
       String(errObj?.message ?? '') + String(errObj?.cause?.message ?? '')
-    const alreadyExists = /^(table|index) "?.+"? already exists$/im.test(msg)
-    if (!alreadyExists) {
+    const harmless =
+      /^(table|index) "?.+"? already exists$/im.test(msg) ||
+      /no such column/im.test(msg) ||
+      /duplicate column name/im.test(msg)
+    if (!harmless) {
       throw err
     }
-    logger.warn({ error: msg }, 'migration_silenced_already_exists')
+    logger.warn({ error: msg }, 'migration_silenced_harmless')
   }
 }
 

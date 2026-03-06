@@ -18,8 +18,8 @@ interface Issue {
   statusId: string
   issueNumber: number
   title: string
+  tags: string[] | null
   description: string | null
-  priority: string
   sortOrder: number
   parentIssueId: string | null
   useWorktree: boolean
@@ -48,7 +48,6 @@ describe('POST /api/projects/:projectId/issues', () => {
     const data = expectSuccess(result)
     expect(data.title).toBe('Test Issue')
     expect(data.statusId).toBe('todo')
-    expect(data.priority).toBe('medium') // default
     expect(data.projectId).toBe(projectId)
     expect(data.issueNumber).toBeGreaterThan(0)
     expect(data.id).toBeTruthy()
@@ -58,7 +57,6 @@ describe('POST /api/projects/:projectId/issues', () => {
     const result = await post<Issue>(`/api/projects/${projectId}/issues`, {
       title: 'Full Issue',
       statusId: 'working',
-      priority: 'high',
       description: 'Detailed description',
       engineType: 'echo',
       model: 'auto',
@@ -67,7 +65,6 @@ describe('POST /api/projects/:projectId/issues', () => {
     const data = expectSuccess(result)
     expect(data.title).toBe('Full Issue')
     expect(data.statusId).toBe('working')
-    expect(data.priority).toBe('high')
     expect(data.engineType).toBe('echo')
     expect(data.model).toBe('auto')
   })
@@ -137,15 +134,6 @@ describe('POST /api/projects/:projectId/issues', () => {
     expect(result.status).toBe(400)
   })
 
-  test('rejects invalid priority', async () => {
-    const result = await post<Issue>(`/api/projects/${projectId}/issues`, {
-      title: 'Bad Priority',
-      statusId: 'todo',
-      priority: 'super-urgent',
-    })
-    expect(result.status).toBe(400)
-  })
-
   test('returns 404 for nonexistent project', async () => {
     const result = await post<Issue>('/api/projects/nonexistent/issues', {
       title: 'Test',
@@ -209,23 +197,6 @@ describe('PATCH /api/projects/:projectId/issues/:id', () => {
     expect(data.title).toBe('After')
   })
 
-  test('updates issue priority', async () => {
-    const created = expectSuccess(
-      await post<Issue>(`/api/projects/${projectId}/issues`, {
-        title: 'Priority Test',
-        statusId: 'todo',
-      }),
-    )
-    const result = await patch<Issue>(
-      `/api/projects/${projectId}/issues/${created.id}`,
-      {
-        priority: 'urgent',
-      },
-    )
-    const data = expectSuccess(result)
-    expect(data.priority).toBe('urgent')
-  })
-
   test('updates issue status', async () => {
     const created = expectSuccess(
       await post<Issue>(`/api/projects/${projectId}/issues`, {
@@ -251,6 +222,76 @@ describe('PATCH /api/projects/:projectId/issues/:id', () => {
       },
     )
     expect(result.status).toBe(404)
+  })
+})
+
+describe('Tags', () => {
+  test('creates issue with tags and round-trips correctly', async () => {
+    const result = await post<Issue>(`/api/projects/${projectId}/issues`, {
+      title: 'Tagged Issue',
+      tags: ['bug', 'feature'],
+      statusId: 'todo',
+    })
+    const data = expectSuccess(result)
+    expect(data.tags).toEqual(['bug', 'feature'])
+  })
+
+  test('creates issue without tags returns null', async () => {
+    const result = await post<Issue>(`/api/projects/${projectId}/issues`, {
+      title: 'No Tags Issue',
+      statusId: 'todo',
+    })
+    const data = expectSuccess(result)
+    expect(data.tags).toBeNull()
+  })
+
+  test('updates tags on an issue', async () => {
+    const created = expectSuccess(
+      await post<Issue>(`/api/projects/${projectId}/issues`, {
+        title: 'Update Tags',
+        statusId: 'todo',
+      }),
+    )
+    const updated = expectSuccess(
+      await patch<Issue>(`/api/projects/${projectId}/issues/${created.id}`, {
+        tags: ['docs', 'refactor'],
+      }),
+    )
+    expect(updated.tags).toEqual(['docs', 'refactor'])
+  })
+
+  test('clears tags by setting null', async () => {
+    const created = expectSuccess(
+      await post<Issue>(`/api/projects/${projectId}/issues`, {
+        title: 'Clear Tags',
+        tags: ['temp'],
+        statusId: 'todo',
+      }),
+    )
+    const updated = expectSuccess(
+      await patch<Issue>(`/api/projects/${projectId}/issues/${created.id}`, {
+        tags: null,
+      }),
+    )
+    expect(updated.tags).toBeNull()
+  })
+
+  test('rejects more than 10 tags', async () => {
+    const result = await post<Issue>(`/api/projects/${projectId}/issues`, {
+      title: 'Too Many Tags',
+      tags: Array.from({ length: 11 }, (_, i) => `tag${i}`),
+      statusId: 'todo',
+    })
+    expect(result.status).toBe(400)
+  })
+
+  test('rejects tag longer than 50 chars', async () => {
+    const result = await post<Issue>(`/api/projects/${projectId}/issues`, {
+      title: 'Long Tag',
+      tags: ['a'.repeat(51)],
+      statusId: 'todo',
+    })
+    expect(result.status).toBe(400)
   })
 })
 

@@ -43,6 +43,13 @@
       "when": 1772870400000,
       "tag": "0005_add_system_prompt",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1772870500000,
+      "tag": "0006_flippant_typhoid_mary",
+      "breakpoints": true
     }
   ]
 }

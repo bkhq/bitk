@@ -4,8 +4,3 @@ import type { TFunction } from 'i18next'
 export function tStatus(t: TFunction, name: string): string {
   return t(`statusName.${name}`, { defaultValue: name })
 }
-
-/** Translate a priority value (urgent/high/medium/low). */
-export function tPriority(t: TFunction, priority: string): string {
-  return t(`priorityName.${priority}`, { defaultValue: priority })
-}

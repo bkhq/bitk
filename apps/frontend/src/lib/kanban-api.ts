@@ -114,8 +114,8 @@ export const kanbanApi = {
     projectId: string,
     data: {
       title: string
+      tags?: string[]
       statusId: string
-      priority?: string
       useWorktree?: boolean
       parentIssueId?: string
       engineType?: string

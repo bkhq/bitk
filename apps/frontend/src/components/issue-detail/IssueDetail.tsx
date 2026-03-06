@@ -1,16 +1,13 @@
-import { Bug, ChevronDown, GitBranch, Trash2 } from 'lucide-react'
+import { Bug, ChevronDown, GitBranch, Tag, Trash2 } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { PriorityIcon } from '@/components/kanban/PriorityIcon'
 import { Button } from '@/components/ui/button'
 import { useClickOutside } from '@/hooks/use-click-outside'
 import { useProjectWorktrees } from '@/hooks/use-kanban'
-import { tPriority, tStatus } from '@/lib/i18n-utils'
+import { tStatus } from '@/lib/i18n-utils'
 import type { StatusDefinition, StatusId } from '@/lib/statuses'
 import { STATUSES } from '@/lib/statuses'
-import type { Issue, Priority } from '@/types/kanban'
-
-export const PRIORITIES: Priority[] = ['urgent', 'high', 'medium', 'low']
+import type { Issue } from '@/types/kanban'
 
 export const badgeBase =
   'inline-flex items-center gap-1 rounded-full border px-2 h-[22px] text-[11px] leading-none font-medium whitespace-nowrap'
@@ -30,12 +27,15 @@ export function IssueDetail({
   projectId?: string
   status?: StatusDefinition
   onUpdate?: (
-    fields: Partial<Pick<Issue, 'statusId' | 'priority' | 'devMode'>>,
+    fields: Partial<Pick<Issue, 'statusId' | 'tags' | 'devMode'>>,
   ) => void
   onDelete?: () => void
   isDeleting?: boolean
 }) {
   const { t } = useTranslation()
+  const [editingTag, setEditingTag] = useState(false)
+  const [tagInput, setTagInput] = useState('')
+  const tagInputRef = useRef<HTMLInputElement>(null)
   const [showWorktree, setShowWorktree] = useState(false)
   const worktreeRef = useRef<HTMLDivElement>(null)
   useClickOutside(worktreeRef, showWorktree, () => setShowWorktree(false))
@@ -59,11 +59,55 @@ export function IssueDetail({
         onChange={(id) => onUpdate?.({ statusId: id })}
       />
 
-      {/* Priority — editable */}
-      <PrioritySelect
-        value={issue.priority}
-        onChange={(p) => onUpdate?.({ priority: p })}
-      />
+      {/* Tags — editable (comma-separated) */}
+      {editingTag ? (
+        <input
+          ref={tagInputRef}
+          type="text"
+          value={tagInput}
+          onChange={(e) => setTagInput(e.target.value)}
+          onBlur={() => {
+            const newTags = tagInput
+              .split(',')
+              .map((s) => s.trim())
+              .filter(Boolean)
+            const prev = issue.tags ?? []
+            if (JSON.stringify(newTags) !== JSON.stringify(prev)) {
+              onUpdate?.({ tags: newTags.length > 0 ? newTags : null })
+            }
+            setEditingTag(false)
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') e.currentTarget.blur()
+            if (e.key === 'Escape') {
+              setTagInput((issue.tags ?? []).join(', '))
+              setEditingTag(false)
+            }
+          }}
+          placeholder={t('issue.tagPlaceholder')}
+          className={`${badgeBase} border-primary/40 bg-background outline-none w-40`}
+        />
+      ) : (
+        <button
+          type="button"
+          onClick={() => {
+            setTagInput((issue.tags ?? []).join(', '))
+            setEditingTag(true)
+            requestAnimationFrame(() => tagInputRef.current?.focus())
+          }}
+          className={`${badgeBase} cursor-pointer transition-colors ${
+            issue.tags && issue.tags.length > 0
+              ? 'border-border/50 bg-muted/30 text-muted-foreground hover:border-border'
+              : 'border-dashed border-border/40 text-muted-foreground/40 hover:text-muted-foreground/60 hover:border-border/60'
+          }`}
+          title={t('issue.tag')}
+        >
+          <Tag className="h-3 w-3" />
+          {issue.tags && issue.tags.length > 0
+            ? issue.tags.join(', ')
+            : t('issue.tag')}
+        </button>
+      )}
 
       {/* Delete */}
       {onDelete ? (
@@ -196,58 +240,6 @@ export function StatusSelect({
                   style={{ backgroundColor: s.color }}
                 />
                 {tStatus(t, s.name)}
-              </button>
-            )
-          })}
-        </div>
-      ) : null}
-    </div>
-  )
-}
-
-export function PrioritySelect({
-  value,
-  onChange,
-}: {
-  value: Priority
-  onChange: (p: Priority) => void
-}) {
-  const { t } = useTranslation()
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-  useClickOutside(ref, open, () => setOpen(false))
-
-  return (
-    <div ref={ref} className="relative flex">
-      <Button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        size="sm"
-        variant="outline"
-        className={`${badgeButtonBase} border-orange-200/50 dark:border-orange-800/30 bg-orange-50/50 dark:bg-orange-950/20 cursor-pointer transition-colors hover:opacity-80`}
-      >
-        <PriorityIcon priority={value} className="h-3 w-3" />
-        {tPriority(t, value)}
-        <ChevronDown className="h-3 w-3 opacity-50" />
-      </Button>
-      {open ? (
-        <div className="absolute left-0 bottom-full mb-1.5 z-50 min-w-[110px] rounded-xl border border-border/60 bg-popover/95 backdrop-blur-sm py-1 shadow-xl text-xs text-popover-foreground">
-          {PRIORITIES.map((p) => {
-            const isActive = p === value
-            return (
-              <button
-                key={p}
-                type="button"
-                onClick={() => {
-                  if (p !== value) onChange(p)
-                  setOpen(false)
-                }}
-                className={`flex items-center gap-2 w-full px-3 py-1.5 text-left transition-colors ${
-                  isActive ? 'bg-primary/10 font-medium' : 'hover:bg-accent/50'
-                }`}
-              >
-                <PriorityIcon priority={p} className="h-3 w-3" />
-                {tPriority(t, p)}
               </button>
             )
           })}

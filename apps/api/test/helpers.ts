@@ -91,7 +91,6 @@ export async function createTestIssue(
     engineType?: string
     model?: string
     description?: string
-    priority?: string
   } = {},
 ) {
   const result = await post<Record<string, unknown>>(
@@ -102,7 +101,6 @@ export async function createTestIssue(
       engineType: opts.engineType ?? 'echo',
       model: opts.model ?? 'auto',
       description: opts.description,
-      priority: opts.priority,
     },
   )
   return result
