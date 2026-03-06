@@ -21,17 +21,19 @@ BitK is a unified frontend for CLI-based coding agents — [Claude Code](https:/
 
 ## Installation
 
-### Option 1: Launcher (Recommended)
-
 Download the launcher binary from the [launcher release](https://github.com/bkhq/bitk/releases/tag/launcher-v1). The launcher is a small binary (~90 MB) that automatically downloads and manages app updates (~1 MB each):
 
+**Linux (x64)**
+
 ```bash
-# Linux (x64)
 curl -LO https://github.com/bkhq/bitk/releases/download/launcher-v1/bitk-launcher-linux-x64
 chmod +x bitk-launcher-linux-x64
 ./bitk-launcher-linux-x64
+```
 
-# macOS (Apple Silicon)
+**macOS (Apple Silicon)**
+
+```bash
 curl -LO https://github.com/bkhq/bitk/releases/download/launcher-v1/bitk-launcher-darwin-arm64
 chmod +x bitk-launcher-darwin-arm64
 ./bitk-launcher-darwin-arm64
@@ -39,42 +41,7 @@ chmod +x bitk-launcher-darwin-arm64
 
 The launcher stays fixed across versions — only the lightweight app package gets updated. Open http://localhost:3000 after starting.
 
-### Option 2: Standalone Binary
-
-Download a fully self-contained binary (~105 MB) from [GitHub Releases](https://github.com/bkhq/bitk/releases):
-
-```bash
-# Linux (x64)
-curl -LO https://github.com/bkhq/bitk/releases/latest/download/bitk-linux-x64
-chmod +x bitk-linux-x64
-./bitk-linux-x64
-
-# macOS (Apple Silicon)
-curl -LO https://github.com/bkhq/bitk/releases/latest/download/bitk-darwin-arm64
-chmod +x bitk-darwin-arm64
-./bitk-darwin-arm64
-```
-
-No runtime dependencies needed. Open http://localhost:3000 after starting.
-
-### Option 3: Run from Source
-
-```bash
-# 1. Install Bun (if you don't have it)
-curl -fsSL https://bun.sh/install | bash
-
-# 2. Clone and install
-git clone <repo-url> bitk && cd bitk
-bun install
-
-# 3. Build and start
-bun run build
-bun run start
-```
-
-Open http://localhost:3000.
-
-## Prerequisites
+## System Requirements
 
 BitK spawns AI coding agents as child processes. Install at least one before using:
 
@@ -120,8 +87,6 @@ All configuration is done via environment variables. Create a `.env` file in the
 |----------|-------------|---------|
 | `API_PORT` | Server port | `3000` |
 | `API_HOST` | Listen address | `0.0.0.0` |
-| `API_SECRET` | Bearer token for API auth (unset = no auth) | — |
-| `ALLOWED_ORIGIN` | CORS allowed origin | `*` |
 | `DB_PATH` | SQLite database path | `data/bitk.db` |
 | `MAX_CONCURRENT_EXECUTIONS` | Max parallel agent sessions | `5` |
 | `LOG_LEVEL` | Log level (`trace` / `debug` / `info` / `warn` / `error`) | `info` |

@@ -21,17 +21,19 @@ BitK 是 CLI 编程代理的统一前端 —— 支持 [Claude Code](https://git
 
 ## 安装
 
-### 方式一：启动器（推荐）
-
 从 [launcher release](https://github.com/bkhq/bitk/releases/tag/launcher-v1) 下载启动器。启动器是一个小型二进制文件（约 90 MB），会自动下载和管理应用更新（每次约 1 MB）：
 
+**Linux (x64)**
+
 ```bash
-# Linux (x64)
 curl -LO https://github.com/bkhq/bitk/releases/download/launcher-v1/bitk-launcher-linux-x64
 chmod +x bitk-launcher-linux-x64
 ./bitk-launcher-linux-x64
+```
 
-# macOS (Apple Silicon)
+**macOS (Apple Silicon)**
+
+```bash
 curl -LO https://github.com/bkhq/bitk/releases/download/launcher-v1/bitk-launcher-darwin-arm64
 chmod +x bitk-launcher-darwin-arm64
 ./bitk-launcher-darwin-arm64
@@ -39,42 +41,7 @@ chmod +x bitk-launcher-darwin-arm64
 
 启动器跨版本保持不变，只有轻量级的应用包会被更新。启动后打开 http://localhost:3000。
 
-### 方式二：独立二进制文件
-
-下载完全自包含的二进制文件（约 105 MB），从 [GitHub Releases](https://github.com/bkhq/bitk/releases)：
-
-```bash
-# Linux (x64)
-curl -LO https://github.com/bkhq/bitk/releases/latest/download/bitk-linux-x64
-chmod +x bitk-linux-x64
-./bitk-linux-x64
-
-# macOS (Apple Silicon)
-curl -LO https://github.com/bkhq/bitk/releases/latest/download/bitk-darwin-arm64
-chmod +x bitk-darwin-arm64
-./bitk-darwin-arm64
-```
-
-无需安装运行时。启动后打开 http://localhost:3000。
-
-### 方式三：从源码运行
-
-```bash
-# 1. 安装 Bun（如果还没有）
-curl -fsSL https://bun.sh/install | bash
-
-# 2. 克隆并安装依赖
-git clone <repo-url> bitk && cd bitk
-bun install
-
-# 3. 构建并启动
-bun run build
-bun run start
-```
-
-打开 http://localhost:3000。
-
-## 前置条件
+## 系统要求
 
 BitK 以子进程方式启动 AI 编程代理，使用前请至少安装其中一个：
 
@@ -120,8 +87,6 @@ npm install -g @google/gemini-cli
 |------|------|--------|
 | `API_PORT` | 服务端口 | `3000` |
 | `API_HOST` | 监听地址 | `0.0.0.0` |
-| `API_SECRET` | Bearer 认证令牌（未设置则无需认证） | — |
-| `ALLOWED_ORIGIN` | CORS 允许的来源 | `*` |
 | `DB_PATH` | SQLite 数据库路径 | `data/bitk.db` |
 | `MAX_CONCURRENT_EXECUTIONS` | 最大并行代理会话数 | `5` |
 | `LOG_LEVEL` | 日志级别（`trace` / `debug` / `info` / `warn` / `error`） | `info` |
