@@ -9,6 +9,7 @@ import {
 } from '@/engines/engine-store'
 import type { EngineContext } from '@/engines/issue/context'
 import { emitIssueSettled, emitStateChange } from '@/engines/issue/events'
+import { emitIssueLogUpdated } from '@/events/issue-events'
 import { dispatch } from '@/engines/issue/state'
 import type { ManagedProcess } from '@/engines/issue/types'
 import { sendInputToRunningProcess } from '@/engines/issue/user-message'
@@ -106,12 +107,18 @@ export function handleTurnCompleted(
           // (caught below), rows stay pending so the next retry consumes them.
           // Promote itself is best-effort: the follow-up is already running,
           // so a failure here must NOT cause a duplicate dispatch on next turn.
-          await promotePendingMessages(pendingIds).catch((promoteErr) => {
-            logger.error(
-              { issueId, err: promoteErr },
-              'promote_pending_after_followup_failed',
-            )
-          })
+          await promotePendingMessages(pendingIds)
+            .then((entries) => {
+              for (const entry of entries) {
+                emitIssueLogUpdated(issueId, entry)
+              }
+            })
+            .catch((promoteErr) => {
+              logger.error(
+                { issueId, err: promoteErr },
+                'promote_pending_after_followup_failed',
+              )
+            })
           return
         } catch (flushErr) {
           logger.error({ issueId, err: flushErr }, 'auto_flush_pending_failed')

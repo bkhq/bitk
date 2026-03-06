@@ -1,12 +1,14 @@
 # Task Index
 
-> Updated: 2026-03-04 20:42 UTC
+> Updated: 2026-03-06 19:50 UTC
 
 ## 待处理
 
 - [ ] （暂无）
 
 ## 已完成
+
+- [x] **BUG-091 调查 pending 消息消费后前端未即时感知** `P0` - owner: codex - file: `docs/task/BUG-091.md`
 
 - [x] **FEAT-006 添加 Notes 笔记功能** `P1` - owner: claude - file: `docs/task/FEAT-006.md`
 - [x] **TEST-003 深度测试进程与状态编排并补充架构文档** `P1` - owner: codex - file: `docs/task/TEST-003.md`

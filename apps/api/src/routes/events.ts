@@ -53,6 +53,11 @@ events.get('/', async (c) => {
         { order: 100 },
       )
 
+      const unsubLogUpdated = appEvents.on('log-updated', (data) => {
+        if (!isVisibleForMode(data.entry, getIssueDevMode(data.issueId))) return
+        writeEvent('log-updated', data)
+      })
+
       // Non-terminal state changes
       const unsubState = appEvents.on('state', (data) => {
         if (TERMINAL.has(data.state)) return // handled by 'done' below
@@ -98,6 +103,7 @@ events.get('/', async (c) => {
       } finally {
         clearInterval(heartbeat)
         unsubLog()
+        unsubLogUpdated()
         unsubState()
         unsubDone()
         unsubIssueUpdated()

@@ -1,3 +1,4 @@
+import type { NormalizedLogEntry } from '@bitk/shared'
 import { resolve } from 'node:path'
 import { and, asc, eq, inArray, isNotNull } from 'drizzle-orm'
 import { UPLOAD_DIR } from '@/uploads'
@@ -51,14 +52,26 @@ export async function markPendingMessagesDispatched(ids: string[]) {
  * persist a new user-message entry for the same content (skipPersistMessage),
  * avoiding duplicate messages in the frontend.
  */
-export async function promotePendingMessages(ids: string[]) {
-  if (ids.length === 0) return
+export async function promotePendingMessages(
+  ids: string[],
+): Promise<NormalizedLogEntry[]> {
+  if (ids.length === 0) return []
   // Batch update in a single transaction to avoid N+1
-  await db.transaction(async (tx) => {
+  return db.transaction(async (tx) => {
     const rows = await tx
-      .select({ id: issueLogs.id, metadata: issueLogs.metadata })
+      .select({
+        id: issueLogs.id,
+        turnIndex: issueLogs.turnIndex,
+        entryIndex: issueLogs.entryIndex,
+        content: issueLogs.content,
+        metadata: issueLogs.metadata,
+        replyToMessageId: issueLogs.replyToMessageId,
+        timestamp: issueLogs.timestamp,
+      })
       .from(issueLogs)
       .where(inArray(issueLogs.id, ids))
+      .orderBy(asc(issueLogs.turnIndex), asc(issueLogs.entryIndex))
+    const updatedEntries: NormalizedLogEntry[] = []
     for (const row of rows) {
       let meta: Record<string, unknown> = {}
       try {
@@ -73,7 +86,19 @@ export async function promotePendingMessages(ids: string[]) {
           metadata: Object.keys(rest).length > 0 ? JSON.stringify(rest) : null,
         })
         .where(eq(issueLogs.id, row.id))
+      updatedEntries.push({
+        messageId: row.id,
+        entryType: 'user-message',
+        content: row.content,
+        turnIndex: row.turnIndex,
+        timestamp: row.timestamp ?? undefined,
+        ...(row.replyToMessageId
+          ? { replyToMessageId: row.replyToMessageId }
+          : {}),
+        ...(Object.keys(rest).length > 0 ? { metadata: rest } : {}),
+      })
     }
+    return updatedEntries
   })
 }
 

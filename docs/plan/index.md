@@ -1,8 +1,9 @@
 # Plan Index
 
-> Updated: 2026-03-04 20:42 UTC
+> Updated: 2026-03-06 19:50 UTC
 
 - [x] **PLAN-010 添加 Notes 笔记功能** - task: `FEAT-006` - owner: claude - file: `docs/plan/PLAN-010.md`
+- [x] **PLAN-011 Pending 消息消费后的前后端同步修复** - task: `BUG-091` - owner: codex - file: `docs/plan/PLAN-011.md`
 - [x] **PLAN-009 深度测试进程与状态编排并产出架构文档** - task: `TEST-003` - owner: codex - file: `docs/plan/PLAN-009.md`
 - [x] **PLAN-008 完善进程与状态管理回归测试** - task: `TEST-002` - owner: codex - file: `docs/plan/PLAN-008.md`
 - [x] **PLAN-007 审计后端进程与 Issue 状态管理** - task: `ENG-015` - owner: codex - file: `docs/plan/PLAN-007.md`

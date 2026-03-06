@@ -14,7 +14,7 @@ import {
 import { issues as issuesTable } from '@/db/schema'
 import { issueEngine } from '@/engines/issue'
 import type { EngineType } from '@/engines/types'
-import { emitIssueUpdated } from '@/events/issue-events'
+import { emitIssueLogUpdated, emitIssueUpdated } from '@/events/issue-events'
 import { logger } from '@/logger'
 import { toISO } from '@/utils/date'
 
@@ -199,12 +199,18 @@ export function flushPendingAsFollowUp(
       // by outer catch), rows stay pending for retry. Promote itself is
       // best-effort: the follow-up is already running, so a failure here
       // must NOT cause a duplicate dispatch.
-      await promotePendingMessages(pendingIds).catch((promoteErr) => {
-        logger.error(
-          { issueId, err: promoteErr },
-          'promote_pending_after_followup_failed',
-        )
-      })
+      await promotePendingMessages(pendingIds)
+        .then((entries) => {
+          for (const entry of entries) {
+            emitIssueLogUpdated(issueId, entry)
+          }
+        })
+        .catch((promoteErr) => {
+          logger.error(
+            { issueId, err: promoteErr },
+            'promote_pending_after_followup_failed',
+          )
+        })
       logger.debug(
         { issueId, pendingCount: pendingIds.length },
         'pending_flushed_as_followup',

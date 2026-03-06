@@ -1,10 +1,12 @@
 import { beforeAll, describe, expect, test } from 'bun:test'
+import { eq } from 'drizzle-orm'
 import { db } from '@/db'
 import {
   issueLogs,
   issues as issuesTable,
   projects as projectsTable,
 } from '@/db/schema'
+import { promotePendingMessages } from '@/db/pending-messages'
 // We import the shared helpers directly
 import {
   getPendingMessages,
@@ -309,5 +311,46 @@ describe('Pending message lifecycle', () => {
             .filter(Boolean)
             .join('\n\n')
     expect(merged).toBe('just the base')
+  })
+})
+
+describe('promotePendingMessages', () => {
+  test('returns updated entries and removes pending metadata while preserving other fields', async () => {
+    const issue = await createTestIssue()
+    await db.insert(issueLogs).values({
+      issueId: issue.id,
+      turnIndex: 2,
+      entryIndex: Date.now(),
+      entryType: 'user-message',
+      content: 'promote me',
+      metadata: JSON.stringify({
+        type: 'pending',
+        attachments: [{ id: 'att-1', name: 'spec.txt', size: 12 }],
+      }),
+      timestamp: new Date().toISOString(),
+    })
+
+    const pending = await getPendingMessages(issue.id)
+    expect(pending.length).toBe(1)
+
+    const updated = await promotePendingMessages([pending[0]!.id])
+    expect(updated).toHaveLength(1)
+    expect(updated[0]!.messageId).toBe(pending[0]!.id)
+    expect(updated[0]!.metadata?.type).toBeUndefined()
+    expect(updated[0]!.metadata?.attachments).toEqual([
+      { id: 'att-1', name: 'spec.txt', size: 12 },
+    ])
+
+    const pendingAfter = await getPendingMessages(issue.id)
+    expect(pendingAfter).toHaveLength(0)
+
+    const [row] = await db
+      .select({ metadata: issueLogs.metadata })
+      .from(issueLogs)
+      .where(eq(issueLogs.id, pending[0]!.id))
+    expect(row).toBeTruthy()
+    expect(JSON.parse(row!.metadata!)).toEqual({
+      attachments: [{ id: 'att-1', name: 'spec.txt', size: 12 }],
+    })
   })
 })

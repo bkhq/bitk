@@ -215,6 +215,7 @@ export interface ChangesSummary {
 /** SSE wire format — what the frontend receives via EventSource. */
 export interface SSEEventMap {
   log: { issueId: string; entry: NormalizedLogEntry }
+  'log-updated': { issueId: string; entry: NormalizedLogEntry }
   state: { issueId: string; executionId: string; state: string }
   done: { issueId: string; finalStatus: string }
   'issue-updated': { issueId: string; changes: Record<string, unknown> }
@@ -230,6 +231,7 @@ export interface AppEventMap {
     entry: NormalizedLogEntry
     streaming: boolean
   }
+  'log-updated': { issueId: string; entry: NormalizedLogEntry }
   state: { issueId: string; executionId: string; state: string }
   done: { issueId: string; executionId: string; finalStatus: string }
   'issue-updated': { issueId: string; changes: Record<string, unknown> }
