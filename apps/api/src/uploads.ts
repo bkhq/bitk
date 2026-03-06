@@ -6,28 +6,6 @@ export const UPLOAD_DIR = resolve(process.cwd(), 'data/uploads')
 export const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10 MB
 export const MAX_FILES = 10
 
-// MIME type prefixes that are safe to accept
-const ALLOWED_MIME_PREFIXES = [
-  'image/',
-  'text/',
-  'application/json',
-  'application/pdf',
-]
-
-// File extensions that are never allowed regardless of MIME type
-const BLOCKED_EXTENSIONS = new Set([
-  '.exe',
-  '.bat',
-  '.cmd',
-  '.sh',
-  '.ps1',
-  '.dll',
-  '.so',
-  '.html',
-  '.htm',
-  '.svg',
-])
-
 export interface SavedFile {
   id: string
   originalName: string
@@ -74,21 +52,6 @@ export function validateFiles(
       }
     }
 
-    const ext = extname(file.name).toLowerCase()
-    if (ext && BLOCKED_EXTENSIONS.has(ext)) {
-      return { ok: false, error: `File type "${ext}" is not allowed` }
-    }
-
-    // Allow empty or generic MIME (browser detection is unreliable for many types)
-    const mime = file.type
-    if (mime && mime !== 'application/octet-stream') {
-      const allowed = ALLOWED_MIME_PREFIXES.some((prefix) =>
-        mime.startsWith(prefix),
-      )
-      if (!allowed) {
-        return { ok: false, error: `MIME type "${mime}" is not allowed` }
-      }
-    }
   }
   return { ok: true }
 }
