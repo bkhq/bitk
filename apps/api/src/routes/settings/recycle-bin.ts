@@ -2,6 +2,7 @@ import { zValidator } from '@hono/zod-validator'
 import { eq, inArray } from 'drizzle-orm'
 import { Hono } from 'hono'
 import * as z from 'zod'
+import { cacheDelByPrefix } from '@/cache'
 import { db } from '@/db'
 import { issues as issuesTable, projects as projectsTable } from '@/db/schema'
 import { logger } from '@/logger'
@@ -95,6 +96,9 @@ recycleBin.post(
       .update(issuesTable)
       .set({ isDeleted: 0 })
       .where(eq(issuesTable.id, issueId))
+
+    // Invalidate cached issue lookups for this project to avoid stale data
+    await cacheDelByPrefix(`issue:${existing.projectId}:`)
 
     logger.info({ issueId, projectId: existing.projectId }, 'issue_restored')
     return c.json({ success: true, data: { id: issueId } })

@@ -545,6 +545,7 @@ export function useRunCleanup() {
     ) => kanbanApi.runCleanup(targets),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.cleanupStats() })
+      queryClient.invalidateQueries({ queryKey: queryKeys.deletedIssues() })
     },
   })
 }
