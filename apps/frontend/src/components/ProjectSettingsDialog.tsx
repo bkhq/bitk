@@ -1,4 +1,6 @@
 import {
+  Check,
+  Copy,
   FileText,
   FolderOpen,
   GitBranch,
@@ -12,6 +14,16 @@ import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { DirectoryPicker } from '@/components/DirectoryPicker'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -116,6 +128,7 @@ function WorktreeSection({ project }: { project: Project }) {
   const { data: worktrees, isLoading } = useProjectWorktrees(project.id)
   const deleteWorktree = useDeleteWorktree()
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [confirmId, setConfirmId] = useState<string | null>(null)
 
   if (isLoading) {
     return (
@@ -135,54 +148,76 @@ function WorktreeSection({ project }: { project: Project }) {
   }
 
   return (
-    <div className="space-y-2">
-      {worktrees.map((wt) => (
-        <div
-          key={wt.issueId}
-          className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2"
-        >
-          <div className="min-w-0 flex-1 space-y-0.5">
-            <p className="truncate text-sm font-medium font-mono">
-              {wt.issueId}
-            </p>
-            {wt.branch ? (
-              <p className="flex items-center gap-1 text-xs text-muted-foreground">
-                <GitBranch className="size-3" />
-                <span className="truncate">{wt.branch}</span>
-              </p>
-            ) : null}
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="shrink-0 text-muted-foreground hover:text-destructive"
-            disabled={deleteWorktree.isPending && deletingId === wt.issueId}
-            onClick={() => {
-              if (
-                !window.confirm(
-                  t('project.worktreeDeleteConfirm', {
-                    issueId: wt.issueId,
-                  }),
-                )
-              ) {
-                return
-              }
-              setDeletingId(wt.issueId)
-              deleteWorktree.mutate(
-                { projectId: project.id, issueId: wt.issueId },
-                { onSettled: () => setDeletingId(null) },
-              )
-            }}
+    <>
+      <div className="space-y-2">
+        {worktrees.map((wt) => (
+          <div
+            key={wt.issueId}
+            className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2"
           >
-            {deleteWorktree.isPending && deletingId === wt.issueId ? (
-              <Loader2 className="size-4 animate-spin" />
-            ) : (
-              <Trash2 className="size-4" />
-            )}
-          </Button>
-        </div>
-      ))}
-    </div>
+            <div className="min-w-0 flex-1 space-y-0.5">
+              <p className="truncate text-sm font-medium font-mono">
+                {wt.issueId}
+              </p>
+              {wt.branch ? (
+                <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <GitBranch className="size-3" />
+                  <span className="truncate">{wt.branch}</span>
+                </p>
+              ) : null}
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="shrink-0 text-muted-foreground hover:text-destructive"
+              disabled={deleteWorktree.isPending && deletingId === wt.issueId}
+              onClick={() => setConfirmId(wt.issueId)}
+            >
+              {deleteWorktree.isPending && deletingId === wt.issueId ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Trash2 className="size-4" />
+              )}
+            </Button>
+          </div>
+        ))}
+      </div>
+
+      <AlertDialog
+        open={confirmId !== null}
+        onOpenChange={(open) => {
+          if (!open) setConfirmId(null)
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('project.worktreeDelete')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('project.worktreeDeleteConfirm', {
+                issueId: confirmId ?? '',
+              })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={() => {
+                if (!confirmId) return
+                setDeletingId(confirmId)
+                deleteWorktree.mutate(
+                  { projectId: project.id, issueId: confirmId },
+                  { onSettled: () => setDeletingId(null) },
+                )
+                setConfirmId(null)
+              }}
+            >
+              {t('project.worktreeDelete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   )
 }
 
@@ -299,6 +334,14 @@ export function ProjectSettingsDialog({
         title={t('project.settings')}
         items={navItems}
         defaultItem="general"
+        sidebarFooter={
+          <div className="flex items-center gap-1.5 rounded-md border border-border/60 bg-muted/30 px-2.5 py-1.5">
+            <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/50">
+              ID
+            </span>
+            <CopyableId value={project.id} />
+          </div>
+        }
         footer={(active) =>
           active !== 'worktrees' ? (
             <div className="flex items-center justify-between border-t px-5 py-3">
@@ -380,6 +423,32 @@ export function ProjectSettingsDialog({
         }}
       />
     </>
+  )
+}
+
+function CopyableId({ value }: { value: string }) {
+  const { t } = useTranslation()
+  const [copied, setCopied] = useState(false)
+
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        void navigator.clipboard.writeText(value).then(() => {
+          setCopied(true)
+          setTimeout(() => setCopied(false), 1500)
+        })
+      }}
+      className="group/id inline-flex items-center gap-1 rounded px-1.5 py-0.5 font-mono text-xs text-muted-foreground hover:bg-muted transition-colors"
+      title={t('project.copyId')}
+    >
+      {value}
+      {copied ? (
+        <Check className="size-3 text-green-500" />
+      ) : (
+        <Copy className="size-3 opacity-0 group-hover/id:opacity-100 transition-opacity" />
+      )}
+    </button>
   )
 }
 

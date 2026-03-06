@@ -30,6 +30,8 @@
     "newProject": "新建项目",
     "issueCount": "{{count}} 个任务",
     "statusCount": "{{count}} 个状态",
+    "copyId": "点击复制 ID",
+    "copyPath": "点击复制路径",
     "browseDirectories": "浏览目录",
     "directoryAlreadyUsed": "该目录已被其他项目使用",
     "delete": "删除项目",

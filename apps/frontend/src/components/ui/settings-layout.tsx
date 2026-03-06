@@ -24,6 +24,7 @@ export function SettingsLayout({
   defaultItem,
   children,
   footer,
+  sidebarFooter,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -32,6 +33,7 @@ export function SettingsLayout({
   defaultItem?: string
   children: (activeItem: string) => React.ReactNode
   footer?: (activeItem: string) => React.ReactNode
+  sidebarFooter?: React.ReactNode
 }) {
   const [active, setActive] = useState(defaultItem ?? items[0]?.id ?? '')
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
@@ -103,6 +105,9 @@ export function SettingsLayout({
                 )
               })}
             </div>
+            {sidebarFooter && (
+              <div className="mt-auto pt-3">{sidebarFooter}</div>
+            )}
           </nav>
 
           {/* Mobile nav backdrop */}

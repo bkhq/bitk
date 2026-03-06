@@ -1,10 +1,11 @@
 import {
+  Check,
+  Copy,
+  FolderOpen,
   Hash,
-  Layers,
   LayoutGrid,
   List,
   Menu,
-  MoreVertical,
   Plus,
   Settings,
   StickyNote,
@@ -42,11 +43,21 @@ function ProjectCard({
   const { t } = useTranslation()
   const stats = useProjectStats(project.id)
   const [showSettings, setShowSettings] = useState(false)
+  const [copied, setCopied] = useState(false)
+
+  const handleCopyPath = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!project.directory) return
+    void navigator.clipboard.writeText(project.directory).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    })
+  }
 
   return (
     <>
       <Card
-        className="bg-card/70 hover:bg-card cursor-pointer transition-all hover:shadow-md hover:border-primary/20 group"
+        className="h-full bg-card/70 hover:bg-card cursor-pointer transition-all hover:shadow-md hover:border-primary/20 group"
         onClick={onClick}
       >
         <CardHeader>
@@ -55,8 +66,11 @@ function ProjectCard({
               {getProjectInitials(project.name)}
             </div>
             <div className="min-w-0 flex-1">
-              <CardTitle className="text-base group-hover:text-primary transition-colors truncate">
-                {project.name}
+              <CardTitle className="flex items-baseline gap-1.5 text-base group-hover:text-primary transition-colors">
+                <span className="truncate">{project.name}</span>
+                <span className="shrink-0 text-[10px] font-normal font-mono text-muted-foreground/60">
+                  {project.id}
+                </span>
               </CardTitle>
               {project.description && (
                 <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">
@@ -74,19 +88,33 @@ function ProjectCard({
               aria-label={t('project.settings')}
               title={t('project.settings')}
             >
-              <MoreVertical className="h-4 w-4" />
+              <Settings className="h-4 w-4" />
             </button>
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-4 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1">
+        <CardContent className="mt-auto">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            {project.directory ? (
+              <button
+                type="button"
+                onClick={handleCopyPath}
+                className="group/path flex min-w-0 items-center gap-1 hover:text-foreground transition-colors text-left"
+                title={t('project.copyPath')}
+              >
+                <FolderOpen className="h-3 w-3 shrink-0" />
+                <span className="truncate font-mono">
+                  {project.directory}
+                </span>
+                {copied ? (
+                  <Check className="h-3 w-3 shrink-0 text-green-500" />
+                ) : (
+                  <Copy className="h-3 w-3 shrink-0 opacity-0 group-hover/path:opacity-100 transition-opacity" />
+                )}
+              </button>
+            ) : null}
+            <span className="ml-auto flex shrink-0 items-center gap-1">
               <Hash className="h-3 w-3" />
-              {t('project.issueCount', { count: stats.issueCount })}
-            </span>
-            <span className="flex items-center gap-1">
-              <Layers className="h-3 w-3" />
-              {t('project.statusCount', { count: stats.statusCount })}
+              {stats.issueCount}
             </span>
           </div>
         </CardContent>

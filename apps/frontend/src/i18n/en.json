@@ -30,6 +30,8 @@
     "newProject": "New Project",
     "issueCount": "{{count}} issues",
     "statusCount": "{{count}} statuses",
+    "copyId": "Click to copy ID",
+    "copyPath": "Click to copy path",
     "browseDirectories": "Browse directories",
     "directoryAlreadyUsed": "This directory is already used by another project",
     "delete": "Delete Project",
