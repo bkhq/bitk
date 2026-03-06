@@ -296,6 +296,8 @@
     "buildId": "Build",
     "devBuild": "Development build",
     "packageMode": "Package",
+    "fullWidthChat": "Full-width chat",
+    "fullWidthChatHint": "Remove the max-width limit on the chat message area",
     "worktreeAutoCleanup": "Auto-cleanup worktrees",
     "worktreeAutoCleanupHint": "Automatically remove worktrees for issues that have been done for more than 1 day",
     "upgradeEnabled": "Auto-upgrade",

@@ -296,6 +296,8 @@
     "buildId": "构建",
     "devBuild": "开发构建",
     "packageMode": "包模式",
+    "fullWidthChat": "全宽聊天",
+    "fullWidthChatHint": "移除聊天消息区域的最大宽度限制",
     "worktreeAutoCleanup": "自动清理工作区",
     "worktreeAutoCleanupHint": "自动清理已完成超过 1 天的工作区",
     "upgradeEnabled": "自动升级",

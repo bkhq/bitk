@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { useTheme } from '@/hooks/use-theme'
 import { getCommandPreview } from '@/lib/command-preview'
 import { codeToHtml } from '@/lib/shiki'
+import { useViewModeStore } from '@/stores/view-mode-store'
 import type { NormalizedLogEntry } from '@/types/kanban'
 import { LogEntry } from './LogEntry'
 
@@ -367,6 +368,7 @@ export function SessionMessages({
   onLoadOlder?: () => void
 }) {
   const { t } = useTranslation()
+  const fullWidthChat = useViewModeStore((s) => s.fullWidthChat)
 
   const todoCallIds = new Set(
     logs
@@ -628,7 +630,7 @@ export function SessionMessages({
   }
 
   return (
-    <div className="flex flex-col py-2 px-5 max-w-[72ch]">
+    <div className={`flex flex-col py-2 px-5${fullWidthChat ? '' : ' max-w-4xl'}`}>
       {hasOlderLogs && onLoadOlder ? (
         <div className="flex justify-center py-2">
           <button

@@ -66,6 +66,7 @@ import {
 import { useTheme } from '@/hooks/use-theme'
 import { LANGUAGES } from '@/lib/constants'
 import { cn } from '@/lib/utils'
+import { useViewModeStore } from '@/stores/view-mode-store'
 import type {
   EngineAvailability,
   EngineModel,
@@ -129,8 +130,8 @@ function GeneralSection({ open }: { open: boolean }) {
   const { data: wsData } = useWorkspacePath(open)
   const updateWsPath = useUpdateWorkspacePath()
   const [dirPickerOpen, setDirPickerOpen] = useState(false)
-  const { data: worktreeCleanupData } = useWorktreeAutoCleanup(open)
-  const setWorktreeAutoCleanup = useSetWorktreeAutoCleanup()
+  const fullWidthChat = useViewModeStore((s) => s.fullWidthChat)
+  const setFullWidthChat = useViewModeStore((s) => s.setFullWidthChat)
 
   const handleSelectWorkspace = (path: string) => {
     updateWsPath.mutate(path)
@@ -207,16 +208,16 @@ function GeneralSection({ open }: { open: boolean }) {
       <div className="flex items-center justify-between">
         <div>
           <span className="text-sm font-medium">
-            {t('settings.worktreeAutoCleanup')}
+            {t('settings.fullWidthChat')}
           </span>
           <p className="text-[11px] text-muted-foreground">
-            {t('settings.worktreeAutoCleanupHint')}
+            {t('settings.fullWidthChatHint')}
           </p>
         </div>
         <Switch
           size="sm"
-          checked={worktreeCleanupData?.enabled ?? false}
-          onCheckedChange={(checked) => setWorktreeAutoCleanup.mutate(checked)}
+          checked={fullWidthChat}
+          onCheckedChange={setFullWidthChat}
         />
       </div>
     </div>
@@ -556,9 +557,27 @@ function CleanupSection({ open }: { open: boolean }) {
   const { t } = useTranslation()
   const { data: cleanupStats, refetch: refetchStats } = useCleanupStats(open)
   const runCleanup = useRunCleanup()
+  const { data: worktreeCleanupData } = useWorktreeAutoCleanup(open)
+  const setWorktreeAutoCleanup = useSetWorktreeAutoCleanup()
 
   return (
     <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <div>
+          <span className="text-sm font-medium">
+            {t('settings.worktreeAutoCleanup')}
+          </span>
+          <p className="text-[11px] text-muted-foreground">
+            {t('settings.worktreeAutoCleanupHint')}
+          </p>
+        </div>
+        <Switch
+          size="sm"
+          checked={worktreeCleanupData?.enabled ?? false}
+          onCheckedChange={(checked) => setWorktreeAutoCleanup.mutate(checked)}
+        />
+      </div>
+
       <div className="flex items-center justify-between">
         <p className="text-xs text-muted-foreground">{t('settings.cleanup')}</p>
         <Button variant="ghost" size="sm" onClick={() => refetchStats()}>
