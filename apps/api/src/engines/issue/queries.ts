@@ -72,7 +72,7 @@ export async function refreshSlashCommandsCache(): Promise<void> {
       const raw = await getAppSetting(slashCommandsKey(et))
       const cat = raw ? parseCategorized(raw) : null
       if (cat) {
-        cachedCommands.set(et, cat)
+        cachedCommands.set(et, mapAgentsToCommands(cat))
       } else {
         cachedCommands.delete(et)
       }
@@ -87,7 +87,7 @@ export async function refreshSlashCommandsCacheForEngine(
   const raw = await getAppSetting(slashCommandsKey(engineType))
   const cat = raw ? parseCategorized(raw) : null
   if (cat) {
-    cachedCommands.set(engineType, cat)
+    cachedCommands.set(engineType, mapAgentsToCommands(cat))
   } else {
     cachedCommands.delete(engineType)
   }
@@ -231,6 +231,33 @@ export function isTurnInFlight(ctx: EngineContext, issueId: string): boolean {
   return !!active && active.turnInFlight
 }
 
+/**
+ * Map agent names to matching command names so they are invocable via `/`.
+ *
+ * Claude CLI reports agents (e.g. `everything-claude-code:code-reviewer`) and
+ * commands/skills (e.g. `everything-claude-code:code-review`) separately.
+ * Agents aren't directly invocable as `/` commands — the matching skill is.
+ * For each agent, if a command shares the same prefix (agent name starts with
+ * command name), replace the agent name with the command name.
+ */
+function mapAgentsToCommands(cat: CategorizedCommands): CategorizedCommands {
+  if (cat.agents.length === 0 || cat.commands.length === 0) return cat
+  const commandSet = new Set(cat.commands)
+  const mappedAgents = cat.agents.map((agent) => {
+    // Already a valid command — no mapping needed
+    if (commandSet.has(agent)) return agent
+    // Find a command where the agent name starts with the command name
+    // e.g. agent "x:code-reviewer" matches command "x:code-review"
+    for (const cmd of cat.commands) {
+      if (agent.startsWith(cmd) && agent.length > cmd.length) {
+        return cmd
+      }
+    }
+    return agent
+  })
+  return { ...cat, agents: mappedAgents }
+}
+
 export function getCategorizedCommands(
   ctx: EngineContext,
   issueId: string,
@@ -243,13 +270,14 @@ export function getCategorizedCommands(
       active.agents.length > 0 ||
       active.plugins.length > 0)
   ) {
-    return {
+    return mapAgentsToCommands({
       commands: active.slashCommands,
       agents: active.agents,
       plugins: active.plugins,
-    }
+    })
   }
   const et = active?.engineType ?? engineType
+  // Cache already has mapped agents (applied in refreshSlashCommandsCache*)
   return getCachedCategorizedCommands(et)
 }
 
