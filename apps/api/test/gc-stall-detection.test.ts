@@ -110,9 +110,7 @@ describe('gcSweep — stream stall detection', () => {
     const stalledAt = new Date(
       Date.now() - STREAM_STALL_TIMEOUT_MS - STALL_LIVENESS_GRACE_MS - 60_000,
     )
-    const detectedAt = new Date(
-      Date.now() - STALL_LIVENESS_GRACE_MS - 60_000,
-    )
+    const detectedAt = new Date(Date.now() - STALL_LIVENESS_GRACE_MS - 60_000)
     const interruptMock = mock(() => {})
     const managed = makeManagedProcess({
       issueId: 'issue-1',
@@ -148,9 +146,7 @@ describe('gcSweep — stream stall detection', () => {
     const detectedAt = new Date(
       Date.now() - STALL_LIVENESS_GRACE_MS - STALL_INTERRUPT_GRACE_MS - 60_000,
     )
-    const probeAt = new Date(
-      Date.now() - STALL_INTERRUPT_GRACE_MS - 60_000,
-    )
+    const probeAt = new Date(Date.now() - STALL_INTERRUPT_GRACE_MS - 60_000)
     const managed = makeManagedProcess({
       issueId: 'issue-1',
       executionId: 'exec-1',
@@ -317,9 +313,7 @@ describe('gcSweep — stream stall detection', () => {
           STALL_INTERRUPT_GRACE_MS -
           120_000,
       ),
-      stallProbeAt: new Date(
-        Date.now() - STALL_INTERRUPT_GRACE_MS - 120_000,
-      ),
+      stallProbeAt: new Date(Date.now() - STALL_INTERRUPT_GRACE_MS - 120_000),
     })
     const activeManaged = makeManagedProcess({
       issueId: 'issue-active',
