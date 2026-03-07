@@ -19,6 +19,7 @@ interface UseIssueStreamReturn {
   isLoadingOlder: boolean
   loadOlderLogs: () => void
   clearLogs: () => void
+  refreshLogs: () => void
   appendServerMessage: (
     messageId: string,
     content: string,
@@ -101,6 +102,8 @@ export function useIssueStream({
   const [isLoadingOlder, setIsLoadingOlder] = useState(false)
   const queryClient = useQueryClient()
 
+  const [refreshCounter, setRefreshCounter] = useState(0)
+
   const doneReceivedRef = useRef(false)
   const activeExecutionRef = useRef<string | null>(null)
   const streamScopeRef = useRef<string | null>(null)
@@ -149,6 +152,12 @@ export function useIssueStream({
     seenIdsRef.current.clear()
     seenContentKeysRef.current.clear()
   }, [])
+
+  /** Clear logs and re-fetch from server. */
+  const refreshLogs = useCallback(() => {
+    clearLogs()
+    setRefreshCounter((c) => c + 1)
+  }, [clearLogs])
 
   /** Register an entry's identity into the seen sets. */
   const markSeen = useCallback((entry: NormalizedLogEntry) => {
@@ -370,7 +379,8 @@ export function useIssueStream({
     // log window on every status transition (running → completed) causes a
     // race: the HTTP response can overwrite SSE entries that arrived between
     // the request and response, making messages appear/disappear/reappear.
-  }, [projectId, issueId, enabled, markSeen])
+    // refreshCounter is included so that refreshLogs() can trigger a re-fetch.
+  }, [projectId, issueId, enabled, markSeen, refreshCounter])
 
   // Subscribe to live SSE events for this issue.
   useEffect(() => {
@@ -436,6 +446,7 @@ export function useIssueStream({
     isLoadingOlder,
     loadOlderLogs,
     clearLogs,
+    refreshLogs,
     appendServerMessage,
   }
 }

@@ -4,7 +4,7 @@ import {
   Image as ImageIcon,
   Loader2,
   Paperclip,
-  Plug,
+  RefreshCw,
   SlashSquare,
   X,
 } from 'lucide-react'
@@ -72,6 +72,7 @@ export function ChatInput({
   slashCommands = [],
   agentCommands = [],
   pluginCommands = [],
+  onRefreshLogs,
 }: {
   projectId?: string
   issueId?: string
@@ -91,6 +92,7 @@ export function ChatInput({
   slashCommands?: string[]
   agentCommands?: string[]
   pluginCommands?: Array<{ name: string; path: string }>
+  onRefreshLogs?: () => void
 }) {
   const { t } = useTranslation()
   const draftKey = issueId ? `bitk:draft:${issueId}` : null
@@ -363,6 +365,13 @@ export function ChatInput({
                   : undefined
         onMessageSent?.(result.messageId, prompt, metadata)
       }
+      // Auto-scroll to bottom after sending
+      setTimeout(() => {
+        scrollRef?.current?.scrollTo({
+          top: scrollRef.current.scrollHeight,
+          behavior: 'smooth',
+        })
+      }, 100)
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
       setSendError(msg)
@@ -708,14 +717,14 @@ export function ChatInput({
                 }
               />
             ) : null}
-            {pluginCommands.length > 0 ? (
-              <PluginPicker
-                plugins={pluginCommands}
-                onSelect={(p) =>
-                  selectSlashCommand(p.startsWith('/') ? p : `/${p}`)
-                }
-              />
-            ) : null}
+            <Button
+              variant="ghost"
+              size="icon"
+              title={t('chat.refreshLogs')}
+              onClick={onRefreshLogs}
+            >
+              <RefreshCw className="size-4" />
+            </Button>
           </div>
 
           <Button
@@ -1030,64 +1039,6 @@ function AgentPicker({
                 className="text-xs px-3 py-1.5"
               >
                 <code className="font-mono text-foreground/80">{agent}</code>
-              </CommandItem>
-            ))}
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
-  )
-}
-
-// ─── PluginPicker ────────────────────────────────────────────────────────────
-
-function PluginPicker({
-  plugins,
-  onSelect,
-}: {
-  plugins: Array<{ name: string; path: string }>
-  onSelect: (name: string) => void
-}) {
-  const { t } = useTranslation()
-  const [open, setOpen] = useState(false)
-
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger
-        render={
-          <Button variant="ghost" size="icon" title={t('chat.plugins')} />
-        }
-      >
-        <Plug className="size-4" />
-      </PopoverTrigger>
-      <PopoverContent side="top" align="start" className="w-[280px] p-0">
-        <Command>
-          <CommandInput
-            placeholder={t('chat.pluginSearch')}
-            className="text-xs h-8"
-          />
-          <CommandList className="max-h-[240px]">
-            <CommandEmpty className="text-xs text-muted-foreground/50 px-3 py-2">
-              {t('chat.noPlugins')}
-            </CommandEmpty>
-            {plugins.map((plugin) => (
-              <CommandItem
-                key={plugin.name}
-                value={plugin.name}
-                onSelect={() => {
-                  onSelect(plugin.name)
-                  setOpen(false)
-                }}
-                className="text-xs px-3 py-1.5"
-              >
-                <div className="flex flex-col gap-0.5">
-                  <code className="font-mono text-foreground/80">
-                    {plugin.name}
-                  </code>
-                  <span className="text-[10px] text-muted-foreground/50 truncate">
-                    {plugin.path}
-                  </span>
-                </div>
               </CommandItem>
             ))}
           </CommandList>

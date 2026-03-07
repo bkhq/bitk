@@ -173,6 +173,7 @@
     "plugins": "Plugins",
     "pluginSearch": "搜索插件...",
     "noPlugins": "没有匹配的插件",
+    "refreshLogs": "刷新日志",
     "worktree": "工作树",
     "worktreeBranch": "分支",
     "worktreePath": "路径"

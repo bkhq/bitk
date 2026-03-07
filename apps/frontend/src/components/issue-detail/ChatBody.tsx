@@ -80,6 +80,7 @@ export function useSessionState(
     hasOlderLogs,
     isLoadingOlder,
     loadOlderLogs,
+    refreshLogs,
     appendServerMessage,
   } = useIssueStream({
     projectId,
@@ -119,6 +120,7 @@ export function useSessionState(
     hasOlderLogs,
     isLoadingOlder,
     loadOlderLogs,
+    refreshLogs,
     appendServerMessage,
   }
 }
@@ -184,6 +186,7 @@ export function ChatBody({
     hasOlderLogs,
     isLoadingOlder,
     loadOlderLogs,
+    refreshLogs,
     appendServerMessage,
   } = useSessionState(projectId, issueId, issue)
 
@@ -331,6 +334,7 @@ export function ChatBody({
         slashCommands={slashCommands}
         agentCommands={agentCommands}
         pluginCommands={pluginCommands}
+        onRefreshLogs={refreshLogs}
         onMessageSent={(messageId, prompt, metadata) => {
           appendServerMessage(messageId, prompt, metadata)
         }}
