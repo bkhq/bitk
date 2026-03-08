@@ -264,4 +264,26 @@ describe('rebuildMessages', () => {
     expect(tg.hiddenCount).toBe(2)
     expect(tg.count).toBe(2)
   })
+
+  test('detects result via metadata.isResult fallback (no toolDetail)', () => {
+    const entries = [
+      // Action with toolDetail
+      toolCall('tc-1', 'Edit', 'file-edit'),
+      // Result with isResult only in metadata (no toolDetail)
+      entry({
+        entryType: 'tool-use',
+        content: 'edit result',
+        metadata: { toolName: 'Edit', toolCallId: 'tc-1', isResult: true },
+      }),
+      entry({ entryType: 'assistant-message', content: 'done' }),
+    ]
+    const msgs = rebuildMessages(entries, opts)
+    expect(msgs).toHaveLength(2) // tool-group + assistant
+    const tg = msgs[0]
+    if (tg.type !== 'tool-group') throw new Error('expected tool-group')
+    expect(tg.items).toHaveLength(1)
+    // The result should be paired
+    expect(tg.items[0].result).not.toBeNull()
+    expect(tg.items[0].result?.content).toBe('edit result')
+  })
 })

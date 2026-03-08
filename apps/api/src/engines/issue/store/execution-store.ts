@@ -27,13 +27,18 @@ interface EntryRow {
 
 function entryToRow(entry: NormalizedLogEntry): Omit<EntryRow, 'idx'> {
   const detail = entry.toolDetail
+  // Merge toolAction into metadata so it survives the round-trip
+  let metadata = entry.metadata
+  if (entry.toolAction && !metadata?.toolAction) {
+    metadata = { ...metadata, toolAction: entry.toolAction }
+  }
   return {
     message_id: entry.messageId ?? null,
     reply_to_message_id: entry.replyToMessageId ?? null,
     turn_index: entry.turnIndex ?? 0,
     entry_type: entry.entryType,
     content: entry.content,
-    metadata: entry.metadata ? JSON.stringify(entry.metadata) : null,
+    metadata: metadata ? JSON.stringify(metadata) : null,
     tool_call_id: detail?.toolCallId ?? null,
     tool_name: detail?.toolName ?? null,
     tool_kind: detail?.kind ?? null,

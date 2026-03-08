@@ -38,12 +38,19 @@ function entryId(entry: NormalizedLogEntry, fallback: string): string {
   return entry.messageId ?? fallback
 }
 
+function hasResultFlag(entry: NormalizedLogEntry): boolean {
+  return (
+    entry.toolDetail?.isResult === true ||
+    (entry.metadata?.isResult as boolean | undefined) === true
+  )
+}
+
 function isToolUseAction(entry: NormalizedLogEntry): boolean {
-  return entry.entryType === 'tool-use' && entry.toolDetail?.isResult !== true
+  return entry.entryType === 'tool-use' && !hasResultFlag(entry)
 }
 
 function isToolUseResult(entry: NormalizedLogEntry): boolean {
-  return entry.entryType === 'tool-use' && entry.toolDetail?.isResult === true
+  return entry.entryType === 'tool-use' && hasResultFlag(entry)
 }
 
 function isTodoWriteEntry(entry: NormalizedLogEntry): boolean {

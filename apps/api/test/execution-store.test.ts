@@ -208,4 +208,29 @@ describe('ExecutionStore', () => {
 
     store.destroy()
   })
+
+  test('toolAction round-trips through store', () => {
+    const store = new ExecutionStore('exec-11')
+    store.append(
+      makeEntry({
+        entryType: 'tool-use',
+        content: 'reading file',
+        toolAction: { kind: 'file-read', path: 'src/index.ts' },
+        toolDetail: {
+          kind: 'file-read',
+          toolName: 'Read',
+          toolCallId: 'tc-rt',
+          isResult: false,
+        },
+      }),
+    )
+
+    const entries = store.getByTurn(0)
+    expect(entries[0].toolAction).toEqual({
+      kind: 'file-read',
+      path: 'src/index.ts',
+    })
+
+    store.destroy()
+  })
 })
