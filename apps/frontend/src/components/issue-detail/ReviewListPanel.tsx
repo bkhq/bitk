@@ -39,7 +39,12 @@ export function ReviewListPanel({
   const grouped = useMemo(() => {
     const map = new Map<
       string,
-      { projectId: string; projectName: string; projectAlias: string; issues: ReviewIssue[] }
+      {
+        projectId: string
+        projectName: string
+        projectAlias: string
+        issues: ReviewIssue[]
+      }
     >()
     for (const issue of filtered) {
       const existing = map.get(issue.projectId)
@@ -99,11 +104,15 @@ export function ReviewListPanel({
       <div className="flex-1 overflow-y-auto">
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
-            <p className="text-xs text-muted-foreground">{t('common.loading')}</p>
+            <p className="text-xs text-muted-foreground">
+              {t('common.loading')}
+            </p>
           </div>
         ) : grouped.length === 0 ? (
           <div className="flex items-center justify-center py-8">
-            <p className="text-xs text-muted-foreground/55">{t('review.empty')}</p>
+            <p className="text-xs text-muted-foreground/55">
+              {t('review.empty')}
+            </p>
           </div>
         ) : (
           grouped.map((group) => (

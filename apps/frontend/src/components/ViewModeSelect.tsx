@@ -84,7 +84,11 @@ export function ViewModeSelect({
       >
         <CurrentIcon className="h-4 w-4" />
       </DropdownMenuTrigger>
-      <DropdownMenuContent side="right" align="center" className="min-w-[120px]">
+      <DropdownMenuContent
+        side="right"
+        align="center"
+        className="min-w-[120px]"
+      >
         {VIEW_MODES.map(({ id, icon: Icon }) => (
           <DropdownMenuItem
             key={id}

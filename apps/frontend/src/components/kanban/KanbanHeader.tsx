@@ -1,10 +1,4 @@
-import {
-  Activity,
-  FolderOpen,
-  Plus,
-  Search,
-  Settings,
-} from 'lucide-react'
+import { Activity, FolderOpen, Plus, Search, Settings } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ProjectSettingsDialog } from '@/components/ProjectSettingsDialog'

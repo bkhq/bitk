@@ -109,11 +109,9 @@ export const kanbanApi = {
 
   // Issues
   getReviewIssues: () =>
-    get<
-      Array<
-        Issue & { projectName: string; projectAlias: string }
-      >
-    >('/api/issues/review'),
+    get<Array<Issue & { projectName: string; projectAlias: string }>>(
+      '/api/issues/review',
+    ),
   getIssues: (projectId: string) =>
     get<Issue[]>(`/api/projects/${projectId}/issues`),
   getChildIssues: (projectId: string, parentId: string) =>
