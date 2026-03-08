@@ -154,9 +154,9 @@ create.post(
         model: resolvedModel,
         timestamp: new Date().toISOString(),
       }
-      const externalUrl = process.env.EXTERNAL_URL
-      if (externalUrl) {
-        webhookPayload.issueUrl = `${externalUrl.replace(/\/+$/, '')}/projects/${project.id}/issues/${newIssue!.id}`
+      const serverUrl = process.env.SERVER_URL
+      if (serverUrl) {
+        webhookPayload.issueUrl = `${serverUrl.replace(/\/+$/, '')}/projects/${project.id}/issues/${newIssue!.id}`
       }
       void webhookDispatch('issue.created', webhookPayload)
 

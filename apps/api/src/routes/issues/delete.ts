@@ -99,9 +99,9 @@ del.delete('/:id', async (c) => {
     title: existing.title,
     timestamp: new Date().toISOString(),
   }
-  const externalUrl = process.env.EXTERNAL_URL
-  if (externalUrl) {
-    webhookPayload.issueUrl = `${externalUrl.replace(/\/+$/, '')}/projects/${project.id}/issues/${issueId}`
+  const serverUrl = process.env.SERVER_URL
+  if (serverUrl) {
+    webhookPayload.issueUrl = `${serverUrl.replace(/\/+$/, '')}/projects/${project.id}/issues/${issueId}`
   }
   void webhookDispatch('issue.deleted', webhookPayload)
 

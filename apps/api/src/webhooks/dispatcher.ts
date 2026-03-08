@@ -65,9 +65,9 @@ async function getIssueMetadata(
       model: row.model,
     }
 
-    const externalUrl = process.env.EXTERNAL_URL
-    if (externalUrl) {
-      result.issueUrl = `${externalUrl.replace(/\/+$/, '')}/projects/${row.projectId}/issues/${row.id}`
+    const serverUrl = process.env.SERVER_URL
+    if (serverUrl) {
+      result.issueUrl = `${serverUrl.replace(/\/+$/, '')}/projects/${row.projectId}/issues/${row.id}`
     }
 
     return result
