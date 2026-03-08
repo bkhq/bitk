@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-03-08 21:10 [progress]
+
+FEAT-002: 将 SERVER_NAME 和 SERVER_URL 从环境变量迁移到数据库
+
+- `apps/api/src/db/helpers.ts` — 新增 `getServerName/getServerUrl/setServerName/setServerUrl/deleteAppSetting/ensureServerInfoDefaults`
+- `apps/api/src/engines/reconciler.ts` — 启动时调用 `ensureServerInfoDefaults()` 自动迁移 env → DB
+- `apps/api/src/routes/settings/general.ts` — 新增 `GET/PATCH /api/settings/server-info` 端点
+- `apps/api/src/routes/settings/about.ts` — system-info 改为从 DB 读取
+- `apps/api/src/webhooks/dispatcher.ts` — 改为从 DB 读取 SERVER_URL
+- `apps/api/src/routes/issues/create.ts` — 改为从 DB 读取 SERVER_URL
+- `apps/api/src/routes/issues/delete.ts` — 改为从 DB 读取 SERVER_URL
+- `apps/frontend/src/lib/kanban-api.ts` — 新增 `getServerInfo/updateServerInfo` API
+- `apps/frontend/src/hooks/use-kanban.ts` — 新增 `useServerInfo/useUpdateServerInfo` hooks
+- `apps/frontend/src/components/AppSettingsDialog.tsx` — 设置页 General 区新增 server name/url 编辑表单
+- `apps/frontend/src/i18n/{en,zh}.json` — 新增 i18n 键
+
+关联方案：PLAN-004
+
 ## 2026-03-08 20:25 [progress]
 
 CHAT-002: Code review 修复

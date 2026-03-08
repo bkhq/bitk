@@ -1,6 +1,7 @@
 import type { WebhookEventType } from '@bkd/shared'
 import { and, desc, eq, inArray } from 'drizzle-orm'
 import { db } from '@/db'
+import { getServerUrl } from '@/db/helpers'
 import {
   issueLogs,
   issues as issuesTable,
@@ -62,7 +63,7 @@ async function getIssueMetadata(
       model: row.model,
     }
 
-    const serverUrl = process.env.SERVER_URL
+    const serverUrl = await getServerUrl()
     if (serverUrl) {
       result.issueUrl = buildIssueUrl(serverUrl, row.projectId, row.id)
     }

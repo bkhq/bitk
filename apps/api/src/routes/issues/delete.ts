@@ -2,7 +2,7 @@ import { and, eq, inArray } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { cacheDel, cacheDelByPrefix } from '@/cache'
 import { db } from '@/db'
-import { findProject } from '@/db/helpers'
+import { findProject, getServerUrl } from '@/db/helpers'
 import { issues as issuesTable } from '@/db/schema'
 import { issueEngine } from '@/engines/issue'
 import { logger } from '@/logger'
@@ -102,7 +102,7 @@ del.delete('/:id', async (c) => {
     title: existing.title,
     timestamp: new Date().toISOString(),
   }
-  const serverUrl = process.env.SERVER_URL
+  const serverUrl = await getServerUrl()
   if (serverUrl) {
     webhookPayload.issueUrl = buildIssueUrl(serverUrl, project.id, issueId)
   }

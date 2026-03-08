@@ -59,6 +59,7 @@ export const queryKeys = {
   systemLogs: () => ['settings', 'systemLogs'] as const,
   cleanupStats: () => ['settings', 'cleanupStats'] as const,
   deletedIssues: () => ['settings', 'deletedIssues'] as const,
+  serverInfo: () => ['settings', 'serverInfo'] as const,
   systemInfo: () => ['settings', 'systemInfo'] as const,
   reviewIssues: () => ['issues', 'review'] as const,
   webhooks: () => ['settings', 'webhooks'] as const,
@@ -527,6 +528,29 @@ export function useSetWorktreeAutoCleanup() {
       queryClient.invalidateQueries({
         queryKey: queryKeys.worktreeAutoCleanup(),
       })
+    },
+  })
+}
+
+// --- Server Info hooks ---
+
+export function useServerInfo(enabled = false) {
+  return useQuery({
+    queryKey: queryKeys.serverInfo(),
+    queryFn: () => kanbanApi.getServerInfo(),
+    enabled,
+    staleTime: Infinity,
+  })
+}
+
+export function useUpdateServerInfo() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (data: { name?: string; url?: string }) =>
+      kanbanApi.updateServerInfo(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.serverInfo() })
+      queryClient.invalidateQueries({ queryKey: queryKeys.systemInfo() })
     },
   })
 }

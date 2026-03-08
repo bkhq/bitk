@@ -3,6 +3,7 @@ import { cacheDel } from '@/cache'
 import { db } from '@/db'
 import {
   ensureDefaultFilterRules,
+  ensureServerInfoDefaults,
   ensureWorktreeAutoCleanupDefault,
 } from '@/db/helpers'
 import { issues as issuesTable } from '@/db/schema'
@@ -116,6 +117,7 @@ export async function startupReconciliation(): Promise<void> {
   // Seed defaults if not present
   await ensureDefaultFilterRules()
   await ensureWorktreeAutoCleanupDefault()
+  await ensureServerInfoDefaults()
 
   // First, mark stale sessions (running/pending sessionStatus) as failed.
   // This was previously done by cleanupStaleSessions in db/helpers.

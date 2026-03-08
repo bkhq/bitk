@@ -307,6 +307,17 @@ export const kanbanApi = {
   restoreDeletedIssue: (id: string) =>
     post<{ id: string }>(`/api/settings/deleted-issues/${id}/restore`, {}),
 
+  // Server Info
+  getServerInfo: () =>
+    get<{ name: string | null; url: string | null }>(
+      '/api/settings/server-info',
+    ),
+  updateServerInfo: (data: { name?: string; url?: string }) =>
+    patch<{ name: string | null; url: string | null }>(
+      '/api/settings/server-info',
+      data,
+    ),
+
   // System Logs
   getSystemLogs: (lines = 200) =>
     get<{ lines: string[]; fileSize: number; totalLines: number }>(
