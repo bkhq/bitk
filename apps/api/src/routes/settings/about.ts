@@ -28,8 +28,8 @@ about.get('/system-info', async (c) => {
         nodeVersion: process.version,
       },
       server: {
-        name: process.env.SERVER_NAME ?? null,
-        url: process.env.SERVER_URL ?? null,
+        name: process.env.SERVER_NAME?.trim() || null,
+        url: process.env.SERVER_URL?.trim() || null,
       },
       process: {
         pid: process.pid,
