@@ -198,6 +198,53 @@ webhooksRoute.patch(
     }
 
     const body = c.req.valid('json')
+
+    // Validate channel-specific rules against effective (merged) values
+    const effectiveChannel = body.channel ?? existing.channel
+    const effectiveUrl = body.url ?? existing.url
+    const effectiveSecret =
+      body.secret !== undefined && body.secret !== SECRET_MASK
+        ? body.secret
+        : existing.secret
+
+    if (effectiveChannel === 'webhook' && body.url !== undefined) {
+      try {
+        const parsed = new URL(effectiveUrl)
+        if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+          return c.json(
+            { success: false, error: 'URL must use http or https protocol' },
+            400,
+          )
+        }
+        if (isPrivateHost(parsed.hostname.toLowerCase())) {
+          return c.json(
+            {
+              success: false,
+              error:
+                'URLs pointing to private/internal networks are not allowed',
+            },
+            400,
+          )
+        }
+      } catch {
+        return c.json({ success: false, error: 'Invalid URL format' }, 400)
+      }
+    }
+    if (effectiveChannel === 'telegram') {
+      if (!effectiveSecret) {
+        return c.json(
+          { success: false, error: 'Bot token is required for Telegram' },
+          400,
+        )
+      }
+      if (body.url !== undefined && !/^-?\d+$/.test(effectiveUrl.trim())) {
+        return c.json(
+          { success: false, error: 'Chat ID must be a numeric value' },
+          400,
+        )
+      }
+    }
+
     const updates: Record<string, unknown> = {}
 
     if (body.channel !== undefined) updates.channel = body.channel

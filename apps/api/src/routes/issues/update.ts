@@ -70,6 +70,8 @@ update.patch(
     const toFlush: Array<{ id: string; model: string | null }> = []
     // Collect issues transitioning to done that need active processes cancelled
     const toCancel: string[] = []
+    // Track which issues actually had a status change (not just reorder within same column)
+    const actualStatusChanges = new Set<string>()
 
     await db.transaction(async (tx) => {
       for (const u of body.updates) {
@@ -95,6 +97,7 @@ update.patch(
           // Only update statusUpdatedAt on actual status change
           if (existing && existing.statusId !== u.statusId) {
             changes.statusUpdatedAt = new Date()
+            actualStatusChanges.add(u.id)
           }
         }
 
@@ -142,7 +145,10 @@ update.patch(
     for (const u of body.updates) {
       if (!projectIssueIdSet.has(u.id)) continue
       const changes: Record<string, unknown> = {}
-      if (u.statusId !== undefined) changes.statusId = u.statusId
+      // Only include statusId when it actually changed (not same-column reorder)
+      if (u.statusId !== undefined && actualStatusChanges.has(u.id)) {
+        changes.statusId = u.statusId
+      }
       if (u.sortOrder !== undefined) changes.sortOrder = u.sortOrder
       if (Object.keys(changes).length > 0) {
         emitIssueUpdated(u.id, changes)
