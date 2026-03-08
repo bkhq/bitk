@@ -380,7 +380,7 @@ export function useIssueStream({
     // race: the HTTP response can overwrite SSE entries that arrived between
     // the request and response, making messages appear/disappear/reappear.
     // refreshCounter is included so that refreshLogs() can trigger a re-fetch.
-  }, [projectId, issueId, enabled, markSeen, refreshCounter])
+  }, [projectId, issueId, enabled, markSeen])
 
   // Subscribe to live SSE events for this issue.
   useEffect(() => {
