@@ -8,3 +8,4 @@
 - [x] **PLAN-003 聊天界面 UI 优化（对标 Claude Code）** - task: `CHAT-001` - file: `docs/plan/PLAN-003.md`
 - [x] **PLAN-004 历史消息分页按会话消息计数** - task: `CHAT-003` - file: `docs/plan/PLAN-004.md`
 - [x] **PLAN-005 Pending 消息改造** - task: `FEAT-002` - file: `docs/plan/PLAN-005.md`
+- [x] **PLAN-006 stdout 断裂后 fallback 到 transcript JSONL** - task: `STALL-001` - owner: claude - file: `docs/plan/PLAN-006.md`

@@ -67,6 +67,10 @@
 
 - [x] **FEAT-002 Pending 消息改造** `P1` - owner: claude - plan: `PLAN-005` - file: `docs/task/FEAT-002.md`
 
+## Stream Reliability
+
+- [x] **STALL-001 stdout 断裂后 fallback 到 transcript JSONL** `P1` - owner: claude - plan: `PLAN-006` - file: `docs/task/STALL-001.md`
+
 ## Bug Fix
 
 - [x] **BUG-001 未指定 root 目录时以自身所在目录为 root** `P1` - file: `docs/task/BUG-001.md`

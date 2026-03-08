@@ -127,7 +127,7 @@ export async function restartIssue(
     const normalizer = createLogNormalizer(executor)
 
     const turnIndex = getNextTurnIndex(issueId)
-    register(
+    const restartManaged = register(
       ctx,
       executionId,
       issueId,
@@ -140,6 +140,11 @@ export async function restartIssue(
       () => handleTurnCompleted(ctx, issueId, executionId),
       worktreePath ? baseDir : undefined,
     )
+    restartManaged.spawnCwd = workingDir
+    restartManaged.externalSessionId =
+      spawned.externalSessionId ??
+      issue.sessionFields.externalSessionId ??
+      undefined
     monitorCompletion(ctx, executionId, issueId, engineType, false)
 
     // Mark pending messages as dispatched after successful spawn

@@ -158,7 +158,7 @@ export async function executeIssue(
     )
     const normalizer = createLogNormalizer(executor)
 
-    register(
+    const execManaged = register(
       ctx,
       executionId,
       issueId,
@@ -171,6 +171,8 @@ export async function executeIssue(
       () => handleTurnCompleted(ctx, issueId, executionId),
       worktreePath ? baseDir : undefined,
     )
+    execManaged.spawnCwd = workingDir
+    execManaged.externalSessionId = finalExternalSessionId
     emitDiagnosticLog(
       issueId,
       executionId,
