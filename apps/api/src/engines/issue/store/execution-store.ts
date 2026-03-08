@@ -32,8 +32,14 @@ function entryToRow(entry: NormalizedLogEntry): Omit<EntryRow, 'idx'> {
     entry_type: entry.entryType,
     content: entry.content,
     metadata: metadata ? JSON.stringify(metadata) : null,
-    tool_call_id: detail?.toolCallId ?? null,
-    tool_name: detail?.toolName ?? null,
+    tool_call_id:
+      detail?.toolCallId ??
+      (entry.metadata?.toolCallId as string | undefined) ??
+      null,
+    tool_name:
+      detail?.toolName ??
+      (entry.metadata?.toolName as string | undefined) ??
+      null,
     tool_kind: detail?.kind ?? null,
     is_result:
       detail?.isResult ||

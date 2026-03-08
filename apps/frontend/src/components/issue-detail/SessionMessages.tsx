@@ -466,7 +466,13 @@ function ChatMessageRow({ message }: { message: ChatMessage }) {
     }
 
     case 'assistant':
-      return <LogEntry key={message.id} entry={message.entry} />
+      return (
+        <LogEntry
+          key={message.id}
+          entry={message.entry}
+          durationMs={message.durationMs}
+        />
+      )
 
     case 'tool-group':
       return <ToolGroupMessage key={message.id} message={message} />

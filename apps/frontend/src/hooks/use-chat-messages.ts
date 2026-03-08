@@ -75,8 +75,21 @@ function rebuildMessages(entries: NormalizedLogEntry[]): ChatMessage[] {
   const messages: ChatMessage[] = []
   let toolBuffer: ToolGroupItem[] = []
 
+  // Build turn → duration map from system-message metadata
+  const turnDuration = new Map<number, number>()
+  for (const entry of entries) {
+    if (
+      entry.entryType === 'system-message' &&
+      typeof entry.metadata?.duration === 'number'
+    ) {
+      turnDuration.set(entry.turnIndex ?? 0, entry.metadata.duration as number)
+    }
+  }
+
   // Build result lookup: toolCallId → entry
   const resultMap = new Map<string, NormalizedLogEntry>()
+  // Track which results get paired with an action
+  const pairedResultCallIds = new Set<string>()
   for (const entry of entries) {
     if (isToolUseResult(entry)) {
       const callId =
@@ -158,7 +171,18 @@ function rebuildMessages(entries: NormalizedLogEntry[]): ChatMessage[] {
   for (let i = 0; i < entries.length; i++) {
     const entry = entries[i]
 
-    if (isToolUseResult(entry)) continue
+    // Skip result entries that were paired with their action
+    if (isToolUseResult(entry)) {
+      const callId =
+        entry.toolDetail?.toolCallId ??
+        (entry.metadata?.toolCallId as string | undefined)
+      if (callId && pairedResultCallIds.has(callId)) continue
+      // Unpaired result (action not in this slice) — render as standalone
+      flushToolBuffer()
+      toolBuffer.push({ action: entry, result: null })
+      flushToolBuffer()
+      continue
+    }
 
     if (isToolUseAction(entry)) {
       const callId =
@@ -167,6 +191,7 @@ function rebuildMessages(entries: NormalizedLogEntry[]): ChatMessage[] {
       let result: NormalizedLogEntry | null = null
       if (callId) {
         result = resultMap.get(callId) ?? null
+        if (result) pairedResultCallIds.add(callId)
       }
       toolBuffer.push({ action: entry, result })
       continue
@@ -215,6 +240,7 @@ function rebuildMessages(entries: NormalizedLogEntry[]): ChatMessage[] {
           type: 'assistant',
           id: entryId(entry, nextId('am')),
           entry,
+          durationMs: turnDuration.get(entry.turnIndex ?? 0),
         } satisfies AssistantChatMessage)
         break
 

@@ -153,6 +153,17 @@ export function rebuildMessages(
   const messages: ChatMessage[] = []
   let toolBuffer: ToolGroupItem[] = []
 
+  // Build turn → duration map from system-message metadata
+  const turnDuration = new Map<number, number>()
+  for (const entry of entries) {
+    if (
+      entry.entryType === 'system-message' &&
+      typeof entry.metadata?.duration === 'number'
+    ) {
+      turnDuration.set(entry.turnIndex ?? 0, entry.metadata.duration as number)
+    }
+  }
+
   // Build result lookup: toolCallId → entry
   const resultMap = new Map<string, NormalizedLogEntry>()
   for (const entry of entries) {
@@ -232,6 +243,7 @@ export function rebuildMessages(
           type: 'assistant',
           id: entryId(entry, nextId('am')),
           entry,
+          durationMs: turnDuration.get(entry.turnIndex ?? 0),
         } satisfies AssistantChatMessage)
         break
 
