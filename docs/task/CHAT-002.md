@@ -21,3 +21,4 @@ CHAT-001 `/simplify` + `/code-review` 审查发现的 MEDIUM/LOW 项，均非阻
 
 - [ ] **ChatMessageRow 冗余 key** — switch 分支内非列表元素上的 `key={message.id}` 无效果，可删除
 - [ ] **后端 rebuildMessages 未被任何路由调用** — Phase 1 阶段性代码，需在后续 Phase 接入或标注为预备代码
+# ci trigger
