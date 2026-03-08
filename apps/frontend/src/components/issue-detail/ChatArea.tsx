@@ -21,6 +21,7 @@ export function ChatArea({
   onDiffWidthChange,
   onCloseDiff,
   showBackToList,
+  backPath,
 }: {
   projectId: string
   issueId: string
@@ -30,6 +31,7 @@ export function ChatArea({
   onDiffWidthChange: (w: number) => void
   onCloseDiff: () => void
   showBackToList?: boolean
+  backPath?: string
 }) {
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -101,13 +103,14 @@ export function ChatArea({
     }
   }, [issue])
 
+  const defaultBack = showBackToList
+    ? `/projects/${projectId}/issues`
+    : `/projects/${projectId}`
+  const resolvedBackPath = backPath ?? defaultBack
+
   const handleAfterDelete = useCallback(() => {
-    void navigate(
-      showBackToList
-        ? `/projects/${projectId}/issues`
-        : `/projects/${projectId}`,
-    )
-  }, [navigate, showBackToList, projectId])
+    void navigate(resolvedBackPath)
+  }, [navigate, resolvedBackPath])
 
   if (isLoading) {
     return (
@@ -126,10 +129,10 @@ export function ChatArea({
             variant="ghost"
             size="sm"
             className="mt-4"
-            onClick={() => navigate(`/projects/${projectId}`)}
+            onClick={() => navigate(backPath ?? `/projects/${projectId}`)}
           >
             <ArrowLeft className="mr-1 h-4 w-4" />
-            {t('issue.backToBoard')}
+            {backPath ? t('issue.backToList') : t('issue.backToBoard')}
           </Button>
         </div>
       </div>
@@ -146,13 +149,13 @@ export function ChatArea({
             variant="ghost"
             size="icon"
             className="h-7 w-7 text-muted-foreground hover:text-foreground shrink-0 transition-colors"
-            onClick={() =>
-              showBackToList
-                ? navigate(`/projects/${projectId}/issues`)
-                : navigate(`/projects/${projectId}`)
-            }
+            onClick={() => navigate(resolvedBackPath)}
             title={
-              showBackToList ? t('issue.backToList') : t('issue.backToBoard')
+              backPath
+                ? t('issue.backToList')
+                : showBackToList
+                  ? t('issue.backToList')
+                  : t('issue.backToBoard')
             }
           >
             <ArrowLeft className="h-4 w-4" />

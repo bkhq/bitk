@@ -125,6 +125,7 @@ export default function ReviewPage() {
           onDiffWidthChange={handleDiffWidthChange}
           onCloseDiff={() => setShowDiff(false)}
           showBackToList
+          backPath="/review"
         />
       ) : !hideListPanel ? (
         <div className="flex flex-1 items-center justify-center">
