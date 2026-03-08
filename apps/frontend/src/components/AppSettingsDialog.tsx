@@ -172,11 +172,11 @@ function GeneralSection({ open }: { open: boolean }) {
         <Field>
           <Label>{t('settings.language')}</Label>
           <Select
-            value={i18n.language}
+            value={LANGUAGES.find((l) => i18n.language.startsWith(l.id))?.id ?? i18n.language}
             onValueChange={(value) => i18n.changeLanguage(value ?? undefined)}
           >
             <SelectTrigger>
-              <SelectValue />
+              <SelectValue placeholder={LANGUAGES.find((l) => i18n.language.startsWith(l.id))?.label} />
             </SelectTrigger>
             <SelectContent>
               {LANGUAGES.map((lang) => (
