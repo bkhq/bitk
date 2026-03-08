@@ -119,6 +119,7 @@ export function handleTurnCompleted(
                 'promote_pending_after_followup_failed',
               )
             })
+          logger.debug({ issueId, executionId }, 'turn_deferred_to_followup')
           return
         } catch (flushErr) {
           logger.error({ issueId, err: flushErr }, 'auto_flush_pending_failed')
@@ -186,8 +187,11 @@ export function handleTurnCompleted(
           return
         }
         await updateIssueSession(issueId, { sessionStatus: finalStatus })
-      } catch {
-        // Best-effort — DB update may have already succeeded above
+      } catch (innerErr) {
+        logger.error(
+          { issueId, executionId, err: innerErr },
+          'issue_turn_settle_catch_db_failed',
+        )
       }
       emitIssueSettled(issueId, executionId, finalStatus)
     }

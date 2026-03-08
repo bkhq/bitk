@@ -25,10 +25,14 @@ export function isVisibleForMode(
   // Tool-use entries are only visible in dev mode
   if (entry.entryType === 'tool-use') return false
 
-  // System messages — only command output and compact boundary
+  // System messages — command output, compact boundary, and diagnostic
   if (entry.entryType === 'system-message') {
     const subtype = entry.metadata?.subtype
-    return subtype === 'command_output' || subtype === 'compact_boundary'
+    return (
+      subtype === 'command_output' ||
+      subtype === 'compact_boundary' ||
+      subtype === 'diagnostic'
+    )
   }
 
   return false

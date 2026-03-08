@@ -2,6 +2,7 @@ import { stat } from 'node:fs/promises'
 import { getIssueWithSession, updateIssueSession } from '@/engines/engine-store'
 import { engineRegistry } from '@/engines/executors'
 import type { EngineContext } from '@/engines/issue/context'
+import { emitDiagnosticLog } from '@/engines/issue/diagnostic'
 import { emitStateChange } from '@/engines/issue/events'
 import {
   getNextTurnIndex,
@@ -82,6 +83,12 @@ export async function spawnWithSessionFallback(
         newExternalSessionId: externalSessionId,
       },
       'missing_external_session_recreate',
+    )
+    emitDiagnosticLog(
+      issueId,
+      '',
+      '[BKD] External session not found — recreating with fresh session',
+      { event: 'session_recreate' },
     )
     // When recreating a session, prepend the project system prompt
     const freshPrompt = opts.systemPrompt
@@ -342,6 +349,12 @@ export async function spawnFollowUpProcess(
       { issueId, executionId, error: spawnError },
       'spawn_failed_reverting_session',
     )
+    emitDiagnosticLog(
+      issueId,
+      executionId,
+      `[BKD] Follow-up spawn failed: ${spawnError instanceof Error ? spawnError.message : String(spawnError)}`,
+      { event: 'followup_spawn_failed' },
+    )
     // Remove the user message persisted before spawn so it doesn't remain as
     // a ghost entry visible to the frontend.
     if (messageId) {
@@ -380,16 +393,23 @@ export async function spawnFollowUpProcess(
   )
   // User message already persisted above (before spawn)
   monitorCompletion(ctx, executionId, issueId, engineType, false)
+  const followUpPid = getPidFromSubprocess(spawned.subprocess)
   logger.info(
     {
       issueId,
       executionId,
-      pid: getPidFromSubprocess(spawned.subprocess),
+      pid: followUpPid,
       engineType,
       turnIndex,
       model: effectiveModel,
     },
     'issue_followup_spawned',
+  )
+  emitDiagnosticLog(
+    issueId,
+    executionId,
+    `[BKD] Follow-up spawned (engine=${engineType}, pid=${followUpPid}, turn=${turnIndex}, model=${effectiveModel ?? 'default'})`,
+    { event: 'followup_spawned', pid: followUpPid, engineType, turnIndex },
   )
 
   return { executionId, messageId }

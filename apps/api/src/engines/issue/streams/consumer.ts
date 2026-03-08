@@ -135,8 +135,14 @@ export async function consumeStream(
         )
       }
     }
+    // Stream ended normally (process closed stdout)
+    logger.info({ issueId, executionId }, 'consume_stream_ended')
   } catch (error) {
     // Stream itself errored (reader.read() failed) — not recoverable
+    logger.warn(
+      { issueId, executionId, err: error },
+      'consume_stream_error',
+    )
     callbacks.onStreamError(error)
   }
 }
@@ -196,8 +202,9 @@ export async function consumeStderr(
         pushStderrEntry(buffer, callbacks.getTurnIndex(), callbacks.onEntry)
       }
     }
-  } catch {
-    // Stderr stream closed or error — ignore
+  } catch (err) {
+    // Stderr stream closed or errored — log for diagnostics
+    logger.debug({ issueId, executionId, err }, 'consume_stderr_stream_error')
   } finally {
     reader.releaseLock()
   }

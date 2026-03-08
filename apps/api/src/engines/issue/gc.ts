@@ -12,6 +12,7 @@ import {
   STREAM_STALL_TIMEOUT_MS,
 } from './constants'
 import type { EngineContext } from './context'
+import { emitDiagnosticLog } from './diagnostic'
 import { emitIssueSettled, emitStateChange } from './events'
 import { withIssueLock } from './process/lock'
 import { cleanupDomainData, syncPmState } from './process/state'
@@ -114,137 +115,183 @@ export function gcSweep(ctx: EngineContext): void {
   // terminateAndSettle() does not mutate the collection we're iterating.
   const now = Date.now()
   for (const entry of ctx.pm.getActive()) {
-    const managed = entry.meta
+    try {
+      const managed = entry.meta
 
-    // --- Check 1: Idle timeout (turn completed, process still alive) ---
-    if (
-      managed.lastIdleAt &&
-      !managed.turnInFlight &&
-      now - managed.lastIdleAt.getTime() > IDLE_TIMEOUT_MS
-    ) {
-      logger.info(
-        {
-          issueId: managed.issueId,
-          executionId: managed.executionId,
-          idleMinutes: Math.round((now - managed.lastIdleAt.getTime()) / 60000),
-        },
-        'idle_timeout_terminate',
-      )
-      terminateAndSettle(ctx, entry.id, managed, 'completed')
-      cleaned++
-      continue
-    }
-
-    // --- Check 2: Stream stall detection (turn in-flight but no output) ---
-    // Three-tier approach: give the CLI time to retry internally before we intervene.
-    //   Tier 1 (STREAM_STALL_TIMEOUT_MS): Non-destructive liveness check via OS
-    //   Tier 2 (+ STALL_LIVENESS_GRACE_MS): Process alive but still silent → send interrupt
-    //   Tier 3 (+ STALL_INTERRUPT_GRACE_MS): No response after interrupt → force kill
-    if (managed.turnInFlight) {
-      const silenceMs = now - managed.lastActivityAt.getTime()
-      const pid = (managed.process.subprocess as { pid?: number }).pid
-
-      // Tier 3: interrupt was sent but process still hasn't responded
+      // --- Check 1: Idle timeout (turn completed, process still alive) ---
       if (
-        managed.stallProbeAt &&
-        now - managed.stallProbeAt.getTime() > STALL_INTERRUPT_GRACE_MS
+        managed.lastIdleAt &&
+        !managed.turnInFlight &&
+        now - managed.lastIdleAt.getTime() > IDLE_TIMEOUT_MS
       ) {
-        const stallMinutes = Math.round(silenceMs / 60000)
-        logger.warn(
+        logger.info(
           {
             issueId: managed.issueId,
             executionId: managed.executionId,
-            stallMinutes,
-            lastActivityAt: managed.lastActivityAt.toISOString(),
-            probeSentAt: managed.stallProbeAt.toISOString(),
+            idleMinutes: Math.round(
+              (now - managed.lastIdleAt.getTime()) / 60000,
+            ),
           },
-          'stream_stall_terminate',
+          'idle_timeout_terminate',
         )
-        managed.stallDetectedAt = undefined
-        managed.stallProbeAt = undefined
-        terminateAndSettle(ctx, entry.id, managed, 'failed')
+        terminateAndSettle(ctx, entry.id, managed, 'completed')
         cleaned++
         continue
       }
 
-      // Tier 2: stall detected for STALL_LIVENESS_GRACE_MS, process still alive → send interrupt
-      if (
-        managed.stallDetectedAt &&
-        !managed.stallProbeAt &&
-        now - managed.stallDetectedAt.getTime() > STALL_LIVENESS_GRACE_MS
-      ) {
-        const stallMinutes = Math.round(silenceMs / 60000)
-        const alive = isProcessAlive(pid)
-        if (!alive) {
-          // Process already dead — skip interrupt, just terminate
+      // --- Check 2: Stream stall detection (turn in-flight but no output) ---
+      // Three-tier approach: give the CLI time to retry internally before we intervene.
+      //   Tier 1 (STREAM_STALL_TIMEOUT_MS): Non-destructive liveness check via OS
+      //   Tier 2 (+ STALL_LIVENESS_GRACE_MS): Process alive but still silent → send interrupt
+      //   Tier 3 (+ STALL_INTERRUPT_GRACE_MS): No response after interrupt → force kill
+      if (managed.turnInFlight) {
+        const silenceMs = now - managed.lastActivityAt.getTime()
+        const pid = (managed.process.subprocess as { pid?: number }).pid
+
+        // Tier 3: interrupt was sent but process still hasn't responded
+        if (
+          managed.stallProbeAt &&
+          now - managed.stallProbeAt.getTime() > STALL_INTERRUPT_GRACE_MS
+        ) {
+          const stallMinutes = Math.round(silenceMs / 60000)
           logger.warn(
             {
               issueId: managed.issueId,
               executionId: managed.executionId,
               stallMinutes,
-              pid,
+              lastActivityAt: managed.lastActivityAt.toISOString(),
+              probeSentAt: managed.stallProbeAt.toISOString(),
             },
-            'stream_stall_process_dead',
+            'stream_stall_terminate',
           )
           managed.stallDetectedAt = undefined
-          terminateAndSettle(ctx, entry.id, managed, 'failed')
-          cleaned++
-          continue
-        }
-        logger.warn(
-          {
-            issueId: managed.issueId,
-            executionId: managed.executionId,
-            stallMinutes,
-            lastActivityAt: managed.lastActivityAt.toISOString(),
-          },
-          'stream_stall_probe_sent',
-        )
-        managed.stallProbeAt = new Date()
-        // Send interrupt to probe process responsiveness. The CLI had
-        // STALL_LIVENESS_GRACE_MS to recover on its own — now we intervene.
-        // Fire-and-forget: use Promise.resolve() to normalize void | Promise<void>
-        // since Codex's implementation is genuinely async while Claude's is sync.
-        void Promise.resolve(
-          managed.process.protocolHandler?.interrupt(),
-        ).catch((err: unknown) => {
-          logger.warn(
-            { issueId: managed.issueId, executionId: managed.executionId, err },
-            'stall_probe_interrupt_failed',
+          managed.stallProbeAt = undefined
+          managed.debugLog?.event(
+            `stall_force_kill silent=${stallMinutes}min pid=${pid} lastActivity=${managed.lastActivityAt.toISOString()}`,
           )
-        })
-        continue
-      }
-
-      // Tier 1: no output for STREAM_STALL_TIMEOUT_MS — non-destructive liveness check
-      if (
-        !managed.stallDetectedAt &&
-        !managed.stallProbeAt &&
-        silenceMs > STREAM_STALL_TIMEOUT_MS
-      ) {
-        const alive = isProcessAlive(pid)
-        const stallMinutes = Math.round(silenceMs / 60000)
-        logger.warn(
-          {
-            issueId: managed.issueId,
-            executionId: managed.executionId,
-            stallMinutes,
-            lastActivityAt: managed.lastActivityAt.toISOString(),
-            pid,
-            processAlive: alive,
-          },
-          'stream_stall_detected',
-        )
-        if (!alive) {
-          // Process already dead — terminate immediately
+          emitDiagnosticLog(
+            managed.issueId,
+            managed.executionId,
+            `[BKD] Stream stall force kill — no response after interrupt (silent ${stallMinutes}min, pid=${pid})`,
+            { event: 'stall_force_kill', stallMinutes, pid },
+          )
           terminateAndSettle(ctx, entry.id, managed, 'failed')
           cleaned++
           continue
         }
-        // Process is alive — likely retrying API connection internally.
-        // Mark stall detected and give CLI time to recover on its own.
-        managed.stallDetectedAt = new Date()
+
+        // Tier 2: stall detected for STALL_LIVENESS_GRACE_MS, process still alive → send interrupt
+        if (
+          managed.stallDetectedAt &&
+          !managed.stallProbeAt &&
+          now - managed.stallDetectedAt.getTime() > STALL_LIVENESS_GRACE_MS
+        ) {
+          const stallMinutes = Math.round(silenceMs / 60000)
+          const alive = isProcessAlive(pid)
+          if (!alive) {
+            // Process already dead — skip interrupt, just terminate
+            logger.warn(
+              {
+                issueId: managed.issueId,
+                executionId: managed.executionId,
+                stallMinutes,
+                pid,
+              },
+              'stream_stall_process_dead',
+            )
+            managed.stallDetectedAt = undefined
+            terminateAndSettle(ctx, entry.id, managed, 'failed')
+            cleaned++
+            continue
+          }
+          logger.warn(
+            {
+              issueId: managed.issueId,
+              executionId: managed.executionId,
+              stallMinutes,
+              lastActivityAt: managed.lastActivityAt.toISOString(),
+            },
+            'stream_stall_probe_sent',
+          )
+          managed.stallProbeAt = new Date()
+          managed.debugLog?.event(
+            `stall_probe silent=${stallMinutes}min pid=${pid} alive=true`,
+          )
+          emitDiagnosticLog(
+            managed.issueId,
+            managed.executionId,
+            `[BKD] Stream stall — sending interrupt probe (silent ${stallMinutes}min, pid=${pid})`,
+            { event: 'stall_probe', stallMinutes, pid },
+          )
+          // Send interrupt to probe process responsiveness. The CLI had
+          // STALL_LIVENESS_GRACE_MS to recover on its own — now we intervene.
+          // Fire-and-forget: use Promise.resolve() to normalize void | Promise<void>
+          // since Codex's implementation is genuinely async while Claude's is sync.
+          void Promise.resolve(
+            managed.process.protocolHandler?.interrupt(),
+          ).catch((err: unknown) => {
+            logger.warn(
+              {
+                issueId: managed.issueId,
+                executionId: managed.executionId,
+                err,
+              },
+              'stall_probe_interrupt_failed',
+            )
+          })
+          continue
+        }
+
+        // Tier 1: no output for STREAM_STALL_TIMEOUT_MS — non-destructive liveness check
+        if (
+          !managed.stallDetectedAt &&
+          !managed.stallProbeAt &&
+          silenceMs > STREAM_STALL_TIMEOUT_MS
+        ) {
+          const alive = isProcessAlive(pid)
+          const stallMinutes = Math.round(silenceMs / 60000)
+          logger.warn(
+            {
+              issueId: managed.issueId,
+              executionId: managed.executionId,
+              stallMinutes,
+              lastActivityAt: managed.lastActivityAt.toISOString(),
+              pid,
+              processAlive: alive,
+            },
+            'stream_stall_detected',
+          )
+          if (!alive) {
+            // Process already dead — terminate immediately
+            emitDiagnosticLog(
+              managed.issueId,
+              managed.executionId,
+              `[BKD] Stream stall — process already dead (silent ${stallMinutes}min, pid=${pid})`,
+              { event: 'stall_process_dead', stallMinutes, pid },
+            )
+            terminateAndSettle(ctx, entry.id, managed, 'failed')
+            cleaned++
+            continue
+          }
+          // Process is alive — likely retrying API connection internally.
+          // Mark stall detected and give CLI time to recover on its own.
+          managed.stallDetectedAt = new Date()
+          managed.debugLog?.event(
+            `stall_detected silent=${stallMinutes}min pid=${pid} alive=true`,
+          )
+          emitDiagnosticLog(
+            managed.issueId,
+            managed.executionId,
+            `[BKD] Stream stall detected — waiting for CLI recovery (silent ${stallMinutes}min, pid=${pid})`,
+            { event: 'stall_detected', stallMinutes, pid },
+          )
+        }
       }
+    } catch (err) {
+      logger.error(
+        { entryId: entry.id, issueId: entry.meta?.issueId, err },
+        'gc_sweep_entry_error',
+      )
     }
   }
 

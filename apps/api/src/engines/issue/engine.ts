@@ -86,7 +86,13 @@ export class IssueEngine {
         opts,
       )
 
-    this.gcTimer = setInterval(() => gcSweep(this.ctx), GC_INTERVAL_MS)
+    this.gcTimer = setInterval(() => {
+      try {
+        gcSweep(this.ctx)
+      } catch (err) {
+        logger.error({ err }, 'gc_sweep_failed')
+      }
+    }, GC_INTERVAL_MS)
     if (
       this.gcTimer &&
       typeof this.gcTimer === 'object' &&

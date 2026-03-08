@@ -5,6 +5,7 @@ import type {
   ProcessStatus,
   SpawnedProcess,
 } from '@/engines/types'
+import type { IssueDebugLog } from './debug-log'
 import type { RingBuffer } from './utils/ring-buffer'
 
 export interface ManagedProcess {
@@ -65,4 +66,6 @@ export interface ManagedProcess {
     displayPrompt?: string
     metadata?: Record<string, unknown>
   }>
+  /** Per-issue debug file logger for raw I/O and lifecycle events */
+  debugLog?: IssueDebugLog
 }

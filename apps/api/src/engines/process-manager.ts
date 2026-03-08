@@ -175,6 +175,10 @@ export class ProcessManager<TMeta> {
     const killTimeout = setTimeout(() => {
       try {
         entry.subprocess.kill(9)
+        this.log.info?.(
+          { pm: this.name, id, pid: (entry.subprocess as { pid?: number }).pid },
+          'pm_sigkill_sent',
+        )
       } catch {
         /* already dead */
       }
@@ -182,8 +186,8 @@ export class ProcessManager<TMeta> {
 
     try {
       await entry.subprocess.exited
-    } catch {
-      /* ignore */
+    } catch (err) {
+      this.log.debug?.({ pm: this.name, id, err }, 'pm_terminate_exited_error')
     } finally {
       clearTimeout(killTimeout)
       if (!entry.finishedAt) {
@@ -218,10 +222,18 @@ export class ProcessManager<TMeta> {
   forceKill(id: string): void {
     const entry = this.entries.get(id)
     if (!entry) return
+    const pid = (entry.subprocess as { pid?: number }).pid
     try {
       entry.subprocess.kill(9)
+      this.log.info?.(
+        { pm: this.name, id, group: entry.group, pid },
+        'pm_force_kill',
+      )
     } catch {
-      /* already dead */
+      this.log.debug?.(
+        { pm: this.name, id, pid },
+        'pm_force_kill_already_dead',
+      )
     }
     if (!TERMINAL_STATES.has(entry.state)) {
       this.transitionState(id, 'cancelled')
@@ -371,6 +383,18 @@ export class ProcessManager<TMeta> {
         const code = exitCode ?? 1
         entry.exitCode = code
 
+        this.log.info?.(
+          {
+            pm: this.name,
+            id: entry.id,
+            group: entry.group,
+            exitCode: code,
+            prevState: entry.state,
+            pid: (entry.subprocess as { pid?: number }).pid,
+          },
+          'pm_process_exited',
+        )
+
         // Only transition if not already terminal (idempotent)
         if (!TERMINAL_STATES.has(entry.state)) {
           const next: ProcessState = code === 0 ? 'completed' : 'failed'
@@ -381,7 +405,17 @@ export class ProcessManager<TMeta> {
 
         this.emitExit(entry, code)
       })
-      .catch(() => {
+      .catch((err) => {
+        this.log.error?.(
+          {
+            pm: this.name,
+            id: entry.id,
+            group: entry.group,
+            err,
+            prevState: entry.state,
+          },
+          'pm_process_exit_error',
+        )
         if (!TERMINAL_STATES.has(entry.state)) {
           this.transitionState(entry.id, 'failed')
         }
@@ -451,8 +485,11 @@ export class ProcessManager<TMeta> {
     for (const handler of this.stateChangeHandlers.values()) {
       try {
         handler(entry, prev, next)
-      } catch {
-        /* ignore callback errors */
+      } catch (err) {
+        this.log.error?.(
+          { pm: this.name, id: entry.id, prev, next, err },
+          'pm_state_change_handler_error',
+        )
       }
     }
   }
@@ -461,8 +498,11 @@ export class ProcessManager<TMeta> {
     for (const handler of this.exitHandlers.values()) {
       try {
         handler(entry, exitCode)
-      } catch {
-        /* ignore callback errors */
+      } catch (err) {
+        this.log.error?.(
+          { pm: this.name, id: entry.id, exitCode, err },
+          'pm_exit_handler_error',
+        )
       }
     }
   }
