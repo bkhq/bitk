@@ -138,12 +138,19 @@ update.patch(
       }
     })
 
+    // Emit issue-updated events for all updated issues (triggers webhook dispatch)
+    for (const u of body.updates) {
+      if (!projectIssueIdSet.has(u.id)) continue
+      const changes: Record<string, unknown> = {}
+      if (u.statusId !== undefined) changes.statusId = u.statusId
+      if (u.sortOrder !== undefined) changes.sortOrder = u.sortOrder
+      if (Object.keys(changes).length > 0) {
+        emitIssueUpdated(u.id, changes)
+      }
+    }
+
     // Fire-and-forget execution for issues that transitioned to working
     for (const issue of toExecute) {
-      emitIssueUpdated(issue.id, {
-        statusId: 'working',
-        sessionStatus: 'pending',
-      })
       triggerIssueExecution(
         issue.id,
         issue,
@@ -310,11 +317,10 @@ update.patch(
       await cacheDelByPrefix(`childCounts:${project.id}`)
     }
 
+    // Emit issue-updated for all changes (triggers SSE + webhook dispatch)
+    emitIssueUpdated(issueId, updates)
+
     if (shouldExecute) {
-      emitIssueUpdated(issueId, {
-        statusId: 'working',
-        sessionStatus: 'pending',
-      })
       triggerIssueExecution(
         issueId,
         {

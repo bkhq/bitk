@@ -10,6 +10,34 @@ import { deliver } from '@/webhooks/dispatcher'
 
 const webhooksRoute = new Hono()
 
+function isPrivateHost(hostname: string): boolean {
+  // Loopback
+  if (
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname === '::1'
+  )
+    return true
+  // IPv4 private ranges
+  if (/^10\./.test(hostname)) return true
+  if (/^172\.(1[6-9]|2\d|3[01])\./.test(hostname)) return true
+  if (/^192\.168\./.test(hostname)) return true
+  // Link-local
+  if (/^169\.254\./.test(hostname)) return true
+  // Cloud metadata
+  if (hostname === '169.254.169.254') return true
+  // IPv6 private/link-local
+  if (
+    /^fe80:/i.test(hostname) ||
+    /^fc00:/i.test(hostname) ||
+    /^fd/i.test(hostname)
+  )
+    return true
+  // Catch-all for 0.0.0.0
+  if (hostname === '0.0.0.0') return true
+  return false
+}
+
 const SECRET_MASK = '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022'
 
 function serializeWebhook(row: typeof webhooks.$inferSelect) {
@@ -56,6 +84,16 @@ const createSchema = z
             code: z.ZodIssueCode.custom,
             path: ['url'],
             message: 'URL must use http or https protocol',
+          })
+        }
+        // Block private/internal network hostnames
+        const host = parsed.hostname.toLowerCase()
+        if (isPrivateHost(host)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['url'],
+            message:
+              'URLs pointing to private/internal networks are not allowed',
           })
         }
       } catch {
@@ -249,7 +287,7 @@ webhooksRoute.post('/webhooks/:id/test', async (c) => {
     return c.json({ success: false, error: 'Webhook not found' }, 404)
   }
 
-  void deliver(
+  await deliver(
     {
       id: existing.id,
       channel: existing.channel,
