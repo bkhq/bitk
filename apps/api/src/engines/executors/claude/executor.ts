@@ -353,10 +353,6 @@ export class ClaudeCodeExecutor implements EngineExecutor {
       // Enable SDK-based permission handling via stdin/stdout control protocol
       // instead of CLI-level flags like --dangerously-skip-permissions.
       .param('--permission-prompt-tool', 'stdio')
-      // Include partial messages for better streaming experience
-      .param('--include-partial-messages')
-      // Replay user messages during session resume so the model sees full history
-      .param('--replay-user-messages')
       .env('NPM_CONFIG_LOGLEVEL', 'error')
       .env('IS_SANDBOX', '1')
       .cwd(options.workingDir)
