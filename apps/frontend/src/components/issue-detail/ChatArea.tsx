@@ -1,22 +1,9 @@
 import { ArrowLeft, Check, Link, Plus, Sparkles } from 'lucide-react'
-import {
-  lazy,
-  Suspense,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react'
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
-import {
-  useAutoTitleIssue,
-  useIssue,
-  useProjectWorktrees,
-  useUpdateIssue,
-} from '@/hooks/use-kanban'
+import { useAutoTitleIssue, useIssue, useUpdateIssue } from '@/hooks/use-kanban'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { getIssueUrl } from '@/stores/server-store'
 import { ChatBody } from './ChatBody'
@@ -59,15 +46,6 @@ export function ChatArea({
   const updateIssue = useUpdateIssue(projectId)
   const autoTitle = useAutoTitleIssue(projectId)
   const [isAutoTitling, setIsAutoTitling] = useState(false)
-
-  // Resolve worktree path for file browser
-  const { data: worktrees } = useProjectWorktrees(
-    issue?.useWorktree ? projectId : '',
-  )
-  const worktreePath = useMemo(
-    () => worktrees?.find((w) => w.issueId === issueId)?.path ?? '',
-    [worktrees, issueId],
-  )
   const titleBeforeAutoRef = useRef<string | null>(null)
 
   // Detect title change to clear auto-titling state
@@ -295,7 +273,6 @@ export function ChatArea({
                 onWidthChange={onDiffWidthChange}
                 onClose={onCloseDiff}
                 fullScreen
-                worktreePath={worktreePath}
               />
             </Suspense>
           </div>
@@ -313,7 +290,6 @@ export function ChatArea({
               width={diffWidth}
               onWidthChange={onDiffWidthChange}
               onClose={onCloseDiff}
-              worktreePath={worktreePath}
             />
           </Suspense>
         )

@@ -118,7 +118,7 @@ function StickyTaskPlan({ message }: { message: TaskPlanChatMessage }) {
         >
           <ListTodo className="h-3.5 w-3.5 shrink-0 text-indigo-500" />
           <span className="font-medium text-muted-foreground">
-            {t('session.taskPlan')}
+            {t('session.tool.taskPlan')}
           </span>
           <span className="text-muted-foreground/50">
             ({completedCount}/{todos.length})

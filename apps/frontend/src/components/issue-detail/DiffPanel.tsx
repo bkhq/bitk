@@ -64,7 +64,6 @@ export function DiffPanel({
   onWidthChange,
   onClose,
   fullScreen,
-  worktreePath,
 }: {
   projectId: string
   issueId: string
@@ -72,13 +71,11 @@ export function DiffPanel({
   onWidthChange: (w: number) => void
   onClose: () => void
   fullScreen?: boolean
-  worktreePath?: string
 }) {
   const { t } = useTranslation()
   const changesQuery = useIssueChanges(projectId, issueId, true)
   const files = changesQuery.data?.files ?? []
   const openFileBrowser = useFileBrowserStore((s) => s.open)
-  const navigateTo = useFileBrowserStore((s) => s.navigateTo)
 
   return (
     <div
@@ -98,16 +95,9 @@ export function DiffPanel({
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => {
-                openFileBrowser(projectId)
-                if (worktreePath) navigateTo(worktreePath)
-              }}
+              onClick={() => openFileBrowser(projectId)}
               className="flex items-center justify-center h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-150"
-              title={
-                worktreePath
-                  ? `${t('diff.openFiles')}: ${worktreePath}`
-                  : t('diff.openFiles')
-              }
+              title={t('diff.openFiles')}
             >
               <FolderOpen className="h-4 w-4" />
             </button>
