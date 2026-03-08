@@ -155,7 +155,7 @@ export async function executeIssue(
       },
       'issue_execute_spawned',
     )
-    const normalizer = await createLogNormalizer(executor)
+    const normalizer = createLogNormalizer(executor)
 
     register(
       ctx,

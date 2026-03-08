@@ -206,7 +206,7 @@ export async function spawnRetry(
       })
     : await spawnFresh(executor, issueId, spawnOpts)
 
-  const normalizer = await createLogNormalizer(executor)
+  const normalizer = createLogNormalizer(executor)
 
   const turnIndex = getNextTurnIndex(issueId)
   register(
@@ -376,7 +376,7 @@ export async function spawnFollowUpProcess(
     throw spawnError
   }
 
-  const normalizer = await createLogNormalizer(executor)
+  const normalizer = createLogNormalizer(executor)
 
   register(
     ctx,

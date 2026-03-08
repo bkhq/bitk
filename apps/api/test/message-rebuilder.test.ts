@@ -1,9 +1,6 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
 import type { NormalizedLogEntry } from '@bkd/shared'
-import {
-  rebuildMessages,
-  resetIdCounter,
-} from '@/engines/issue/store/message-rebuilder'
+import { rebuildMessages } from '@/engines/issue/store/message-rebuilder'
 import type { WriteFilterRule } from '@/engines/write-filter'
 
 const DEFAULT_RULES: WriteFilterRule[] = [
@@ -51,8 +48,6 @@ function toolResult(
     metadata: { toolName, toolCallId, isResult: true },
   })
 }
-
-beforeEach(() => resetIdCounter())
 
 describe('rebuildMessages', () => {
   test('maps user and assistant messages', () => {
@@ -112,7 +107,6 @@ describe('rebuildMessages', () => {
     expect(tg.count).toBe(3) // Total is still 3
 
     // Dev mode: all visible
-    resetIdCounter()
     const devMsgs = rebuildMessages(entries, devOpts)
     const devTg = devMsgs[0]
     if (devTg.type !== 'tool-group') throw new Error('expected tool-group')
@@ -216,7 +210,7 @@ describe('rebuildMessages', () => {
       entry({
         entryType: 'system-message',
         content: 'info',
-        metadata: { type: 'warning' },
+        metadata: { subtype: 'warning' },
       }),
       entry({ entryType: 'error-message', content: 'oops' }),
     ]

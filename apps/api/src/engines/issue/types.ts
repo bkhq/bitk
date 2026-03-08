@@ -1,12 +1,11 @@
 import type {
   EngineType,
-  NormalizedLogEntry,
   PermissionPolicy,
   ProcessStatus,
   SpawnedProcess,
 } from '@/engines/types'
 import type { IssueDebugLog } from './debug-log'
-import type { RingBuffer } from './utils/ring-buffer'
+import type { ExecutionStore } from './store/execution-store'
 
 export interface ManagedProcess {
   executionId: string
@@ -17,7 +16,7 @@ export interface ManagedProcess {
   startedAt: Date
   finishedAt?: Date
   exitCode?: number
-  logs: RingBuffer<NormalizedLogEntry>
+  logs: ExecutionStore
   retryCount: number
   turnInFlight: boolean
   queueCancelRequested: boolean

@@ -1,10 +1,10 @@
-import { MAX_LOG_ENTRIES } from '@/engines/issue/constants'
 import type { EngineContext } from '@/engines/issue/context'
 import {
   createIssueDebugLog,
   teeStreamToDebug,
 } from '@/engines/issue/debug-log'
 import { emitStateChange } from '@/engines/issue/events'
+import { ExecutionStore } from '@/engines/issue/store/execution-store'
 import type { StreamCallbacks } from '@/engines/issue/streams/consumer'
 import { consumeStderr, consumeStream } from '@/engines/issue/streams/consumer'
 import {
@@ -14,7 +14,6 @@ import {
 } from '@/engines/issue/streams/handlers'
 import type { ManagedProcess } from '@/engines/issue/types'
 import { getPidFromManaged } from '@/engines/issue/utils/pid'
-import { RingBuffer } from '@/engines/issue/utils/ring-buffer'
 import type {
   EngineType,
   NormalizedLogEntry,
@@ -44,7 +43,7 @@ export function register(
     process,
     state: 'running',
     startedAt: new Date(),
-    logs: new RingBuffer<NormalizedLogEntry>(MAX_LOG_ENTRIES),
+    logs: new ExecutionStore(executionId),
     retryCount: 0,
     turnInFlight: true,
     queueCancelRequested: false,

@@ -1,62 +1,25 @@
+import type {
+  ChatMessage,
+  NormalizedLogEntry,
+  ToolGroupChatMessage,
+  ToolGroupItem,
+} from '@bkd/shared'
 import DOMPurify from 'dompurify'
-import { FileEdit, FileText } from 'lucide-react'
+import { ChevronRight, FileEdit, FileText, Wrench } from 'lucide-react'
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useChatMessages } from '@/hooks/use-chat-messages'
 import { useTheme } from '@/hooks/use-theme'
 import { getCommandPreview } from '@/lib/command-preview'
 import { codeToHtml } from '@/lib/shiki'
 import { useViewModeStore } from '@/stores/view-mode-store'
-import type { NormalizedLogEntry } from '@/types/kanban'
 import { LogEntry } from './LogEntry'
 
 const LazyMultiFileDiff = lazy(() =>
   import('@pierre/diffs/react').then((m) => ({ default: m.MultiFileDiff })),
 )
 
-/** Extract duration (ms) from the last system-message with duration metadata in a turn */
-function getTurnDuration(
-  logs: NormalizedLogEntry[],
-  turn: number,
-): number | null {
-  for (let i = logs.length - 1; i >= 0; i--) {
-    const entry = logs.at(i)
-    if (!entry) continue
-    if ((entry.turnIndex ?? 0) !== turn) continue
-    if (
-      entry.entryType === 'system-message' &&
-      entry.metadata &&
-      typeof entry.metadata.duration === 'number'
-    ) {
-      return entry.metadata.duration
-    }
-  }
-  return null
-}
-
-/**
- * For each turn, find the index of the last assistant-message so we can
- * attach the turn's duration to it.
- */
-function buildDurationMap(logs: NormalizedLogEntry[]): Map<number, number> {
-  // turnNumber → last assistant-message index
-  const lastAssistantIdx = new Map<number, number>()
-  for (let i = 0; i < logs.length; i++) {
-    const entry = logs.at(i)
-    if (entry?.entryType === 'assistant-message') {
-      lastAssistantIdx.set(entry.turnIndex ?? 0, i)
-    }
-  }
-
-  // logIndex → durationMs
-  const durationMap = new Map<number, number>()
-  for (const [turn, idx] of lastAssistantIdx) {
-    const dur = getTurnDuration(logs, turn)
-    if (dur !== null) {
-      durationMap.set(idx, dur)
-    }
-  }
-  return durationMap
-}
+// ── Shared UI primitives ─────────────────────────────────
 
 function stringifyPretty(input: unknown): string {
   if (input == null) return ''
@@ -256,12 +219,10 @@ function ToolPanel({
   )
 }
 
-function FileToolGroup({
-  actionEntry,
-}: {
-  actionEntry: NormalizedLogEntry
-  resultEntry: NormalizedLogEntry
-}) {
+// ── Single tool item renderers ───────────────────────────
+
+function FileToolItem({ item }: { item: ToolGroupItem }) {
+  const actionEntry = item.action
   const tool = actionEntry.toolAction
   const isEdit = tool?.kind === 'file-edit'
   const toolName =
@@ -276,7 +237,6 @@ function FileToolGroup({
   const hasOldString = parsed.oldString !== undefined
   const hasNewString = parsed.newString !== undefined
 
-  // File-read: show only the file path, no content
   if (!isEdit) {
     return (
       <div className="flex items-center gap-2 py-0.5 text-xs text-muted-foreground">
@@ -346,6 +306,190 @@ function FileToolGroup({
   )
 }
 
+function CommandToolItem({ item }: { item: ToolGroupItem }) {
+  const { t } = useTranslation()
+  const fullCommand =
+    item.action.toolAction?.kind === 'command-run'
+      ? item.action.toolAction.command
+      : ''
+  const isTruncatedInTitle = getCommandPreview(fullCommand, 90).isTruncated
+  const showFullCommand = isTruncatedInTitle || fullCommand.includes('\n')
+
+  return (
+    <ToolPanel
+      collapsible
+      summary={<LogEntry entry={item.action} inToolGroup />}
+    >
+      <div className="space-y-2">
+        {showFullCommand ? (
+          <div className="rounded-md border border-border/30 bg-muted/10 p-2 space-y-1">
+            <div className="px-0.5 text-[11px] text-muted-foreground">
+              {t('session.tool.fullCommand')}
+            </div>
+            <CodeBlock
+              content={fullCommand}
+              language="shell"
+              collapsible={false}
+            />
+          </div>
+        ) : null}
+        <CodeBlock
+          content={item.result?.content || '(empty)'}
+          collapsible={false}
+        />
+      </div>
+    </ToolPanel>
+  )
+}
+
+function GenericToolItem({ item }: { item: ToolGroupItem }) {
+  return (
+    <ToolPanel
+      collapsible
+      summary={<LogEntry entry={item.action} inToolGroup />}
+    >
+      <CodeBlock
+        content={item.result?.content || '(empty)'}
+        collapsible={false}
+      />
+    </ToolPanel>
+  )
+}
+
+// ── ToolGroupMessage — collapsible group of tool calls ───
+
+function getGroupSummaryLabel(
+  stats: Record<string, number>,
+  count: number,
+  t: (key: string) => string,
+): string {
+  const parts: string[] = []
+  if (stats['file-read'])
+    parts.push(`${stats['file-read']} ${t('session.tool.fileRead')}`)
+  if (stats['file-edit'])
+    parts.push(`${stats['file-edit']} ${t('session.tool.fileEdit')}`)
+  if (stats['command-run'])
+    parts.push(`${stats['command-run']} ${t('session.tool.commandRun')}`)
+  if (stats.search) parts.push(`${stats.search} ${t('session.tool.search')}`)
+  if (stats['web-fetch'])
+    parts.push(`${stats['web-fetch']} ${t('session.tool.webFetch')}`)
+  const otherCount =
+    count - Object.values(stats).reduce((a, b) => a + b, 0) + (stats.other ?? 0)
+  if (otherCount > 0) parts.push(`${otherCount} other`)
+  return parts.length > 0 ? parts.join(', ') : `${count} tool calls`
+}
+
+function ToolGroupMessage({ message }: { message: ToolGroupChatMessage }) {
+  const { t } = useTranslation()
+  const [expanded, setExpanded] = useState(false)
+  const { items, stats, count } = message
+  const summaryLabel = getGroupSummaryLabel(stats, count, t)
+
+  return (
+    <div className="py-0.5 animate-message-enter">
+      <div className="rounded-lg border border-border/30 bg-muted/10">
+        <button
+          type="button"
+          onClick={() => setExpanded(!expanded)}
+          className="flex w-full items-center gap-2 px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted/20"
+        >
+          <ChevronRight
+            className={`h-3 w-3 shrink-0 transition-transform duration-200 ${expanded ? 'rotate-90' : ''}`}
+          />
+          <Wrench className="h-3 w-3 shrink-0" />
+          <span className="truncate">{summaryLabel}</span>
+          <span className="ml-auto text-[10px] text-muted-foreground/50">
+            {count}
+          </span>
+        </button>
+        {expanded ? (
+          <div className="space-y-1 px-2.5 pb-2.5 pt-1 border-t border-border/20">
+            {items.map((item, idx) => {
+              const kind = item.action.toolAction?.kind
+              if (kind === 'file-edit' || kind === 'file-read') {
+                return (
+                  <FileToolItem
+                    key={item.action.messageId ?? `ti-${idx}`}
+                    item={item}
+                  />
+                )
+              }
+              if (kind === 'command-run') {
+                return (
+                  <CommandToolItem
+                    key={item.action.messageId ?? `ti-${idx}`}
+                    item={item}
+                  />
+                )
+              }
+              return (
+                <GenericToolItem
+                  key={item.action.messageId ?? `ti-${idx}`}
+                  item={item}
+                />
+              )
+            })}
+          </div>
+        ) : null}
+      </div>
+    </div>
+  )
+}
+
+// ── ChatMessage renderer ─────────────────────────────────
+
+function ChatMessageRow({ message }: { message: ChatMessage }) {
+  switch (message.type) {
+    case 'user': {
+      // Command user-messages get special rendering
+      if (message.status === 'command') {
+        return (
+          <div key={message.id} className="group py-1.5 animate-message-enter">
+            <details className="rounded-lg border border-border/30 bg-muted/10 transition-all duration-200 open:bg-muted/20">
+              <summary className="cursor-pointer list-none px-3 py-2 text-xs text-muted-foreground hover:bg-muted/20 transition-colors">
+                <code className="font-mono text-foreground/70">
+                  {message.entry.content}
+                </code>
+              </summary>
+              {message.commandOutput ? (
+                <div className="px-3 pb-3 pt-1.5 border-t border-border/20">
+                  <pre className="text-xs text-foreground/80 whitespace-pre-wrap font-mono leading-relaxed overflow-x-auto">
+                    {message.commandOutput.content}
+                  </pre>
+                </div>
+              ) : null}
+            </details>
+          </div>
+        )
+      }
+      return <LogEntry key={message.id} entry={message.entry} />
+    }
+
+    case 'assistant':
+      return <LogEntry key={message.id} entry={message.entry} />
+
+    case 'tool-group':
+      return <ToolGroupMessage key={message.id} message={message} />
+
+    case 'task-plan':
+      return <LogEntry key={message.id} entry={message.entry} />
+
+    case 'thinking':
+      return <LogEntry key={message.id} entry={message.entry} />
+
+    case 'system':
+      return <LogEntry key={message.id} entry={message.entry} />
+
+    case 'error':
+      return <LogEntry key={message.id} entry={message.entry} />
+
+    default:
+      return null
+  }
+}
+
+// ── SessionMessages (main export) ────────────────────────
+
 export function SessionMessages({
   logs,
   scrollRef,
@@ -370,39 +514,10 @@ export function SessionMessages({
   const { t } = useTranslation()
   const fullWidthChat = useViewModeStore((s) => s.fullWidthChat)
 
-  const todoCallIds = new Set(
-    logs
-      .filter((entry) => {
-        if (entry.entryType !== 'tool-use') return false
-        const md = entry.metadata
-        return md?.toolName === 'TodoWrite' && typeof md.toolCallId === 'string'
-      })
-      .map((entry) => String(entry.metadata?.toolCallId)),
-  )
+  // Transform flat entries → grouped ChatMessage[]
+  const messages = useChatMessages(logs)
 
-  // Backend filters entries by devMode (default: only user + assistant messages).
-  // Frontend only hides TodoWrite tool calls which are always noise.
-  const visibleLogs = logs.filter((entry) => {
-    if (entry.entryType !== 'tool-use') return true
-    const md = entry.metadata
-    if (md?.toolName === 'TodoWrite') return false
-    if (
-      md?.isResult === true &&
-      typeof md.toolCallId === 'string' &&
-      todoCallIds.has(md.toolCallId)
-    ) {
-      return false
-    }
-    return true
-  })
-
-  // Auto-scroll to bottom on new logs appended at the end.
-  // Skip auto-scroll when older logs are prepended (first entry changes)
-  // or when the user has scrolled up to read history.
-  //
-  // Near-bottom is tracked continuously via a scroll listener so we capture
-  // the state *before* new entries change scrollHeight (useEffect runs after
-  // render, so checking inside it would see the already-expanded height).
+  // Auto-scroll to bottom on new messages appended at the end.
   const nearBottomRef = useRef(true)
   useEffect(() => {
     const el = scrollRef?.current
@@ -418,29 +533,29 @@ export function SessionMessages({
   // Scroll to bottom on initial load
   const initialScrollDone = useRef(false)
   useEffect(() => {
-    if (initialScrollDone.current || visibleLogs.length === 0) return
+    if (initialScrollDone.current || messages.length === 0) return
     const el = scrollRef?.current
     if (el) {
       el.scrollTo({ top: el.scrollHeight })
       initialScrollDone.current = true
     }
-  }, [visibleLogs.length, scrollRef])
+  }, [messages.length, scrollRef])
 
-  const prevLenRef = useRef(visibleLogs.length)
-  const prevFirstIdRef = useRef(visibleLogs[0]?.messageId)
+  const prevLenRef = useRef(messages.length)
+  const prevFirstIdRef = useRef(messages[0]?.id)
   // biome-ignore lint/correctness/useExhaustiveDependencies: prevLenRef/prevFirstIdRef are stable refs, not needed as dependencies
   useEffect(() => {
     if (!initialScrollDone.current) return
-    const firstId = visibleLogs[0]?.messageId
+    const firstId = messages[0]?.id
     const wasOlderPrepend =
-      visibleLogs.length > prevLenRef.current &&
+      messages.length > prevLenRef.current &&
       prevFirstIdRef.current &&
       firstId !== prevFirstIdRef.current
 
     if (
       !wasOlderPrepend &&
       nearBottomRef.current &&
-      (visibleLogs.length !== prevLenRef.current || isRunning)
+      (messages.length !== prevLenRef.current || isRunning)
     ) {
       const el = scrollRef?.current
       el?.scrollTo({
@@ -448,198 +563,11 @@ export function SessionMessages({
         behavior: 'smooth',
       })
     }
-    prevLenRef.current = visibleLogs.length
+    prevLenRef.current = messages.length
     prevFirstIdRef.current = firstId
-  }, [visibleLogs.length, isRunning, scrollRef])
+  }, [messages.length, isRunning, scrollRef])
 
-  if (visibleLogs.length === 0 && !isRunning) return null
-
-  const durationMap = buildDurationMap(visibleLogs)
-
-  // Build a map from toolCallId → index for all tool-result entries,
-  // so tool-call entries can find their matching result regardless of position.
-  // Iterate in reverse so the first result per callId wins (Map.set overwrites).
-  const resultByCallId = new Map<string, number>()
-  for (let i = visibleLogs.length - 1; i >= 0; i--) {
-    const e = visibleLogs[i]
-    if (
-      e.entryType === 'tool-use' &&
-      e.metadata?.isResult === true &&
-      typeof e.metadata.toolCallId === 'string'
-    ) {
-      resultByCallId.set(e.metadata.toolCallId, i)
-    }
-  }
-
-  // Track which result indices have been consumed by a tool-call pairing
-  const consumedResults = new Set<number>()
-  // Build a map: command user-message index → command_output index
-  const commandOutputByIdx = new Map<number, number>()
-  for (let i = 0; i < visibleLogs.length; i++) {
-    const entry = visibleLogs[i]
-    if (
-      entry.entryType === 'user-message' &&
-      entry.metadata?.type === 'command'
-    ) {
-      // Find the next command_output in the same turn
-      for (let j = i + 1; j < visibleLogs.length; j++) {
-        const candidate = visibleLogs[j]
-        if (
-          candidate.entryType === 'system-message' &&
-          candidate.metadata?.subtype === 'command_output'
-        ) {
-          commandOutputByIdx.set(i, j)
-          break
-        }
-      }
-    }
-  }
-  const consumedCommandOutputs = new Set(commandOutputByIdx.values())
-
-  const rows: React.ReactNode[] = []
-
-  for (let i = 0; i < visibleLogs.length; i++) {
-    const entry = visibleLogs[i]
-
-    // Skip command_output entries consumed by a command group
-    if (consumedCommandOutputs.has(i)) continue
-
-    // Skip result entries that were already rendered as part of a tool-call group
-    if (consumedResults.has(i)) continue
-
-    // Group command user-messages with their output
-    if (
-      entry.entryType === 'user-message' &&
-      entry.metadata?.type === 'command'
-    ) {
-      const outputIdx = commandOutputByIdx.get(i)
-      const output = outputIdx !== undefined ? visibleLogs[outputIdx] : null
-      rows.push(
-        <div
-          key={`cmd-group-${entry.messageId ?? `${entry.turnIndex ?? 0}-${i}`}`}
-          className="group py-1.5 animate-message-enter"
-        >
-          <details className="rounded-lg border border-border/30 bg-muted/10 transition-all duration-200 open:bg-muted/20">
-            <summary className="cursor-pointer list-none px-3 py-2 text-xs text-muted-foreground hover:bg-muted/20 transition-colors">
-              <code className="font-mono text-foreground/70">
-                {entry.content}
-              </code>
-            </summary>
-            {output ? (
-              <div className="px-3 pb-3 pt-1.5 border-t border-border/20">
-                <pre className="text-xs text-foreground/80 whitespace-pre-wrap font-mono leading-relaxed overflow-x-auto">
-                  {output.content}
-                </pre>
-              </div>
-            ) : null}
-          </details>
-        </div>,
-      )
-      continue
-    }
-
-    const callId = entry.metadata?.toolCallId
-    const isToolCall =
-      entry.entryType === 'tool-use' && entry.metadata?.isResult !== true
-
-    // Find matching result by toolCallId (not just consecutive position)
-    let matchedResult: NormalizedLogEntry | null = null
-    let matchedResultIdx = -1
-    if (isToolCall && typeof callId === 'string') {
-      const rIdx = resultByCallId.get(callId)
-      if (rIdx !== undefined) {
-        matchedResult = visibleLogs[rIdx]
-        matchedResultIdx = rIdx
-      }
-    }
-
-    if (isToolCall && matchedResult) {
-      consumedResults.add(matchedResultIdx)
-      const actionKind = entry.toolAction?.kind
-      if (actionKind === 'file-edit' || actionKind === 'file-read') {
-        rows.push(
-          <div
-            key={`file-tool-group-${entry.messageId ?? `${entry.turnIndex ?? 0}-${i}`}`}
-            className="py-0.5 animate-message-enter"
-          >
-            <FileToolGroup actionEntry={entry} resultEntry={matchedResult} />
-          </div>,
-        )
-        continue
-      }
-
-      if (actionKind === 'command-run') {
-        const fullCommand =
-          entry.toolAction?.kind === 'command-run'
-            ? entry.toolAction.command
-            : ''
-        const isTruncatedInTitle = getCommandPreview(
-          fullCommand,
-          90,
-        ).isTruncated
-        const showFullCommand = isTruncatedInTitle || fullCommand.includes('\n')
-        rows.push(
-          <div
-            key={`tool-group-${entry.messageId ?? `${entry.turnIndex ?? 0}-${i}`}`}
-            className="py-0.5 animate-message-enter"
-          >
-            <ToolPanel
-              collapsible
-              summary={<LogEntry entry={entry} inToolGroup />}
-            >
-              <div className="space-y-2">
-                {showFullCommand ? (
-                  <div className="rounded-md border border-border/30 bg-muted/10 p-2 space-y-1">
-                    <div className="px-0.5 text-[11px] text-muted-foreground">
-                      {t('session.tool.fullCommand')}
-                    </div>
-                    <CodeBlock
-                      content={fullCommand}
-                      language="shell"
-                      collapsible={false}
-                    />
-                  </div>
-                ) : null}
-                <CodeBlock
-                  content={matchedResult.content || '(empty)'}
-                  collapsible={false}
-                />
-              </div>
-            </ToolPanel>
-          </div>,
-        )
-        continue
-      }
-
-      rows.push(
-        <div
-          key={`tool-group-${entry.messageId ?? `${entry.turnIndex ?? 0}-${i}`}`}
-          className="py-0.5 animate-message-enter"
-        >
-          <ToolPanel
-            collapsible
-            summary={<LogEntry entry={entry} inToolGroup />}
-          >
-            <CodeBlock
-              content={matchedResult.content || '(empty)'}
-              collapsible={false}
-            />
-          </ToolPanel>
-        </div>,
-      )
-      continue
-    }
-
-    rows.push(
-      <LogEntry
-        key={
-          entry.messageId ?? `${entry.turnIndex ?? 0}-${i}-${entry.entryType}`
-        }
-        entry={entry}
-        durationMs={durationMap.get(i)}
-      />,
-    )
-  }
+  if (messages.length === 0 && !isRunning) return null
 
   return (
     <div
@@ -657,7 +585,9 @@ export function SessionMessages({
           </button>
         </div>
       ) : null}
-      {rows}
+      {messages.map((msg) => (
+        <ChatMessageRow key={msg.id} message={msg} />
+      ))}
       {isRunning ? (
         <div className="flex items-center gap-2.5 my-2 px-3 py-2 text-xs text-muted-foreground animate-message-enter">
           <span className="thinking-dots flex items-center gap-[3px] text-violet-500/70 dark:text-violet-400/70">

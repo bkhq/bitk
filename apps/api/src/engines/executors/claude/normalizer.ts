@@ -1,5 +1,4 @@
 import type { NormalizedLogEntry } from '@/engines/types'
-import type { WriteFilterRule } from '@/engines/write-filter'
 import {
   buildToolResultRaw,
   classifyToolAction,
@@ -31,18 +30,12 @@ export { classifyToolAction, extractTextContent } from './normalizer-tool'
 // ---------- Normalizer ----------
 
 export class ClaudeLogNormalizer {
-  private readonly rules: WriteFilterRule[]
-  private readonly filteredToolCallIds = new Set<string>()
   /** Map tool_use_id → structured info for follow-up tool_result replacement. */
   private readonly toolMap = new Map<string, ToolCallInfo>()
   /** Model name extracted from first assistant message. */
   private modelName: string | undefined
   /** Last assistant message text (used to deduplicate result.result text). */
   private lastAssistantMessage: string | undefined
-
-  constructor(rules: WriteFilterRule[] = []) {
-    this.rules = rules.filter((r) => r.enabled)
-  }
 
   parse(rawLine: string): NormalizedLogEntry | NormalizedLogEntry[] | null {
     let data: ClaudeJson
@@ -204,11 +197,6 @@ export class ClaudeLogNormalizer {
       for (const block of contentBlocks) {
         if (block.type !== 'tool_use' || !block.name) continue
 
-        if (this.isFiltered(block.name)) {
-          if (block.id) this.filteredToolCallIds.add(block.id)
-          continue
-        }
-
         const input = block.input ?? {}
         const toolCallId = block.id ?? ''
 
@@ -286,11 +274,6 @@ export class ClaudeLogNormalizer {
       for (const tr of toolResults) {
         const toolUseId = tr.tool_use_id ?? ''
 
-        if (toolUseId && this.filteredToolCallIds.has(toolUseId)) {
-          this.filteredToolCallIds.delete(toolUseId)
-          continue
-        }
-
         const info = toolUseId ? this.toolMap.get(toolUseId) : undefined
         if (info && toolUseId) this.toolMap.delete(toolUseId)
         const resultContent = normalizeToolResultContent(tr.content)
@@ -350,11 +333,6 @@ export class ClaudeLogNormalizer {
   private parseToolUse(data: ClaudeToolUse): NormalizedLogEntry | null {
     if (!data.name) return null
 
-    if (this.isFiltered(data.name)) {
-      if (data.id) this.filteredToolCallIds.add(data.id)
-      return null
-    }
-
     const input = data.input ?? {}
     const toolCallId = data.id ?? ''
 
@@ -380,11 +358,6 @@ export class ClaudeLogNormalizer {
 
   private parseToolResult(data: ClaudeToolResult): NormalizedLogEntry | null {
     const toolUseId = data.tool_use_id ?? ''
-
-    if (toolUseId && this.filteredToolCallIds.has(toolUseId)) {
-      this.filteredToolCallIds.delete(toolUseId)
-      return null
-    }
 
     const info = toolUseId ? this.toolMap.get(toolUseId) : undefined
     if (info && toolUseId) this.toolMap.delete(toolUseId)
@@ -600,13 +573,5 @@ export class ClaudeLogNormalizer {
       timestamp: data.timestamp as string | undefined,
       metadata: { subtype: (data.type as string) ?? 'unknown' },
     }
-  }
-
-  // ---------- Helpers ----------
-
-  private isFiltered(toolName: string): boolean {
-    return this.rules.some(
-      (r) => r.type === 'tool-name' && r.match === toolName,
-    )
   }
 }

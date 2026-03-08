@@ -1,12 +1,5 @@
 import { Database } from 'bun:sqlite'
-import type { NormalizedLogEntry, ToolDetail } from '@bkd/shared'
-
-// ---------- Types ----------
-
-export interface ToolPair {
-  action: NormalizedLogEntry
-  result: NormalizedLogEntry | null
-}
+import type { NormalizedLogEntry, ToolDetail, ToolGroupItem } from '@bkd/shared'
 
 interface EntryRow {
   idx: number
@@ -100,8 +93,19 @@ function rowToEntry(row: EntryRow): NormalizedLogEntry {
  */
 export class ExecutionStore {
   private db: Database
-  private insertStmt: ReturnType<Database['prepare']>
   private destroyed = false
+
+  // Prepared statements — compiled once, reused on every call
+  private insertStmt: ReturnType<Database['prepare']>
+  private byTurnStmt: ReturnType<Database['prepare']>
+  private allEntriesStmt: ReturnType<Database['prepare']>
+  private toolActionsStmt: ReturnType<Database['prepare']>
+  private toolResultsStmt: ReturnType<Database['prepare']>
+  private resultByIdStmt: ReturnType<Database['prepare']>
+  private toolStatsStmt: ReturnType<Database['prepare']>
+  private countByTurnStmt: ReturnType<Database['prepare']>
+  private totalCountStmt: ReturnType<Database['prepare']>
+  private hasEntryStmt: ReturnType<Database['prepare']>
 
   constructor(readonly executionId: string) {
     this.db = new Database(':memory:')
@@ -135,6 +139,37 @@ export class ExecutionStore {
         ($message_id, $reply_to_message_id, $turn_index, $entry_type, $content,
          $metadata, $tool_call_id, $tool_name, $tool_kind, $is_result, $timestamp)
     `)
+    this.byTurnStmt = this.db.prepare(
+      'SELECT * FROM entries WHERE turn_index = ? ORDER BY idx',
+    )
+    this.allEntriesStmt = this.db.prepare('SELECT * FROM entries ORDER BY idx')
+    this.toolActionsStmt = this.db.prepare(
+      `SELECT * FROM entries
+       WHERE turn_index = ? AND entry_type = 'tool-use' AND is_result = 0
+       ORDER BY idx`,
+    )
+    this.toolResultsStmt = this.db.prepare(
+      `SELECT * FROM entries
+       WHERE turn_index = ? AND entry_type = 'tool-use' AND is_result = 1`,
+    )
+    this.resultByIdStmt = this.db.prepare(
+      `SELECT * FROM entries
+       WHERE tool_call_id = ? AND is_result = 1
+       LIMIT 1`,
+    )
+    this.toolStatsStmt = this.db.prepare(
+      `SELECT tool_kind, COUNT(*) as cnt
+       FROM entries
+       WHERE turn_index = ? AND entry_type = 'tool-use' AND is_result = 0
+       GROUP BY tool_kind`,
+    )
+    this.countByTurnStmt = this.db.prepare(
+      'SELECT COUNT(*) as cnt FROM entries WHERE turn_index = ?',
+    )
+    this.totalCountStmt = this.db.prepare('SELECT COUNT(*) as cnt FROM entries')
+    this.hasEntryStmt = this.db.prepare(
+      'SELECT 1 FROM entries WHERE message_id = ? LIMIT 1',
+    )
   }
 
   /** Append a normalized entry. */
@@ -159,18 +194,14 @@ export class ExecutionStore {
   /** Get all entries for a given turn, ordered by insertion. */
   getByTurn(turnIndex: number): NormalizedLogEntry[] {
     if (this.destroyed) return []
-    const rows = this.db
-      .prepare('SELECT * FROM entries WHERE turn_index = ? ORDER BY idx')
-      .all(turnIndex) as EntryRow[]
+    const rows = this.byTurnStmt.all(turnIndex) as EntryRow[]
     return rows.map(rowToEntry)
   }
 
   /** Get all entries across all turns, ordered by insertion. */
   getAllEntries(): NormalizedLogEntry[] {
     if (this.destroyed) return []
-    const rows = this.db
-      .prepare('SELECT * FROM entries ORDER BY idx')
-      .all() as EntryRow[]
+    const rows = this.allEntriesStmt.all() as EntryRow[]
     return rows.map(rowToEntry)
   }
 
@@ -179,57 +210,41 @@ export class ExecutionStore {
    * Pairs each tool invocation (isResult=false) with its matching result
    * (isResult=true, same toolCallId).
    */
-  getToolPairs(turnIndex: number): ToolPair[] {
+  getToolPairs(turnIndex: number): ToolGroupItem[] {
     if (this.destroyed) return []
 
-    const actions = this.db
-      .prepare(
-        `SELECT * FROM entries
-         WHERE turn_index = ? AND entry_type = 'tool-use' AND is_result = 0
-         ORDER BY idx`,
-      )
-      .all(turnIndex) as EntryRow[]
+    const actions = this.toolActionsStmt.all(turnIndex) as EntryRow[]
+    // Bulk-fetch all results for this turn and build a Map for O(1) lookup
+    const resultRows = this.toolResultsStmt.all(turnIndex) as EntryRow[]
+    const resultMap = new Map<string, EntryRow>()
+    for (const row of resultRows) {
+      if (row.tool_call_id) resultMap.set(row.tool_call_id, row)
+    }
 
     return actions.map((actionRow) => {
-      let resultEntry: NormalizedLogEntry | null = null
+      let result: NormalizedLogEntry | null = null
       if (actionRow.tool_call_id) {
-        const resultRow = this.db
-          .prepare(
-            `SELECT * FROM entries
-             WHERE tool_call_id = ? AND is_result = 1
-             LIMIT 1`,
-          )
-          .get(actionRow.tool_call_id) as EntryRow | null
-        if (resultRow) resultEntry = rowToEntry(resultRow)
+        const resultRow = resultMap.get(actionRow.tool_call_id)
+        if (resultRow) result = rowToEntry(resultRow)
       }
-      return { action: rowToEntry(actionRow), result: resultEntry }
+      return { action: rowToEntry(actionRow), result }
     })
   }
 
   /** Get a single result entry matching a toolCallId. */
   getResult(toolCallId: string): NormalizedLogEntry | null {
     if (this.destroyed || !toolCallId) return null
-    const row = this.db
-      .prepare(
-        `SELECT * FROM entries
-         WHERE tool_call_id = ? AND is_result = 1
-         LIMIT 1`,
-      )
-      .get(toolCallId) as EntryRow | null
+    const row = this.resultByIdStmt.get(toolCallId) as EntryRow | null
     return row ? rowToEntry(row) : null
   }
 
   /** Count tool calls by kind for a given turn. */
   getToolStats(turnIndex: number): Record<string, number> {
     if (this.destroyed) return {}
-    const rows = this.db
-      .prepare(
-        `SELECT tool_kind, COUNT(*) as cnt
-         FROM entries
-         WHERE turn_index = ? AND entry_type = 'tool-use' AND is_result = 0
-         GROUP BY tool_kind`,
-      )
-      .all(turnIndex) as Array<{ tool_kind: string | null; cnt: number }>
+    const rows = this.toolStatsStmt.all(turnIndex) as Array<{
+      tool_kind: string | null
+      cnt: number
+    }>
     const stats: Record<string, number> = {}
     for (const row of rows) {
       stats[row.tool_kind ?? 'other'] = row.cnt
@@ -240,27 +255,21 @@ export class ExecutionStore {
   /** Total entry count for a turn. */
   getEntryCount(turnIndex: number): number {
     if (this.destroyed) return 0
-    const row = this.db
-      .prepare('SELECT COUNT(*) as cnt FROM entries WHERE turn_index = ?')
-      .get(turnIndex) as { cnt: number }
+    const row = this.countByTurnStmt.get(turnIndex) as { cnt: number }
     return row.cnt
   }
 
   /** Total entry count across all turns. */
   get totalEntries(): number {
     if (this.destroyed) return 0
-    const row = this.db
-      .prepare('SELECT COUNT(*) as cnt FROM entries')
-      .get() as { cnt: number }
+    const row = this.totalCountStmt.get() as { cnt: number }
     return row.cnt
   }
 
   /** Check if an entry with the given messageId exists. */
   hasEntry(messageId: string): boolean {
     if (this.destroyed || !messageId) return false
-    const row = this.db
-      .prepare('SELECT 1 FROM entries WHERE message_id = ? LIMIT 1')
-      .get(messageId) as { 1: number } | null
+    const row = this.hasEntryStmt.get(messageId) as { 1: number } | null
     return row !== null
   }
 

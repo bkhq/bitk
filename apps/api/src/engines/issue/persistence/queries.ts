@@ -37,6 +37,7 @@ export function getLogsFromDb(
           AND (json_extract(${logsTable.metadata}, '$.type') IS NULL
                OR json_extract(${logsTable.metadata}, '$.type') != 'system'))
         OR ${logsTable.entryType} = 'assistant-message'
+        OR ${logsTable.entryType} = 'tool-use'
         OR (${logsTable.entryType} = 'system-message'
           AND json_extract(${logsTable.metadata}, '$.subtype') IN ('command_output', 'compact_boundary', 'diagnostic'))
       )`,
@@ -68,9 +69,9 @@ export function getLogsFromDb(
   // Reverse results so output is always in ascending (chronological) order
   if (isReverse) rows.reverse()
 
-  // Batch-fetch tool details only in devMode (non-dev excludes tool-use at SQL level)
+  // Batch-fetch tool details for any rows that might be tool-use entries
   const toolByLogId = new Map<string, (typeof toolsTable)['$inferSelect']>()
-  if (devMode && rows.length > 0) {
+  if (rows.length > 0) {
     const logIds = rows.map((r) => r.id)
     const toolRows = db
       .select()

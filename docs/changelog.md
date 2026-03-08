@@ -1,5 +1,47 @@
 # Changelog
 
+## 2026-03-08 17:30 [progress]
+
+CHAT-001 Phase 4 完成：回归验证 + 代码审查修复
+
+修复：
+- `apps/api/src/engines/process-manager.ts` — dispose() 增加 onRemove 循环，避免 ExecutionStore 泄漏
+- `apps/frontend/src/hooks/use-chat-messages.ts` — idCounter 改为函数内局部变量，消除并发竞态；command_output 配对改为预索引 O(1) + 消费集合避免跨命令错配
+- `apps/api/src/engines/issue/store/message-rebuilder.ts` — metadata.type 修正为 metadata.subtype；清理 consumedResults 死代码
+- `apps/api/test/message-rebuilder.test.ts` — 测试数据对齐 metadata.subtype
+
+全部 377 后端 + 28 前端测试通过。CHAT-001 标记完成。
+
+关联方案：PLAN-001
+
+## 2026-03-08 17:10 [progress]
+
+CHAT-001 Phase 3 完成：前端适配
+
+修改文件：
+- `apps/api/src/engines/issue/utils/visibility.ts` — isVisibleForMode 开放 tool-use（normal mode 可见）
+- `apps/api/src/engines/issue/persistence/queries.ts` — SQL 过滤 + tool detail 获取支持 tool-use
+- `apps/frontend/src/hooks/use-chat-messages.ts` — 新增 useChatMessages hook（entries → ChatMessage[]）
+- `apps/frontend/src/components/issue-detail/SessionMessages.tsx` — 重写为 ChatMessage 类型驱动渲染 + ToolGroupMessage 组件
+
+关联方案：PLAN-001
+
+## 2026-03-08 16:00 [progress]
+
+CHAT-001 Phase 2 完成：后端 Pipeline 切换
+
+修改文件：
+- `apps/api/src/engines/executors/claude/normalizer.ts` — 移除 write filter 拦截，所有工具调用（Read/Glob/Grep）不再丢弃
+- `apps/api/src/engines/types.ts` — createNormalizer 签名移除 WriteFilterRule 参数
+- `apps/api/src/engines/issue/utils/normalizer.ts` — createLogNormalizer 同步化
+- `apps/api/src/engines/issue/types.ts` — ManagedProcess.logs: RingBuffer → ExecutionStore
+- `apps/api/src/engines/issue/process/register.ts` — 创建 ExecutionStore 替代 RingBuffer
+- `apps/api/src/engines/process-manager.ts` — 新增 onRemove 回调
+- `apps/api/src/engines/issue/engine.ts` — 注册 onRemove 自动销毁 ExecutionStore
+- `apps/api/test/claude-normalizer.test.ts` — 更新测试
+
+关联方案：PLAN-001
+
 ## 2026-03-08 14:30 [progress]
 
 CHAT-001 Phase 1 完成：聊天界面 UI 优化后端基础设施

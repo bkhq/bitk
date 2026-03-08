@@ -1,6 +1,6 @@
 # PLAN-001 聊天界面 UI 优化（对标 Claude Code）
 
-- **status**: implementing
+- **status**: completed
 - **createdAt**: 2026-03-08 12:00
 - **approvedAt**: 2026-03-08 13:30
 - **relatedTask**: CHAT-001
@@ -473,3 +473,22 @@ Phase 1 实施记录（2026-03-08）：
 - ✅ `apps/api/test/execution-store.test.ts` — 10 个单元测试
 - ✅ `apps/api/test/message-rebuilder.test.ts` — 10 个单元测试
 - 全部 375 个现有测试不受影响
+
+Phase 2 实施记录（2026-03-08）：
+- ✅ `apps/api/src/engines/executors/claude/normalizer.ts` — 移除 write filter 拦截，删除 rules/filteredToolCallIds/isFiltered()，所有工具调用（Read/Glob/Grep）流经 pipeline
+- ✅ `apps/api/src/engines/types.ts` — createNormalizer 签名移除 WriteFilterRule 参数
+- ✅ `apps/api/src/engines/executors/claude/executor.ts` — createNormalizer() 不再传 filterRules
+- ✅ `apps/api/src/engines/issue/utils/normalizer.ts` — createLogNormalizer 从 async 改为 sync，移除 loadFilterRules 依赖
+- ✅ `apps/api/src/engines/issue/types.ts` — ManagedProcess.logs 从 RingBuffer 改为 ExecutionStore
+- ✅ `apps/api/src/engines/issue/process/register.ts` — 创建 ExecutionStore 替代 RingBuffer
+- ✅ `apps/api/src/engines/process-manager.ts` — 新增 onRemove 回调，在 remove() 时触发
+- ✅ `apps/api/src/engines/issue/engine.ts` — 注册 onRemove 回调，自动销毁 ExecutionStore
+- ✅ `apps/api/test/claude-normalizer.test.ts` — 更新测试：移除过滤预期，改为验证全部保留
+- 全部 377 个测试通过（含 Phase 1 新增测试）
+
+Phase 3 实施记录（2026-03-08）：
+- ✅ `apps/api/src/engines/issue/utils/visibility.ts` — isVisibleForMode 开放 tool-use（return true），normal mode 下发所有工具调用给前端
+- ✅ `apps/api/src/engines/issue/persistence/queries.ts` — SQL 过滤条件新增 tool-use entryType；tool detail 获取不再限 devMode
+- ✅ `apps/frontend/src/hooks/use-chat-messages.ts` — 新增 useChatMessages hook，NormalizedLogEntry[] → ChatMessage[] 前端重建（分组/配对/TaskPlan 提取），等价于后端 MessageRebuilder 的前端实现
+- ✅ `apps/frontend/src/components/issue-detail/SessionMessages.tsx` — 重写为 ChatMessage 类型驱动渲染：命令式 for 循环 → switch(msg.type) + ChatMessageRow 组件；新增 ToolGroupMessage（折叠/展开 + kind 统计摘要）、FileToolItem/CommandToolItem/GenericToolItem
+- 全部 377 个后端测试 + 28 个前端测试通过；TypeScript 编译通过；Vite 构建通过

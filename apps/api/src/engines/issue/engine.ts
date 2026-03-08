@@ -46,6 +46,7 @@ export class IssueEngine {
       gcIntervalMs: 0, // IssueEngine keeps its own domain GC
       killTimeoutMs: 30_000,
       logger,
+      onRemove: (_id, meta) => meta.logs.destroy(),
     })
 
     this.ctx = {
@@ -101,18 +102,8 @@ export class IssueEngine {
       this.gcTimer.unref()
     }
 
-    // Sync PM auto-cleanup with domain data
-    pm.onStateChange((entry) => {
-      const state = entry.state
-      if (
-        state === 'completed' ||
-        state === 'failed' ||
-        state === 'cancelled'
-      ) {
-        // When PM auto-removes, clean domain data too
-        // (entryCounters, turnIndexes are cleaned on remove)
-      }
-    })
+    // ExecutionStore lifecycle: destroyed via onRemove callback in PM options
+    // when the process entry is auto-cleaned (after AUTO_CLEANUP_DELAY_MS).
   }
 
   // ---- Orchestration ----

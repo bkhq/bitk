@@ -1,6 +1,6 @@
 # CHAT-001 聊天界面 UI 优化（对标 Claude Code）
 
-- **status**: in_progress
+- **status**: completed
 - **priority**: P1
 - **owner**: claude
 - **createdAt**: 2026-03-08 12:00
@@ -18,14 +18,28 @@
 - [x] MessageRebuilder（分组/配对/过滤纯函数）— entries → ChatMessage[]
 - [x] 单元测试 — 20 个测试全部通过
 
-### Phase 2: 后端 Pipeline 切换 ⏳
+### Phase 2: 后端 Pipeline 切换 ✅
 
-- [ ] 修改 normalizer 移除 write filter 拦截
-- [ ] 修改 consumer 写入 ExecutionStore
-- [ ] 改造 pipeline（persist/ring-buffer/SSE）
+- [x] 移除 normalizer write filter 拦截 — Read/Glob/Grep 不再丢弃
+- [x] 替换 RingBuffer 为 ExecutionStore — ManagedProcess.logs 使用内存 SQLite
+- [x] ExecutionStore 生命周期管理 — ProcessManager.onRemove 回调自动销毁
+- [x] createLogNormalizer 同步化 — 不再依赖 loadFilterRules
 
-### Phase 3: 前端适配 ⏳
+### Phase 3: 前端适配 ✅
 
-- [ ] use-issue-stream 处理新 SSE 事件
-- [ ] 重写 SessionMessages + ToolGroupMessage
-- [ ] 合并 ChatInput 状态栏 + i18n
+- [x] isVisibleForMode 开放 tool-use — normal mode 下发所有工具调用
+- [x] DB 查询适配 — SQL 过滤和 tool detail 获取支持 tool-use
+- [x] useChatMessages hook — NormalizedLogEntry[] → ChatMessage[] 前端重建
+- [x] 重写 SessionMessages — ChatMessage 类型驱动渲染（switch on type）
+- [x] ToolGroupMessage 可折叠组件 — 按 kind 统计摘要 + 展开内部 item
+
+### Phase 4: 回归验证 ✅
+
+- [x] 全量 lint + tests（377 后端 + 28 前端，0 fail）
+- [x] 代码审查发现 5 个问题，全部修复：
+  - ProcessManager.dispose() 跳过 onRemove → 增加循环调用
+  - useChatMessages idCounter 模块级竞态 → 改为函数内局部变量
+  - backend rebuilder metadata.type vs metadata.subtype 不一致 → 修正为 subtype
+  - command_output 配对 indexOf O(n) + 跨命令错配 → 改为预索引 + consumedOutputIdx
+  - backend rebuilder consumedResults 死代码 → 清理
+- [x] Vite 构建通过

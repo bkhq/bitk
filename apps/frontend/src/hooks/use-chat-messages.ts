@@ -10,23 +10,9 @@ import type {
   ToolGroupItem,
   UserChatMessage,
 } from '@bkd/shared'
-import type { WriteFilterRule } from '@/engines/write-filter'
-import { isToolFiltered } from '@/engines/write-filter'
-
-// ---------- Options ----------
-
-export interface RebuildOptions {
-  /** When true, show all entries including filtered tools */
-  devMode: boolean
-  /** Write filter rules (default: Read/Glob/Grep filtered) */
-  filterRules: WriteFilterRule[]
-}
+import { useMemo } from 'react'
 
 // ---------- Helpers ----------
-
-function entryId(entry: NormalizedLogEntry, fallback: string): string {
-  return entry.messageId ?? fallback
-}
 
 function hasResultFlag(entry: NormalizedLogEntry): boolean {
   return (
@@ -43,64 +29,19 @@ function isToolUseResult(entry: NormalizedLogEntry): boolean {
   return entry.entryType === 'tool-use' && hasResultFlag(entry)
 }
 
+function getToolName(entry: NormalizedLogEntry): string | undefined {
+  return (
+    entry.toolDetail?.toolName ??
+    (entry.metadata?.toolName as string | undefined)
+  )
+}
+
 function isTodoWriteEntry(entry: NormalizedLogEntry): boolean {
-  const name =
-    entry.toolDetail?.toolName ??
-    (entry.metadata?.toolName as string | undefined)
-  return name === 'TodoWrite'
+  return getToolName(entry) === 'TodoWrite'
 }
 
-function isFilteredTool(
-  entry: NormalizedLogEntry,
-  rules: WriteFilterRule[],
-): boolean {
-  const name =
-    entry.toolDetail?.toolName ??
-    (entry.metadata?.toolName as string | undefined)
-  if (!name) return false
-  return isToolFiltered(name, rules)
-}
-
-// ---------- Tool group builder ----------
-
-function buildToolGroup(
-  items: ToolGroupItem[],
-  options: RebuildOptions,
-  nextId: (prefix: string) => string,
-): ToolGroupChatMessage {
-  const stats: Record<string, number> = {}
-  for (const item of items) {
-    const kind =
-      item.action.toolDetail?.kind ?? item.action.toolAction?.kind ?? 'other'
-    stats[kind] = (stats[kind] ?? 0) + 1
-  }
-
-  // Apply write filter: mark items as hidden rather than dropping
-  let visibleItems: ToolGroupItem[]
-  let hiddenCount = 0
-
-  if (options.devMode) {
-    // devMode: show everything
-    visibleItems = items
-  } else {
-    visibleItems = []
-    for (const item of items) {
-      if (isFilteredTool(item.action, options.filterRules)) {
-        hiddenCount++
-      } else {
-        visibleItems.push(item)
-      }
-    }
-  }
-
-  return {
-    type: 'tool-group',
-    id: nextId('tg'),
-    items: visibleItems,
-    stats,
-    count: items.length,
-    hiddenCount,
-  }
+function entryId(entry: NormalizedLogEntry, fallback: string): string {
+  return entry.messageId ?? fallback
 }
 
 // ---------- TodoWrite → TaskPlan ----------
@@ -110,15 +51,12 @@ function extractTodos(
 ): TaskPlanChatMessage['todos'] | null {
   const meta = entry.metadata
   if (!meta) return null
-
-  // TodoWrite arguments contain the todos array
   const args = (meta.arguments ?? meta.input) as
     | {
         todos?: Array<{ content: string; status: string; activeForm?: string }>
       }
     | undefined
   if (!args?.todos || !Array.isArray(args.todos)) return null
-
   return args.todos.map((t) => ({
     content: t.content ?? '',
     status: t.status ?? 'pending',
@@ -126,27 +64,11 @@ function extractTodos(
   }))
 }
 
-// ---------- Main rebuilder ----------
+// ---------- Main rebuild ----------
 
-/**
- * Rebuilds structured ChatMessages from a flat array of NormalizedLogEntry[].
- *
- * This is the core transformation function. It:
- * 1. Groups consecutive tool-use entries into ToolGroupChatMessage
- * 2. Pairs tool call ↔ result by toolCallId
- * 3. Extracts TodoWrite calls into TaskPlanChatMessage
- * 4. Applies write filter rules as visibility (hidden count) not drops
- * 5. Maps other entry types to their ChatMessage variants
- *
- * Can be used with entries from ExecutionStore (in-memory) or
- * from disk DB (historical logs).
- */
-export function rebuildMessages(
-  entries: NormalizedLogEntry[],
-  options: RebuildOptions,
-): ChatMessage[] {
-  // Local counter — avoids module-level singleton issues when
-  // rebuildMessages is called concurrently for different executions.
+function rebuildMessages(entries: NormalizedLogEntry[]): ChatMessage[] {
+  // Local counter — avoids module-level singleton race when multiple
+  // components call useChatMessages concurrently.
   let seq = 0
   const nextId = (prefix: string) => `${prefix}-${++seq}`
 
@@ -164,16 +86,54 @@ export function rebuildMessages(
     }
   }
 
+  // Pre-build command_output index: for each command user-message index,
+  // find the next command_output system-message. This avoids O(n) indexOf
+  // inside the main loop and prevents cross-command mismatches.
+  const commandOutputByIdx = new Map<number, number>()
+  const consumedOutputIdx = new Set<number>()
+  for (let i = 0; i < entries.length; i++) {
+    const e = entries[i]
+    if (e.entryType === 'user-message' && e.metadata?.type === 'command') {
+      for (let j = i + 1; j < entries.length; j++) {
+        const c = entries[j]
+        if (
+          c.entryType === 'system-message' &&
+          c.metadata?.subtype === 'command_output' &&
+          !consumedOutputIdx.has(j)
+        ) {
+          commandOutputByIdx.set(i, j)
+          consumedOutputIdx.add(j)
+          break
+        }
+      }
+    }
+  }
+
+  function buildToolGroup(items: ToolGroupItem[]): ToolGroupChatMessage {
+    const stats: Record<string, number> = {}
+    for (const item of items) {
+      const kind =
+        item.action.toolDetail?.kind ?? item.action.toolAction?.kind ?? 'other'
+      stats[kind] = (stats[kind] ?? 0) + 1
+    }
+    return {
+      type: 'tool-group',
+      id: nextId('tg'),
+      items,
+      stats,
+      count: items.length,
+      hiddenCount: 0,
+    }
+  }
+
   function flushToolBuffer(): void {
     if (toolBuffer.length === 0) return
 
-    // Check if the entire group is just TodoWrite calls
     const todoItems = toolBuffer.filter((item) => isTodoWriteEntry(item.action))
     const nonTodoItems = toolBuffer.filter(
       (item) => !isTodoWriteEntry(item.action),
     )
 
-    // Extract task plan from last TodoWrite in the group
     if (todoItems.length > 0) {
       const lastTodo = todoItems[todoItems.length - 1]
       const todos = extractTodos(lastTodo.action)
@@ -188,19 +148,18 @@ export function rebuildMessages(
       }
     }
 
-    // Build tool group from non-TodoWrite items
     if (nonTodoItems.length > 0) {
-      messages.push(buildToolGroup(nonTodoItems, options, nextId))
+      messages.push(buildToolGroup(nonTodoItems))
     }
 
     toolBuffer = []
   }
 
-  for (const entry of entries) {
-    // Skip result entries (they're paired with their action)
+  for (let i = 0; i < entries.length; i++) {
+    const entry = entries[i]
+
     if (isToolUseResult(entry)) continue
 
-    // Tool action: buffer it with its paired result
     if (isToolUseAction(entry)) {
       const callId =
         entry.toolDetail?.toolCallId ??
@@ -213,19 +172,43 @@ export function rebuildMessages(
       continue
     }
 
-    // Non-tool entry → flush any pending tool buffer first
+    // Non-tool entry → flush pending tool buffer
     flushToolBuffer()
 
     switch (entry.entryType) {
-      case 'user-message':
-        messages.push({
+      case 'user-message': {
+        const metaType = entry.metadata?.type as string | undefined
+        const attachments = (entry.metadata?.attachments ?? []) as Array<{
+          id: string
+          name: string
+          mimeType: string
+          size: number
+        }>
+        const status =
+          metaType === 'pending'
+            ? 'pending'
+            : metaType === 'done'
+              ? 'done'
+              : metaType === 'command'
+                ? 'command'
+                : 'normal'
+        const msg: UserChatMessage = {
           type: 'user',
           id: entryId(entry, nextId('um')),
           entry,
-          attachments: [],
-          status: 'normal',
-        } satisfies UserChatMessage)
+          attachments,
+          status: status as UserChatMessage['status'],
+        }
+        // Pair command user-messages with their pre-indexed command_output
+        if (status === 'command') {
+          const outputIdx = commandOutputByIdx.get(i)
+          if (outputIdx !== undefined) {
+            msg.commandOutput = entries[outputIdx]
+          }
+        }
+        messages.push(msg)
         break
+      }
 
       case 'assistant-message':
         messages.push({
@@ -243,7 +226,9 @@ export function rebuildMessages(
         } satisfies ThinkingChatMessage)
         break
 
-      case 'system-message':
+      case 'system-message': {
+        // Skip command_output entries consumed by command user-messages
+        if (consumedOutputIdx.has(i)) break
         messages.push({
           type: 'system',
           id: entryId(entry, nextId('sys')),
@@ -251,6 +236,7 @@ export function rebuildMessages(
           subtype: (entry.metadata?.subtype as string | undefined) ?? 'info',
         } satisfies SystemChatMessage)
         break
+      }
 
       case 'error-message':
         messages.push({
@@ -261,27 +247,24 @@ export function rebuildMessages(
         break
 
       case 'token-usage':
-        // Token usage entries are metadata, not rendered as messages
-        break
-
       case 'loading':
-        // Loading entries are transient, skip
         break
 
       default:
-        // Unknown entry type: render as system message
-        messages.push({
-          type: 'system',
-          id: entryId(entry, nextId('sys')),
-          entry,
-          subtype: 'unknown',
-        } satisfies SystemChatMessage)
         break
     }
   }
 
-  // Flush remaining tool buffer
   flushToolBuffer()
-
   return messages
+}
+
+// ---------- Hook ----------
+
+/**
+ * Transform flat NormalizedLogEntry[] into grouped ChatMessage[].
+ * Frontend equivalent of the backend MessageRebuilder.
+ */
+export function useChatMessages(logs: NormalizedLogEntry[]): ChatMessage[] {
+  return useMemo(() => rebuildMessages(logs), [logs])
 }

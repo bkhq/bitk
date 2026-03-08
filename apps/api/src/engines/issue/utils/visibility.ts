@@ -22,8 +22,9 @@ export function isVisibleForMode(
   )
     return true
 
-  // Tool-use entries are only visible in dev mode
-  if (entry.entryType === 'tool-use') return false
+  // Tool-use entries are visible in all modes so the frontend
+  // can group them into ToolGroupChatMessage (Phase 3 chat UI).
+  if (entry.entryType === 'tool-use') return true
 
   // System messages — command output, compact boundary, and diagnostic
   if (entry.entryType === 'system-message') {

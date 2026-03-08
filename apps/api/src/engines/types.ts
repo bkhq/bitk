@@ -214,9 +214,7 @@ export interface EngineExecutor {
     rawLine: string,
   ) => NormalizedLogEntry | NormalizedLogEntry[] | null
 
-  createNormalizer?: (
-    filterRules: import('./write-filter').WriteFilterRule[],
-  ) => {
+  createNormalizer?: () => {
     parse: (rawLine: string) => NormalizedLogEntry | NormalizedLogEntry[] | null
   }
 }

@@ -14,7 +14,7 @@ import type {
   SpawnedProcess,
   SpawnOptions,
 } from '@/engines/types'
-import type { WriteFilterRule } from '@/engines/write-filter'
+
 import { logger } from '@/logger'
 import { ROOT_DIR } from '@/root'
 import { ClaudeLogNormalizer } from './normalizer'
@@ -212,8 +212,8 @@ export class ClaudeCodeExecutor implements EngineExecutor {
     return this.defaultNormalizer.parse(rawLine)
   }
 
-  createNormalizer(filterRules: WriteFilterRule[]) {
-    return new ClaudeLogNormalizer(filterRules)
+  createNormalizer() {
+    return new ClaudeLogNormalizer()
   }
 
   /**

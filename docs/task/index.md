@@ -8,7 +8,7 @@
 
 ## Chat UI
 
-- [-] **CHAT-001 聊天界面 UI 优化（对标 Claude Code）** `P1` - owner: claude - file: `docs/task/CHAT-001.md`
+- [x] **CHAT-001 聊天界面 UI 优化（对标 Claude Code）** `P1` - owner: claude - file: `docs/task/CHAT-001.md`
 
 ## Backend Audit — CRITICAL
 

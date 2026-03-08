@@ -33,7 +33,7 @@ export interface ProcessManagerLogger {
   error: (...args: unknown[]) => void
 }
 
-export interface ProcessManagerOptions {
+export interface ProcessManagerOptions<TMeta = unknown> {
   /** Active process limit. 0 = unlimited. Default: 0 */
   maxConcurrent?: number
   /** Delay (ms) before auto-removing a finished entry. 0 = no auto-removal. Default: 300_000 */
@@ -45,6 +45,8 @@ export interface ProcessManagerOptions {
    *  callers should set a higher value (e.g. 30_000) to allow graceful exit. */
   killTimeoutMs?: number
   logger?: ProcessManagerLogger
+  /** Called when a managed entry is removed (cleanup, GC, or dispose). */
+  onRemove?: (id: string, meta: TMeta) => void
 }
 
 export type StateChangeHandler<T> = (
@@ -74,14 +76,16 @@ export class ProcessManager<TMeta> {
   private readonly autoCleanupDelayMs: number
   private readonly killTimeoutMs: number
   private readonly log: ProcessManagerLogger
+  private readonly onRemove?: (id: string, meta: TMeta) => void
 
   constructor(
     private readonly name: string,
-    options?: ProcessManagerOptions,
+    options?: ProcessManagerOptions<TMeta>,
   ) {
     this.maxConcurrent = options?.maxConcurrent ?? 0
     this.autoCleanupDelayMs = options?.autoCleanupDelayMs ?? 300_000
     this.killTimeoutMs = options?.killTimeoutMs ?? 5_000
+    this.onRemove = options?.onRemove
     this.log = options?.logger ?? {
       debug() {},
       info() {},
@@ -336,6 +340,7 @@ export class ProcessManager<TMeta> {
     }
 
     this.entries.delete(id)
+    this.onRemove?.(id, entry.meta)
   }
 
   async dispose(): Promise<void> {
@@ -348,6 +353,13 @@ export class ProcessManager<TMeta> {
     }
     this.cleanupTimers.clear()
     await this.terminateAll()
+    // Call onRemove for each entry before clearing — ensures cleanup hooks
+    // (e.g., ExecutionStore.destroy()) fire during graceful shutdown.
+    if (this.onRemove) {
+      for (const [id, entry] of this.entries) {
+        this.onRemove(id, entry.meta)
+      }
+    }
     this.entries.clear()
     this.groupIndex.clear()
     this.stateChangeHandlers.clear()
