@@ -1,8 +1,13 @@
+import {
+  getTranscriptPath,
+  runTranscriptFallback,
+} from '@/engines/executors/claude/transcript-fallback'
 import type { EngineContext } from '@/engines/issue/context'
 import {
   createIssueDebugLog,
   teeStreamToDebug,
 } from '@/engines/issue/debug-log'
+import { emitDiagnosticLog } from '@/engines/issue/diagnostic'
 import { emitStateChange } from '@/engines/issue/events'
 import { ExecutionStore } from '@/engines/issue/store/execution-store'
 import type { StreamCallbacks } from '@/engines/issue/streams/consumer'
@@ -132,6 +137,116 @@ export function register(
     .then(() => {
       debugLog.event('stdout_stream_ended')
       logger.debug({ issueId, executionId }, 'consume_stream_promise_resolved')
+
+      // Detect stdout pipe breakage: stream ended but process is still alive
+      const m = ctx.pm.get(executionId)?.meta
+      if (!m || m.turnSettled || m.state !== 'running') return
+      const pid = getPidFromManaged(m)
+      if (!pid) return
+      let alive = false
+      try {
+        process.kill(pid, 0)
+        alive = true
+      } catch {
+        // process already dead — normal exit path
+      }
+      if (!alive) return
+
+      // stdout broke while process is still running
+      m.stdoutBroken = true
+
+      // Transcript JSONL fallback is Claude CLI-specific — other engines
+      // (codex, gemini, echo) don't write transcript files.
+      if (engineType !== 'claude-code') {
+        debugLog.event(
+          `stdout_broken pid=${pid} engine=${engineType} — no transcript fallback`,
+        )
+        logger.warn(
+          { issueId, executionId, pid, engineType },
+          'stdout_broken_no_fallback_non_claude',
+        )
+        return
+      }
+
+      const cwd = m.spawnCwd
+      const sessionId = m.externalSessionId
+      if (!cwd || !sessionId) {
+        logger.warn(
+          { issueId, executionId, hasCwd: !!cwd, hasSessionId: !!sessionId },
+          'transcript_fallback_skipped_missing_context',
+        )
+        return
+      }
+
+      const transcriptPath = getTranscriptPath(cwd, sessionId)
+      const cutoffTimestamp = m.lastActivityAt.toISOString()
+      debugLog.event(
+        `stdout_broken pid=${pid} alive=true — starting transcript fallback from ${cutoffTimestamp}`,
+      )
+      logger.warn(
+        { issueId, executionId, pid, transcriptPath, cutoffTimestamp },
+        'stdout_broken_transcript_fallback_starting',
+      )
+      emitDiagnosticLog(
+        issueId,
+        executionId,
+        `[BKD] stdout pipe broke — falling back to transcript JSONL (pid=${pid})`,
+        { event: 'stdout_broken_fallback', pid },
+      )
+
+      // Poll transcript JSONL until turn completion is detected or
+      // the process exits.  The process may still be mid-turn (running
+      // tool calls) when stdout breaks, so a single read is not enough.
+      const POLL_INTERVAL_MS = 5_000
+      const MAX_POLL_MS = 10 * 60_000 // 10 min safety cap
+      const pollStart = Date.now()
+      let lastCutoff = cutoffTimestamp
+
+      const pollTimer = setInterval(() => {
+        const current = ctx.pm.get(executionId)?.meta
+        if (!current || current.turnSettled || current.state !== 'running') {
+          clearInterval(pollTimer)
+          return
+        }
+
+        // Safety: stop polling after MAX_POLL_MS to avoid infinite loop.
+        // Clear stdoutBroken so stall detection can take over again.
+        if (Date.now() - pollStart > MAX_POLL_MS) {
+          clearInterval(pollTimer)
+          current.stdoutBroken = false
+          debugLog.event('transcript_fallback_timeout')
+          logger.warn(
+            { issueId, executionId },
+            'transcript_fallback_poll_timeout',
+          )
+          return
+        }
+
+        const turnCompleted = runTranscriptFallback(
+          transcriptPath,
+          lastCutoff,
+          logParser,
+          (entry) => {
+            const turnIdx = ctx.turnIndexes.get(executionId) ?? 0
+            handleStreamEntry(issueId, executionId, {
+              ...entry,
+              turnIndex: turnIdx,
+            })
+            // Advance cutoff so next poll skips already-processed entries
+            if (entry.timestamp) lastCutoff = entry.timestamp
+          },
+        )
+
+        if (turnCompleted) {
+          clearInterval(pollTimer)
+          debugLog.event('transcript_fallback_turn_completed')
+          logger.info(
+            { issueId, executionId },
+            'transcript_fallback_turn_completed',
+          )
+          onTurnCompleted()
+        }
+      }, POLL_INTERVAL_MS)
     })
     .catch((err) => {
       debugLog.event(`stdout_stream_error: ${err}`)

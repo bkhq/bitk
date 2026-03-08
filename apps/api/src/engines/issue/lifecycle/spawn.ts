@@ -104,9 +104,13 @@ export async function spawnWithSessionFallback(
       },
       spawnCtx,
     )
+    const finalSessionId = spawned.externalSessionId ?? externalSessionId
     await updateIssueSession(issueId, {
-      externalSessionId: spawned.externalSessionId ?? externalSessionId,
+      externalSessionId: finalSessionId,
     })
+    if (!spawned.externalSessionId) {
+      spawned.externalSessionId = finalSessionId
+    }
     return spawned
   }
 }
@@ -140,9 +144,15 @@ export async function spawnFresh(
       issueId,
     },
   )
+  const finalSessionId = spawned.externalSessionId ?? externalSessionId
   await updateIssueSession(issueId, {
-    externalSessionId: spawned.externalSessionId ?? externalSessionId,
+    externalSessionId: finalSessionId,
   })
+  // Ensure the returned object always carries the session ID so callers
+  // (e.g. managed.externalSessionId) don't end up with undefined.
+  if (!spawned.externalSessionId) {
+    spawned.externalSessionId = finalSessionId
+  }
   return spawned
 }
 
@@ -209,7 +219,7 @@ export async function spawnRetry(
   const normalizer = createLogNormalizer(executor)
 
   const turnIndex = getNextTurnIndex(issueId)
-  register(
+  const retryManaged = register(
     ctx,
     executionId,
     issueId,
@@ -222,6 +232,11 @@ export async function spawnRetry(
     () => handleTurnCompleted(ctx, issueId, executionId),
     worktreePath ? baseDir : undefined,
   )
+  retryManaged.spawnCwd = workingDir
+  retryManaged.externalSessionId =
+    spawned.externalSessionId ??
+    issue.sessionFields.externalSessionId ??
+    undefined
   monitorCompletion(ctx, executionId, issueId, engineType, true)
   logger.debug(
     { issueId, executionId, engineType, turnIndex },
@@ -378,7 +393,7 @@ export async function spawnFollowUpProcess(
 
   const normalizer = createLogNormalizer(executor)
 
-  register(
+  const followUpManaged = register(
     ctx,
     executionId,
     issueId,
@@ -391,6 +406,11 @@ export async function spawnFollowUpProcess(
     () => handleTurnCompleted(ctx, issueId, executionId),
     worktreePath ? baseDir : undefined,
   )
+  followUpManaged.spawnCwd = workingDir
+  followUpManaged.externalSessionId =
+    spawned.externalSessionId ??
+    issue.sessionFields.externalSessionId ??
+    undefined
   // User message already persisted above (before spawn)
   monitorCompletion(ctx, executionId, issueId, engineType, false)
   const followUpPid = getPidFromSubprocess(spawned.subprocess)

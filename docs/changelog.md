@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-03-08 23:00 [progress]
+
+STALL-001：stdout pipe 断裂后 fallback 到 transcript JSONL
+
+解决 Claude CLI stdout pipe 偶发性异常关闭导致 9 分钟 stall detection 延迟的问题。
+
+修改：
+- `streams/transcript-fallback.ts`（新建）— 读取 transcript JSONL，转换格式后复用 normalizer 补齐缺失条目
+- `process/register.ts` — consumeStream 结束后检测进程是否存活，存活则启动 transcript fallback，检测到 turn completion 后主动 settle
+- `types.ts` — ManagedProcess 添加 `stdoutBroken`/`spawnCwd`/`externalSessionId` 字段
+- `gc.ts` — stdoutBroken 时跳过 stall escalation
+- `orchestration/execute.ts`、`restart.ts`、`lifecycle/spawn.ts` — 所有 register() 调用点设置 spawnCwd 和 externalSessionId
+
 ## 2026-03-08 21:00 [progress]
 
 BUG-004：非 dev 模式不再返回 tool-use 和 system-message 条目
