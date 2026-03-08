@@ -31,6 +31,7 @@ export function FileBrowserDrawer() {
     isFullscreen,
     width,
     projectId,
+    rootPath,
     currentPath,
     hideIgnored,
     close,
@@ -59,12 +60,12 @@ export function FileBrowserDrawer() {
 
   const handleDownload = useCallback(() => {
     if (!projectId || currentPath === '.') return
-    const url = kanbanApi.rawFileUrl(projectId, currentPath)
+    const url = kanbanApi.rawFileUrl(projectId, currentPath, rootPath)
     const a = document.createElement('a')
     a.href = url
     a.download = ''
     a.click()
-  }, [projectId, currentPath])
+  }, [projectId, currentPath, rootPath])
 
   const { data: project } = useProject(projectId ?? '')
   const {
@@ -159,6 +160,7 @@ export function FileBrowserDrawer() {
             <FolderOpen className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
             <span className="text-xs font-medium text-muted-foreground truncate">
               {project?.name ?? t('fileBrowser.title')}
+              {rootPath ? ` (${rootPath.split('/').pop()})` : ''}
             </span>
           </div>
           <div className="flex items-center gap-1">

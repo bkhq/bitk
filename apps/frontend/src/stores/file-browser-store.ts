@@ -20,10 +20,11 @@ interface FileBrowserStore {
   isFullscreen: boolean
   width: number
   projectId: string | null
+  rootPath: string | null
   currentPath: string
   hideIgnored: boolean
-  open: (projectId: string) => void
-  openFullscreen: (projectId: string) => void
+  open: (projectId: string, rootPath?: string) => void
+  openFullscreen: (projectId: string, rootPath?: string) => void
   close: () => void
   toggle: (projectId: string) => void
   minimize: () => void
@@ -43,23 +44,32 @@ export const useFileBrowserStore = create<FileBrowserStore>((set) => ({
   isFullscreen: false,
   width: Math.round(getViewportWidth() * DEFAULT_WIDTH_RATIO),
   projectId: null,
+  rootPath: null,
   currentPath: '.',
   hideIgnored: false,
 
-  open: (projectId) =>
+  open: (projectId, rootPath) =>
     set((s) => ({
       isOpen: true,
       isMinimized: false,
       projectId,
-      currentPath: s.projectId === projectId ? s.currentPath : '.',
+      rootPath: rootPath ?? null,
+      currentPath:
+        s.projectId === projectId && s.rootPath === (rootPath ?? null)
+          ? s.currentPath
+          : '.',
     })),
-  openFullscreen: (projectId) =>
+  openFullscreen: (projectId, rootPath) =>
     set((s) => ({
       isOpen: true,
       isMinimized: false,
       isFullscreen: true,
       projectId,
-      currentPath: s.projectId === projectId ? s.currentPath : '.',
+      rootPath: rootPath ?? null,
+      currentPath:
+        s.projectId === projectId && s.rootPath === (rootPath ?? null)
+          ? s.currentPath
+          : '.',
     })),
   close: () => set({ isOpen: false }),
   toggle: (projectId) =>

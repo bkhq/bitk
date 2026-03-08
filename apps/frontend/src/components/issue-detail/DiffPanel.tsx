@@ -75,6 +75,7 @@ export function DiffPanel({
   const { t } = useTranslation()
   const changesQuery = useIssueChanges(projectId, issueId, true)
   const files = changesQuery.data?.files ?? []
+  const changesRoot = changesQuery.data?.root
   const openFileBrowser = useFileBrowserStore((s) => s.open)
 
   return (
@@ -95,7 +96,7 @@ export function DiffPanel({
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => openFileBrowser(projectId)}
+              onClick={() => openFileBrowser(projectId, changesRoot)}
               className="flex items-center justify-center h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-150"
               title={t('diff.openFiles')}
             >

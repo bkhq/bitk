@@ -34,8 +34,19 @@ export const queryKeys = {
     ['projects', projectId, 'issues', 'children', parentId] as const,
   slashCommands: (projectId: string, issueId: string) =>
     ['projects', projectId, 'issues', issueId, 'slash-commands'] as const,
-  projectFiles: (projectId: string, path: string, hideIgnored: boolean) =>
-    ['projects', projectId, 'files', path, { hideIgnored }] as const,
+  projectFiles: (
+    projectId: string,
+    path: string,
+    hideIgnored: boolean,
+    rootPath?: string | null,
+  ) =>
+    [
+      'projects',
+      projectId,
+      'files',
+      path,
+      { hideIgnored, rootPath: rootPath ?? null },
+    ] as const,
   projectProcesses: (projectId: string) =>
     ['projects', projectId, 'processes'] as const,
   projectWorktrees: (projectId: string) =>
@@ -720,10 +731,11 @@ export function useProjectFiles(
   enabled = true,
 ) {
   const hideIgnored = useFileBrowserStore((s) => s.hideIgnored)
+  const rootPath = useFileBrowserStore((s) => s.rootPath)
   return useQuery({
-    queryKey: queryKeys.projectFiles(projectId, path, hideIgnored),
+    queryKey: queryKeys.projectFiles(projectId, path, hideIgnored, rootPath),
     queryFn: () =>
-      kanbanApi.listFiles(projectId, path || undefined, hideIgnored),
+      kanbanApi.listFiles(projectId, path || undefined, hideIgnored, rootPath),
     enabled: !!projectId && enabled,
   })
 }
