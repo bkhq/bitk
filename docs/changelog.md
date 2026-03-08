@@ -1,5 +1,27 @@
 # Changelog
 
+## 2026-03-08 21:00 [progress]
+
+BUG-004：非 dev 模式不再返回 tool-use 和 system-message 条目
+
+修改：
+- `visibility.ts` — isVisibleForMode 非 dev 仅放行 user-message + assistant-message
+- `persistence/queries.ts` — VISIBLE_ENTRIES_CONDITION 改为与 CONVERSATION_MSG_CONDITION 一致
+
+## 2026-03-08 20:30 [progress]
+
+CHAT-003 完成：历史消息分页按会话消息计数
+
+修改：
+- `apps/api/src/engines/issue/persistence/queries.ts` — `getLogsFromDb` 改为两步查询：先查会话消息边界（user-message + assistant-message），再获取范围内所有可见条目。返回类型改为 `PaginatedLogResult { entries, hasMore }`
+- `apps/api/src/engines/issue/queries.ts` — `getLogs` 返回类型同步改为 `PaginatedLogResult`
+- `apps/api/src/engines/issue/engine.ts` — `IssueEngine.getLogs` 签名更新
+- `apps/api/src/routes/issues/logs.ts` — 移除 "fetch limit+1, trim" 逻辑，直接使用 `result.hasMore`
+
+效果：limit=30 表示 30 条用户/助手消息，附带其间所有工具调用。全部 417 测试通过。
+
+关联方案：PLAN-004
+
 ## 2026-03-08 17:30 [progress]
 
 CHAT-001 Phase 4 完成：回归验证 + 代码审查修复

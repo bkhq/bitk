@@ -58,8 +58,13 @@
 - [ ] **AUDIT-026 SSE writeSSE 序列化失败无日志** `P3` - file: `docs/task/AUDIT-026.md`
 - [ ] **AUDIT-027 全局无速率限制** `P3` - file: `docs/task/AUDIT-027.md`
 
+## Chat UI — Pagination
+
+- [x] **CHAT-003 历史消息分页按会话消息计数** `P1` - owner: claude - plan: `PLAN-004` - file: `docs/task/CHAT-003.md`
+
 ## Bug Fix
 
 - [x] **BUG-001 未指定 root 目录时以自身所在目录为 root** `P1` - file: `docs/task/BUG-001.md`
 - [x] **BUG-002 ChatInput 刷新按钮不可用** `P1` - file: `docs/task/BUG-002.md`
 - [x] **BUG-003 升级不要自动下载，只提示新版本** `P1` - file: `docs/task/BUG-003.md`
+- [x] **BUG-004 非 dev 模式不应返回 tool-use 消息** `P1` - owner: claude - file: `docs/task/BUG-004.md`
