@@ -83,7 +83,7 @@ export async function cleanupStaleSessions(): Promise<number> {
 
 // --- App Settings helpers ---
 
-const SETTINGS_CACHE_TTL = 300 // seconds
+const SETTINGS_CACHE_TTL = 3600 // seconds
 
 export async function getAppSetting(key: string): Promise<string | null> {
   return cacheGetOrSet(`app_setting:${key}`, SETTINGS_CACHE_TTL, async () => {
@@ -202,6 +202,54 @@ export async function ensureDefaultFilterRules(): Promise<void> {
       WRITE_FILTER_RULES_KEY,
       JSON.stringify(DEFAULT_FILTER_RULES),
     )
+  }
+}
+
+// --- Server Info ---
+
+const SERVER_NAME_KEY = 'server:name'
+const SERVER_URL_KEY = 'server:url'
+
+export async function getServerName(): Promise<string | null> {
+  return getAppSetting(SERVER_NAME_KEY)
+}
+
+export async function getServerUrl(): Promise<string | null> {
+  return getAppSetting(SERVER_URL_KEY)
+}
+
+export async function setServerName(value: string): Promise<void> {
+  await setAppSetting(SERVER_NAME_KEY, value)
+}
+
+export async function setServerUrl(value: string): Promise<void> {
+  await setAppSetting(SERVER_URL_KEY, value)
+}
+
+export async function deleteAppSetting(key: string): Promise<void> {
+  await db.delete(appSettingsTable).where(eq(appSettingsTable.key, key))
+  await cacheDel(`app_setting:${key}`)
+}
+
+/**
+ * On startup: if DB has no server name/url but env vars are set, migrate them.
+ */
+export async function ensureServerInfoDefaults(): Promise<void> {
+  const envName = process.env.SERVER_NAME?.trim()
+  const envUrl = process.env.SERVER_URL?.trim()
+
+  if (envName) {
+    const existing = await getAppSetting(SERVER_NAME_KEY)
+    if (!existing) {
+      await setAppSetting(SERVER_NAME_KEY, envName)
+    }
+  }
+
+  if (envUrl) {
+    const existing = await getAppSetting(SERVER_URL_KEY)
+    if (!existing) {
+      await setAppSetting(SERVER_URL_KEY, envUrl)
+    }
   }
 }
 

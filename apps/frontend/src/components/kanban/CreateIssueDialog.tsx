@@ -462,19 +462,12 @@ function WorktreeToggle({
   value: boolean
   onChange: (v: boolean) => void
 }) {
-  const { t } = useTranslation()
-
   return (
     <div className="flex items-center gap-2 w-full">
       <Switch checked={value} onCheckedChange={onChange} className="shrink-0" />
-      <span
-        className={`text-sm ${value ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'}`}
-      >
-        <GitBranch
-          className={`inline h-3.5 w-3.5 mr-1 shrink-0 ${value ? 'text-emerald-500' : 'text-muted-foreground'}`}
-        />
-        {value ? t('createIssue.worktreeOn') : t('createIssue.worktreeOff')}
-      </span>
+      <GitBranch
+        className={`h-3.5 w-3.5 shrink-0 ${value ? 'text-emerald-500' : 'text-muted-foreground'}`}
+      />
     </div>
   )
 }

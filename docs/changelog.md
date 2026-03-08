@@ -22,6 +22,61 @@ CHAT-003 完成：历史消息分页按会话消息计数
 
 关联方案：PLAN-004
 
+## 2026-03-08 21:10 [progress]
+
+FEAT-002: 将 SERVER_NAME 和 SERVER_URL 从环境变量迁移到数据库
+
+- `apps/api/src/db/helpers.ts` — 新增 `getServerName/getServerUrl/setServerName/setServerUrl/deleteAppSetting/ensureServerInfoDefaults`
+- `apps/api/src/engines/reconciler.ts` — 启动时调用 `ensureServerInfoDefaults()` 自动迁移 env → DB
+- `apps/api/src/routes/settings/general.ts` — 新增 `GET/PATCH /api/settings/server-info` 端点
+- `apps/api/src/routes/settings/about.ts` — system-info 改为从 DB 读取
+- `apps/api/src/webhooks/dispatcher.ts` — 改为从 DB 读取 SERVER_URL
+- `apps/api/src/routes/issues/create.ts` — 改为从 DB 读取 SERVER_URL
+- `apps/api/src/routes/issues/delete.ts` — 改为从 DB 读取 SERVER_URL
+- `apps/frontend/src/lib/kanban-api.ts` — 新增 `getServerInfo/updateServerInfo` API
+- `apps/frontend/src/hooks/use-kanban.ts` — 新增 `useServerInfo/useUpdateServerInfo` hooks
+- `apps/frontend/src/components/AppSettingsDialog.tsx` — 设置页 General 区新增 server name/url 编辑表单
+- `apps/frontend/src/i18n/{en,zh}.json` — 新增 i18n 键
+
+关联方案：PLAN-004
+
+## 2026-03-08 20:25 [progress]
+
+CHAT-002: Code review 修复
+
+- **[HIGH] messages.pop() 脆弱变异** — 改为 `pendingThinking` 携带变量，thinking 入口延迟推送，flushToolBuffer 消费或独立 flush
+- **[MEDIUM] i18n 硬编码** — StickyTaskPlan 使用 `t('session.taskPlan')`
+- **[MEDIUM] 不稳定 key** — todo list key 从 `item.content` 改为 `idx`（items 不独立重排）
+- **[LOW] 空 todos 守卫** — `latestTaskPlan.todos.length > 0` 防止空状态栏
+
+## 2026-03-08 20:15 [progress]
+
+CHAT-002: Task Plan 状态栏 + ToolGroup "Show N more"
+
+- **Task Plan 状态栏** — 底部紧凑栏（显示 in_progress 项 + 进度），点击向上展开完整列表；SSE 实时更新通过已有 log 管道自动生效
+- **ToolGroup "Show N more"** — 展开时默认显示前 3 项，超出部分折叠为 "Show N more" 按钮
+
+## 2026-03-08 20:10 [progress]
+
+CHAT-002: 聊天 UI 4 项修复
+
+1. **File Read 显示行数** — `ToolItems.tsx` FileToolItem 从 result.content 计算行数，显示 "Read N lines"
+2. **ToolGroup 标题显示 thinking 描述** — `shared/index.ts` 增加 `description` 字段；`use-chat-messages.ts` flush 时吸收前一条 thinking 消息作为描述；`ToolItems.tsx` 优先显示 description
+3. **Agent 工具项渲染** — 新增 `AgentToolItem` 组件，显示 "Agent" + description 标签 + 可折叠 result 内容
+4. **Task Plan 固定底部** — `SessionMessages.tsx` 提取最新 task-plan，sticky bottom 渲染，不再内联显示
+
+Build + 28 前端测试 + lint 通过。
+
+## 2026-03-08 20:05 [progress]
+
+CHAT-002: SessionMessages.tsx 拆分（620 行 → 3 个文件）
+
+- `CodeRenderers.tsx` (~190 行) — stringifyPretty, parseFileToolInput, detectCodeLanguage, ShikiCodeBlock, CodeBlock, ShikiUnifiedDiff, ToolPanel
+- `ToolItems.tsx` (~210 行) — FileToolItem, CommandToolItem, GenericToolItem, ToolGroupMessage
+- `SessionMessages.tsx` (~160 行) — ChatMessageRow + SessionMessages 主导出
+
+纯文件拆分，无逻辑变更。Build + 28 前端测试 + lint 通过。
+
 ## 2026-03-08 17:30 [progress]
 
 CHAT-001 Phase 4 完成：回归验证 + 代码审查修复

@@ -74,6 +74,10 @@ function rebuildMessages(entries: NormalizedLogEntry[]): ChatMessage[] {
 
   const messages: ChatMessage[] = []
   let toolBuffer: ToolGroupItem[] = []
+  // Deferred thinking entry — consumed by the next tool group as its description,
+  // or flushed as a standalone thinking message if no tool calls follow.
+  let pendingThinking: { content: string; entry: NormalizedLogEntry } | null =
+    null
 
   // Build turn → duration map from system-message metadata
   const turnDuration = new Map<number, number>()
@@ -122,7 +126,10 @@ function rebuildMessages(entries: NormalizedLogEntry[]): ChatMessage[] {
     }
   }
 
-  function buildToolGroup(items: ToolGroupItem[]): ToolGroupChatMessage {
+  function buildToolGroup(
+    items: ToolGroupItem[],
+    description?: string,
+  ): ToolGroupChatMessage {
     const stats: Record<string, number> = {}
     for (const item of items) {
       const kind =
@@ -136,7 +143,18 @@ function rebuildMessages(entries: NormalizedLogEntry[]): ChatMessage[] {
       stats,
       count: items.length,
       hiddenCount: 0,
+      description,
     }
+  }
+
+  function flushPendingThinking(): void {
+    if (!pendingThinking) return
+    messages.push({
+      type: 'thinking',
+      id: entryId(pendingThinking.entry, nextId('th')),
+      entry: pendingThinking.entry,
+    } satisfies ThinkingChatMessage)
+    pendingThinking = null
   }
 
   function flushToolBuffer(): void {
@@ -147,10 +165,17 @@ function rebuildMessages(entries: NormalizedLogEntry[]): ChatMessage[] {
       (item) => !isTodoWriteEntry(item.action),
     )
 
+    // Save thinking before task-plan flush so non-todo tools can still use it
+    const savedThinking = pendingThinking
+
     if (todoItems.length > 0) {
       const lastTodo = todoItems[todoItems.length - 1]
       const todos = extractTodos(lastTodo.action)
       if (todos) {
+        if (nonTodoItems.length === 0) {
+          // No other tools to absorb thinking — flush it as standalone
+          flushPendingThinking()
+        }
         messages.push({
           type: 'task-plan',
           id: entryId(lastTodo.action, nextId('tp')),
@@ -162,7 +187,13 @@ function rebuildMessages(entries: NormalizedLogEntry[]): ChatMessage[] {
     }
 
     if (nonTodoItems.length > 0) {
-      messages.push(buildToolGroup(nonTodoItems))
+      // Consume deferred thinking as tool group description
+      const desc = savedThinking?.content
+      pendingThinking = null
+      messages.push(buildToolGroup(nonTodoItems, desc))
+    } else if (pendingThinking) {
+      // No tool items consumed the thinking — flush it as standalone
+      flushPendingThinking()
     }
 
     toolBuffer = []
@@ -197,11 +228,12 @@ function rebuildMessages(entries: NormalizedLogEntry[]): ChatMessage[] {
       continue
     }
 
-    // Non-tool entry → flush pending tool buffer
+    // Non-tool entry → flush pending tool buffer + any unconsumed thinking
     flushToolBuffer()
 
     switch (entry.entryType) {
       case 'user-message': {
+        flushPendingThinking()
         const metaType = entry.metadata?.type as string | undefined
         const attachments = (entry.metadata?.attachments ?? []) as Array<{
           id: string
@@ -236,6 +268,7 @@ function rebuildMessages(entries: NormalizedLogEntry[]): ChatMessage[] {
       }
 
       case 'assistant-message':
+        flushPendingThinking()
         messages.push({
           type: 'assistant',
           id: entryId(entry, nextId('am')),
@@ -245,16 +278,25 @@ function rebuildMessages(entries: NormalizedLogEntry[]): ChatMessage[] {
         break
 
       case 'thinking':
-        messages.push({
-          type: 'thinking',
-          id: entryId(entry, nextId('th')),
-          entry,
-        } satisfies ThinkingChatMessage)
+        // Defer: if the next entries are tool calls, this becomes the tool group
+        // description; otherwise it will be flushed as a standalone thinking message
+        flushPendingThinking()
+        pendingThinking = entry.content
+          ? { content: entry.content, entry }
+          : null
+        if (!pendingThinking) {
+          messages.push({
+            type: 'thinking',
+            id: entryId(entry, nextId('th')),
+            entry,
+          } satisfies ThinkingChatMessage)
+        }
         break
 
       case 'system-message': {
         // Skip command_output entries consumed by command user-messages
         if (consumedOutputIdx.has(i)) break
+        flushPendingThinking()
         messages.push({
           type: 'system',
           id: entryId(entry, nextId('sys')),
@@ -265,6 +307,7 @@ function rebuildMessages(entries: NormalizedLogEntry[]): ChatMessage[] {
       }
 
       case 'error-message':
+        flushPendingThinking()
         messages.push({
           type: 'error',
           id: entryId(entry, nextId('err')),
@@ -282,6 +325,7 @@ function rebuildMessages(entries: NormalizedLogEntry[]): ChatMessage[] {
   }
 
   flushToolBuffer()
+  flushPendingThinking()
   return messages
 }
 

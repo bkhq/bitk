@@ -189,6 +189,7 @@
     "emptyFile": "该文件当前没有可显示的完整内容",
     "truncated": "补丁内容过长，已截断显示",
     "copyPath": "复制文件路径",
+    "openFiles": "打开文件管理器",
     "fileType": {
       "new": "新",
       "deleted": "删",
@@ -225,7 +226,8 @@
       "search": "搜索",
       "webFetch": "获取 URL",
       "taskPlan": "任务计划",
-      "fullCommand": "完整命令"
+      "fullCommand": "完整命令",
+      "showLess": "收起"
     },
     "restart": "重启",
     "restarting": "重启中...",
@@ -281,6 +283,9 @@
     "probing": "正在检测引擎...",
     "workspacePath": "默认工作区路径",
     "workspacePathHint": "创建项目时的默认目录",
+    "serverName": "服务器名称",
+    "serverUrl": "服务器 URL",
+    "saveServerInfo": "保存",
     "browseWorkspace": "浏览工作区目录",
     "defaultEngine": "默认引擎",
     "defaultEngineHint": "创建新任务时默认使用的引擎",

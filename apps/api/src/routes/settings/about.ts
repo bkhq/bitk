@@ -1,5 +1,6 @@
 import { arch, platform } from 'node:os'
 import { Hono } from 'hono'
+import { getServerName, getServerUrl } from '@/db/helpers'
 import { getVersionInfo } from '@/upgrade/service'
 
 const about = new Hono()
@@ -9,6 +10,10 @@ const startedAt = Date.now()
 // GET /api/settings/system-info
 about.get('/system-info', async (c) => {
   const versionInfo = getVersionInfo()
+  const [serverName, serverUrl] = await Promise.all([
+    getServerName(),
+    getServerUrl(),
+  ])
 
   return c.json({
     success: true,
@@ -28,8 +33,8 @@ about.get('/system-info', async (c) => {
         nodeVersion: process.version,
       },
       server: {
-        name: process.env.SERVER_NAME?.trim() || null,
-        url: process.env.SERVER_URL?.trim() || null,
+        name: serverName,
+        url: serverUrl,
       },
       process: {
         pid: process.pid,

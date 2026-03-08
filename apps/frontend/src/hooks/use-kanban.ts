@@ -34,8 +34,19 @@ export const queryKeys = {
     ['projects', projectId, 'issues', 'children', parentId] as const,
   slashCommands: (projectId: string, issueId: string) =>
     ['projects', projectId, 'issues', issueId, 'slash-commands'] as const,
-  projectFiles: (projectId: string, path: string, hideIgnored: boolean) =>
-    ['projects', projectId, 'files', path, { hideIgnored }] as const,
+  projectFiles: (
+    projectId: string,
+    path: string,
+    hideIgnored: boolean,
+    rootPath?: string | null,
+  ) =>
+    [
+      'projects',
+      projectId,
+      'files',
+      path,
+      { hideIgnored, rootPath: rootPath ?? null },
+    ] as const,
   projectProcesses: (projectId: string) =>
     ['projects', projectId, 'processes'] as const,
   projectWorktrees: (projectId: string) =>
@@ -48,6 +59,7 @@ export const queryKeys = {
   systemLogs: () => ['settings', 'systemLogs'] as const,
   cleanupStats: () => ['settings', 'cleanupStats'] as const,
   deletedIssues: () => ['settings', 'deletedIssues'] as const,
+  serverInfo: () => ['settings', 'serverInfo'] as const,
   systemInfo: () => ['settings', 'systemInfo'] as const,
   reviewIssues: () => ['issues', 'review'] as const,
   webhooks: () => ['settings', 'webhooks'] as const,
@@ -520,6 +532,29 @@ export function useSetWorktreeAutoCleanup() {
   })
 }
 
+// --- Server Info hooks ---
+
+export function useServerInfo(enabled = false) {
+  return useQuery({
+    queryKey: queryKeys.serverInfo(),
+    queryFn: () => kanbanApi.getServerInfo(),
+    enabled,
+    staleTime: Infinity,
+  })
+}
+
+export function useUpdateServerInfo() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (data: { name?: string; url?: string }) =>
+      kanbanApi.updateServerInfo(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.serverInfo() })
+      queryClient.invalidateQueries({ queryKey: queryKeys.systemInfo() })
+    },
+  })
+}
+
 // --- System Logs hooks ---
 
 export function useSystemLogs(enabled = false, lines = 200) {
@@ -720,10 +755,11 @@ export function useProjectFiles(
   enabled = true,
 ) {
   const hideIgnored = useFileBrowserStore((s) => s.hideIgnored)
+  const rootPath = useFileBrowserStore((s) => s.rootPath)
   return useQuery({
-    queryKey: queryKeys.projectFiles(projectId, path, hideIgnored),
+    queryKey: queryKeys.projectFiles(projectId, path, hideIgnored, rootPath),
     queryFn: () =>
-      kanbanApi.listFiles(projectId, path || undefined, hideIgnored),
+      kanbanApi.listFiles(projectId, path || undefined, hideIgnored, rootPath),
     enabled: !!projectId && enabled,
   })
 }

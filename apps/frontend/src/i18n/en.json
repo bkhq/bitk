@@ -189,6 +189,7 @@
     "emptyFile": "No file content available",
     "truncated": "Patch output is truncated",
     "copyPath": "Copy file path",
+    "openFiles": "Open file browser",
     "fileType": {
       "new": "New",
       "deleted": "Del",
@@ -225,7 +226,8 @@
       "search": "Search",
       "webFetch": "Fetch URL",
       "taskPlan": "Task Plan",
-      "fullCommand": "Full Command"
+      "fullCommand": "Full Command",
+      "showLess": "Show less"
     },
     "restart": "Restart",
     "restarting": "Restarting...",
@@ -281,6 +283,9 @@
     "probing": "Detecting engines...",
     "workspacePath": "Default Workspace Path",
     "workspacePathHint": "Default directory when creating projects",
+    "serverName": "Server Name",
+    "serverUrl": "Server URL",
+    "saveServerInfo": "Save",
     "browseWorkspace": "Browse workspace directory",
     "defaultEngine": "Default Engine",
     "defaultEngineHint": "Engine used by default when creating new issues",

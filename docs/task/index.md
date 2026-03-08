@@ -9,11 +9,12 @@
 ## Chat UI
 
 - [x] **CHAT-001 聊天界面 UI 优化（对标 Claude Code）** `P1` - owner: claude - file: `docs/task/CHAT-001.md`
-- [ ] **CHAT-002 聊天 UI 代码审查遗留项** `P2` - owner: — - file: `docs/task/CHAT-002.md`
+- [-] **CHAT-002 聊天 UI 代码审查遗留项** `P2` - owner: claude - file: `docs/task/CHAT-002.md`
 
 ## Feature
 
 - [x] **FEAT-001 添加 server_name 和 server_url 环境变量** `P2` - file: `docs/task/FEAT-001.md`
+- [x] **FEAT-002 将 SERVER_NAME 和 SERVER_URL 从环境变量迁移到数据库** `P2` - owner: claude - file: `docs/task/FEAT-002.md`
 
 ## Webhook
 

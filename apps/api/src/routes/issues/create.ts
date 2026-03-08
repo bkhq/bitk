@@ -7,6 +7,7 @@ import {
   findProject,
   getDefaultEngine,
   getEngineDefaultModel,
+  getServerUrl,
 } from '@/db/helpers'
 import { issues as issuesTable } from '@/db/schema'
 import { engineRegistry } from '@/engines/executors'
@@ -157,7 +158,7 @@ create.post(
         model: resolvedModel,
         timestamp: new Date().toISOString(),
       }
-      const serverUrl = process.env.SERVER_URL
+      const serverUrl = await getServerUrl()
       if (serverUrl) {
         webhookPayload.issueUrl = buildIssueUrl(
           serverUrl,

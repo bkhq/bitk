@@ -1,450 +1,30 @@
 import type {
   ChatMessage,
   NormalizedLogEntry,
-  ToolGroupChatMessage,
-  ToolGroupItem,
+  TaskPlanChatMessage,
 } from '@bkd/shared'
-import DOMPurify from 'dompurify'
-import { ChevronRight, FileEdit, FileText, Wrench } from 'lucide-react'
-import { lazy, Suspense, useEffect, useRef, useState } from 'react'
+import {
+  CheckCircle2,
+  ChevronUp,
+  Circle,
+  ListTodo,
+  Loader2,
+} from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useChatMessages } from '@/hooks/use-chat-messages'
-import { useTheme } from '@/hooks/use-theme'
-import { getCommandPreview } from '@/lib/command-preview'
-import { codeToHtml } from '@/lib/shiki'
 import { useViewModeStore } from '@/stores/view-mode-store'
 import { LogEntry } from './LogEntry'
-
-const LazyMultiFileDiff = lazy(() =>
-  import('@pierre/diffs/react').then((m) => ({ default: m.MultiFileDiff })),
-)
-
-// ── Shared UI primitives ─────────────────────────────────
-
-function stringifyPretty(input: unknown): string {
-  if (input == null) return ''
-  if (typeof input === 'string') return input
-  try {
-    return JSON.stringify(input, null, 2)
-  } catch {
-    return String(input)
-  }
-}
-
-interface ParsedFileToolInput {
-  filePath?: string
-  content?: string
-  oldString?: string
-  newString?: string
-  hasOnlyFilePath: boolean
-  raw: string
-}
-
-function parseFileToolInput(input: unknown): ParsedFileToolInput {
-  const raw = stringifyPretty(input)
-  if (!input || typeof input !== 'object') {
-    return { hasOnlyFilePath: false, raw }
-  }
-  const obj = input as Record<string, unknown>
-  const keys = Object.keys(obj)
-  const hasOnlyFilePath = keys.length === 1 && keys[0] === 'file_path'
-  return {
-    filePath: typeof obj.file_path === 'string' ? obj.file_path : undefined,
-    content: typeof obj.content === 'string' ? obj.content : undefined,
-    oldString: typeof obj.old_string === 'string' ? obj.old_string : undefined,
-    newString: typeof obj.new_string === 'string' ? obj.new_string : undefined,
-    hasOnlyFilePath,
-    raw,
-  }
-}
-
-function detectCodeLanguage(filePath?: string): string {
-  if (!filePath) return 'text'
-  const p = filePath.toLowerCase()
-  if (p.endsWith('.json')) return 'json'
-  if (p.endsWith('.ts')) return 'typescript'
-  if (p.endsWith('.tsx')) return 'tsx'
-  if (p.endsWith('.js')) return 'javascript'
-  if (p.endsWith('.jsx')) return 'jsx'
-  if (p.endsWith('.md') || p.endsWith('.markdown')) return 'markdown'
-  if (p.endsWith('.html') || p.endsWith('.htm')) return 'html'
-  if (p.endsWith('.css')) return 'css'
-  if (p.endsWith('.py')) return 'python'
-  if (p.endsWith('.sql')) return 'sql'
-  if (p.endsWith('.yaml') || p.endsWith('.yml')) return 'yaml'
-  if (p.endsWith('.xml')) return 'xml'
-  if (p.endsWith('.go')) return 'go'
-  if (p.endsWith('.rs')) return 'rust'
-  if (p.endsWith('.sh') || p.endsWith('.bash') || p.endsWith('.zsh'))
-    return 'shell'
-  if (p.endsWith('.toml')) return 'toml'
-  if (p.endsWith('.dockerfile') || p.includes('Dockerfile')) return 'dockerfile'
-  return 'text'
-}
-
-function ShikiCodeBlock({
-  content,
-  language = 'text',
-  maxHeightClass,
-}: {
-  content: string
-  language?: string
-  maxHeightClass: string
-}) {
-  const [html, setHtml] = useState<string>('')
-
-  useEffect(() => {
-    let cancelled = false
-    void codeToHtml(content, language).then((h) => {
-      if (!cancelled) setHtml(h)
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [content, language])
-
-  if (!html) {
-    return (
-      <pre
-        className={`code-surface ${maxHeightClass} overflow-auto rounded-md p-2 text-[12px] leading-[1.45] font-mono`}
-      >
-        {content}
-      </pre>
-    )
-  }
-
-  return (
-    <div
-      className={`code-surface shiki-block ${maxHeightClass} overflow-auto rounded-md`}
-      // biome-ignore lint/security/noDangerouslySetInnerHtml: content is sanitized via DOMPurify.sanitize()
-      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(html) }}
-    />
-  )
-}
-
-function CodeBlock({
-  content,
-  language = 'text',
-  collapsible = false,
-}: {
-  content: string
-  language?: string
-  collapsible?: boolean
-}) {
-  const value = content || '(empty)'
-  const maxHeightClass = collapsible ? 'max-h-64' : 'max-h-80'
-  return (
-    <ShikiCodeBlock
-      content={value}
-      language={language}
-      maxHeightClass={maxHeightClass}
-    />
-  )
-}
-
-function ShikiUnifiedDiff({
-  original,
-  modified,
-  filePath,
-}: {
-  original: string
-  modified: string
-  filePath?: string
-}) {
-  const { t } = useTranslation()
-  const { resolved } = useTheme()
-  const themeType = resolved === 'dark' ? 'dark' : 'light'
-  const name = filePath ?? 'file'
-
-  return (
-    <div className="overflow-x-auto rounded-md border border-border/40">
-      <Suspense
-        fallback={
-          <div className="px-2.5 py-2 text-[11px] text-muted-foreground">
-            {t('common.loading')}
-          </div>
-        }
-      >
-        <LazyMultiFileDiff
-          oldFile={{ name, contents: original }}
-          newFile={{ name, contents: modified }}
-          options={{
-            diffStyle: 'unified',
-            diffIndicators: 'bars',
-            expandUnchanged: false,
-            hunkSeparators: 'line-info',
-            disableLineNumbers: false,
-            overflow: 'wrap',
-            theme: {
-              light: 'github-light-default',
-              dark: 'github-dark-default',
-            },
-            themeType,
-            disableFileHeader: true,
-          }}
-        />
-      </Suspense>
-    </div>
-  )
-}
-
-function ToolPanel({
-  summary,
-  children,
-  collapsible = false,
-}: {
-  summary: React.ReactNode
-  children: React.ReactNode
-  collapsible?: boolean
-}) {
-  if (collapsible) {
-    return (
-      <details className="group/panel rounded-lg border border-border/30 bg-muted/10 transition-all duration-200 open:bg-muted/20">
-        <summary className="cursor-pointer list-none px-2.5 py-1.5 transition-colors hover:bg-muted/20">
-          {summary}
-        </summary>
-        <div className="px-2.5 pb-2.5 pt-1.5 border-t border-border/20">
-          {children}
-        </div>
-      </details>
-    )
-  }
-  return (
-    <div className="rounded-lg border border-border/30 bg-muted/10">
-      <div className="px-2.5 py-1.5">{summary}</div>
-      <div className="px-2.5 pb-2.5 pt-1.5 border-t border-border/20">
-        {children}
-      </div>
-    </div>
-  )
-}
-
-// ── Single tool item renderers ───────────────────────────
-
-function FileToolItem({ item }: { item: ToolGroupItem }) {
-  const actionEntry = item.action
-  const tool = actionEntry.toolAction
-  const isEdit = tool?.kind === 'file-edit'
-  const toolName =
-    typeof actionEntry.metadata?.toolName === 'string'
-      ? actionEntry.metadata.toolName
-      : undefined
-  const isWrite = toolName === 'Write'
-  const filePath = tool && 'path' in tool ? tool.path : 'unknown'
-  const codeLanguage = detectCodeLanguage(filePath)
-  const parsed = parseFileToolInput(actionEntry.metadata?.input)
-  const hasContent = parsed.content !== undefined
-  const hasOldString = parsed.oldString !== undefined
-  const hasNewString = parsed.newString !== undefined
-
-  if (!isEdit) {
-    return (
-      <div className="flex items-center gap-2 py-0.5 text-xs text-muted-foreground">
-        <FileText className="h-3 w-3 shrink-0 text-blue-500" />
-        <span className="font-mono truncate">File Read: {filePath}</span>
-      </div>
-    )
-  }
-
-  return (
-    <ToolPanel
-      collapsible
-      summary={
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <FileEdit className="h-3.5 w-3.5 shrink-0 text-amber-500" />
-          <span className="font-mono truncate">
-            {isWrite ? 'File Write' : 'File Edit'}: {filePath}
-          </span>
-        </div>
-      }
-    >
-      <div className="space-y-2">
-        {hasContent ? (
-          <CodeBlock
-            content={parsed.content!}
-            language={codeLanguage}
-            collapsible={false}
-          />
-        ) : null}
-
-        {hasOldString ? (
-          hasNewString ? (
-            <ShikiUnifiedDiff
-              original={parsed.oldString || ''}
-              modified={parsed.newString || ''}
-              filePath={filePath}
-            />
-          ) : (
-            <CodeBlock
-              content={parsed.oldString || ''}
-              language={codeLanguage}
-              collapsible={false}
-            />
-          )
-        ) : null}
-
-        {!hasOldString && hasNewString ? (
-          <CodeBlock
-            content={parsed.newString || ''}
-            language={codeLanguage}
-            collapsible={false}
-          />
-        ) : null}
-
-        {!hasContent &&
-        !hasOldString &&
-        !hasNewString &&
-        !parsed.hasOnlyFilePath ? (
-          <CodeBlock
-            content={parsed.raw || '(empty)'}
-            language="json"
-            collapsible={false}
-          />
-        ) : null}
-      </div>
-    </ToolPanel>
-  )
-}
-
-function CommandToolItem({ item }: { item: ToolGroupItem }) {
-  const { t } = useTranslation()
-  const fullCommand =
-    item.action.toolAction?.kind === 'command-run'
-      ? item.action.toolAction.command
-      : ''
-  const isTruncatedInTitle = getCommandPreview(fullCommand, 90).isTruncated
-  const showFullCommand = isTruncatedInTitle || fullCommand.includes('\n')
-
-  return (
-    <ToolPanel
-      collapsible
-      summary={<LogEntry entry={item.action} inToolGroup />}
-    >
-      <div className="space-y-2">
-        {showFullCommand ? (
-          <div className="rounded-md border border-border/30 bg-muted/10 p-2 space-y-1">
-            <div className="px-0.5 text-[11px] text-muted-foreground">
-              {t('session.tool.fullCommand')}
-            </div>
-            <CodeBlock
-              content={fullCommand}
-              language="shell"
-              collapsible={false}
-            />
-          </div>
-        ) : null}
-        <CodeBlock
-          content={item.result?.content || item.action.content || '(empty)'}
-          collapsible={false}
-        />
-      </div>
-    </ToolPanel>
-  )
-}
-
-function GenericToolItem({ item }: { item: ToolGroupItem }) {
-  return (
-    <ToolPanel
-      collapsible
-      summary={<LogEntry entry={item.action} inToolGroup />}
-    >
-      <CodeBlock
-        content={item.result?.content || item.action.content || '(empty)'}
-        collapsible={false}
-      />
-    </ToolPanel>
-  )
-}
-
-// ── ToolGroupMessage — collapsible group of tool calls ───
-
-function getGroupSummaryLabel(
-  stats: Record<string, number>,
-  count: number,
-  t: (key: string) => string,
-): string {
-  const parts: string[] = []
-  if (stats['file-read'])
-    parts.push(`${stats['file-read']} ${t('session.tool.fileRead')}`)
-  if (stats['file-edit'])
-    parts.push(`${stats['file-edit']} ${t('session.tool.fileEdit')}`)
-  if (stats['command-run'])
-    parts.push(`${stats['command-run']} ${t('session.tool.commandRun')}`)
-  if (stats.search) parts.push(`${stats.search} ${t('session.tool.search')}`)
-  if (stats['web-fetch'])
-    parts.push(`${stats['web-fetch']} ${t('session.tool.webFetch')}`)
-  const otherCount =
-    count - Object.values(stats).reduce((a, b) => a + b, 0) + (stats.other ?? 0)
-  if (otherCount > 0) parts.push(`${otherCount} other`)
-  return parts.length > 0 ? parts.join(', ') : `${count} tool calls`
-}
-
-function ToolGroupMessage({ message }: { message: ToolGroupChatMessage }) {
-  const { t } = useTranslation()
-  const [expanded, setExpanded] = useState(false)
-  const { items, stats, count } = message
-  const summaryLabel = getGroupSummaryLabel(stats, count, t)
-
-  return (
-    <div className="py-0.5 animate-message-enter">
-      <div className="rounded-lg border border-border/30 bg-muted/10">
-        <button
-          type="button"
-          onClick={() => setExpanded(!expanded)}
-          className="flex w-full items-center gap-2 px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted/20"
-        >
-          <ChevronRight
-            className={`h-3 w-3 shrink-0 transition-transform duration-200 ${expanded ? 'rotate-90' : ''}`}
-          />
-          <Wrench className="h-3 w-3 shrink-0" />
-          <span className="truncate">{summaryLabel}</span>
-          <span className="ml-auto text-[10px] text-muted-foreground/50">
-            {count}
-          </span>
-        </button>
-        {expanded ? (
-          <div className="space-y-1 px-2.5 pb-2.5 pt-1 border-t border-border/20">
-            {items.map((item, idx) => {
-              const kind = item.action.toolAction?.kind
-              if (kind === 'file-edit' || kind === 'file-read') {
-                return (
-                  <FileToolItem
-                    key={item.action.messageId ?? `ti-${idx}`}
-                    item={item}
-                  />
-                )
-              }
-              if (kind === 'command-run') {
-                return (
-                  <CommandToolItem
-                    key={item.action.messageId ?? `ti-${idx}`}
-                    item={item}
-                  />
-                )
-              }
-              return (
-                <GenericToolItem
-                  key={item.action.messageId ?? `ti-${idx}`}
-                  item={item}
-                />
-              )
-            })}
-          </div>
-        ) : null}
-      </div>
-    </div>
-  )
-}
+import { ToolGroupMessage } from './ToolItems'
 
 // ── ChatMessage renderer ─────────────────────────────────
 
 function ChatMessageRow({ message }: { message: ChatMessage }) {
   switch (message.type) {
     case 'user': {
-      // Command user-messages get special rendering
       if (message.status === 'command') {
         return (
-          <div key={message.id} className="group py-1.5 animate-message-enter">
+          <div className="group py-1.5 animate-message-enter">
             <details className="rounded-lg border border-border/30 bg-muted/10 transition-all duration-200 open:bg-muted/20">
               <summary className="cursor-pointer list-none px-3 py-2 text-xs text-muted-foreground hover:bg-muted/20 transition-colors">
                 <code className="font-mono text-foreground/70">
@@ -462,36 +42,99 @@ function ChatMessageRow({ message }: { message: ChatMessage }) {
           </div>
         )
       }
-      return <LogEntry key={message.id} entry={message.entry} />
+      return <LogEntry entry={message.entry} />
     }
 
     case 'assistant':
-      return (
-        <LogEntry
-          key={message.id}
-          entry={message.entry}
-          durationMs={message.durationMs}
-        />
-      )
+      return <LogEntry entry={message.entry} durationMs={message.durationMs} />
 
     case 'tool-group':
-      return <ToolGroupMessage key={message.id} message={message} />
+      return <ToolGroupMessage message={message} />
 
     case 'task-plan':
-      return <LogEntry key={message.id} entry={message.entry} />
+      return null
 
     case 'thinking':
-      return <LogEntry key={message.id} entry={message.entry} />
-
     case 'system':
-      return <LogEntry key={message.id} entry={message.entry} />
-
     case 'error':
-      return <LogEntry key={message.id} entry={message.entry} />
+      return <LogEntry entry={message.entry} />
 
     default:
       return null
   }
+}
+
+// ── Sticky Task Plan Status Bar ──────────────────────────
+
+function StickyTaskPlan({ message }: { message: TaskPlanChatMessage }) {
+  const { t } = useTranslation()
+  const [expanded, setExpanded] = useState(false)
+  const { todos, completedCount } = message
+
+  const inProgressItem = todos.find((it) => it.status === 'in_progress')
+  const statusText = inProgressItem
+    ? inProgressItem.activeForm || inProgressItem.content
+    : null
+
+  return (
+    <div className="sticky bottom-0 z-10 animate-message-enter">
+      <div className="rounded-lg border border-border/40 bg-background/95 backdrop-blur-sm shadow-sm">
+        {/* Expandable detail panel — opens upward */}
+        {expanded ? (
+          <div className="px-3 pt-2 pb-1 space-y-0.5 border-b border-border/20">
+            {todos.map((item, idx) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: todos do not reorder independently within a plan snapshot; content is not unique
+              <div key={idx} className="flex items-start gap-1.5 text-xs">
+                {item.status === 'completed' ? (
+                  <CheckCircle2 className="h-3 w-3 shrink-0 text-emerald-500 mt-0.5" />
+                ) : item.status === 'in_progress' ? (
+                  <Loader2 className="h-3 w-3 shrink-0 text-blue-500 animate-spin mt-0.5" />
+                ) : (
+                  <Circle className="h-3 w-3 shrink-0 text-muted-foreground/40 mt-0.5" />
+                )}
+                <span
+                  className={
+                    item.status === 'completed'
+                      ? 'text-muted-foreground/60 line-through'
+                      : item.status === 'in_progress'
+                        ? 'text-blue-600 dark:text-blue-400'
+                        : ''
+                  }
+                >
+                  {item.status === 'in_progress'
+                    ? item.activeForm || item.content
+                    : item.content}
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : null}
+
+        {/* Compact status bar */}
+        <button
+          type="button"
+          onClick={() => setExpanded(!expanded)}
+          className="flex w-full items-center gap-2 px-3 py-2 text-xs transition-colors hover:bg-muted/20"
+        >
+          <ListTodo className="h-3.5 w-3.5 shrink-0 text-indigo-500" />
+          <span className="font-medium text-muted-foreground">
+            {t('session.tool.taskPlan')}
+          </span>
+          <span className="text-muted-foreground/50">
+            ({completedCount}/{todos.length})
+          </span>
+          {statusText ? (
+            <span className="truncate text-blue-600 dark:text-blue-400">
+              {statusText}
+            </span>
+          ) : null}
+          <ChevronUp
+            className={`ml-auto h-3 w-3 shrink-0 text-muted-foreground/50 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}
+          />
+        </button>
+      </div>
+    </div>
+  )
 }
 
 // ── SessionMessages (main export) ────────────────────────
@@ -525,7 +168,16 @@ export function SessionMessages({
   // Transform flat entries → grouped ChatMessage[]
   const { messages, pendingMessages } = useChatMessages(logs)
 
-  // Auto-scroll to bottom on new messages appended at the end.
+  const latestTaskPlan = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].type === 'task-plan') {
+        return messages[i] as TaskPlanChatMessage
+      }
+    }
+    return null
+  }, [messages])
+
+  // Auto-scroll to bottom on new messages
   const nearBottomRef = useRef(true)
   useEffect(() => {
     const el = scrollRef?.current
@@ -538,7 +190,6 @@ export function SessionMessages({
     return () => el.removeEventListener('scroll', handler)
   }, [scrollRef])
 
-  // Scroll to bottom on initial load
   const initialScrollDone = useRef(false)
   useEffect(() => {
     if (initialScrollDone.current || messages.length === 0) return
@@ -640,6 +291,9 @@ export function SessionMessages({
             </div>
           ))}
         </div>
+      ) : null}
+      {latestTaskPlan && latestTaskPlan.todos.length > 0 ? (
+        <StickyTaskPlan message={latestTaskPlan} />
       ) : null}
     </div>
   )

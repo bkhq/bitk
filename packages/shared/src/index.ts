@@ -155,6 +155,8 @@ export interface ToolGroupChatMessage {
   count: number
   /** Number of operations hidden by write filter rules */
   hiddenCount: number
+  /** Thinking/description text absorbed from the preceding thinking entry */
+  description?: string
 }
 
 export interface TaskPlanChatMessage {
