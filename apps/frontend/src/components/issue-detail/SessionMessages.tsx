@@ -334,7 +334,7 @@ function CommandToolItem({ item }: { item: ToolGroupItem }) {
           </div>
         ) : null}
         <CodeBlock
-          content={item.result?.content || '(empty)'}
+          content={item.result?.content || item.action.content || '(empty)'}
           collapsible={false}
         />
       </div>
@@ -349,7 +349,7 @@ function GenericToolItem({ item }: { item: ToolGroupItem }) {
       summary={<LogEntry entry={item.action} inToolGroup />}
     >
       <CodeBlock
-        content={item.result?.content || '(empty)'}
+        content={item.result?.content || item.action.content || '(empty)'}
         collapsible={false}
       />
     </ToolPanel>
