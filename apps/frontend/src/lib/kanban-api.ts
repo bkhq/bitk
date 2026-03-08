@@ -105,6 +105,12 @@ export const kanbanApi = {
     del<{ issueId: string }>(`/api/projects/${projectId}/worktrees/${issueId}`),
 
   // Issues
+  getReviewIssues: () =>
+    get<
+      Array<
+        Issue & { projectName: string; projectAlias: string }
+      >
+    >('/api/issues/review'),
   getIssues: (projectId: string) =>
     get<Issue[]>(`/api/projects/${projectId}/issues`),
   getChildIssues: (projectId: string, parentId: string) =>

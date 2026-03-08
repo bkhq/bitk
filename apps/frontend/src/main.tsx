@@ -31,6 +31,7 @@ eventBus.onConnectionChange((connected) => {
 // Invalidate issue queries when any issue status changes via SSE
 eventBus.onIssueUpdated(() => {
   queryClient.invalidateQueries({ queryKey: ['projects'] })
+  queryClient.invalidateQueries({ queryKey: ['issues', 'review'] })
 })
 // Debounced invalidation of changes queries on any issue activity (log/state/done)
 {
@@ -51,6 +52,7 @@ eventBus.onIssueUpdated(() => {
 const HomePage = lazy(() => import('./pages/HomePage'))
 const KanbanPage = lazy(() => import('./pages/KanbanPage'))
 const IssueDetailPage = lazy(() => import('./pages/IssueDetailPage'))
+const ReviewPage = lazy(() => import('./pages/ReviewPage'))
 const TerminalPage = lazy(() => import('./pages/TerminalPage'))
 const LazyTerminalDrawer = lazy(() =>
   import('./components/terminal/TerminalDrawer').then((m) => ({
@@ -175,6 +177,22 @@ if (!rootElement.innerHTML) {
                   element={
                     <ErrorBoundary>
                       <IssueDetailPage />
+                    </ErrorBoundary>
+                  }
+                />
+                <Route
+                  path="/review"
+                  element={
+                    <ErrorBoundary>
+                      <ReviewPage />
+                    </ErrorBoundary>
+                  }
+                />
+                <Route
+                  path="/review/:projectAlias/:issueId"
+                  element={
+                    <ErrorBoundary>
+                      <ReviewPage />
                     </ErrorBoundary>
                   }
                 />

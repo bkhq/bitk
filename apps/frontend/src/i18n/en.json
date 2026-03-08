@@ -259,6 +259,7 @@
     "switchView": "Switch view mode",
     "kanban": "Kanban",
     "list": "List",
+    "review": "Review",
     "files": "Files"
   },
   "settings": {
@@ -354,6 +355,11 @@
     "title": "Something went wrong",
     "description": "An unexpected error occurred. Please try reloading the page.",
     "reload": "Reload page"
+  },
+  "review": {
+    "title": "Review",
+    "empty": "No issues pending review",
+    "selectToStart": "Select an issue to review"
   },
   "statusName": {
     "Todo": "Todo",

@@ -45,12 +45,20 @@ export const queryKeys = {
   cleanupStats: () => ['settings', 'cleanupStats'] as const,
   deletedIssues: () => ['settings', 'deletedIssues'] as const,
   systemInfo: () => ['settings', 'systemInfo'] as const,
+  reviewIssues: () => ['issues', 'review'] as const,
 }
 
 export function useProjects() {
   return useQuery({
     queryKey: queryKeys.projects(),
     queryFn: () => kanbanApi.getProjects(),
+  })
+}
+
+export function useReviewIssues() {
+  return useQuery({
+    queryKey: queryKeys.reviewIssues(),
+    queryFn: () => kanbanApi.getReviewIssues(),
   })
 }
 

@@ -1,22 +1,17 @@
 import {
   Activity,
   FolderOpen,
-  LayoutGrid,
-  List,
   Plus,
   Search,
   Settings,
 } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useNavigate } from 'react-router-dom'
 import { ProjectSettingsDialog } from '@/components/ProjectSettingsDialog'
 import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
 import { useFileBrowserStore } from '@/stores/file-browser-store'
 import { usePanelStore } from '@/stores/panel-store'
 import { useProcessManagerStore } from '@/stores/process-manager-store'
-import { useViewModeStore } from '@/stores/view-mode-store'
 import type { Project } from '@/types/kanban'
 
 export function KanbanHeader({
@@ -35,13 +30,10 @@ export function KanbanHeader({
   mobileNav?: React.ReactNode
 }) {
   const { t } = useTranslation()
-  const navigate = useNavigate()
   const openCreateDialog = usePanelStore((s) => s.openCreateDialog)
-  const { mode, setMode } = useViewModeStore()
   const toggleFileBrowser = useFileBrowserStore((s) => s.toggle)
   const toggleProcessManager = useProcessManagerStore((s) => s.toggle)
   const [showSettings, setShowSettings] = useState(false)
-  const isListView = mode === 'list'
 
   return (
     <div className="shrink-0 border-b border-border bg-card">
@@ -87,42 +79,6 @@ export function KanbanHeader({
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          {/* View mode toggle */}
-          <div className="flex items-center rounded-md border border-border bg-muted/30 p-0.5">
-            <button
-              type="button"
-              onClick={() => {
-                setMode('kanban')
-                void navigate(`/projects/${project.alias}`)
-              }}
-              className={cn(
-                'rounded-sm px-2 py-1 text-xs transition-colors',
-                !isListView
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground',
-              )}
-              aria-label={t('viewMode.kanban')}
-            >
-              <LayoutGrid className="h-3.5 w-3.5" />
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setMode('list')
-                void navigate(`/projects/${project.alias}/issues`)
-              }}
-              className={cn(
-                'rounded-sm px-2 py-1 text-xs transition-colors',
-                isListView
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground',
-              )}
-              aria-label={t('viewMode.list')}
-            >
-              <List className="h-3.5 w-3.5" />
-            </button>
-          </div>
-
           {/* Search — hidden on mobile */}
           <div className="hidden md:flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1.5">
             <Search className="h-3.5 w-3.5 text-muted-foreground" />
