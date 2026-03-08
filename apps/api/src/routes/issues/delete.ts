@@ -2,10 +2,14 @@ import { and, eq, inArray } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { cacheDel, cacheDelByPrefix } from '@/cache'
 import { db } from '@/db'
-import { findProject } from '@/db/helpers'
+import { findProject, getServerUrl } from '@/db/helpers'
 import { issues as issuesTable } from '@/db/schema'
 import { issueEngine } from '@/engines/issue'
 import { logger } from '@/logger'
+import {
+  buildIssueUrl,
+  dispatch as webhookDispatch,
+} from '@/webhooks/dispatcher'
 
 const del = new Hono()
 
@@ -88,6 +92,21 @@ del.delete('/:id', async (c) => {
   await cacheDelByPrefix(`childCounts:${project.id}`)
 
   logger.info({ projectId: project.id, issueId }, 'issue_deleted')
+
+  const webhookPayload: Record<string, unknown> = {
+    event: 'issue.deleted',
+    issueId,
+    issueNumber: existing.issueNumber,
+    projectId: project.id,
+    projectName: project.name,
+    title: existing.title,
+    timestamp: new Date().toISOString(),
+  }
+  const serverUrl = await getServerUrl()
+  if (serverUrl) {
+    webhookPayload.issueUrl = buildIssueUrl(serverUrl, project.id, issueId)
+  }
+  void webhookDispatch('issue.deleted', webhookPayload)
 
   return c.json({ success: true, data: { id: issueId } })
 })

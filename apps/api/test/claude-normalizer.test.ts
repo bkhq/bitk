@@ -1,27 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { ClaudeLogNormalizer } from '@/engines/executors/claude'
 import type { NormalizedLogEntry } from '@/engines/types'
-import type { WriteFilterRule } from '@/engines/write-filter'
-
-const READ_RULE: WriteFilterRule = {
-  id: 'read',
-  type: 'tool-name',
-  match: 'Read',
-  enabled: true,
-}
-const GLOB_RULE: WriteFilterRule = {
-  id: 'glob',
-  type: 'tool-name',
-  match: 'Glob',
-  enabled: true,
-}
-const GREP_RULE: WriteFilterRule = {
-  id: 'grep',
-  type: 'tool-name',
-  match: 'Grep',
-  enabled: true,
-}
-const ALL_RULES: WriteFilterRule[] = [READ_RULE, GLOB_RULE, GREP_RULE]
 
 function line(obj: Record<string, unknown>): string {
   return JSON.stringify(obj)
@@ -349,11 +328,12 @@ describe('ClaudeLogNormalizer', () => {
     })
   })
 
-  describe('filter Read — standalone tool_use returns null', () => {
-    const normalizer = new ClaudeLogNormalizer([READ_RULE])
+  describe('Read/Glob/Grep tool_use entries are preserved (no filtering)', () => {
+    const normalizer = new ClaudeLogNormalizer()
 
-    test('standalone Read tool_use is filtered', () => {
-      const result = normalizer.parse(
+    test('standalone Read tool_use is preserved', () => {
+      const entries = parseAll(
+        normalizer,
         line({
           type: 'tool_use',
           name: 'Read',
@@ -361,10 +341,12 @@ describe('ClaudeLogNormalizer', () => {
           input: { file_path: '/bar' },
         }),
       )
-      expect(result).toBeNull()
+      expect(entries).toHaveLength(1)
+      expect(entries[0]!.entryType).toBe('tool-use')
+      expect(entries[0]!.toolDetail?.toolName).toBe('Read')
     })
 
-    test('standalone Bash tool_use is NOT filtered', () => {
+    test('standalone Bash tool_use is preserved', () => {
       const entries = parseAll(
         normalizer,
         line({
@@ -379,10 +361,10 @@ describe('ClaudeLogNormalizer', () => {
     })
   })
 
-  describe('filter Read — assistant mixed message preserves text, strips tool_use', () => {
-    const normalizer = new ClaudeLogNormalizer([READ_RULE])
+  describe('assistant mixed message preserves all tool_use entries', () => {
+    const normalizer = new ClaudeLogNormalizer()
 
-    test('text preserved, Read tool_use removed', () => {
+    test('text + Read tool_use both preserved', () => {
       const entries = parseAll(
         normalizer,
         line({
@@ -401,13 +383,16 @@ describe('ClaudeLogNormalizer', () => {
           },
         }),
       )
-      expect(entries).toHaveLength(1)
+      expect(entries).toHaveLength(2)
       expect(entries[0]!.entryType).toBe('assistant-message')
       expect(entries[0]!.content).toBe('Let me check')
+      expect(entries[1]!.entryType).toBe('tool-use')
+      expect(entries[1]!.toolDetail?.toolName).toBe('Read')
     })
 
-    test('all tool_use filtered + no text → null', () => {
-      const result = normalizer.parse(
+    test('Read-only assistant message produces tool-use entry', () => {
+      const entries = parseAll(
+        normalizer,
         line({
           type: 'assistant',
           message: {
@@ -423,10 +408,12 @@ describe('ClaudeLogNormalizer', () => {
           },
         }),
       )
-      expect(result).toBeNull()
+      expect(entries).toHaveLength(1)
+      expect(entries[0]!.entryType).toBe('tool-use')
+      expect(entries[0]!.toolDetail?.toolName).toBe('Read')
     })
 
-    test('mixed: one filtered, one kept', () => {
+    test('mixed Read + Edit: both preserved', () => {
       const entries = parseAll(
         normalizer,
         line({
@@ -450,19 +437,18 @@ describe('ClaudeLogNormalizer', () => {
           },
         }),
       )
-      expect(entries).toHaveLength(1)
-      expect(entries[0]!.entryType).toBe('tool-use')
-      // Content now shows the file path
-      expect(entries[0]!.content).toBe('/b')
-      expect(entries[0]!.toolDetail?.toolName).toBe('Edit')
+      expect(entries).toHaveLength(2)
+      expect(entries[0]!.toolDetail?.toolName).toBe('Read')
+      expect(entries[1]!.toolDetail?.toolName).toBe('Edit')
+      expect(entries[1]!.content).toBe('/b')
     })
   })
 
-  describe('tool_result correlation filtering', () => {
-    test('tool_result for filtered Read returns null', () => {
-      const normalizer = new ClaudeLogNormalizer([READ_RULE])
+  describe('tool_result correlation — all results preserved', () => {
+    test('tool_result for Read is preserved', () => {
+      const normalizer = new ClaudeLogNormalizer()
 
-      // First, filter the tool_use
+      // Parse the tool_use first (registers in toolMap)
       normalizer.parse(
         line({
           type: 'tool_use',
@@ -472,21 +458,23 @@ describe('ClaudeLogNormalizer', () => {
         }),
       )
 
-      // Now the tool_result should also be filtered
-      const result = normalizer.parse(
+      // tool_result is now also preserved
+      const entries = parseAll(
+        normalizer,
         line({
           type: 'tool_result',
           tool_use_id: 'tu_corr1',
           content: 'file contents',
         }),
       )
-      expect(result).toBeNull()
+      expect(entries).toHaveLength(1)
+      expect(entries[0]!.content).toBe('file contents')
+      expect(entries[0]!.metadata?.toolName).toBe('Read')
     })
 
-    test('tool_result for non-filtered tool passes through', () => {
-      const normalizer = new ClaudeLogNormalizer([READ_RULE])
+    test('tool_result for Bash is preserved', () => {
+      const normalizer = new ClaudeLogNormalizer()
 
-      // Bash is not filtered
       normalizer.parse(
         line({
           type: 'tool_use',
@@ -508,10 +496,10 @@ describe('ClaudeLogNormalizer', () => {
       expect(entries[0]!.content).toBe('output')
     })
 
-    test('user message with tool_result blocks — filtered ones removed', () => {
-      const normalizer = new ClaudeLogNormalizer([READ_RULE])
+    test('user message with tool_result blocks — all preserved', () => {
+      const normalizer = new ClaudeLogNormalizer()
 
-      // Filter a Read tool_use (in assistant message)
+      // Parse assistant message with Read + Edit tool_use
       normalizer.parse(
         line({
           type: 'assistant',
@@ -535,7 +523,7 @@ describe('ClaudeLogNormalizer', () => {
         }),
       )
 
-      // User message with two tool_results
+      // User message with two tool_results — both preserved
       const entries = parseAll(
         normalizer,
         line({
@@ -556,14 +544,14 @@ describe('ClaudeLogNormalizer', () => {
           },
         }),
       )
-      expect(entries).toHaveLength(1)
-      expect(entries[0]!.content).toBe('edit result')
+      expect(entries).toHaveLength(2)
+      expect(entries[0]!.content).toBe('read result')
+      expect(entries[1]!.content).toBe('edit result')
     })
 
-    test('user message with all tool_results filtered → null', () => {
-      const normalizer = new ClaudeLogNormalizer(ALL_RULES)
+    test('user message with Read + Glob tool_results — all preserved', () => {
+      const normalizer = new ClaudeLogNormalizer()
 
-      // Filter Read and Glob
       normalizer.parse(
         line({
           type: 'assistant',
@@ -577,7 +565,8 @@ describe('ClaudeLogNormalizer', () => {
         }),
       )
 
-      const result = normalizer.parse(
+      const entries = parseAll(
+        normalizer,
         line({
           type: 'user',
           message: {
@@ -588,12 +577,14 @@ describe('ClaudeLogNormalizer', () => {
           },
         }),
       )
-      expect(result).toBeNull()
+      expect(entries).toHaveLength(2)
+      expect(entries[0]!.content).toBe('a')
+      expect(entries[1]!.content).toBe('b')
     })
   })
 
-  describe('non-matching tools pass through with concise content', () => {
-    const normalizer = new ClaudeLogNormalizer(ALL_RULES)
+  describe('tools pass through with concise content', () => {
+    const normalizer = new ClaudeLogNormalizer()
 
     test('Edit shows file path', () => {
       const entries = parseAll(
@@ -792,26 +783,29 @@ describe('ClaudeLogNormalizer', () => {
     })
   })
 
-  describe('filteredToolCallIds cleanup', () => {
-    test('id is removed from set after matching tool_result', () => {
-      const normalizer = new ClaudeLogNormalizer([READ_RULE])
+  describe('toolMap cleanup after tool_result', () => {
+    test('toolMap entry is removed after matching tool_result', () => {
+      const normalizer = new ClaudeLogNormalizer()
 
-      // Filter the tool_use
+      // Parse tool_use (registers in toolMap)
       normalizer.parse(
         line({ type: 'tool_use', name: 'Read', id: 'tu_clean1', input: {} }),
       )
 
-      // First result is filtered and cleans up the id
-      normalizer.parse(
+      // First result consumes the toolMap entry
+      const first = parseAll(
+        normalizer,
         line({
           type: 'tool_result',
           tool_use_id: 'tu_clean1',
           content: 'data',
         }),
       )
+      expect(first).toHaveLength(1)
+      expect(first[0]!.metadata?.toolName).toBe('Read')
 
-      // Second result with same id should NOT be filtered (id was cleaned up)
-      const entries = parseAll(
+      // Second result with same id — no toolMap entry, so toolName is undefined
+      const second = parseAll(
         normalizer,
         line({
           type: 'tool_result',
@@ -819,8 +813,9 @@ describe('ClaudeLogNormalizer', () => {
           content: 'duplicate',
         }),
       )
-      expect(entries).toHaveLength(1)
-      expect(entries[0]!.content).toBe('duplicate')
+      expect(second).toHaveLength(1)
+      expect(second[0]!.content).toBe('duplicate')
+      expect(second[0]!.metadata?.toolName).toBeUndefined()
     })
   })
 

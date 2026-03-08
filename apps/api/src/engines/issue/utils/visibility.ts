@@ -15,23 +15,11 @@ export function isVisibleForMode(
   // Meta-turn entries (auto-title etc.) are always hidden
   if (entry.metadata?.type === 'system') return false
 
-  // User & assistant messages are always visible
-  if (
+  // Non-dev mode: only user and assistant messages are visible
+  return (
     entry.entryType === 'user-message' ||
     entry.entryType === 'assistant-message'
   )
-    return true
-
-  // Tool-use entries are only visible in dev mode
-  if (entry.entryType === 'tool-use') return false
-
-  // System messages — only command output and compact boundary
-  if (entry.entryType === 'system-message') {
-    const subtype = entry.metadata?.subtype
-    return subtype === 'command_output' || subtype === 'compact_boundary'
-  }
-
-  return false
 }
 
 // ---------- Dev mode cache ----------

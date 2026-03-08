@@ -73,6 +73,8 @@ export function ChatInput({
   agentCommands = [],
   pluginCommands = [],
   onRefreshLogs,
+  pendingEditContent,
+  onPendingEditConsumed,
 }: {
   projectId?: string
   issueId?: string
@@ -93,6 +95,8 @@ export function ChatInput({
   agentCommands?: string[]
   pluginCommands?: Array<{ name: string; path: string }>
   onRefreshLogs?: () => void
+  pendingEditContent?: string | null
+  onPendingEditConsumed?: () => void
 }) {
   const { t } = useTranslation()
   const draftKey = issueId ? `bkd:draft:${issueId}` : null
@@ -147,6 +151,15 @@ export function ChatInput({
       /* quota exceeded — ignore */
     }
   }, [draftKey, input])
+  // Fill input from pending message edit (recall)
+  useEffect(() => {
+    if (pendingEditContent) {
+      setInput(pendingEditContent)
+      textareaRef.current?.focus()
+      onPendingEditConsumed?.()
+    }
+  }, [pendingEditContent, onPendingEditConsumed])
+
   const [sendError, setSendError] = useState<string | null>(null)
   const [attachedFiles, setAttachedFiles] = useState<File[]>([])
   const [isDragOver, setIsDragOver] = useState(false)

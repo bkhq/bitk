@@ -4,6 +4,7 @@ import type { NormalizedLogEntry, SessionStatus } from '@/types/kanban'
 export interface IssueEventHandler {
   onLog: (entry: NormalizedLogEntry) => void
   onLogUpdated: (entry: NormalizedLogEntry) => void
+  onLogRemoved: (messageIds: string[]) => void
   onState: (data: { executionId: string; state: SessionStatus }) => void
   onDone: (data: { finalStatus: SessionStatus }) => void
 }
@@ -72,6 +73,19 @@ class EventBus {
           entry: NormalizedLogEntry
         }
         this.dispatch(data.issueId, (h) => h.onLogUpdated(data.entry))
+        this.notifyActivity(data.issueId)
+      } catch {
+        /* ignore parse errors */
+      }
+    })
+
+    es.addEventListener('log-removed', (e) => {
+      try {
+        const data = JSON.parse(e.data) as {
+          issueId: string
+          messageIds: string[]
+        }
+        this.dispatch(data.issueId, (h) => h.onLogRemoved(data.messageIds))
         this.notifyActivity(data.issueId)
       } catch {
         /* ignore parse errors */

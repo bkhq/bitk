@@ -20,6 +20,7 @@ import {
   useSlashCommands,
   useUpdateIssue,
 } from '@/hooks/use-kanban'
+import { kanbanApi } from '@/lib/kanban-api'
 import { STATUS_MAP } from '@/lib/statuses'
 import type { Issue, NormalizedLogEntry } from '@/types/kanban'
 import { ChatInput } from './ChatInput'
@@ -81,6 +82,7 @@ export function useSessionState(
     isLoadingOlder,
     loadOlderLogs,
     refreshLogs,
+    removeEntries,
     appendServerMessage,
   } = useIssueStream({
     projectId,
@@ -121,6 +123,7 @@ export function useSessionState(
     isLoadingOlder,
     loadOlderLogs,
     refreshLogs,
+    removeEntries,
     appendServerMessage,
   }
 }
@@ -153,6 +156,9 @@ export function ChatBody({
   const deleteIssueMutation = useDeleteIssue(projectId)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [isCancelling, setIsCancelling] = useState(false)
+  const [pendingEditContent, setPendingEditContent] = useState<string | null>(
+    null,
+  )
 
   const handleDelete = useCallback(() => {
     setDeleteDialogOpen(true)
@@ -187,8 +193,19 @@ export function ChatBody({
     isLoadingOlder,
     loadOlderLogs,
     refreshLogs,
+    removeEntries,
     appendServerMessage,
   } = useSessionState(projectId, issueId, issue)
+
+  const handleEditPending = useCallback(async () => {
+    try {
+      const result = await kanbanApi.deletePendingMessage(projectId, issueId)
+      setPendingEditContent(result.content)
+      removeEntries([result.id])
+    } catch {
+      /* ignore — pending may have been consumed already */
+    }
+  }, [projectId, issueId, removeEntries])
 
   // Reset cancelling state when the session settles or a new turn starts.
   // Without the sessionStatus check, a follow-up that keeps isThinking=true
@@ -279,6 +296,7 @@ export function ChatBody({
                 hasOlderLogs={hasOlderLogs}
                 isLoadingOlder={isLoadingOlder}
                 onLoadOlder={loadOlderLogs}
+                onEditPending={handleEditPending}
               />
             </Suspense>
           </div>
@@ -338,6 +356,8 @@ export function ChatBody({
         onMessageSent={(messageId, prompt, metadata) => {
           appendServerMessage(messageId, prompt, metadata)
         }}
+        pendingEditContent={pendingEditContent}
+        onPendingEditConsumed={() => setPendingEditContent(null)}
       />
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

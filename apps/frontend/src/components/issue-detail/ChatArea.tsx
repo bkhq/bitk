@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { useAutoTitleIssue, useIssue, useUpdateIssue } from '@/hooks/use-kanban'
 import { useIsMobile } from '@/hooks/use-mobile'
+import { getIssueUrl } from '@/stores/server-store'
 import { ChatBody } from './ChatBody'
 import { SubIssueDialog } from './SubIssueDialog'
 
@@ -21,6 +22,7 @@ export function ChatArea({
   onDiffWidthChange,
   onCloseDiff,
   showBackToList,
+  backPath,
 }: {
   projectId: string
   issueId: string
@@ -30,6 +32,7 @@ export function ChatArea({
   onDiffWidthChange: (w: number) => void
   onCloseDiff: () => void
   showBackToList?: boolean
+  backPath?: string
 }) {
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -101,13 +104,14 @@ export function ChatArea({
     }
   }, [issue])
 
+  const defaultBack = showBackToList
+    ? `/projects/${projectId}/issues`
+    : `/projects/${projectId}`
+  const resolvedBackPath = backPath ?? defaultBack
+
   const handleAfterDelete = useCallback(() => {
-    void navigate(
-      showBackToList
-        ? `/projects/${projectId}/issues`
-        : `/projects/${projectId}`,
-    )
-  }, [navigate, showBackToList, projectId])
+    void navigate(resolvedBackPath)
+  }, [navigate, resolvedBackPath])
 
   if (isLoading) {
     return (
@@ -126,10 +130,10 @@ export function ChatArea({
             variant="ghost"
             size="sm"
             className="mt-4"
-            onClick={() => navigate(`/projects/${projectId}`)}
+            onClick={() => navigate(backPath ?? `/projects/${projectId}`)}
           >
             <ArrowLeft className="mr-1 h-4 w-4" />
-            {t('issue.backToBoard')}
+            {backPath ? t('issue.backToList') : t('issue.backToBoard')}
           </Button>
         </div>
       </div>
@@ -146,13 +150,13 @@ export function ChatArea({
             variant="ghost"
             size="icon"
             className="h-7 w-7 text-muted-foreground hover:text-foreground shrink-0 transition-colors"
-            onClick={() =>
-              showBackToList
-                ? navigate(`/projects/${projectId}/issues`)
-                : navigate(`/projects/${projectId}`)
-            }
+            onClick={() => navigate(resolvedBackPath)}
             title={
-              showBackToList ? t('issue.backToList') : t('issue.backToBoard')
+              backPath
+                ? t('issue.backToList')
+                : showBackToList
+                  ? t('issue.backToList')
+                  : t('issue.backToBoard')
             }
           >
             <ArrowLeft className="h-4 w-4" />
@@ -222,9 +226,8 @@ export function ChatArea({
             className={`h-7 w-7 shrink-0 transition-all duration-200 ${copied ? 'text-emerald-500 scale-110' : 'text-muted-foreground hover:text-foreground'}`}
             title={t('issue.copyLink')}
             onClick={() => {
-              const url = `${window.location.origin}/projects/${projectId}/issues/${issueId}`
               navigator.clipboard
-                .writeText(url)
+                .writeText(getIssueUrl(projectId, issueId))
                 .then(() => {
                   setCopied(true)
                   setTimeout(() => setCopied(false), 2000)

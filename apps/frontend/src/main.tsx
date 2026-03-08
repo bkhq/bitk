@@ -1,14 +1,16 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { Toaster } from './components/ui/sonner'
+import { useSystemInfo } from './hooks/use-kanban'
 import { eventBus } from './lib/event-bus'
 import { useFileBrowserStore } from './stores/file-browser-store'
 import { useNotesStore } from './stores/notes-store'
 import { useProcessManagerStore } from './stores/process-manager-store'
+import { useServerStore } from './stores/server-store'
 import { useTerminalStore } from './stores/terminal-store'
 import './i18n'
 import './index.css'
@@ -31,6 +33,7 @@ eventBus.onConnectionChange((connected) => {
 // Invalidate issue queries when any issue status changes via SSE
 eventBus.onIssueUpdated(() => {
   queryClient.invalidateQueries({ queryKey: ['projects'] })
+  queryClient.invalidateQueries({ queryKey: ['issues', 'review'] })
 })
 // Debounced invalidation of changes queries on any issue activity (log/state/done)
 {
@@ -51,6 +54,7 @@ eventBus.onIssueUpdated(() => {
 const HomePage = lazy(() => import('./pages/HomePage'))
 const KanbanPage = lazy(() => import('./pages/KanbanPage'))
 const IssueDetailPage = lazy(() => import('./pages/IssueDetailPage'))
+const ReviewPage = lazy(() => import('./pages/ReviewPage'))
 const TerminalPage = lazy(() => import('./pages/TerminalPage'))
 const LazyTerminalDrawer = lazy(() =>
   import('./components/terminal/TerminalDrawer').then((m) => ({
@@ -129,6 +133,22 @@ function NotesDrawerMount() {
   )
 }
 
+function ServerConfigLoader() {
+  const { data } = useSystemInfo(true)
+  const setServerInfo = useServerStore((s) => s.setServerInfo)
+
+  useEffect(() => {
+    if (!data) return
+    const { name, url } = data.server
+    setServerInfo(name, url)
+    if (name) {
+      document.title = name
+    }
+  }, [data, setServerInfo])
+
+  return null
+}
+
 const rootElement = document.getElementById('app')!
 
 if (!rootElement.innerHTML) {
@@ -179,6 +199,22 @@ if (!rootElement.innerHTML) {
                   }
                 />
                 <Route
+                  path="/review"
+                  element={
+                    <ErrorBoundary>
+                      <ReviewPage />
+                    </ErrorBoundary>
+                  }
+                />
+                <Route
+                  path="/review/:projectAlias/:issueId"
+                  element={
+                    <ErrorBoundary>
+                      <ReviewPage />
+                    </ErrorBoundary>
+                  }
+                />
+                <Route
                   path="/terminal"
                   element={
                     <ErrorBoundary>
@@ -195,6 +231,7 @@ if (!rootElement.innerHTML) {
           <ProcessManagerDrawerMount />
           <NotesDrawerMount />
           <Toaster position="top-center" />
+          <ServerConfigLoader />
         </ErrorBoundary>
       </BrowserRouter>
       {import.meta.env.DEV ? (

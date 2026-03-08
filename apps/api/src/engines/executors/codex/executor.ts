@@ -10,7 +10,7 @@ import type {
   SpawnedProcess,
   SpawnOptions,
 } from '@/engines/types'
-import type { WriteFilterRule } from '@/engines/write-filter'
+
 import { logger } from '@/logger'
 import { CodexLogNormalizer } from './normalizer'
 import type { ThreadStartParams } from './protocol'
@@ -553,7 +553,7 @@ export class CodexExecutor implements EngineExecutor {
    * Create a stateful normalizer that handles `codex/event/*` notifications.
    * This replaces the stateless normalizeLog for proper streaming state tracking.
    */
-  createNormalizer(_filterRules: WriteFilterRule[]) {
+  createNormalizer() {
     const normalizer = new CodexLogNormalizer()
     return {
       parse: (rawLine: string) => normalizer.parse(rawLine),

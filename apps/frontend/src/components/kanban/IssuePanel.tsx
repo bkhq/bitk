@@ -6,6 +6,7 @@ import { ChatBody } from '@/components/issue-detail/ChatBody'
 import { SubIssueDialog } from '@/components/issue-detail/SubIssueDialog'
 import { Button } from '@/components/ui/button'
 import { useIssue, useUpdateIssue } from '@/hooks/use-kanban'
+import { getIssueUrl } from '@/stores/server-store'
 
 const DEFAULT_DIFF_WIDTH = 360
 const LazyDiffPanel = lazy(() =>
@@ -85,9 +86,8 @@ export function IssuePanel({
 
   const handleCopyLink = () => {
     if (!issueId) return
-    const url = `${window.location.origin}/projects/${projectId}/issues/${issueId}`
     navigator.clipboard
-      .writeText(url)
+      .writeText(getIssueUrl(projectId, issueId))
       .then(() => {
         setCopied(true)
         setTimeout(() => setCopied(false), 2000)

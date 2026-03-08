@@ -124,7 +124,7 @@ export async function restartIssue(
       throw spawnError
     }
 
-    const normalizer = await createLogNormalizer(executor)
+    const normalizer = createLogNormalizer(executor)
 
     const turnIndex = getNextTurnIndex(issueId)
     register(

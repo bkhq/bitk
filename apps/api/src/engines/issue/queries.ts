@@ -1,8 +1,9 @@
 import type { CategorizedCommands } from '@bkd/shared'
 import { cacheDel } from '@/cache'
 import { getAppSetting, setAppSetting } from '@/db/helpers'
-import type { EngineType, NormalizedLogEntry } from '@/engines/types'
+import type { EngineType } from '@/engines/types'
 import type { EngineContext } from './context'
+import type { PaginatedLogResult } from './persistence/queries'
 import { getLogsFromDb } from './persistence/queries'
 import { cancel } from './process/cancel'
 import { getActiveProcesses, getActiveProcessForIssue } from './process/state'
@@ -144,21 +145,22 @@ export function getLogs(
     before?: string // ULID id — fetch entries before this
     limit?: number
   },
-): NormalizedLogEntry[] {
+): PaginatedLogResult {
   setIssueDevMode(issueId, devMode)
   // DB pre-filters by visible + entryType; isVisibleForMode() handles subtype rules.
-  const persisted = getLogsFromDb(issueId, devMode, opts)
+  const result = getLogsFromDb(issueId, devMode, opts)
 
   // When loading older entries (before cursor), skip in-memory merge —
   // in-memory logs are always the newest and irrelevant for historical pages.
-  if (opts?.before) return persisted
+  if (opts?.before) return result
 
   // While a process is active, merge any in-memory tail not yet persisted.
   const active = getActiveProcessForIssue(ctx, issueId)
   if (!active || active.logs.length === 0) {
-    return persisted
+    return result
   }
 
+  const persisted = result.entries
   const seen = new Set(
     persisted.map((entry) =>
       entry.messageId
@@ -205,7 +207,7 @@ export function getLogs(
     return 0
   })
 
-  return merged
+  return { entries: merged, hasMore: result.hasMore }
 }
 
 export function getActiveProcessesList(ctx: EngineContext): ManagedProcess[] {

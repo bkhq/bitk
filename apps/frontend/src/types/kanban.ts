@@ -27,6 +27,7 @@ export type {
   LogEntryType,
   NormalizedLogEntry,
   Note,
+  NotificationChannel,
   PermissionMode,
   ProbeResult,
   ProcessInfo,
@@ -35,4 +36,7 @@ export type {
   SessionStatus,
   ToolAction,
   ToolDetail,
+  Webhook,
+  WebhookDelivery,
+  WebhookEventType,
 } from '@bkd/shared'

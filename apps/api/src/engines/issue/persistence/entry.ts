@@ -27,6 +27,9 @@ export function persistEntry(
   )
   if (persisted) {
     ctx.entryCounters.set(executionId, idx + 1)
+    // Ensure downstream stages (SSE) see the DB-resolved turn index,
+    // not the one from the original entry which may be stale/hardcoded.
+    persisted.turnIndex = turnIdx
   }
   return persisted
 }

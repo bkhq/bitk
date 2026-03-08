@@ -44,6 +44,10 @@ export function generateToolContent(
       return String(input.query ?? toolName)
     case 'Task':
       return input.description ? `Task: ${input.description}` : 'Task'
+    case 'Agent':
+      return input.description
+        ? `Agent: ${input.description}`
+        : String(input.prompt ?? 'Agent')
     case 'TodoWrite':
       return 'TODO list updated'
     case 'ExitPlanMode':

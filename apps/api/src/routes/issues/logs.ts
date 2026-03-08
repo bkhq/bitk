@@ -27,45 +27,33 @@ logs.get('/:id/logs', async (c) => {
   const limit = limitParam
     ? Math.min(Math.max(Math.floor(Number(limitParam)) || 30, 1), 1000)
     : undefined
-  const effectiveLimit = limit ?? 30
 
-  // Fetch one extra to detect hasMore. SQL-level filtering now matches
-  // isVisibleForMode() rules exactly, so no overfetch multiplier is needed.
-  const fetchLimit = effectiveLimit + 1
-
-  const issueLogs = issueEngine.getLogs(issueId, issue.devMode, {
+  // Pagination now counts only conversation messages (user + assistant)
+  // but returns all visible entries within the range.
+  const result = issueEngine.getLogs(issueId, issue.devMode, {
     cursor,
     before,
-    limit: fetchLimit,
+    limit,
   })
 
   const isReverse = !cursor
-  const hasMore = issueLogs.length > effectiveLimit
-
-  // For reverse: keep the newest entries (tail of ascending array).
-  // For forward: keep the oldest entries (head of ascending array).
-  const trimmedLogs = hasMore
-    ? isReverse
-      ? issueLogs.slice(-effectiveLimit)
-      : issueLogs.slice(0, effectiveLimit)
-    : issueLogs
 
   // nextCursor: use ULID messageId directly.
   // For reverse → oldest entry in batch (first) so client passes as `before`.
   // For forward → newest entry (last) for next newer page via `cursor`.
   const cursorEntry = isReverse
-    ? trimmedLogs[0]
-    : trimmedLogs[trimmedLogs.length - 1]
+    ? result.entries[0]
+    : result.entries[result.entries.length - 1]
   const nextCursor =
-    hasMore && cursorEntry?.messageId ? cursorEntry.messageId : null
+    result.hasMore && cursorEntry?.messageId ? cursorEntry.messageId : null
 
   return c.json({
     success: true,
     data: {
       issue: serializeIssue(issue),
-      logs: trimmedLogs,
+      logs: result.entries,
       nextCursor,
-      hasMore,
+      hasMore: result.hasMore,
     },
   })
 })

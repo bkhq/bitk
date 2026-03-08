@@ -7,7 +7,6 @@ import {
   isPackageMode,
   UPGRADE_ENABLED_KEY,
 } from './constants'
-import { downloadUpdate, getDownloadStatus } from './download'
 import { cleanupBackupDirs, cleanupTmpFiles } from './files'
 
 // --- Re-exports (preserve public API for route consumers) ---
@@ -61,7 +60,7 @@ export function startPeriodicCheck(): void {
   periodicCheckTimer = setInterval(() => {
     void isUpgradeEnabled().then((enabled) => {
       if (enabled) {
-        void checkAndAutoDownload().catch((err) => {
+        void checkForUpdates().catch((err) => {
           logger.warn(
             { error: err instanceof Error ? err.message : String(err) },
             'upgrade_periodic_check_failed',
@@ -78,27 +77,6 @@ export function startPeriodicCheck(): void {
     'unref' in periodicCheckTimer
   ) {
     periodicCheckTimer.unref()
-  }
-}
-
-async function checkAndAutoDownload(): Promise<void> {
-  const result = await checkForUpdates()
-  const fileName = result.downloadFileName
-  if (
-    result.hasUpdate &&
-    result.downloadUrl &&
-    fileName &&
-    getDownloadStatus().status === 'idle'
-  ) {
-    logger.info(
-      { version: result.latestVersion, fileName },
-      'upgrade_auto_downloading',
-    )
-    await downloadUpdate(
-      result.downloadUrl,
-      fileName,
-      result.checksumUrl ?? undefined,
-    )
   }
 }
 
@@ -126,8 +104,8 @@ export async function initUpgradeSystem(): Promise<void> {
 
   const enabled = await isUpgradeEnabled()
   if (enabled) {
-    // Do an initial check + auto-download if available
-    void checkAndAutoDownload().catch((err) => {
+    // Do an initial check (notify only, no auto-download)
+    void checkForUpdates().catch((err) => {
       logger.warn(
         { error: err instanceof Error ? err.message : String(err) },
         'upgrade_initial_check_failed',

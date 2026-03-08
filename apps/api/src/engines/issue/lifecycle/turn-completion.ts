@@ -1,6 +1,6 @@
 import {
-  collectPendingWithAttachments,
-  promotePendingMessages,
+  relocatePendingForProcessing,
+  restorePendingVisibility,
 } from '@/db/pending-messages'
 import {
   autoMoveToReview,
@@ -13,7 +13,7 @@ import { dispatch } from '@/engines/issue/state'
 import type { ManagedProcess } from '@/engines/issue/types'
 import { sendInputToRunningProcess } from '@/engines/issue/user-message'
 import type { ProcessStatus } from '@/engines/types'
-import { emitIssueLogUpdated } from '@/events/issue-events'
+import { emitIssueLogRemoved } from '@/events/issue-events'
 import { logger } from '@/logger'
 
 // ---------- Turn completion ----------
@@ -82,46 +82,32 @@ export function handleTurnCompleted(
 
       // Check for pending DB messages before moving to review.
       // If the user sent messages while the engine was busy, they were queued
-      // as pending in the DB. Merge ALL pending messages (with attachments)
-      // into a single follow-up prompt so the AI processes them in one turn.
-      const { prompt: pendingPrompt, pendingIds } =
-        await collectPendingWithAttachments(issueId)
-      if (pendingIds.length > 0) {
+      // as pending in the DB. Relocate: hide old pending row, let follow-up
+      // create a new entry at the current position in the conversation.
+      const relocated = await relocatePendingForProcessing(issueId)
+      if (relocated) {
         logger.info(
-          { issueId, executionId, pendingCount: pendingIds.length },
+          { issueId, executionId, oldPendingId: relocated.oldId },
           'auto_flush_pending_after_turn',
         )
         try {
           const issue = await getIssueWithSession(issueId)
           await ctx.followUpIssue?.(
             issueId,
-            pendingPrompt,
+            relocated.prompt,
             issue?.model ?? undefined,
             undefined, // permissionMode
             undefined, // busyAction
-            undefined, // displayPrompt
-            undefined, // metadata
-            { skipPersistMessage: true },
+            relocated.displayPrompt,
+            relocated.metadata,
           )
-          // Promote only after follow-up is accepted. If follow-up fails
-          // (caught below), rows stay pending so the next retry consumes them.
-          // Promote itself is best-effort: the follow-up is already running,
-          // so a failure here must NOT cause a duplicate dispatch on next turn.
-          await promotePendingMessages(pendingIds)
-            .then((entries) => {
-              for (const entry of entries) {
-                emitIssueLogUpdated(issueId, entry)
-              }
-            })
-            .catch((promoteErr) => {
-              logger.error(
-                { issueId, err: promoteErr },
-                'promote_pending_after_followup_failed',
-              )
-            })
+          // Notify frontend to remove the old pending entry
+          emitIssueLogRemoved(issueId, [relocated.oldId])
+          logger.debug({ issueId, executionId }, 'turn_deferred_to_followup')
           return
         } catch (flushErr) {
           logger.error({ issueId, err: flushErr }, 'auto_flush_pending_failed')
+          restorePendingVisibility(relocated.oldId)
           // Fall through to normal review flow
         }
       }
@@ -186,8 +172,11 @@ export function handleTurnCompleted(
           return
         }
         await updateIssueSession(issueId, { sessionStatus: finalStatus })
-      } catch {
-        // Best-effort — DB update may have already succeeded above
+      } catch (innerErr) {
+        logger.error(
+          { issueId, executionId, err: innerErr },
+          'issue_turn_settle_catch_db_failed',
+        )
       }
       emitIssueSettled(issueId, executionId, finalStatus)
     }

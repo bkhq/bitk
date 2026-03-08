@@ -2,6 +2,7 @@ import { getEngineDefaultModel } from '@/db/helpers'
 import { getIssueWithSession, updateIssueSession } from '@/engines/engine-store'
 import { engineRegistry } from '@/engines/executors'
 import type { EngineContext } from '@/engines/issue/context'
+import { emitDiagnosticLog } from '@/engines/issue/diagnostic'
 import { emitStateChange } from '@/engines/issue/events'
 import { monitorCompletion } from '@/engines/issue/lifecycle/completion-monitor'
 import { handleTurnCompleted } from '@/engines/issue/lifecycle/turn-completion'
@@ -20,6 +21,7 @@ import type {
   SpawnedProcess,
 } from '@/engines/types'
 import { logger } from '@/logger'
+import { ROOT_DIR } from '@/root'
 
 export async function executeIssue(
   ctx: EngineContext,
@@ -74,7 +76,7 @@ export async function executeIssue(
       model,
     })
 
-    const baseDir = opts.workingDir ?? process.cwd()
+    const baseDir = opts.workingDir ?? ROOT_DIR
     let workingDir = baseDir
     let worktreePath: string | undefined
 
@@ -119,6 +121,12 @@ export async function executeIssue(
         { issueId, executionId, error: spawnError },
         'execute_spawn_failed_reverting_session',
       )
+      emitDiagnosticLog(
+        issueId,
+        executionId,
+        `[BKD] Process spawn failed: ${spawnError instanceof Error ? spawnError.message : String(spawnError)}`,
+        { event: 'spawn_failed' },
+      )
       await updateIssueSession(issueId, { sessionStatus: 'failed' }).catch(
         (e) =>
           logger.error(
@@ -136,19 +144,19 @@ export async function executeIssue(
     await updateIssueSession(issueId, {
       externalSessionId: finalExternalSessionId,
     })
+    const pid = getPidFromSubprocess(spawned.subprocess)
     logger.info(
       {
         issueId,
         executionId,
-        pid: getPidFromSubprocess(spawned.subprocess),
+        pid,
         engineType: opts.engineType,
         externalSessionId: finalExternalSessionId,
         worktreePath,
       },
       'issue_execute_spawned',
     )
-
-    const normalizer = await createLogNormalizer(executor)
+    const normalizer = createLogNormalizer(executor)
 
     register(
       ctx,
@@ -162,6 +170,12 @@ export async function executeIssue(
       false,
       () => handleTurnCompleted(ctx, issueId, executionId),
       worktreePath ? baseDir : undefined,
+    )
+    emitDiagnosticLog(
+      issueId,
+      executionId,
+      `[BKD] Process spawned (engine=${opts.engineType}, pid=${pid}, model=${model ?? 'default'})`,
+      { event: 'process_spawned', pid, engineType: opts.engineType, model },
     )
     const messageId = persistUserMessage(ctx, issueId, executionId, opts.prompt)
     monitorCompletion(ctx, executionId, issueId, opts.engineType, false)

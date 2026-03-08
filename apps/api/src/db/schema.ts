@@ -167,6 +167,39 @@ export const attachments = sqliteTable(
   ],
 )
 
+export const webhooks = sqliteTable('webhooks', {
+  id: id(),
+  channel: text('channel').notNull().default('webhook'), // 'webhook' | 'telegram'
+  url: text('url').notNull(), // webhook: URL, telegram: chat ID
+  secret: text('secret'), // webhook: API key, telegram: bot token
+  events: text('events').notNull(), // JSON: WebhookEventType[]
+  isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
+  ...commonFields,
+})
+
+export const webhookDeliveries = sqliteTable(
+  'webhook_deliveries',
+  {
+    id: id(),
+    webhookId: text('webhook_id')
+      .notNull()
+      .references(() => webhooks.id),
+    event: text('event').notNull(),
+    payload: text('payload').notNull(),
+    statusCode: integer('status_code'),
+    response: text('response'),
+    success: integer('success', { mode: 'boolean' }).notNull().default(false),
+    duration: integer('duration'), // ms
+    createdAt: integer('created_at', { mode: 'timestamp' })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (table) => [
+    index('webhook_deliveries_webhook_id_idx').on(table.webhookId),
+    index('webhook_deliveries_created_at_idx').on(table.createdAt),
+  ],
+)
+
 export const issuesLogsToolsCall = sqliteTable(
   'issues_logs_tools_call',
   {

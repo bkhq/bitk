@@ -1,9 +1,5 @@
 import { ProcessManager } from '@/engines/process-manager'
-import type {
-  EngineType,
-  NormalizedLogEntry,
-  PermissionPolicy,
-} from '@/engines/types'
+import type { EngineType, PermissionPolicy } from '@/engines/types'
 import { logger } from '@/logger'
 import {
   AUTO_CLEANUP_DELAY_MS,
@@ -19,6 +15,7 @@ import {
   restartIssue,
   restartStaleSessions,
 } from './orchestration'
+import type { PaginatedLogResult } from './persistence/queries'
 import { registerLogPipeline } from './pipeline'
 import { terminateProcess } from './process/cancel'
 import {
@@ -46,6 +43,7 @@ export class IssueEngine {
       gcIntervalMs: 0, // IssueEngine keeps its own domain GC
       killTimeoutMs: 30_000,
       logger,
+      onRemove: (_id, meta) => meta.logs.destroy(),
     })
 
     this.ctx = {
@@ -86,7 +84,13 @@ export class IssueEngine {
         opts,
       )
 
-    this.gcTimer = setInterval(() => gcSweep(this.ctx), GC_INTERVAL_MS)
+    this.gcTimer = setInterval(() => {
+      try {
+        gcSweep(this.ctx)
+      } catch (err) {
+        logger.error({ err }, 'gc_sweep_failed')
+      }
+    }, GC_INTERVAL_MS)
     if (
       this.gcTimer &&
       typeof this.gcTimer === 'object' &&
@@ -95,18 +99,8 @@ export class IssueEngine {
       this.gcTimer.unref()
     }
 
-    // Sync PM auto-cleanup with domain data
-    pm.onStateChange((entry) => {
-      const state = entry.state
-      if (
-        state === 'completed' ||
-        state === 'failed' ||
-        state === 'cancelled'
-      ) {
-        // When PM auto-removes, clean domain data too
-        // (entryCounters, turnIndexes are cleaned on remove)
-      }
-    })
+    // ExecutionStore lifecycle: destroyed via onRemove callback in PM options
+    // when the process entry is auto-cleaned (after AUTO_CLEANUP_DELAY_MS).
   }
 
   // ---- Orchestration ----
@@ -170,7 +164,7 @@ export class IssueEngine {
       before?: string // ULID id — fetch entries before this
       limit?: number
     },
-  ): NormalizedLogEntry[] {
+  ): PaginatedLogResult {
     return getLogs(this.ctx, issueId, devMode, opts)
   }
 

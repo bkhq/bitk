@@ -17,14 +17,17 @@ import {
   Settings,
   Trash,
   Trash2,
+  Webhook,
 } from 'lucide-react'
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { DirectoryPicker } from '@/components/DirectoryPicker'
 import { EngineIcon } from '@/components/EngineIcons'
+import { WebhookSection } from '@/components/settings/WebhookSection'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Field } from '@/components/ui/field'
+import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
   Select,
@@ -50,12 +53,14 @@ import {
   useRestartWithUpgrade,
   useRestoreDeletedIssue,
   useRunCleanup,
+  useServerInfo,
   useSetUpgradeEnabled,
   useSetWorktreeAutoCleanup,
   useSystemInfo,
   useSystemLogs,
   useUpdateDefaultEngine,
   useUpdateEngineModelSetting,
+  useUpdateServerInfo,
   useUpdateWorkspacePath,
   useUpgradeCheck,
   useUpgradeEnabled,
@@ -95,6 +100,7 @@ export function AppSettingsDialog({
       { id: 'logs', label: t('settings.tabLogs'), icon: FileText },
       { id: 'cleanup', label: t('settings.tabCleanup'), icon: Trash2 },
       { id: 'recycleBin', label: t('settings.tabRecycleBin'), icon: Trash },
+      { id: 'webhooks', label: t('settings.tabWebhooks'), icon: Webhook },
       { id: 'upgrade', label: t('settings.tabUpgrade'), icon: ArrowDownToLine },
       { id: 'about', label: t('settings.tabAbout'), icon: Info },
     ],
@@ -116,6 +122,7 @@ export function AppSettingsDialog({
           {active === 'logs' && <LogsSection open={open} />}
           {active === 'cleanup' && <CleanupSection open={open} />}
           {active === 'recycleBin' && <RecycleBinSection open={open} />}
+          {active === 'webhooks' && <WebhookSection open={open} />}
           {active === 'upgrade' && <UpgradeSection open={open} />}
           {active === 'about' && <AboutSection open={open} />}
         </>
@@ -132,9 +139,46 @@ function GeneralSection({ open }: { open: boolean }) {
   const [dirPickerOpen, setDirPickerOpen] = useState(false)
   const fullWidthChat = useViewModeStore((s) => s.fullWidthChat)
   const setFullWidthChat = useViewModeStore((s) => s.setFullWidthChat)
+  const { data: serverData } = useServerInfo(open)
+  const updateServerInfo = useUpdateServerInfo()
+  const [serverName, setServerName] = useState('')
+  const [serverUrl, setServerUrl] = useState('')
+  const [serverInfoLoaded, setServerInfoLoaded] = useState(false)
 
   const handleSelectWorkspace = (path: string) => {
     updateWsPath.mutate(path)
+  }
+
+  useEffect(() => {
+    if (serverData && !serverInfoLoaded) {
+      setServerName(serverData.name ?? '')
+      setServerUrl(serverData.url ?? '')
+      setServerInfoLoaded(true)
+    }
+  }, [serverData, serverInfoLoaded])
+
+  // Reset loaded flag when dialog closes
+  useEffect(() => {
+    if (!open) setServerInfoLoaded(false)
+  }, [open])
+
+  const serverInfoDirty =
+    serverInfoLoaded &&
+    (serverName !== (serverData?.name ?? '') ||
+      serverUrl !== (serverData?.url ?? ''))
+
+  const handleSaveServerInfo = () => {
+    updateServerInfo.mutate(
+      { name: serverName, url: serverUrl },
+      {
+        onSuccess: (data) => {
+          setServerName(data.name ?? '')
+          setServerUrl(data.url ?? '')
+          // Update page title if name changed
+          document.title = data.name || 'BKD'
+        },
+      },
+    )
   }
 
   return (
@@ -166,13 +210,55 @@ function GeneralSection({ open }: { open: boolean }) {
 
       <div className="grid grid-cols-2 gap-4">
         <Field>
+          <Label>{t('settings.serverName')}</Label>
+          <Input
+            value={serverName}
+            onChange={(e) => setServerName(e.target.value)}
+            placeholder="BKD"
+          />
+        </Field>
+        <Field>
+          <Label>{t('settings.serverUrl')}</Label>
+          <Input
+            value={serverUrl}
+            onChange={(e) => setServerUrl(e.target.value)}
+            placeholder="https://example.com"
+          />
+        </Field>
+      </div>
+      {serverInfoDirty && (
+        <div className="flex justify-end">
+          <Button
+            size="sm"
+            onClick={handleSaveServerInfo}
+            disabled={updateServerInfo.isPending}
+          >
+            {updateServerInfo.isPending ? (
+              <Loader2 className="size-3 animate-spin mr-1" />
+            ) : (
+              <Check className="size-3 mr-1" />
+            )}
+            {t('settings.saveServerInfo')}
+          </Button>
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 gap-4">
+        <Field>
           <Label>{t('settings.language')}</Label>
           <Select
-            value={i18n.language}
+            value={
+              LANGUAGES.find((l) => i18n.language.startsWith(l.id))?.id ??
+              i18n.language
+            }
             onValueChange={(value) => i18n.changeLanguage(value ?? undefined)}
           >
             <SelectTrigger>
-              <SelectValue />
+              <SelectValue
+                placeholder={
+                  LANGUAGES.find((l) => i18n.language.startsWith(l.id))?.label
+                }
+              />
             </SelectTrigger>
             <SelectContent>
               {LANGUAGES.map((lang) => (

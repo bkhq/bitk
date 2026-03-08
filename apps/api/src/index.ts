@@ -29,6 +29,26 @@ import {
   registerShutdownForUpgrade,
   stopPeriodicCheck,
 } from './upgrade/service'
+import {
+  initWebhookDispatcher,
+  startDeliveryCleanup,
+} from './webhooks/dispatcher'
+
+// ---------- Global error handlers ----------
+// Catch unhandled promise rejections so they are always logged.
+// This prevents silent failures in fire-and-forget async operations
+// (monitorCompletion, turn settlement, GC sweep, etc.).
+process.on('unhandledRejection', (reason, promise) => {
+  logger.error({ reason, promise: String(promise) }, 'unhandled_rejection')
+})
+
+// Catch truly uncaught exceptions. Log and exit — the process state is
+// unreliable after an uncaught exception.
+process.on('uncaughtException', (err, origin) => {
+  logger.fatal({ err, origin }, 'uncaught_exception')
+  // Give pino time to flush the log entry before exiting
+  setTimeout(() => process.exit(1), 200)
+})
 
 // Migrate legacy global slash commands key to per-engine format, then load cache
 void migrateSlashCommandsKey()
@@ -52,8 +72,14 @@ startPeriodicReconciliation()
 // Start watching for file changes to push summaries via SSE
 startChangesSummaryWatcher()
 
-const listenHost = process.env.API_HOST ?? '0.0.0.0'
-const listenPort = Number(process.env.API_PORT ?? 3000)
+// Initialize webhook dispatcher (subscribes to event bus)
+initWebhookDispatcher()
+
+// Start periodic webhook delivery cleanup (keeps last 100 per webhook)
+const stopDeliveryCleanup = startDeliveryCleanup()
+
+const listenHost = process.env.HOST ?? '0.0.0.0'
+const listenPort = Number(process.env.PORT ?? 3000)
 
 // --- Static file serving ---
 // In compiled mode, static-assets.ts is replaced at build time with
@@ -126,6 +152,7 @@ registerShutdownForUpgrade(async () => {
   stopUploadCleanup()
   stopWorktreeCleanup()
   stopPeriodicCheck()
+  stopDeliveryCleanup()
   await issueEngine.cancelAll()
   http.stop()
   logger.info('server_stopped_for_upgrade')
@@ -140,11 +167,21 @@ let isShuttingDown = false
 
 async function shutdown(signal: string) {
   if (isShuttingDown) {
+    logger.warn({ signal }, 'server_shutdown_duplicate_signal_ignored')
     return
   }
   isShuttingDown = true
 
-  logger.warn({ signal }, 'server_shutdown')
+  const activeProcesses = issueEngine.getActiveProcesses()
+  logger.warn(
+    {
+      signal,
+      activeProcessCount: activeProcesses.length,
+      activeIssues: activeProcesses.map((p) => p.issueId),
+      uptimeSeconds: Math.round(process.uptime()),
+    },
+    'server_shutdown',
+  )
 
   // Stop SSE subscriptions and periodic jobs before cancelling processes
   stopChangesSummaryWatcher()
@@ -153,6 +190,7 @@ async function shutdown(signal: string) {
   stopUploadCleanup()
   stopWorktreeCleanup()
   stopPeriodicCheck()
+  stopDeliveryCleanup()
 
   // Cancel all active engine processes before shutting down
   await issueEngine.cancelAll()

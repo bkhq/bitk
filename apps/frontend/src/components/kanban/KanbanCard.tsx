@@ -54,9 +54,9 @@ export const KanbanCard = memo(function KanbanCard({
       {/* Tags */}
       {issue.tags && issue.tags.length > 0 ? (
         <div className="mt-1.5 flex flex-wrap gap-1">
-          {issue.tags.map((t, i) => (
+          {issue.tags.map((t) => (
             <span
-              key={`${i}-${t}`}
+              key={t}
               className="inline-flex items-center rounded-full border border-border/50 bg-muted/40 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground"
             >
               {t}

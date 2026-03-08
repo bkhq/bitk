@@ -73,25 +73,32 @@ export async function withIssueLock<T>(
   }
 
   let execTimer: ReturnType<typeof setTimeout> | undefined
+  const execStart = Date.now()
   try {
     // Execute with timeout
     const result = await Promise.race([
       fn(),
       new Promise<never>((_, reject) => {
-        execTimer = setTimeout(
-          () =>
-            reject(
-              new Error(
-                `Lock execution timeout for issue ${issueId} after ${LOCK_EXECUTION_TIMEOUT_MS}ms`,
-              ),
+        execTimer = setTimeout(() => {
+          logger.error(
+            { issueId, execMs: Date.now() - execStart },
+            'issue_lock_execution_timeout',
+          )
+          reject(
+            new Error(
+              `Lock execution timeout for issue ${issueId} after ${LOCK_EXECUTION_TIMEOUT_MS}ms`,
             ),
-          LOCK_EXECUTION_TIMEOUT_MS,
-        )
+          )
+        }, LOCK_EXECUTION_TIMEOUT_MS)
       }),
     ])
     return result
   } finally {
     if (execTimer !== undefined) clearTimeout(execTimer)
+    const heldMs = Date.now() - execStart
+    if (heldMs > 30_000) {
+      logger.warn({ issueId, heldMs }, 'issue_lock_long_hold')
+    }
     release()
     ctx.lockDepth.set(issueId, (ctx.lockDepth.get(issueId) ?? 1) - 1)
     if ((ctx.lockDepth.get(issueId) ?? 0) <= 0) {

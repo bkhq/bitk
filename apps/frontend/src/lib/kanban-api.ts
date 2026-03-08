@@ -17,6 +17,9 @@ import type {
   ProbeResult,
   Project,
   ProjectProcessesResponse,
+  Webhook,
+  WebhookDelivery,
+  WebhookEventType,
 } from '@/types/kanban'
 
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
@@ -105,6 +108,10 @@ export const kanbanApi = {
     del<{ issueId: string }>(`/api/projects/${projectId}/worktrees/${issueId}`),
 
   // Issues
+  getReviewIssues: () =>
+    get<Array<Issue & { projectName: string; projectAlias: string }>>(
+      '/api/issues/review',
+    ),
   getIssues: (projectId: string) =>
     get<Issue[]>(`/api/projects/${projectId}/issues`),
   getChildIssues: (projectId: string, parentId: string) =>
@@ -200,6 +207,19 @@ export const kanbanApi = {
       `/api/projects/${projectId}/issues/${issueId}/restart`,
       {},
     ),
+
+  deletePendingMessage: (projectId: string, issueId: string) =>
+    del<{
+      id: string
+      content: string
+      metadata: Record<string, unknown>
+      attachments: Array<{
+        id: string
+        originalName: string
+        mimeType: string
+        size: number
+      }>
+    }>(`/api/projects/${projectId}/issues/${issueId}/pending`),
 
   autoTitleIssue: async (projectId: string, issueId: string) => {
     const res = await fetch(
@@ -300,6 +320,17 @@ export const kanbanApi = {
   restoreDeletedIssue: (id: string) =>
     post<{ id: string }>(`/api/settings/deleted-issues/${id}/restore`, {}),
 
+  // Server Info
+  getServerInfo: () =>
+    get<{ name: string | null; url: string | null }>(
+      '/api/settings/server-info',
+    ),
+  updateServerInfo: (data: { name?: string; url?: string }) =>
+    patch<{ name: string | null; url: string | null }>(
+      '/api/settings/server-info',
+      data,
+    ),
+
   // System Logs
   getSystemLogs: (lines = 200) =>
     get<{ lines: string[]; fileSize: number; totalLines: number }>(
@@ -325,6 +356,10 @@ export const kanbanApi = {
         platform: string
         arch: string
         nodeVersion: string
+      }
+      server: {
+        name: string | null
+        url: string | null
       }
       process: {
         pid: number
@@ -401,12 +436,20 @@ export const kanbanApi = {
     post<{ status: string }>('/api/settings/upgrade/restart', {}),
 
   // File Browser
-  listFiles: (projectId: string, path?: string, hideIgnored?: boolean) => {
+  listFiles: (
+    projectId: string,
+    path?: string,
+    hideIgnored?: boolean,
+    root?: string | null,
+  ) => {
     const encodedPath =
       path && path !== '.'
         ? `/${path.split('/').map(encodeURIComponent).join('/')}`
         : ''
-    const qs = hideIgnored ? '?hideIgnored=true' : ''
+    const params = new URLSearchParams()
+    if (hideIgnored) params.set('hideIgnored', 'true')
+    if (root) params.set('root', root)
+    const qs = params.toString() ? `?${params.toString()}` : ''
     return get<FileListingResult>(
       `/api/projects/${projectId}/files/show${encodedPath}${qs}`,
     )
@@ -422,10 +465,37 @@ export const kanbanApi = {
       {},
     ),
 
-  rawFileUrl: (projectId: string, path: string) => {
+  rawFileUrl: (projectId: string, path: string, root?: string | null) => {
     const encodedPath = path.split('/').map(encodeURIComponent).join('/')
-    return `/api/projects/${projectId}/files/raw/${encodedPath}`
+    const qs = root ? `?root=${encodeURIComponent(root)}` : ''
+    return `/api/projects/${projectId}/files/raw/${encodedPath}${qs}`
   },
+
+  // Webhooks
+  getWebhooks: () => get<Webhook[]>('/api/settings/webhooks'),
+  createWebhook: (data: {
+    channel?: string
+    url: string
+    secret?: string
+    events: WebhookEventType[]
+    isActive?: boolean
+  }) => post<Webhook>('/api/settings/webhooks', data),
+  updateWebhook: (
+    id: string,
+    data: {
+      channel?: string
+      url?: string
+      secret?: string | null
+      events?: WebhookEventType[]
+      isActive?: boolean
+    },
+  ) => patch<Webhook>(`/api/settings/webhooks/${id}`, data),
+  deleteWebhook: (id: string) =>
+    del<{ id: string }>(`/api/settings/webhooks/${id}`),
+  getWebhookDeliveries: (id: string) =>
+    get<WebhookDelivery[]>(`/api/settings/webhooks/${id}/deliveries`),
+  testWebhook: (id: string) =>
+    post<{ sent: boolean }>(`/api/settings/webhooks/${id}/test`, {}),
 
   // Notes
   getNotes: () => get<Note[]>('/api/notes'),

@@ -1,6 +1,5 @@
 import {
-  LayoutGrid,
-  List,
+  Eye,
   Plus,
   Settings,
   StickyNote,
@@ -16,6 +15,7 @@ import { AppSettingsDialog } from '@/components/AppSettingsDialog'
 import { CreateProjectDialog } from '@/components/CreateProjectDialog'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
+import { ViewModeSelect } from '@/components/ViewModeSelect'
 import { useEventConnection } from '@/hooks/use-event-connection'
 import { useProjects } from '@/hooks/use-kanban'
 import { getProjectInitials } from '@/lib/format'
@@ -189,7 +189,17 @@ export function AppSidebar({ activeProjectId }: { activeProjectId: string }) {
             <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-primary" />
           )}
         </Button>
-        <ViewModeToggle activeProjectId={activeProjectId} />
+        <ViewModeSelect activeProjectId={activeProjectId} />
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9 text-muted-foreground"
+          aria-label={t('viewMode.review')}
+          title={t('viewMode.review')}
+          onClick={() => navigate('/review')}
+        >
+          <Eye className="h-4 w-4" />
+        </Button>
         <Button
           variant="ghost"
           size="icon"
@@ -203,35 +213,5 @@ export function AppSidebar({ activeProjectId }: { activeProjectId: string }) {
         <AppSettingsDialog open={showSettings} onOpenChange={setShowSettings} />
       </div>
     </div>
-  )
-}
-
-function ViewModeToggle({ activeProjectId }: { activeProjectId: string }) {
-  const { t } = useTranslation()
-  const navigate = useNavigate()
-  const { mode, setMode } = useViewModeStore()
-
-  const nextMode = mode === 'kanban' ? 'list' : 'kanban'
-  const Icon = mode === 'list' ? List : LayoutGrid
-  const label = mode === 'kanban' ? t('viewMode.kanban') : t('viewMode.list')
-
-  return (
-    <Button
-      variant="ghost"
-      size="icon"
-      className="h-9 w-9 text-muted-foreground"
-      aria-label={t('viewMode.switchView')}
-      title={label}
-      onClick={() => {
-        setMode(nextMode)
-        const path =
-          nextMode === 'kanban'
-            ? `/projects/${activeProjectId}`
-            : `/projects/${activeProjectId}/issues`
-        void navigate(path)
-      }}
-    >
-      <Icon className="h-4 w-4" />
-    </Button>
   )
 }

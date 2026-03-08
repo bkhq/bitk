@@ -81,18 +81,24 @@ Requires `GOOGLE_API_KEY` or `GEMINI_API_KEY`.
 
 ## Configuration
 
-All configuration is done via environment variables. Create a `.env` file in the project root or set them in your environment:
+All configuration is done via environment variables. Create a `.env` file in `apps/api/` (Bun auto-loads it) or set them in your shell. See `apps/api/.env.example` for a full template.
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `API_PORT` | Server port | `3000` |
-| `API_HOST` | Listen address | `0.0.0.0` |
+| `PORT` | Server port | `3000` |
+| `HOST` | Listen address | `0.0.0.0` |
+| `ROOT_DIR` | Workspace root directory | auto-detected |
 | `DB_PATH` | SQLite database path | `data/db/bkd.db` |
-| `MAX_CONCURRENT_EXECUTIONS` | Max parallel agent sessions | `5` |
 | `LOG_LEVEL` | Log level (`trace` / `debug` / `info` / `warn` / `error`) | `info` |
+| `SERVICE_NAME` | Logger name prefix | `bkd` |
+| `LOG_EXECUTOR_IO` | Log executor stdin/stdout (`1` = on, `0` = off) | `1` |
+| `MAX_CONCURRENT_EXECUTIONS` | Max parallel agent sessions | `5` |
 | `ANTHROPIC_API_KEY` | Claude API key | — |
 | `OPENAI_API_KEY` | OpenAI / Codex API key | — |
-| `GOOGLE_API_KEY` | Gemini API key | — |
+| `CODEX_API_KEY` | Codex-specific API key (fallback) | — |
+| `GOOGLE_API_KEY` | Google Gemini API key | — |
+| `GEMINI_API_KEY` | Gemini-specific API key (fallback) | — |
+| `ENABLE_RUNTIME_ENDPOINT` | Enable `/api/runtime` debug endpoint | disabled |
 
 ## Development
 

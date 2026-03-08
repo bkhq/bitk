@@ -8,13 +8,13 @@ import { db } from '@/db'
 import { getAppSetting } from '@/db/helpers'
 import {
   collectPendingWithAttachments,
-  markPendingMessagesDispatched,
-  promotePendingMessages,
+  relocatePendingForProcessing,
+  restorePendingVisibility,
 } from '@/db/pending-messages'
 import { issues as issuesTable } from '@/db/schema'
 import { issueEngine } from '@/engines/issue'
 import type { EngineType } from '@/engines/types'
-import { emitIssueLogUpdated, emitIssueUpdated } from '@/events/issue-events'
+import { emitIssueLogRemoved, emitIssueUpdated } from '@/events/issue-events'
 import { logger } from '@/logger'
 import { toISO } from '@/utils/date'
 
@@ -180,43 +180,28 @@ export function flushPendingAsFollowUp(
 ): void {
   void (async () => {
     try {
-      const { prompt, pendingIds } =
-        await collectPendingWithAttachments(issueId)
-      if (pendingIds.length === 0) return
+      const relocated = await relocatePendingForProcessing(issueId)
+      if (!relocated) return
       // Emit SSE so frontend shows "AI thinking" indicator
       emitIssueUpdated(issueId, { sessionStatus: 'pending' })
       await issueEngine.followUpIssue(
         issueId,
-        prompt,
+        relocated.prompt,
         issue.model ?? undefined,
         undefined, // permissionMode
         'queue', // busyAction
-        undefined, // displayPrompt
-        undefined, // metadata
-        { skipPersistMessage: true },
+        relocated.displayPrompt,
+        relocated.metadata,
       )
-      // Promote only after follow-up is accepted. If follow-up fails (caught
-      // by outer catch), rows stay pending for retry. Promote itself is
-      // best-effort: the follow-up is already running, so a failure here
-      // must NOT cause a duplicate dispatch.
-      await promotePendingMessages(pendingIds)
-        .then((entries) => {
-          for (const entry of entries) {
-            emitIssueLogUpdated(issueId, entry)
-          }
-        })
-        .catch((promoteErr) => {
-          logger.error(
-            { issueId, err: promoteErr },
-            'promote_pending_after_followup_failed',
-          )
-        })
+      // Notify frontend to remove old pending entry
+      emitIssueLogRemoved(issueId, [relocated.oldId])
       logger.debug(
-        { issueId, pendingCount: pendingIds.length },
+        { issueId, oldPendingId: relocated.oldId },
         'pending_flushed_as_followup',
       )
     } catch (err) {
       logger.error({ issueId, err }, 'pending_flush_followup_failed')
+      if (relocated) restorePendingVisibility(relocated.oldId)
     }
   })()
 }
@@ -336,14 +321,14 @@ export function triggerIssueExecution(
         }
       }
 
-      const { prompt: pendingPrompt, pendingIds } =
-        await collectPendingWithAttachments(issueId)
+      // Relocate any pending messages: hide old pending row, include content in prompt
+      const relocated = await relocatePendingForProcessing(issueId)
       const basePrompt = systemPrompt
         ? `${systemPrompt}\n\n${issue.prompt ?? ''}`
         : (issue.prompt ?? '')
-      const effectivePrompt = [basePrompt, pendingPrompt]
-        .filter(Boolean)
-        .join('\n\n')
+      const effectivePrompt = relocated
+        ? [basePrompt, relocated.prompt].filter(Boolean).join('\n\n')
+        : basePrompt
 
       await issueEngine.executeIssue(issueId, {
         engineType: (issue.engineType ?? 'echo') as EngineType,
@@ -353,16 +338,14 @@ export function triggerIssueExecution(
         permissionMode: issue.permissionMode as 'plan' | 'auto' | undefined,
         envVars: envVars ?? undefined,
       })
-      // Delete pending rows only AFTER successful execution to prevent message loss
-      if (pendingIds.length > 0) {
-        await markPendingMessagesDispatched(pendingIds)
+      // Notify frontend to remove old pending entry after successful execution
+      if (relocated) {
+        emitIssueLogRemoved(issueId, [relocated.oldId])
       }
-      logger.debug(
-        { issueId, pendingCount: pendingIds.length },
-        'auto_execute_started',
-      )
+      logger.debug({ issueId, hadPending: !!relocated }, 'auto_execute_started')
     } catch (err) {
       logger.error({ issueId, err }, 'auto_execute_failed')
+      if (relocated) restorePendingVisibility(relocated.oldId)
       issueEngine.setLastError(
         issueId,
         err instanceof Error ? err.message : 'auto_execute_failed',

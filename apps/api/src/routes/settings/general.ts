@@ -4,7 +4,15 @@ import { resolve } from 'node:path'
 import { zValidator } from '@hono/zod-validator'
 import { Hono } from 'hono'
 import * as z from 'zod'
-import { getAppSetting, setAppSetting } from '@/db/helpers'
+import {
+  deleteAppSetting,
+  getAppSetting,
+  getServerName,
+  getServerUrl,
+  setAppSetting,
+  setServerName,
+  setServerUrl,
+} from '@/db/helpers'
 import { getCachedCategorizedCommands } from '@/engines/issue/queries'
 import type { WriteFilterRule } from '@/engines/write-filter'
 import {
@@ -182,6 +190,67 @@ general.patch(
     const { enabled } = c.req.valid('json')
     await setAppSetting(WORKTREE_AUTO_CLEANUP_KEY, String(enabled))
     return c.json({ success: true, data: { enabled } })
+  },
+)
+
+// --- Server Info ---
+
+// GET /api/settings/server-info
+general.get('/server-info', async (c) => {
+  const [name, url] = await Promise.all([getServerName(), getServerUrl()])
+  return c.json({ success: true, data: { name, url } })
+})
+
+// PATCH /api/settings/server-info
+general.patch(
+  '/server-info',
+  zValidator(
+    'json',
+    z.object({
+      name: z.string().max(128).optional(),
+      url: z.string().max(1024).optional(),
+    }),
+    (result, c) => {
+      if (!result.success) {
+        return c.json(
+          {
+            success: false,
+            error: result.error.issues.map((i) => i.message).join(', '),
+          },
+          400,
+        )
+      }
+    },
+  ),
+  async (c) => {
+    const { name, url } = c.req.valid('json')
+
+    if (name !== undefined) {
+      const trimmed = name.trim()
+      if (trimmed) {
+        await setServerName(trimmed)
+      } else {
+        await deleteAppSetting('server:name')
+      }
+    }
+
+    if (url !== undefined) {
+      const trimmed = url.trim()
+      if (trimmed) {
+        await setServerUrl(trimmed)
+      } else {
+        await deleteAppSetting('server:url')
+      }
+    }
+
+    const [currentName, currentUrl] = await Promise.all([
+      getServerName(),
+      getServerUrl(),
+    ])
+    return c.json({
+      success: true,
+      data: { name: currentName, url: currentUrl },
+    })
   },
 )
 

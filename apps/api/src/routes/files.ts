@@ -3,6 +3,7 @@ import { basename, resolve } from 'node:path'
 import type { Context } from 'hono'
 import { Hono } from 'hono'
 import { findProject, getAppSetting } from '@/db/helpers'
+import { WORKTREE_BASE } from '@/engines/issue/utils/worktree'
 
 interface FileEntry {
   name: string
@@ -57,6 +58,12 @@ async function getGitIgnoredNames(
   }
 }
 
+/** Check if `dir` is a valid worktree directory for the given project. */
+function isValidWorktreeRoot(dir: string, projectId: string): boolean {
+  const prefix = `${resolve(WORKTREE_BASE, projectId)}/`
+  return dir.startsWith(prefix)
+}
+
 /** Resolve project root + validate path is inside it. */
 async function resolveProjectPath(c: Context, relativePath: string) {
   const projectId = c.req.param('projectId') as string
@@ -75,18 +82,44 @@ async function resolveProjectPath(c: Context, relativePath: string) {
     }
   }
 
-  const root = resolve(project.directory)
+  // Determine root: use `root` query param if it's a valid worktree for this project
+  const rootOverride = c.req.query('root')
+  let root: string
 
-  // SEC: Validate project directory is within configured workspace root
-  const workspaceRoot = await getAppSetting('workspace:defaultPath')
-  if (workspaceRoot && workspaceRoot !== '/') {
-    const resolvedWs = resolve(workspaceRoot)
-    if (!root.startsWith(`${resolvedWs}/`) && root !== resolvedWs) {
+  if (rootOverride) {
+    const resolvedOverride = resolve(rootOverride)
+    if (
+      resolvedOverride === resolve(project.directory) ||
+      isValidWorktreeRoot(resolvedOverride, projectId)
+    ) {
+      root = resolvedOverride
+    } else {
       return {
         error: c.json(
-          { success: false, error: 'Project directory is outside workspace' },
+          {
+            success: false,
+            error: 'Root is not a valid project or worktree directory',
+          },
           403,
         ),
+      }
+    }
+  } else {
+    root = resolve(project.directory)
+  }
+
+  // SEC: Validate project directory is within configured workspace root
+  if (!rootOverride) {
+    const workspaceRoot = await getAppSetting('workspace:defaultPath')
+    if (workspaceRoot && workspaceRoot !== '/') {
+      const resolvedWs = resolve(workspaceRoot)
+      if (!root.startsWith(`${resolvedWs}/`) && root !== resolvedWs) {
+        return {
+          error: c.json(
+            { success: false, error: 'Project directory is outside workspace' },
+            403,
+          ),
+        }
       }
     }
   }

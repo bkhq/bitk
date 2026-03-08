@@ -216,8 +216,8 @@ The engine layer is the most complex part of the backend:
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `API_HOST` | Listen address | `0.0.0.0` |
-| `API_PORT` | Listen port | `3000` |
+| `HOST` | Listen address | `0.0.0.0` |
+| `PORT` | Listen port | `3000` |
 | `API_SECRET` | Bearer token for auth (unset = no auth) | — |
 | `ALLOWED_ORIGIN` | CORS allowed origin | `*` |
 | `DB_PATH` | SQLite database path | `data/db/bkd.db` |

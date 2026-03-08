@@ -7,11 +7,16 @@ import {
   findProject,
   getDefaultEngine,
   getEngineDefaultModel,
+  getServerUrl,
 } from '@/db/helpers'
 import { issues as issuesTable } from '@/db/schema'
 import { engineRegistry } from '@/engines/executors'
 import type { EngineType } from '@/engines/types'
 import { logger } from '@/logger'
+import {
+  buildIssueUrl,
+  dispatch as webhookDispatch,
+} from '@/webhooks/dispatcher'
 import {
   createIssueSchema,
   parseProjectEnvVars,
@@ -140,6 +145,28 @@ create.post(
       // After successful creation, invalidate relevant caches
       await cacheDelByPrefix(`childCounts:${project.id}`)
       await cacheDel(`projectIssueIds:${project.id}`)
+
+      const webhookPayload: Record<string, unknown> = {
+        event: 'issue.created',
+        issueId: newIssue!.id,
+        issueNumber: newIssue!.issueNumber,
+        projectId: project.id,
+        projectName: project.name,
+        title: body.title,
+        statusId: effectiveStatusId,
+        engineType: resolvedEngine,
+        model: resolvedModel,
+        timestamp: new Date().toISOString(),
+      }
+      const serverUrl = await getServerUrl()
+      if (serverUrl) {
+        webhookPayload.issueUrl = buildIssueUrl(
+          serverUrl,
+          project.id,
+          newIssue!.id,
+        )
+      }
+      void webhookDispatch('issue.created', webhookPayload)
 
       // Only auto-execute when created directly in working
       if (shouldExecute) {

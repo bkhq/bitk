@@ -1,6 +1,10 @@
-import { MAX_LOG_ENTRIES } from '@/engines/issue/constants'
 import type { EngineContext } from '@/engines/issue/context'
+import {
+  createIssueDebugLog,
+  teeStreamToDebug,
+} from '@/engines/issue/debug-log'
 import { emitStateChange } from '@/engines/issue/events'
+import { ExecutionStore } from '@/engines/issue/store/execution-store'
 import type { StreamCallbacks } from '@/engines/issue/streams/consumer'
 import { consumeStderr, consumeStream } from '@/engines/issue/streams/consumer'
 import {
@@ -10,7 +14,6 @@ import {
 } from '@/engines/issue/streams/handlers'
 import type { ManagedProcess } from '@/engines/issue/types'
 import { getPidFromManaged } from '@/engines/issue/utils/pid'
-import { RingBuffer } from '@/engines/issue/utils/ring-buffer'
 import type {
   EngineType,
   NormalizedLogEntry,
@@ -40,7 +43,7 @@ export function register(
     process,
     state: 'running',
     startedAt: new Date(),
-    logs: new RingBuffer<NormalizedLogEntry>(MAX_LOG_ENTRIES),
+    logs: new ExecutionStore(executionId),
     retryCount: 0,
     turnInFlight: true,
     queueCancelRequested: false,
@@ -108,29 +111,47 @@ export function register(
     }
   }
 
+  // Create per-issue debug log for raw I/O capture
+  const debugLog = createIssueDebugLog(issueId, executionId)
+  managed.debugLog = debugLog
+  debugLog.event(
+    `pid=${getPidFromManaged(managed)} engine=${engineType} turn=${turnIndex} cmd=${process.spawnCommand ?? 'unknown'}`,
+  )
+
+  // Tee streams: raw bytes go to debug file, downstream consumers get the same data
+  const stdoutStream = teeStreamToDebug(process.stdout, debugLog, 'stdout')
+  const stderrStream = teeStreamToDebug(process.stderr, debugLog, 'stderr')
+
   void consumeStream(
     executionId,
     issueId,
-    process.stdout,
+    stdoutStream,
     logParser,
     stdoutCallbacks,
-  ).catch((err) => {
-    logger.error(
-      { issueId, executionId, err },
-      'consume_stream_unhandled_error',
-    )
-  })
-  void consumeStderr(
-    executionId,
-    issueId,
-    process.stderr,
-    stderrCallbacks,
-  ).catch((err) => {
-    logger.error(
-      { issueId, executionId, err },
-      'consume_stderr_unhandled_error',
-    )
-  })
+  )
+    .then(() => {
+      debugLog.event('stdout_stream_ended')
+      logger.debug({ issueId, executionId }, 'consume_stream_promise_resolved')
+    })
+    .catch((err) => {
+      debugLog.event(`stdout_stream_error: ${err}`)
+      logger.error(
+        { issueId, executionId, err },
+        'consume_stream_unhandled_error',
+      )
+    })
+  void consumeStderr(executionId, issueId, stderrStream, stderrCallbacks)
+    .then(() => {
+      debugLog.event('stderr_stream_ended')
+      logger.debug({ issueId, executionId }, 'consume_stderr_promise_resolved')
+    })
+    .catch((err) => {
+      debugLog.event(`stderr_stream_error: ${err}`)
+      logger.error(
+        { issueId, executionId, err },
+        'consume_stderr_unhandled_error',
+      )
+    })
   logger.debug(
     { issueId, executionId, pid: getPidFromManaged(managed), turnIndex },
     'issue_process_registered',

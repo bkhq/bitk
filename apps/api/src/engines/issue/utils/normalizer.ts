@@ -1,5 +1,4 @@
 import type { EngineExecutor, NormalizedLogEntry } from '@/engines/types'
-import { loadFilterRules } from '@/engines/write-filter'
 
 export interface LogNormalizer {
   parse: (rawLine: string) => NormalizedLogEntry | NormalizedLogEntry[] | null
@@ -8,13 +7,13 @@ export interface LogNormalizer {
 /**
  * Create a log normalizer for the given executor.
  * Extracts a pattern that was previously duplicated 4 times across orchestration and lifecycle.
+ *
+ * Note: Write filter rules are no longer applied at the normalizer stage.
+ * All entries flow through; filtering happens in the MessageRebuilder.
  */
-export async function createLogNormalizer(
-  executor: EngineExecutor,
-): Promise<LogNormalizer> {
-  const filterRules = await loadFilterRules()
+export function createLogNormalizer(executor: EngineExecutor): LogNormalizer {
   if (executor.createNormalizer) {
-    return executor.createNormalizer(filterRules)
+    return executor.createNormalizer()
   }
   return { parse: (line: string) => executor.normalizeLog(line) }
 }

@@ -73,3 +73,6 @@ core
 
 # temp
 tmp/
+
+# runtime worktree
+worktrees
