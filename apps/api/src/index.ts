@@ -34,6 +34,22 @@ import {
   startDeliveryCleanup,
 } from './webhooks/dispatcher'
 
+// ---------- Global error handlers ----------
+// Catch unhandled promise rejections so they are always logged.
+// This prevents silent failures in fire-and-forget async operations
+// (monitorCompletion, turn settlement, GC sweep, etc.).
+process.on('unhandledRejection', (reason, promise) => {
+  logger.error({ reason, promise: String(promise) }, 'unhandled_rejection')
+})
+
+// Catch truly uncaught exceptions. Log and exit — the process state is
+// unreliable after an uncaught exception.
+process.on('uncaughtException', (err, origin) => {
+  logger.fatal({ err, origin }, 'uncaught_exception')
+  // Give pino time to flush the log entry before exiting
+  setTimeout(() => process.exit(1), 200)
+})
+
 // Migrate legacy global slash commands key to per-engine format, then load cache
 void migrateSlashCommandsKey()
   .then(() => refreshSlashCommandsCache())
@@ -151,11 +167,21 @@ let isShuttingDown = false
 
 async function shutdown(signal: string) {
   if (isShuttingDown) {
+    logger.warn({ signal }, 'server_shutdown_duplicate_signal_ignored')
     return
   }
   isShuttingDown = true
 
-  logger.warn({ signal }, 'server_shutdown')
+  const activeProcesses = issueEngine.getActiveProcesses()
+  logger.warn(
+    {
+      signal,
+      activeProcessCount: activeProcesses.length,
+      activeIssues: activeProcesses.map((p) => p.issueId),
+      uptimeSeconds: Math.round(process.uptime()),
+    },
+    'server_shutdown',
+  )
 
   // Stop SSE subscriptions and periodic jobs before cancelling processes
   stopChangesSummaryWatcher()

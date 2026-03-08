@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs'
+import { existsSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { CommandBuilder } from '@/engines/command'
 import { safeEnv } from '@/engines/safe-env'
@@ -16,10 +16,14 @@ import type {
 } from '@/engines/types'
 import type { WriteFilterRule } from '@/engines/write-filter'
 import { logger } from '@/logger'
+import { ROOT_DIR } from '@/root'
 import { ClaudeLogNormalizer } from './normalizer'
 import { ClaudeProtocolHandler } from './protocol'
 
 const NPX_FALLBACK = 'npx -y @anthropic-ai/claude-code'
+
+/** Base directory for per-issue debug logs */
+const ISSUE_LOG_DIR = join(ROOT_DIR, 'data', 'logs', 'issues')
 
 /**
  * Find the `claude` binary, checking PATH and common install locations.
@@ -356,6 +360,23 @@ export class ClaudeCodeExecutor implements EngineExecutor {
       .env('NPM_CONFIG_LOGLEVEL', 'error')
       .env('IS_SANDBOX', '1')
       .cwd(options.workingDir)
+
+    // When LOG_LEVEL=debug|trace, enable Claude Code's built-in debug logging
+    // to a per-issue file. The CLI writes detailed internal logs (API calls,
+    // tool execution, permission decisions, etc.) to the specified path.
+    const logLevel = process.env.LOG_LEVEL ?? 'info'
+    if (env.issueId && (logLevel === 'debug' || logLevel === 'trace')) {
+      try {
+        const issueLogDir = join(ISSUE_LOG_DIR, env.issueId)
+        mkdirSync(issueLogDir, { recursive: true })
+        const debugFile = join(issueLogDir, 'claude-debug.log')
+        builder.param('--debug')
+        builder.env('CLAUDE_LOG_FILE', debugFile)
+        builder.env('CLAUDE_LOG_LEVEL', 'debug')
+      } catch {
+        // Fail open — debug logging is best-effort
+      }
+    }
 
     // Plan mode: start CLI with bypassPermissions so we can switch back to it
     // after ExitPlanMode. SDK protocol then sets the actual mode to "plan".

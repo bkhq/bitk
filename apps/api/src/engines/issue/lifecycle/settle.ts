@@ -1,5 +1,6 @@
 import { autoMoveToReview, updateIssueSession } from '@/engines/engine-store'
 import type { EngineContext } from '@/engines/issue/context'
+import { emitDiagnosticLog } from '@/engines/issue/diagnostic'
 import { emitIssueSettled } from '@/engines/issue/events'
 import { cleanupDomainData } from '@/engines/issue/process/state'
 import { logger } from '@/logger'
@@ -31,6 +32,12 @@ export async function settleIssue(
     )
   } finally {
     cleanupDomainData(ctx, executionId)
+    emitDiagnosticLog(
+      issueId,
+      executionId,
+      `[BKD] Issue settled (status=${status})`,
+      { event: 'issue_settled', status },
+    )
     emitIssueSettled(issueId, executionId, status)
   }
 }

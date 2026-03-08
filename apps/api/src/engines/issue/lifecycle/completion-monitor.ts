@@ -1,6 +1,7 @@
 import { updateIssueSession } from '@/engines/engine-store'
 import { MAX_AUTO_RETRIES } from '@/engines/issue/constants'
 import type { EngineContext } from '@/engines/issue/context'
+import { emitDiagnosticLog } from '@/engines/issue/diagnostic'
 import { emitStateChange } from '@/engines/issue/events'
 import { withIssueLock } from '@/engines/issue/process/lock'
 import { cleanupDomainData, syncPmState } from '@/engines/issue/process/state'
@@ -59,16 +60,30 @@ export function monitorCompletion(
     try {
       const exitCode = await managed.process.subprocess.exited
       dispatch(managed, { type: 'SET_EXIT_CODE', exitCode })
+      const pid = getPidFromManaged(managed)
       logger.info(
         {
           issueId,
           executionId,
-          pid: getPidFromManaged(managed),
+          pid,
           exitCode,
           queued: managed.pendingInputs.length,
           state: managed.state,
         },
         'issue_process_exited',
+      )
+      const signal =
+        exitCode !== null && exitCode > 128
+          ? `SIG${exitCode === 137 ? 'KILL' : exitCode === 143 ? 'TERM' : exitCode - 128}`
+          : undefined
+      managed.debugLog?.event(
+        `process_exited pid=${pid} code=${exitCode} signal=${signal ?? 'none'} state=${managed.state}`,
+      )
+      emitDiagnosticLog(
+        issueId,
+        executionId,
+        `[BKD] Process exited (pid=${pid}, code=${exitCode}${signal ? `, signal=${signal}` : ''})`,
+        { event: 'process_exited', pid, exitCode, signal },
       )
 
       // If the issue was already settled by handleTurnCompleted (conversational
@@ -193,6 +208,12 @@ export function monitorCompletion(
           logger.info(
             { issueId, executionId, retryCount: managed.retryCount },
             'auto_retry_issue',
+          )
+          emitDiagnosticLog(
+            issueId,
+            executionId,
+            `[BKD] Auto-retrying (attempt=${managed.retryCount}, exitCode=${exitCode})`,
+            { event: 'auto_retry', retryCount: managed.retryCount, exitCode },
           )
           cleanupDomainData(ctx, executionId)
 

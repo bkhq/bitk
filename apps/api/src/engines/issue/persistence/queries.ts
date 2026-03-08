@@ -38,7 +38,7 @@ export function getLogsFromDb(
                OR json_extract(${logsTable.metadata}, '$.type') != 'system'))
         OR ${logsTable.entryType} = 'assistant-message'
         OR (${logsTable.entryType} = 'system-message'
-          AND json_extract(${logsTable.metadata}, '$.subtype') IN ('command_output', 'compact_boundary'))
+          AND json_extract(${logsTable.metadata}, '$.subtype') IN ('command_output', 'compact_boundary', 'diagnostic'))
       )`,
     )
   }
