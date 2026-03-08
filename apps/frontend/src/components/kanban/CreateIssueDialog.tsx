@@ -1,9 +1,4 @@
-import {
-  ChevronDown,
-  ChevronsRight,
-  GitBranch,
-  MousePointerClick,
-} from 'lucide-react'
+import { ChevronDown, ChevronsRight, MousePointerClick } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useParams } from 'react-router-dom'
@@ -463,11 +458,8 @@ function WorktreeToggle({
   onChange: (v: boolean) => void
 }) {
   return (
-    <div className="flex items-center gap-2 w-full">
+    <div className="flex items-center w-full">
       <Switch checked={value} onCheckedChange={onChange} className="shrink-0" />
-      <GitBranch
-        className={`h-3.5 w-3.5 shrink-0 ${value ? 'text-emerald-500' : 'text-muted-foreground'}`}
-      />
     </div>
   )
 }

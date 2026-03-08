@@ -307,6 +307,8 @@ export function LogEntry({
       if (entry.metadata?.subtype === 'hook_completed') return null
       if (entry.metadata?.source === 'result') return null
       if (typeof entry.metadata?.duration === 'number') return null
+      // Image metadata hints from CLI (e.g. "[Image: original 2400x312...]")
+      if (entry.content.startsWith('[Image:')) return null
       // Command output (e.g. /context, /cost): collapsed by default
       if (entry.metadata?.subtype === 'command_output') {
         const firstLine =
@@ -354,12 +356,26 @@ export function LogEntry({
         </div>
       )
 
-    case 'thinking':
+    case 'thinking': {
+      const preview =
+        entry.content.length > 80
+          ? `${entry.content.slice(0, 80)}…`
+          : entry.content
       return (
-        <div className="py-0.5 text-xs text-violet-500/70 dark:text-violet-400/70 italic">
-          Thinking: {entry.content}
+        <div className="my-0.5 animate-message-enter">
+          <details className="rounded-lg bg-violet-500/[0.04] border border-violet-300/20 dark:border-violet-500/15 transition-all duration-200 open:bg-violet-500/[0.06]">
+            <summary className="cursor-pointer list-none px-3 py-1.5 text-xs text-violet-500/70 dark:text-violet-400/70 hover:bg-violet-500/[0.06] transition-colors">
+              <span className="italic">Thinking: {preview}</span>
+            </summary>
+            <div className="px-3 pb-2 pt-1 border-t border-violet-300/15 dark:border-violet-500/10">
+              <pre className="text-xs text-violet-600/70 dark:text-violet-300/60 whitespace-pre-wrap font-mono leading-relaxed overflow-x-auto">
+                {entry.content}
+              </pre>
+            </div>
+          </details>
         </div>
       )
+    }
 
     case 'loading':
       return (

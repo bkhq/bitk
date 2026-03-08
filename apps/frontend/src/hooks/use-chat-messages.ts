@@ -136,9 +136,12 @@ function rebuildMessages(entries: NormalizedLogEntry[]): ChatMessage[] {
         item.action.toolDetail?.kind ?? item.action.toolAction?.kind ?? 'other'
       stats[kind] = (stats[kind] ?? 0) + 1
     }
+    // Stable ID from first action's messageId — prevents React key changes
+    // when new tool entries arrive and the message list is rebuilt.
+    const stableId = items[0]?.action.messageId ?? nextId('tg')
     return {
       type: 'tool-group',
-      id: nextId('tg'),
+      id: `tg-${stableId}`,
       items,
       stats,
       count: items.length,
@@ -225,6 +228,20 @@ function rebuildMessages(entries: NormalizedLogEntry[]): ChatMessage[] {
         if (result) pairedResultCallIds.add(callId)
       }
       toolBuffer.push({ action: entry, result })
+      continue
+    }
+
+    // task_progress: display inline but do NOT break the current tool group
+    if (
+      entry.entryType === 'system-message' &&
+      entry.metadata?.subtype === 'task_progress'
+    ) {
+      messages.push({
+        type: 'system',
+        id: entryId(entry, nextId('sys')),
+        entry,
+        subtype: 'task_progress',
+      } satisfies SystemChatMessage)
       continue
     }
 

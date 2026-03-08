@@ -1,6 +1,7 @@
 import {
   Bot,
   FileText,
+  FolderOpen,
   Image as ImageIcon,
   Loader2,
   Paperclip,
@@ -40,6 +41,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { useChangesSummary } from '@/hooks/use-changes-summary'
 import { useEngineAvailability, useFollowUpIssue } from '@/hooks/use-kanban'
 import { formatFileSize, formatModelName } from '@/lib/format'
+import { useFileBrowserStore } from '@/stores/file-browser-store'
 import type { BusyAction, EngineModel, SessionStatus } from '@/types/kanban'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10 MB
@@ -176,6 +178,8 @@ export function ChatInput({
   const changedCount = changesSummary?.fileCount ?? 0
   const additions = changesSummary?.additions ?? 0
   const deletions = changesSummary?.deletions ?? 0
+  const changesRoot = (changesSummary as { root?: string } | null)?.root
+  const openFileBrowser = useFileBrowserStore((s) => s.open)
 
   // Fetch models for current engine
   const { data: discovery } = useEngineAvailability(!!engineType)
@@ -587,6 +591,14 @@ export function ChatInput({
                 -{deletions}
               </span>
             </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => projectId && openFileBrowser(projectId, changesRoot)}
+            className="inline-flex items-center justify-center rounded-lg px-1.5 py-1 text-muted-foreground bg-muted/40 hover:bg-muted/60 transition-all duration-200"
+            title={t('diff.openFiles')}
+          >
+            <FolderOpen className="h-3.5 w-3.5" />
           </button>
 
           <div className="ml-auto flex items-center gap-1">

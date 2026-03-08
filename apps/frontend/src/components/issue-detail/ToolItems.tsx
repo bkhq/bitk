@@ -3,6 +3,7 @@ import { ChevronDown, ChevronRight } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getCommandPreview } from '@/lib/command-preview'
+import { formatFileSize } from '@/lib/format'
 import {
   CodeBlock,
   detectCodeLanguage,
@@ -95,8 +96,7 @@ export function FileToolItem({ item }: { item: ToolGroupItem }) {
       item.result?.toolDetail?.raw?.isError === true ||
       item.result?.entryType === 'error-message'
     const lineCount = countLines(resultContent)
-    const showResultText =
-      resultContent && (isResultError || (lineCount !== null && lineCount <= 3))
+    const showResultText = resultContent && isResultError
 
     const summary = (
       <div className="flex items-center gap-2 text-xs">
@@ -117,12 +117,18 @@ export function FileToolItem({ item }: { item: ToolGroupItem }) {
       )
     }
 
+    const sizeInfo = lineCount
+      ? `Read ${lineCount} lines`
+      : resultContent
+        ? `${formatFileSize(resultContent.length)}`
+        : null
+
     return (
       <div className="py-0.5">
         {summary}
-        {lineCount ? (
+        {sizeInfo ? (
           <div className="ml-0.5 mt-0.5 text-[11px] text-muted-foreground/60">
-            Read {lineCount} lines
+            {sizeInfo}
           </div>
         ) : null}
       </div>

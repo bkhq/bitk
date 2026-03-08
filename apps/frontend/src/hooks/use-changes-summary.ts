@@ -62,7 +62,8 @@ export function useChangesSummary(
       fileCount: restData.files.length,
       additions: restData.additions,
       deletions: restData.deletions,
-    } satisfies ChangesSummaryData
+      root: restData.root,
+    }
   }
 
   return null
