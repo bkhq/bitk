@@ -1,0 +1,1 @@
+ALTER TABLE `webhooks` ADD `channel` text DEFAULT 'webhook' NOT NULL;

@@ -6,6 +6,7 @@ import { findProject } from '@/db/helpers'
 import { issues as issuesTable } from '@/db/schema'
 import { issueEngine } from '@/engines/issue'
 import { logger } from '@/logger'
+import { dispatch as webhookDispatch } from '@/webhooks/dispatcher'
 
 const del = new Hono()
 
@@ -88,6 +89,14 @@ del.delete('/:id', async (c) => {
   await cacheDelByPrefix(`childCounts:${project.id}`)
 
   logger.info({ projectId: project.id, issueId }, 'issue_deleted')
+
+  void webhookDispatch('issue.deleted', {
+    event: 'issue.deleted',
+    issueId,
+    projectId: project.id,
+    title: existing.title,
+    timestamp: new Date().toISOString(),
+  })
 
   return c.json({ success: true, data: { id: issueId } })
 })

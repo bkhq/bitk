@@ -155,13 +155,6 @@ export async function executeIssue(
       },
       'issue_execute_spawned',
     )
-    emitDiagnosticLog(
-      issueId,
-      executionId,
-      `[BKD] Process spawned (engine=${opts.engineType}, pid=${pid}, model=${model ?? 'default'})`,
-      { event: 'process_spawned', pid, engineType: opts.engineType, model },
-    )
-
     const normalizer = await createLogNormalizer(executor)
 
     register(
@@ -176,6 +169,12 @@ export async function executeIssue(
       false,
       () => handleTurnCompleted(ctx, issueId, executionId),
       worktreePath ? baseDir : undefined,
+    )
+    emitDiagnosticLog(
+      issueId,
+      executionId,
+      `[BKD] Process spawned (engine=${opts.engineType}, pid=${pid}, model=${model ?? 'default'})`,
+      { event: 'process_spawned', pid, engineType: opts.engineType, model },
     )
     const messageId = persistUserMessage(ctx, issueId, executionId, opts.prompt)
     monitorCompletion(ctx, executionId, issueId, opts.engineType, false)

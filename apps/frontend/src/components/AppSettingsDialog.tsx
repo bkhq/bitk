@@ -17,11 +17,13 @@ import {
   Settings,
   Trash,
   Trash2,
+  Webhook,
 } from 'lucide-react'
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { DirectoryPicker } from '@/components/DirectoryPicker'
 import { EngineIcon } from '@/components/EngineIcons'
+import { WebhookSection } from '@/components/settings/WebhookSection'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Field } from '@/components/ui/field'
@@ -95,6 +97,7 @@ export function AppSettingsDialog({
       { id: 'logs', label: t('settings.tabLogs'), icon: FileText },
       { id: 'cleanup', label: t('settings.tabCleanup'), icon: Trash2 },
       { id: 'recycleBin', label: t('settings.tabRecycleBin'), icon: Trash },
+      { id: 'webhooks', label: t('settings.tabWebhooks'), icon: Webhook },
       { id: 'upgrade', label: t('settings.tabUpgrade'), icon: ArrowDownToLine },
       { id: 'about', label: t('settings.tabAbout'), icon: Info },
     ],
@@ -116,6 +119,7 @@ export function AppSettingsDialog({
           {active === 'logs' && <LogsSection open={open} />}
           {active === 'cleanup' && <CleanupSection open={open} />}
           {active === 'recycleBin' && <RecycleBinSection open={open} />}
+          {active === 'webhooks' && <WebhookSection open={open} />}
           {active === 'upgrade' && <UpgradeSection open={open} />}
           {active === 'about' && <AboutSection open={open} />}
         </>

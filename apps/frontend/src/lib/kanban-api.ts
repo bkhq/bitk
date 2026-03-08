@@ -17,6 +17,9 @@ import type {
   ProbeResult,
   Project,
   ProjectProcessesResponse,
+  Webhook,
+  WebhookDelivery,
+  WebhookEventType,
 } from '@/types/kanban'
 
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
@@ -105,6 +108,10 @@ export const kanbanApi = {
     del<{ issueId: string }>(`/api/projects/${projectId}/worktrees/${issueId}`),
 
   // Issues
+  getReviewIssues: () =>
+    get<Array<Issue & { projectName: string; projectAlias: string }>>(
+      '/api/issues/review',
+    ),
   getIssues: (projectId: string) =>
     get<Issue[]>(`/api/projects/${projectId}/issues`),
   getChildIssues: (projectId: string, parentId: string) =>
@@ -426,6 +433,32 @@ export const kanbanApi = {
     const encodedPath = path.split('/').map(encodeURIComponent).join('/')
     return `/api/projects/${projectId}/files/raw/${encodedPath}`
   },
+
+  // Webhooks
+  getWebhooks: () => get<Webhook[]>('/api/settings/webhooks'),
+  createWebhook: (data: {
+    channel?: string
+    url: string
+    secret?: string
+    events: WebhookEventType[]
+    isActive?: boolean
+  }) => post<Webhook>('/api/settings/webhooks', data),
+  updateWebhook: (
+    id: string,
+    data: {
+      channel?: string
+      url?: string
+      secret?: string | null
+      events?: WebhookEventType[]
+      isActive?: boolean
+    },
+  ) => patch<Webhook>(`/api/settings/webhooks/${id}`, data),
+  deleteWebhook: (id: string) =>
+    del<{ id: string }>(`/api/settings/webhooks/${id}`),
+  getWebhookDeliveries: (id: string) =>
+    get<WebhookDelivery[]>(`/api/settings/webhooks/${id}/deliveries`),
+  testWebhook: (id: string) =>
+    post<{ sent: boolean }>(`/api/settings/webhooks/${id}/test`, {}),
 
   // Notes
   getNotes: () => get<Note[]>('/api/notes'),

@@ -125,7 +125,10 @@ function parsePorcelainLine(line: string): GitChangedFile | null {
 }
 
 async function listChangedFiles(cwd: string): Promise<GitChangedFile[]> {
-  const { code, stdout } = await runGit(['status', '--porcelain=v1', '-uall'], cwd)
+  const { code, stdout } = await runGit(
+    ['status', '--porcelain=v1', '-uall'],
+    cwd,
+  )
   if (code !== 0) return []
   return stdout
     .split('\n')

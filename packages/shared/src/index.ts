@@ -286,6 +286,57 @@ export interface ProjectProcessesResponse {
   processes: ProcessInfo[]
 }
 
+// ── Webhooks ─────────────────────────────────────────────
+
+export type WebhookEventType =
+  | 'issue.created'
+  | 'issue.updated'
+  | 'issue.deleted'
+  | 'issue.status_changed'
+  | 'session.started'
+  | 'session.completed'
+  | 'session.failed'
+
+export const WEBHOOK_EVENT_TYPES: WebhookEventType[] = [
+  'issue.created',
+  'issue.updated',
+  'issue.deleted',
+  'issue.status_changed',
+  'session.started',
+  'session.completed',
+  'session.failed',
+]
+
+export type NotificationChannel = 'webhook' | 'telegram'
+
+export const NOTIFICATION_CHANNELS: NotificationChannel[] = [
+  'webhook',
+  'telegram',
+]
+
+export interface Webhook {
+  id: string
+  channel: NotificationChannel
+  url: string
+  secret: string | null
+  events: WebhookEventType[]
+  isActive: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export interface WebhookDelivery {
+  id: string
+  webhookId: string
+  event: WebhookEventType
+  payload: string
+  statusCode: number | null
+  response: string | null
+  success: boolean
+  duration: number | null
+  createdAt: string
+}
+
 // ── Notes ───────────────────────────────────────────────
 
 export interface Note {

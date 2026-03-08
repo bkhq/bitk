@@ -1,10 +1,9 @@
 import {
   Check,
   Copy,
+  Eye,
   FolderOpen,
   Hash,
-  LayoutGrid,
-  List,
   Menu,
   Plus,
   Settings,
@@ -27,7 +26,6 @@ import { useProjects } from '@/hooks/use-kanban'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { useProjectStats } from '@/hooks/use-project-stats'
 import { getProjectInitials } from '@/lib/format'
-import { cn } from '@/lib/utils'
 import { useNotesStore } from '@/stores/notes-store'
 import { useTerminalStore } from '@/stores/terminal-store'
 import { useViewModeStore } from '@/stores/view-mode-store'
@@ -136,6 +134,7 @@ function MobileHomeMenu({
   onOpenSettings: () => void
 }) {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const [open, setOpen] = useState(false)
 
   return (
@@ -170,6 +169,19 @@ function MobileHomeMenu({
               >
                 <Plus className="h-4.5 w-4.5 text-muted-foreground" />
                 {t('project.newProject')}
+              </button>
+
+              {/* Review */}
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false)
+                  void navigate('/review')
+                }}
+                className="flex items-center gap-3 w-full px-4 min-h-[48px] text-sm text-foreground/80 hover:bg-accent/50 active:bg-accent transition-colors"
+              >
+                <Eye className="h-4.5 w-4.5 text-muted-foreground" />
+                {t('viewMode.review')}
               </button>
 
               <Separator />
@@ -230,41 +242,20 @@ function DesktopHeaderControls({
   onOpenSettings: () => void
 }) {
   const { t } = useTranslation()
-  const { mode, setMode } = useViewModeStore()
-  const isListView = mode === 'list'
+  const navigate = useNavigate()
 
   return (
     <div className="ml-auto flex items-center gap-2">
-      {/* View mode toggle */}
-      <div className="flex items-center rounded-md border border-border bg-muted/30 p-0.5">
-        <button
-          type="button"
-          onClick={() => setMode('kanban')}
-          className={cn(
-            'rounded-sm px-2 py-1 text-xs transition-colors',
-            !isListView
-              ? 'bg-background text-foreground shadow-sm'
-              : 'text-muted-foreground hover:text-foreground',
-          )}
-          aria-label={t('viewMode.kanban')}
-        >
-          <LayoutGrid className="h-3.5 w-3.5" />
-        </button>
-        <button
-          type="button"
-          onClick={() => setMode('list')}
-          className={cn(
-            'rounded-sm px-2 py-1 text-xs transition-colors',
-            isListView
-              ? 'bg-background text-foreground shadow-sm'
-              : 'text-muted-foreground hover:text-foreground',
-          )}
-          aria-label={t('viewMode.list')}
-        >
-          <List className="h-3.5 w-3.5" />
-        </button>
-      </div>
-
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8 text-muted-foreground"
+        onClick={() => navigate('/review')}
+        aria-label={t('viewMode.review')}
+        title={t('viewMode.review')}
+      >
+        <Eye className="h-4 w-4" />
+      </Button>
       <Button
         variant="ghost"
         size="icon"

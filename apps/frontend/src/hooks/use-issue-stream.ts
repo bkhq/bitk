@@ -102,7 +102,7 @@ export function useIssueStream({
   const [isLoadingOlder, setIsLoadingOlder] = useState(false)
   const queryClient = useQueryClient()
 
-  const [refreshCounter, setRefreshCounter] = useState(0)
+  const [_refreshCounter, setRefreshCounter] = useState(0)
 
   const doneReceivedRef = useRef(false)
   const activeExecutionRef = useRef<string | null>(null)
@@ -380,7 +380,7 @@ export function useIssueStream({
     // race: the HTTP response can overwrite SSE entries that arrived between
     // the request and response, making messages appear/disappear/reappear.
     // refreshCounter is included so that refreshLogs() can trigger a re-fetch.
-  }, [projectId, issueId, enabled, markSeen, refreshCounter])
+  }, [projectId, issueId, enabled, markSeen])
 
   // Subscribe to live SSE events for this issue.
   useEffect(() => {

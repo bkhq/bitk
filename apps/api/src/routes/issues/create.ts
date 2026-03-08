@@ -12,6 +12,7 @@ import { issues as issuesTable } from '@/db/schema'
 import { engineRegistry } from '@/engines/executors'
 import type { EngineType } from '@/engines/types'
 import { logger } from '@/logger'
+import { dispatch as webhookDispatch } from '@/webhooks/dispatcher'
 import {
   createIssueSchema,
   parseProjectEnvVars,
@@ -140,6 +141,15 @@ create.post(
       // After successful creation, invalidate relevant caches
       await cacheDelByPrefix(`childCounts:${project.id}`)
       await cacheDel(`projectIssueIds:${project.id}`)
+
+      void webhookDispatch('issue.created', {
+        event: 'issue.created',
+        issueId: newIssue!.id,
+        projectId: project.id,
+        title: body.title,
+        statusId: effectiveStatusId,
+        timestamp: new Date().toISOString(),
+      })
 
       // Only auto-execute when created directly in working
       if (shouldExecute) {
