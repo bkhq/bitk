@@ -52,19 +52,25 @@ export function useChangesSummary(
     return unsub
   }, [issueId, projectId, queryClient])
 
-  // SSE data takes priority over REST data
-  if (sseSummary) return sseSummary
-
   // Derive summary from REST response
-  if (restData) {
+  const restSummary = restData
+    ? {
+        issueId: issueId ?? '',
+        fileCount: restData.files.length,
+        additions: restData.additions,
+        deletions: restData.deletions,
+        root: restData.root,
+      }
+    : null
+
+  // SSE data takes priority, but preserve REST root as fallback
+  // (SSE payloads don't carry root, so worktree paths would be lost)
+  if (sseSummary) {
     return {
-      issueId: issueId ?? '',
-      fileCount: restData.files.length,
-      additions: restData.additions,
-      deletions: restData.deletions,
-      root: restData.root,
+      ...sseSummary,
+      root: restSummary?.root,
     }
   }
 
-  return null
+  return restSummary
 }
