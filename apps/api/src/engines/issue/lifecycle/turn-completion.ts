@@ -1,4 +1,7 @@
-import { relocatePendingForProcessing } from '@/db/pending-messages'
+import {
+  relocatePendingForProcessing,
+  restorePendingVisibility,
+} from '@/db/pending-messages'
 import {
   autoMoveToReview,
   getIssueWithSession,
@@ -104,6 +107,7 @@ export function handleTurnCompleted(
           return
         } catch (flushErr) {
           logger.error({ issueId, err: flushErr }, 'auto_flush_pending_failed')
+          restorePendingVisibility(relocated.oldId)
           // Fall through to normal review flow
         }
       }

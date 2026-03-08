@@ -173,16 +173,6 @@ export function ChatBody({
     })
   }, [deleteIssueMutation, issueId, onAfterDelete])
 
-  const handleEditPending = useCallback(async () => {
-    try {
-      const result = await kanbanApi.deletePendingMessage(projectId, issueId)
-      setPendingEditContent(result.content)
-      removeEntries([result.id])
-    } catch {
-      /* ignore — pending may have been consumed already */
-    }
-  }, [projectId, issueId, removeEntries])
-
   const hasSession = !!issue.sessionStatus
   const { data: globalCmds } = useGlobalSlashCommands(issue.engineType)
   const { data: liveCmds } = useSlashCommands(projectId, issueId, hasSession)
@@ -206,6 +196,16 @@ export function ChatBody({
     removeEntries,
     appendServerMessage,
   } = useSessionState(projectId, issueId, issue)
+
+  const handleEditPending = useCallback(async () => {
+    try {
+      const result = await kanbanApi.deletePendingMessage(projectId, issueId)
+      setPendingEditContent(result.content)
+      removeEntries([result.id])
+    } catch {
+      /* ignore — pending may have been consumed already */
+    }
+  }, [projectId, issueId, removeEntries])
 
   // Reset cancelling state when the session settles or a new turn starts.
   // Without the sessionStatus check, a follow-up that keeps isThinking=true

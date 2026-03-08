@@ -9,6 +9,7 @@ import { getAppSetting } from '@/db/helpers'
 import {
   collectPendingWithAttachments,
   relocatePendingForProcessing,
+  restorePendingVisibility,
 } from '@/db/pending-messages'
 import { issues as issuesTable } from '@/db/schema'
 import { issueEngine } from '@/engines/issue'
@@ -200,6 +201,7 @@ export function flushPendingAsFollowUp(
       )
     } catch (err) {
       logger.error({ issueId, err }, 'pending_flush_followup_failed')
+      if (relocated) restorePendingVisibility(relocated.oldId)
     }
   })()
 }
@@ -343,6 +345,7 @@ export function triggerIssueExecution(
       logger.debug({ issueId, hadPending: !!relocated }, 'auto_execute_started')
     } catch (err) {
       logger.error({ issueId, err }, 'auto_execute_failed')
+      if (relocated) restorePendingVisibility(relocated.oldId)
       issueEngine.setLastError(
         issueId,
         err instanceof Error ? err.message : 'auto_execute_failed',

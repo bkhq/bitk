@@ -253,6 +253,17 @@ export async function relocatePendingForProcessing(issueId: string): Promise<{
 }
 
 /**
+ * Restore a relocated pending message back to visible if dispatch failed.
+ * Prevents losing user input when the engine call fails after relocation.
+ */
+export function restorePendingVisibility(pendingId: string): void {
+  db.update(issueLogs)
+    .set({ visible: 1 })
+    .where(and(eq(issueLogs.id, pendingId), eq(issueLogs.visible, 0)))
+    .run()
+}
+
+/**
  * Mark pending messages as dispatched by setting visible = 0.
  * Only call AFTER the engine has successfully consumed the messages
  * to prevent message loss on failure.
