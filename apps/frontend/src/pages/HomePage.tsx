@@ -176,7 +176,7 @@ function MobileHomeMenu({
                 type="button"
                 onClick={() => {
                   setOpen(false)
-                  navigate('/review')
+                  void navigate('/review')
                 }}
                 className="flex items-center gap-3 w-full px-4 min-h-[48px] text-sm text-foreground/80 hover:bg-accent/50 active:bg-accent transition-colors"
               >
