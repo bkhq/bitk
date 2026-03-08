@@ -220,9 +220,7 @@ describe('ExecutionStore', () => {
       }),
     )
     // Entry with isResult in toolDetail (normal path)
-    store.append(
-      makeToolEntry('tc-detail', true, { turnIndex: 0 }),
-    )
+    store.append(makeToolEntry('tc-detail', true, { turnIndex: 0 }))
 
     const entries = store.getAllEntries()
     expect(entries).toHaveLength(2)
