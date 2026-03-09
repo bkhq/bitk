@@ -2,6 +2,7 @@ import { existsSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { CommandBuilder } from '@/engines/command'
 import { safeEnv } from '@/engines/safe-env'
+import { spawnNode } from '@/engines/spawn'
 import type {
   EngineAvailability,
   EngineCapability,
@@ -129,7 +130,8 @@ export class ClaudeCodeExecutor implements EngineExecutor {
         .env('NPM_CONFIG_LOGLEVEL', 'error')
         .resolve()
 
-      const proc = Bun.spawn([resolved.resolvedPath, ...resolved.args], {
+      const proc = spawnNode([resolved.resolvedPath, ...resolved.args], {
+        stdin: 'ignore',
         stdout: 'pipe',
         stderr: 'pipe',
         env: safeEnv(resolved.env),
@@ -214,7 +216,7 @@ export class ClaudeCodeExecutor implements EngineExecutor {
       .cwd(workingDir)
       .resolve()
 
-    const proc = Bun.spawn([resolved.resolvedPath, ...resolved.args], {
+    const proc = spawnNode([resolved.resolvedPath, ...resolved.args], {
       cwd: resolved.cwd ?? workingDir,
       stdin: 'ignore',
       stdout: 'pipe',
@@ -405,7 +407,7 @@ export class ClaudeCodeExecutor implements EngineExecutor {
       `claude_${mode}_command`,
     )
 
-    const proc = Bun.spawn([resolved.resolvedPath, ...resolved.args], {
+    const proc = spawnNode([resolved.resolvedPath, ...resolved.args], {
       cwd: resolved.cwd ?? options.workingDir,
       stdin: 'pipe',
       stdout: 'pipe',
@@ -426,7 +428,7 @@ export class ClaudeCodeExecutor implements EngineExecutor {
     logger.debug(
       {
         issueId: env.issueId,
-        pid: (proc as { pid?: number }).pid,
+        pid: proc.pid,
         mode,
         promptChars: options.prompt.length,
         permissionMode: options.permissionMode ?? 'auto',
@@ -435,12 +437,12 @@ export class ClaudeCodeExecutor implements EngineExecutor {
     )
 
     // Wrap stdout to intercept control_request messages
-    const filteredStdout = handler.wrapStdout(proc.stdout as ReadableStream<Uint8Array>)
+    const filteredStdout = handler.wrapStdout(proc.stdout)
 
     return {
-      subprocess: proc,
+      subprocess: proc as unknown as SpawnedProcess['subprocess'],
       stdout: filteredStdout,
-      stderr: proc.stderr as ReadableStream<Uint8Array>,
+      stderr: proc.stderr,
       cancel: () => handler.interrupt(),
       protocolHandler: handler,
       spawnCommand: [resolved.resolvedPath, ...resolved.args].join(' '),

@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-03-09 05:00 [BUG-P0]
+
+PIPE-001: Replace Bun.spawn with node:child_process for Claude executor
+
+- Root cause: Bun.spawn stdout pipe breaks prematurely while process still alive
+- Process stays alive (stdin open) → subprocess.exited never resolves → no settlement → frontend stuck in "thinking"
+- Created `engines/spawn.ts` — node:child_process wrapper with Bun Subprocess-compatible interface
+- Updated `ClaudeProtocolHandler` stdin type from Bun `FileSink` to generic `StdinWriter`
+- Replaced all 3 Bun.spawn calls in claude executor with `spawnNode()`
+- Other executors (codex, gemini, echo) unchanged — only claude-code affected
+
 ## 2026-03-09 04:00 [progress]
 
 UI-003: Remove devMode feature entirely

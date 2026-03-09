@@ -1,5 +1,5 @@
-import type { FileSink } from 'bun'
 import { ulid } from 'ulid'
+import type { StdinWriter } from '@/engines/spawn'
 import type { PermissionPolicy } from '@/engines/types'
 import { logger } from '@/logger'
 
@@ -89,7 +89,7 @@ interface ControlRequest {
  * normal log entries.
  */
 export class ClaudeProtocolHandler {
-  private stdin: FileSink
+  private stdin: StdinWriter
   private closed = false
   /**
    * Called when ANY stdout data is received from the process, signaling it is alive.
@@ -101,7 +101,7 @@ export class ClaudeProtocolHandler {
   /** Called when a Result message is received, signaling turn completion. */
   onResult?: (data: unknown) => void
 
-  constructor(stdin: FileSink) {
+  constructor(stdin: StdinWriter) {
     this.stdin = stdin
   }
 
