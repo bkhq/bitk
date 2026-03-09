@@ -186,6 +186,9 @@ async function queryCodexModels(): Promise<EngineModel[]> {
     detached: false,
   })
 
+  // Drain stderr to prevent pipe from filling up and blocking the process
+  const stderrReader = new Response(proc.stderr).text()
+
   const killTimer = setTimeout(() => {
     logger.warn({ message: 'Killing codex app-server after timeout' }, 'codex_models_kill_timeout')
     proc.kill()
@@ -234,9 +237,11 @@ async function queryCodexModels(): Promise<EngineModel[]> {
     logger.debug({ count: models.length, models: models.map(m => m.id) }, 'codex_models_done')
     return models
   } catch (error) {
+    const stderr = await stderrReader.catch(() => '')
     logger.error(
       {
         error: error instanceof Error ? error.message : String(error),
+        stderr: stderr.slice(0, 1000),
       },
       'codex_models_error',
     )
