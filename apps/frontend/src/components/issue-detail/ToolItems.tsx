@@ -256,11 +256,26 @@ export function CommandToolItem({ item }: { item: ToolGroupItem }) {
               </div>
             )
           : null}
-        <CodeBlock
-          content={item.result?.content || item.action.content || '(empty)'}
-          collapsible={false}
-          language={hasError ? 'text' : undefined}
-        />
+        {(() => {
+          const resultContent = item.result?.content || item.action.content || '(empty)'
+          return (
+            <div className="relative group/result">
+              <CodeBlock
+                content={resultContent}
+                collapsible={false}
+                language={hasError ? 'text' : undefined}
+              />
+              <button
+                type="button"
+                className="absolute top-1.5 right-1.5 p-1 rounded opacity-0 group-hover/result:opacity-100 hover:bg-muted/50 text-muted-foreground/50 hover:text-muted-foreground transition-all"
+                title={t('common.copy')}
+                onClick={() => navigator.clipboard.writeText(resultContent)}
+              >
+                <Copy className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          )
+        })()}
       </div>
     </ToolPanel>
   )
