@@ -188,7 +188,7 @@ export function LogEntry({
           'border-foreground/70'
       return (
         <div className="group py-2 animate-message-enter">
-          <div className={`bg-muted/70 px-3 py-2.5 border-l-[3px] ${barColor}`}>
+          <div className={`bg-muted/70 px-3 py-2.5 rounded-md border border-l-[3px] ${barColor}`}>
             {entry.content.trim() ?
                 (
                   <div className="text-[15px] whitespace-pre-wrap break-words text-foreground leading-[1.75]">
