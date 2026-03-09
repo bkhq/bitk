@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-03-09 00:05 [progress]
+
+FEAT-003：MAX_CONCURRENT_EXECUTIONS 可通过设置页面配置
+
+- `ProcessManager` — `maxConcurrent` 改为可变，新增 `setMaxConcurrent()` 方法
+- `IssueEngine` — 新增 `setMaxConcurrent()` + `initMaxConcurrent()` 启动时从 DB 读取
+- `routes/settings/general.ts` — 新增 GET/PATCH `/api/settings/max-concurrent-executions`
+- Frontend — 设置页 General 区域新增数字输入框，支持 1–20 范围
+- i18n — 新增 `maxConcurrentExecutions` / `maxConcurrentExecutionsHint` 键
+
 ## 2026-03-08 23:50 [progress]
 
 LINT-001: Migrate from Biome to ESLint + Prettier

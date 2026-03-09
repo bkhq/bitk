@@ -44,6 +44,11 @@ void migrateSlashCommandsKey()
     logger.error({ err }, 'slash_commands_cache_load_failed')
   })
 
+// Load max concurrent executions setting from DB
+void issueEngine.initMaxConcurrent().catch((err) => {
+  logger.error({ err }, 'init_max_concurrent_failed')
+})
+
 // Run startup reconciliation: mark stale sessions as failed and move
 // orphaned working issues to review.
 void startupReconciliation().catch((err) => {

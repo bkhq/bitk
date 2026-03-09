@@ -268,6 +268,12 @@ export const kanbanApi = {
     patch<{ enabled: boolean }>('/api/settings/worktree-auto-cleanup', {
       enabled,
     }),
+  getMaxConcurrentExecutions: () =>
+    get<{ value: number }>('/api/settings/max-concurrent-executions'),
+  setMaxConcurrentExecutions: (value: number) =>
+    patch<{ value: number }>('/api/settings/max-concurrent-executions', {
+      value,
+    }),
   getCleanupStats: () =>
     get<{
       logs: { logCount: number; toolCallCount: number }

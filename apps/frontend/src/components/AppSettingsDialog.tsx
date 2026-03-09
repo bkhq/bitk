@@ -50,12 +50,14 @@ import {
   useEngineProfiles,
   useEngineSettings,
   useLogPageSize,
+  useMaxConcurrentExecutions,
   useProbeEngines,
   useRestartWithUpgrade,
   useRestoreDeletedIssue,
   useRunCleanup,
   useServerInfo,
   useSetLogPageSize,
+  useSetMaxConcurrentExecutions,
   useSetUpgradeEnabled,
   useSetWorktreeAutoCleanup,
   useSystemInfo,
@@ -144,6 +146,8 @@ function GeneralSection({ open }: { open: boolean }) {
   const [serverName, setServerName] = useState('')
   const [serverUrl, setServerUrl] = useState('')
   const [serverInfoLoaded, setServerInfoLoaded] = useState(false)
+  const { data: maxConcurrentData } = useMaxConcurrentExecutions(open)
+  const setMaxConcurrent = useSetMaxConcurrentExecutions()
 
   const handleSelectWorkspace = (path: string) => {
     updateWsPath.mutate(path)
@@ -299,6 +303,26 @@ function GeneralSection({ open }: { open: boolean }) {
           </SelectContent>
         </Select>
         <p className="text-[11px] text-muted-foreground">{t('settings.logPageSizeHint')}</p>
+      </Field>
+
+      <Field>
+        <Label>{t('settings.maxConcurrentExecutions')}</Label>
+        <Input
+          type="number"
+          min={1}
+          max={20}
+          className="w-24"
+          value={maxConcurrentData?.value ?? 5}
+          onChange={(e) => {
+            const v = Number.parseInt(e.target.value, 10)
+            if (v >= 1 && v <= 20) {
+              setMaxConcurrent.mutate(v)
+            }
+          }}
+        />
+        <p className="text-[11px] text-muted-foreground">
+          {t('settings.maxConcurrentExecutionsHint')}
+        </p>
       </Field>
     </div>
   )

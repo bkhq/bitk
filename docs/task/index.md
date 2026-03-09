@@ -14,6 +14,7 @@
 
 - [x] **FEAT-001 添加 server_name 和 server_url 环境变量** `P2` - file: `docs/task/FEAT-001.md`
 - [x] **FEAT-002 将 SERVER_NAME 和 SERVER_URL 从环境变量迁移到数据库** `P2` - owner: claude - file: `docs/task/FEAT-002.md`
+- [x] **FEAT-003 MAX_CONCURRENT_EXECUTIONS 可通过设置配置** `P2` - owner: claude - plan: `PLAN-006` - file: `docs/task/FEAT-003.md`
 
 ## Webhook
 

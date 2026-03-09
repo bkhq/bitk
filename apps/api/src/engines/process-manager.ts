@@ -60,7 +60,7 @@ export class ProcessManager<TMeta> {
   private exitHandlers = new Map<number, ProcessExitHandler<TMeta>>()
   private nextHandlerId = 0
 
-  private readonly maxConcurrent: number
+  private maxConcurrent: number
   private readonly autoCleanupDelayMs: number
   private readonly killTimeoutMs: number
   private readonly log: ProcessManagerLogger
@@ -88,6 +88,10 @@ export class ProcessManager<TMeta> {
         ;(this.gcTimer as NodeJS.Timeout).unref()
       }
     }
+  }
+
+  setMaxConcurrent(n: number): void {
+    this.maxConcurrent = n
   }
 
   // ---- Registration & State Transitions ----

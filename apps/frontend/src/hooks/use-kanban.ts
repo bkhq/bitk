@@ -28,6 +28,8 @@ export const queryKeys = {
   projectWorktrees: (projectId: string) => ['projects', projectId, 'worktrees'] as const,
   logPageSize: () => ['settings', 'logPageSize'] as const,
   worktreeAutoCleanup: () => ['settings', 'worktreeAutoCleanup'] as const,
+  maxConcurrentExecutions: () =>
+    ['settings', 'maxConcurrentExecutions'] as const,
   upgradeVersion: () => ['upgrade', 'version'] as const,
   upgradeEnabled: () => ['upgrade', 'enabled'] as const,
   upgradeCheck: () => ['upgrade', 'check'] as const,
@@ -507,6 +509,29 @@ export function useSetWorktreeAutoCleanup() {
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.worktreeAutoCleanup(),
+      })
+    },
+  })
+}
+
+// --- Max Concurrent Executions hooks ---
+
+export function useMaxConcurrentExecutions(enabled = false) {
+  return useQuery({
+    queryKey: queryKeys.maxConcurrentExecutions(),
+    queryFn: () => kanbanApi.getMaxConcurrentExecutions(),
+    enabled,
+    staleTime: Infinity,
+  })
+}
+
+export function useSetMaxConcurrentExecutions() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (value: number) => kanbanApi.setMaxConcurrentExecutions(value),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.maxConcurrentExecutions(),
       })
     },
   })

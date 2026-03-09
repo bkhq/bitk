@@ -195,6 +195,23 @@ export class IssueEngine {
     return terminateProcess(this.ctx, issueId)
   }
 
+  // ---- Concurrency config ----
+
+  setMaxConcurrent(n: number): void {
+    this.ctx.pm.setMaxConcurrent(n)
+  }
+
+  async initMaxConcurrent(): Promise<void> {
+    const { getAppSetting } = await import('@/db/helpers')
+    const value = await getAppSetting('engine:maxConcurrentExecutions')
+    if (value) {
+      const n = Number(value)
+      if (Number.isFinite(n) && n >= 1) {
+        this.ctx.pm.setMaxConcurrent(n)
+      }
+    }
+  }
+
   // ---- Error tracking ----
 
   getLastError(issueId: string): string | undefined {

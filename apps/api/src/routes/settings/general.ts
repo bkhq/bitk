@@ -213,6 +213,50 @@ general.patch(
   },
 )
 
+// --- Max Concurrent Executions ---
+
+const MAX_CONCURRENT_KEY = 'engine:maxConcurrentExecutions'
+const DEFAULT_MAX_CONCURRENT = Number(process.env.MAX_CONCURRENT_EXECUTIONS) || 5
+
+// GET /api/settings/max-concurrent-executions
+general.get('/max-concurrent-executions', async (c) => {
+  const value = await getAppSetting(MAX_CONCURRENT_KEY)
+  return c.json({
+    success: true,
+    data: { value: value ? Number(value) : DEFAULT_MAX_CONCURRENT },
+  })
+})
+
+// PATCH /api/settings/max-concurrent-executions
+general.patch(
+  '/max-concurrent-executions',
+  zValidator(
+    'json',
+    z.object({ value: z.number().int().min(1).max(20) }),
+    (result, c) => {
+      if (!result.success) {
+        return c.json(
+          {
+            success: false,
+            error: result.error.issues.map((i) => i.message).join(', '),
+          },
+          400,
+        )
+      }
+    },
+  ),
+  async (c) => {
+    const { value } = c.req.valid('json')
+    await setAppSetting(MAX_CONCURRENT_KEY, String(value))
+
+    // Apply at runtime
+    const { issueEngine } = await import('@/engines/issue')
+    issueEngine.setMaxConcurrent(value)
+
+    return c.json({ success: true, data: { value } })
+  },
+)
+
 // --- Server Info ---
 
 // GET /api/settings/server-info
