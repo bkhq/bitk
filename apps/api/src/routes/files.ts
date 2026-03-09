@@ -81,7 +81,11 @@ function extractPathAfter(c: Context, marker: string): string {
   if (idx < 0) return '.'
   const raw = fullPath.slice(idx + marker.length)
   if (!raw) return '.'
-  return decodeURIComponent(raw)
+  try {
+    return decodeURIComponent(raw)
+  } catch {
+    return raw
+  }
 }
 
 // ── /files/show — JSON browse (directory listing + file preview) ──

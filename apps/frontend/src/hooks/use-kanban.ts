@@ -22,7 +22,7 @@ export const queryKeys = {
     ['projects', projectId, 'issues', 'children', parentId] as const,
   slashCommands: (projectId: string, issueId: string) =>
     ['projects', projectId, 'issues', issueId, 'slash-commands'] as const,
-  projectFiles: (root: string, path: string, hideIgnored: boolean) =>
+  projectFiles: (root: string | null, path: string, hideIgnored: boolean) =>
     ['files', root, path, { hideIgnored }] as const,
   projectProcesses: (projectId: string) => ['projects', projectId, 'processes'] as const,
   projectWorktrees: (projectId: string) => ['projects', projectId, 'worktrees'] as const,
@@ -749,7 +749,7 @@ export function useRestartWithUpgrade() {
 export function useProjectFiles(root: string | null | undefined, path: string, enabled = true) {
   const hideIgnored = useFileBrowserStore(s => s.hideIgnored)
   return useQuery({
-    queryKey: queryKeys.projectFiles(root ?? '', path, hideIgnored),
+    queryKey: queryKeys.projectFiles(root ?? null, path, hideIgnored),
     queryFn: () => kanbanApi.listFiles(root!, path || undefined, hideIgnored),
     enabled: !!root && enabled,
   })

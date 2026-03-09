@@ -1,7 +1,7 @@
 import { X } from 'lucide-react'
 import { useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import { FILE_BROWSER_MIN_WIDTH } from '@/stores/file-browser-store'
+import { FILE_BROWSER_MAX_WIDTH_RATIO, FILE_BROWSER_MIN_WIDTH } from '@/stores/file-browser-store'
 import { FileBrowserContent } from './FileBrowserContent'
 
 export function FileBrowserPanel({
@@ -17,6 +17,7 @@ export function FileBrowserPanel({
 }) {
   const { t } = useTranslation()
   const dragRef = useRef<{ startX: number, startWidth: number } | null>(null)
+  const maxWidth = Math.round((typeof window === 'undefined' ? 800 : window.innerWidth) * FILE_BROWSER_MAX_WIDTH_RATIO)
 
   return (
     <div
@@ -35,6 +36,7 @@ export function FileBrowserPanel({
           aria-label={t('fileBrowser.resizePanel')}
           aria-valuenow={width}
           aria-valuemin={FILE_BROWSER_MIN_WIDTH}
+          aria-valuemax={maxWidth}
           tabIndex={0}
           className="absolute top-0 bottom-0 left-0 w-2 -translate-x-1/2 z-10 cursor-col-resize group select-none outline-none"
           onPointerDown={(e) => {
