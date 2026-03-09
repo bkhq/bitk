@@ -17,8 +17,7 @@ function displayWidth(str: string): number {
       || (code >= 0x20000 && code <= 0x2FA1F)
     ) {
       w += 2
-    }
-    else {
+    } else {
       w += 1
     }
   }
@@ -93,8 +92,7 @@ function preprocessContent(text: string): string {
     const isTableLine = trimmed.startsWith('|') && trimmed.endsWith('|') && trimmed.length > 1
     if (isTableLine) {
       tableBuf.push(line)
-    }
-    else {
+    } else {
       flushTable()
       result.push(line)
     }

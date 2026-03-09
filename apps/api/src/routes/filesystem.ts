@@ -41,8 +41,7 @@ filesystem.get('/dirs', async (c) => {
       success: true,
       data: { current, parent, dirs },
     })
-  }
-  catch {
+  } catch {
     return c.json({
       success: true,
       data: { current, parent, dirs: [] },
@@ -90,8 +89,7 @@ filesystem.post(
     try {
       await mkdir(target, { recursive: true })
       return c.json({ success: true, data: { path: target } }, 201)
-    }
-    catch {
+    } catch {
       return c.json({ success: false, error: 'Failed to create directory' }, 500)
     }
   },

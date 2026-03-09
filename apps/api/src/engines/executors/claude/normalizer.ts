@@ -41,8 +41,7 @@ export class ClaudeLogNormalizer {
     let data: ClaudeJson
     try {
       data = JSON.parse(rawLine)
-    }
-    catch {
+    } catch {
       if (rawLine.trim()) {
         return { entryType: 'system-message', content: rawLine }
       }

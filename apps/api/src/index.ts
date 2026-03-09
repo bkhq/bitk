@@ -75,8 +75,7 @@ const listenPort = Number(process.env.PORT ?? 3000)
 if (staticAssets.size > 0) {
   app.use('*', embeddedStatic(staticAssets))
   logger.info({ assets: staticAssets.size }, 'embedded_static_loaded')
-}
-else {
+} else {
   // In package mode, static files live in APP_DIR/public/.
   // In dev mode, they live in apps/frontend/dist/.
   const staticRoot = APP_DIR ? resolve(APP_DIR, 'public') : resolve(ROOT_DIR, 'apps/frontend/dist')

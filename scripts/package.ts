@@ -70,8 +70,7 @@ const outfile = resolve(OUT_DIR, args.outfile ?? defaultOutfile)
 
 if (args['skip-frontend']) {
   step('Skipping frontend build (--skip-frontend)')
-}
-else {
+} else {
   step('Building frontend...')
   const vite = Bun.spawn(['bun', 'run', 'build'], {
     cwd: ROOT,

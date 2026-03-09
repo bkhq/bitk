@@ -45,8 +45,7 @@ export class IssueDebugLog {
   private write(data: string): void {
     try {
       appendFileSync(this.filePath, data)
-    }
-    catch {
+    } catch {
       // best-effort — don't crash the process
     }
   }
@@ -65,8 +64,7 @@ export function createIssueDebugLog(issueId: string, executionId: string): Issue
   if (!ENABLED) return NOOP_LOG
   try {
     return new IssueDebugLog(issueId, executionId)
-  }
-  catch {
+  } catch {
     return NOOP_LOG
   }
 }

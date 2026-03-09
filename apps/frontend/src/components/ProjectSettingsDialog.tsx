@@ -297,8 +297,7 @@ export function ProjectSettingsDialog({
         onError: (err) => {
           if (err.message === 'directory_already_used') {
             setError(t('project.directoryAlreadyUsed'))
-          }
-          else {
+          } else {
             setError(err.message)
           }
         },
@@ -532,11 +531,9 @@ function GeneralSection({
               try {
                 const result = await kanbanApi.detectGitRemote(dir)
                 setRepositoryUrl(result.url)
-              }
-              catch {
+              } catch {
                 // silently ignore — directory may not be a git repo
-              }
-              finally {
+              } finally {
                 setDetectingRemote(false)
               }
             }}

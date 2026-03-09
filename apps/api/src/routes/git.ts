@@ -45,8 +45,7 @@ git.post(
       if (!s.isDirectory()) {
         return c.json({ success: false, error: 'not_a_directory' }, 400)
       }
-    }
-    catch {
+    } catch {
       return c.json({ success: false, error: 'directory_not_found' }, 404)
     }
 

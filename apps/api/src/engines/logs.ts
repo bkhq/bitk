@@ -35,8 +35,7 @@ export async function* normalizeStream(
         if (result) {
           if (Array.isArray(result)) {
             for (const entry of result) yield entry
-          }
-          else {
+          } else {
             yield result
           }
         }
@@ -49,14 +48,12 @@ export async function* normalizeStream(
       if (result) {
         if (Array.isArray(result)) {
           for (const entry of result) yield entry
-        }
-        else {
+        } else {
           yield result
         }
       }
     }
-  }
-  finally {
+  } finally {
     reader.releaseLock()
   }
 }

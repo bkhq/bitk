@@ -26,8 +26,7 @@ export async function getPendingMessage(issueId: string) {
     rows.find((row) => {
       try {
         return JSON.parse(row.metadata!).type === 'pending'
-      }
-      catch {
+      } catch {
         return false
       }
     }) ?? null
@@ -51,8 +50,7 @@ export async function getPendingMessages(issueId: string) {
   return rows.filter((row) => {
     try {
       return JSON.parse(row.metadata!).type === 'pending'
-    }
-    catch {
+    } catch {
       return false
     }
   })
@@ -80,8 +78,7 @@ export async function upsertPendingMessage(
     let existingMeta: Record<string, unknown> = {}
     try {
       existingMeta = existing.metadata ? JSON.parse(existing.metadata) : {}
-    }
-    catch {
+    } catch {
       // ignore
     }
 
@@ -168,8 +165,7 @@ export async function deletePendingMessage(issueId: string): Promise<{
   let meta: Record<string, unknown> = {}
   try {
     meta = pending.metadata ? JSON.parse(pending.metadata) : {}
-  }
-  catch {
+  } catch {
     // ignore
   }
 
@@ -230,8 +226,7 @@ export async function relocatePendingForProcessing(issueId: string): Promise<{
   let meta: Record<string, unknown> = {}
   try {
     meta = pending.metadata ? JSON.parse(pending.metadata) : {}
-  }
-  catch {
+  } catch {
     // ignore
   }
 

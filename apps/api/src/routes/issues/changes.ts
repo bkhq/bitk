@@ -60,8 +60,7 @@ async function resolveChangesDir(
   try {
     const s = await stat(wtPath)
     if (s.isDirectory()) return wtPath
-  }
-  catch {
+  } catch {
     // worktree dir doesn't exist — fall back
   }
   return projectRoot
@@ -132,8 +131,7 @@ async function summarizeFileLines(
     try {
       const content = await Bun.file(resolve(cwd, file.path)).text()
       return { additions: countTextLines(content), deletions: 0 }
-    }
-    catch {
+    } catch {
       return { additions: 0, deletions: 0 }
     }
   }
@@ -155,8 +153,7 @@ async function summarizeFileLines(
     const additions = Number.isNaN(Number(addRaw)) ? 0 : Number(addRaw)
     const deletions = Number.isNaN(Number(delRaw)) ? 0 : Number(delRaw)
     return { additions, deletions }
-  }
-  catch {
+  } catch {
     return { additions: 0, deletions: 0 }
   }
 }
@@ -270,8 +267,7 @@ changes.get('/:id/changes/file', async (c) => {
     const content = await Bun.file(abs).text()
     oldText = ''
     newText = content
-  }
-  else {
+  } else {
     const { stdout } = await runGit(['diff', '--no-color', '--no-ext-diff', '--', path], root)
     patch = stdout
 
@@ -292,8 +288,7 @@ changes.get('/:id/changes/file', async (c) => {
       const abs = resolve(root, path)
       try {
         newText = await Bun.file(abs).text()
-      }
-      catch {
+      } catch {
         newText = ''
       }
     }

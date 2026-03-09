@@ -66,8 +66,7 @@ export async function spawnWithSessionFallback(
       },
       spawnCtx,
     )
-  }
-  catch (error) {
+  } catch (error) {
     if (!isMissingExternalSessionError(error)) throw error
     const externalSessionId = crypto.randomUUID()
     logger.warn(
@@ -176,16 +175,14 @@ export async function spawnRetry(
         if (await isWorktreeRegistered(baseDir, candidatePath)) {
           worktreePath = candidatePath
           workingDir = candidatePath
-        }
-        else {
+        } else {
           logger.warn(
             { issueId, candidatePath, baseDir },
             'worktree_not_registered_follow_up_fallback',
           )
         }
       }
-    }
-    catch {
+    } catch {
       // Worktree doesn't exist — follow-up in base dir
     }
   }
@@ -299,21 +296,18 @@ export async function spawnFollowUpProcess(
         if (await isWorktreeRegistered(baseDir, candidatePath)) {
           worktreePath = candidatePath
           workingDir = candidatePath
-        }
-        else {
+        } else {
           logger.warn({ issueId, candidatePath, baseDir }, 'worktree_not_registered_recreating')
           worktreePath = await createWorktree(baseDir, issue.projectId, issueId)
           workingDir = worktreePath
         }
       }
-    }
-    catch {
+    } catch {
       // Worktree dir doesn't exist — create fresh
       try {
         worktreePath = await createWorktree(baseDir, issue.projectId, issueId)
         workingDir = worktreePath
-      }
-      catch (wtErr) {
+      } catch (wtErr) {
         logger.warn({ issueId, error: wtErr }, 'worktree_creation_failed_fallback_to_base')
       }
     }
@@ -334,8 +328,7 @@ export async function spawnFollowUpProcess(
       envVars: projCtx.envVars,
       systemPrompt: projCtx.systemPrompt,
     })
-  }
-  catch (spawnError) {
+  } catch (spawnError) {
     // Spawn failed after we already emitted 'running' and persisted the user
     // message.  Revert the session status so the issue doesn't get stuck in
     // 'running' forever with no process to settle it.
@@ -351,8 +344,7 @@ export async function spawnFollowUpProcess(
     if (messageId) {
       try {
         removeLogEntry(messageId)
-      }
-      catch (e) {
+      } catch (e) {
         logger.error({ issueId, messageId, error: e }, 'spawn_failed_remove_user_message_error')
       }
     }

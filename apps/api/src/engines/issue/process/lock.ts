@@ -53,8 +53,7 @@ export async function withIssueLock<T>(
       // Restore the previous tail so an already-running lock holder remains visible.
       if (currentTail) {
         ctx.issueOpLocks.set(issueId, currentTail)
-      }
-      else {
+      } else {
         ctx.issueOpLocks.delete(issueId)
       }
     }
@@ -84,8 +83,7 @@ export async function withIssueLock<T>(
       }),
     ])
     return result
-  }
-  finally {
+  } finally {
     if (execTimer !== undefined) clearTimeout(execTimer)
     const heldMs = Date.now() - execStart
     if (heldMs > 30_000) {

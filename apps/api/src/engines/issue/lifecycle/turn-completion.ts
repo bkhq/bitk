@@ -69,8 +69,7 @@ export function handleTurnCompleted(
           sessionStatus: finalStatus,
           externalSessionId: null,
         })
-      }
-      else {
+      } else {
         await updateIssueSession(issueId, { sessionStatus: finalStatus })
       }
 
@@ -99,8 +98,7 @@ export function handleTurnCompleted(
           emitIssueLogRemoved(issueId, [relocated.oldId])
           logger.debug({ issueId, executionId }, 'turn_deferred_to_followup')
           return
-        }
-        catch (flushErr) {
+        } catch (flushErr) {
           logger.error({ issueId, err: flushErr }, 'auto_flush_pending_failed')
           restorePendingVisibility(relocated.oldId)
           // Fall through to normal review flow
@@ -128,8 +126,7 @@ export function handleTurnCompleted(
       await autoMoveToReview(issueId)
       emitIssueSettled(issueId, executionId, finalStatus)
       logger.info({ issueId, executionId, finalStatus }, 'issue_turn_settled')
-    }
-    catch (error) {
+    } catch (error) {
       logger.error({ issueId, executionId, error }, 'issue_turn_settle_failed')
       // Safety net: ensure frontend is always notified even if settlement
       // partially failed. Without this, the frontend never receives the
@@ -165,8 +162,7 @@ export function handleTurnCompleted(
           return
         }
         await updateIssueSession(issueId, { sessionStatus: finalStatus })
-      }
-      catch (innerErr) {
+      } catch (innerErr) {
         logger.error({ issueId, executionId, err: innerErr }, 'issue_turn_settle_catch_db_failed')
       }
       emitIssueSettled(issueId, executionId, finalStatus)
@@ -225,8 +221,7 @@ export async function flushQueuedInputs(
     // Remove only the consumed messages — new inputs queued during the
     // await above are preserved for the next flush cycle.
     dispatch(managed, { type: 'SPLICE_PENDING_INPUTS', count: all.length })
-  }
-  catch (err) {
+  } catch (err) {
     // Messages preserved in managed.pendingInputs for next flush attempt
     logger.error(
       { issueId, executionId: managed.executionId, err },

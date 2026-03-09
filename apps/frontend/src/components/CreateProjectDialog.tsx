@@ -78,8 +78,7 @@ export function CreateProjectDialog({
         onError: (err) => {
           if (err.message === 'directory_already_used') {
             setError(t('project.directoryAlreadyUsed'))
-          }
-          else {
+          } else {
             setError(err.message)
           }
         },
@@ -186,11 +185,9 @@ export function CreateProjectDialog({
                   try {
                     const result = await kanbanApi.detectGitRemote(dir)
                     setRepositoryUrl(result.url)
-                  }
-                  catch {
+                  } catch {
                     // silently ignore — directory may not be a git repo
-                  }
-                  finally {
+                  } finally {
                     setDetectingRemote(false)
                   }
                 }}

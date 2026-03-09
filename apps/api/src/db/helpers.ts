@@ -153,8 +153,7 @@ export async function getProbeResults(): Promise<ProbeData | null> {
       engines: JSON.parse(enginesJson),
       models: JSON.parse(modelsJson),
     }
-  }
-  catch {
+  } catch {
     return null
   }
 }

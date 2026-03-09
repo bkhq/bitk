@@ -93,8 +93,7 @@ export function getLogsFromDb(
     if (isReverse) {
       // Reverse: include entries >= boundaryId (oldest conversation message we keep)
       allConditions.push(sql`${logsTable.id} >= ${boundaryId}`)
-    }
-    else {
+    } else {
       // Forward: include entries <= boundaryId (newest conversation message we keep)
       allConditions.push(sql`${logsTable.id} <= ${boundaryId}`)
     }

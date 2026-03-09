@@ -30,8 +30,7 @@ async function runWorktreeCleanup(): Promise<void> {
   let projectEntries: import('node:fs').Dirent[]
   try {
     projectEntries = await readdir(worktreeBaseDir, { withFileTypes: true })
-  }
-  catch {
+  } catch {
     return // No worktree directory at all
   }
 
@@ -59,8 +58,7 @@ async function runWorktreeCleanup(): Promise<void> {
     let issueEntries: import('node:fs').Dirent[]
     try {
       issueEntries = await readdir(projectWorktreeDir, { withFileTypes: true })
-    }
-    catch {
+    } catch {
       continue
     }
 
@@ -108,8 +106,7 @@ async function runWorktreeCleanup(): Promise<void> {
           { projectId: issue.projectId, issueId: issue.id, worktreePath },
           'worktree_auto_cleaned',
         )
-      }
-      catch (err) {
+      } catch (err) {
         logger.warn(
           { projectId: issue.projectId, issueId: issue.id, err },
           'worktree_auto_cleanup_failed',

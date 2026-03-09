@@ -44,11 +44,9 @@ export function DirectoryPicker({
     try {
       const data = await kanbanApi.listDirs(path)
       setDirData(data)
-    }
-    catch (e) {
+    } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load directories')
-    }
-    finally {
+    } finally {
       setLoading(false)
     }
   }
@@ -56,8 +54,7 @@ export function DirectoryPicker({
   useEffect(() => {
     if (open) {
       void fetchDirs(initialPath || undefined)
-    }
-    else {
+    } else {
       setDirData(null)
       setError(null)
       setShowNewFolder(false)
@@ -92,11 +89,9 @@ export function DirectoryPicker({
       setShowNewFolder(false)
       setNewFolderName('')
       void fetchDirs(result.path)
-    }
-    catch (e) {
+    } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to create directory')
-    }
-    finally {
+    } finally {
       setCreating(false)
     }
   }

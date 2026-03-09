@@ -170,19 +170,16 @@ export class ProcessManager<TMeta> {
           },
           'pm_sigkill_sent',
         )
-      }
-      catch {
+      } catch {
         /* already dead */
       }
     }, this.killTimeoutMs)
 
     try {
       await entry.subprocess.exited
-    }
-    catch (err) {
+    } catch (err) {
       this.log.debug?.({ pm: this.name, id, err }, 'pm_terminate_exited_error')
-    }
-    finally {
+    } finally {
       clearTimeout(killTimeout)
       if (!entry.finishedAt) {
         entry.finishedAt = new Date()
@@ -215,8 +212,7 @@ export class ProcessManager<TMeta> {
     try {
       entry.subprocess.kill(9)
       this.log.info?.({ pm: this.name, id, group: entry.group, pid }, 'pm_force_kill')
-    }
-    catch {
+    } catch {
       this.log.debug?.({ pm: this.name, id, pid }, 'pm_force_kill_already_dead')
     }
     if (!TERMINAL_STATES.has(entry.state)) {
@@ -392,8 +388,7 @@ export class ProcessManager<TMeta> {
         if (!TERMINAL_STATES.has(entry.state)) {
           const next: ProcessState = code === 0 ? 'completed' : 'failed'
           this.transitionState(entry.id, next)
-        }
-        else if (!entry.finishedAt) {
+        } else if (!entry.finishedAt) {
           entry.finishedAt = new Date()
         }
 
@@ -476,8 +471,7 @@ export class ProcessManager<TMeta> {
     for (const handler of this.stateChangeHandlers.values()) {
       try {
         handler(entry, prev, next)
-      }
-      catch (err) {
+      } catch (err) {
         this.log.error?.(
           { pm: this.name, id: entry.id, prev, next, err },
           'pm_state_change_handler_error',
@@ -490,8 +484,7 @@ export class ProcessManager<TMeta> {
     for (const handler of this.exitHandlers.values()) {
       try {
         handler(entry, exitCode)
-      }
-      catch (err) {
+      } catch (err) {
         this.log.error?.({ pm: this.name, id: entry.id, exitCode, err }, 'pm_exit_handler_error')
       }
     }

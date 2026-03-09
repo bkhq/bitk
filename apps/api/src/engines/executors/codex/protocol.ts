@@ -289,15 +289,13 @@ export class CodexProtocolHandler {
 
     try {
       this.notificationController?.close()
-    }
-    catch {
+    } catch {
       /* already closed */
     }
 
     try {
       this.stdin.end()
-    }
-    catch {
+    } catch {
       /* already closed */
     }
   }
@@ -321,11 +319,9 @@ export class CodexProtocolHandler {
           }
         }
         if (buffer.trim()) this.processLine(buffer)
-      }
-      catch (error) {
+      } catch (error) {
         logger.warn({ error }, 'codex_protocol_reader_error')
-      }
-      finally {
+      } finally {
         reader.releaseLock()
         this.close()
       }
@@ -341,13 +337,11 @@ export class CodexProtocolHandler {
     let msg: Record<string, unknown>
     try {
       msg = JSON.parse(line)
-    }
-    catch {
+    } catch {
       // Non-JSON line — push through as-is
       try {
         this.notificationController?.enqueue(this.encoder.encode(`${line}\n`))
-      }
-      catch {
+      } catch {
         /* controller closed */
       }
       return
@@ -368,8 +362,7 @@ export class CodexProtocolHandler {
         this.trackNotification(msg as unknown as JsonRpcNotification)
         try {
           this.notificationController?.enqueue(this.encoder.encode(`${line}\n`))
-        }
-        catch {
+        } catch {
           /* controller closed */
         }
         break
@@ -377,8 +370,7 @@ export class CodexProtocolHandler {
       default:
         try {
           this.notificationController?.enqueue(this.encoder.encode(`${line}\n`))
-        }
-        catch {
+        } catch {
           /* controller closed */
         }
         break
@@ -417,8 +409,7 @@ export class CodexProtocolHandler {
       // Push orphan response through for downstream processing
       try {
         this.notificationController?.enqueue(this.encoder.encode(`${JSON.stringify(response)}\n`))
-      }
-      catch {
+      } catch {
         /* controller closed */
       }
       return
@@ -434,8 +425,7 @@ export class CodexProtocolHandler {
         'codex_protocol_rpc_error',
       )
       pending.reject(new Error(errMsg))
-    }
-    else {
+    } else {
       logger.debug({ id: response.id }, 'codex_protocol_rpc_response')
       pending.resolve(response.result)
 
@@ -446,8 +436,7 @@ export class CodexProtocolHandler {
           result: response.result,
         })
         this.notificationController?.enqueue(this.encoder.encode(`${responseJson}\n`))
-      }
-      catch {
+      } catch {
         /* controller closed */
       }
     }
@@ -507,8 +496,7 @@ export class CodexProtocolHandler {
       }
       this.stdin.write(`${json}\n`)
       this.stdin.flush?.()
-    }
-    catch (error) {
+    } catch (error) {
       logger.warn({ error }, 'codex_protocol_write_failed')
     }
   }

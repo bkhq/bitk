@@ -108,8 +108,7 @@ update.patch(
               prompt: existing.prompt,
               model: existing.model,
             })
-          }
-          else if (['completed', 'failed', 'cancelled'].includes(existing.sessionStatus)) {
+          } else if (['completed', 'failed', 'cancelled'].includes(existing.sessionStatus)) {
             // Session already finished — flush pending messages as follow-up
             toFlush.push({ id: u.id, model: existing.model })
           }
@@ -234,8 +233,7 @@ update.patch(
     if (body.parentIssueId !== undefined) {
       if (body.parentIssueId === null) {
         updates.parentIssueId = null
-      }
-      else {
+      } else {
         if (body.parentIssueId === issueId) {
           return c.json({ success: false, error: 'Issue cannot be its own parent' }, 400)
         }
@@ -318,8 +316,7 @@ update.patch(
         project.systemPrompt,
         parseProjectEnvVars(project.envVars),
       )
-    }
-    else if (shouldFlush) {
+    } else if (shouldFlush) {
       flushPendingAsFollowUp(issueId, { model: existing.model })
     }
 

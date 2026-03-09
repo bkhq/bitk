@@ -30,8 +30,7 @@ export function applyAutoTitle(issueId: string, content: string): void {
       .run()
     emitIssueUpdated(issueId, { title })
     logger.info({ issueId, title }, 'auto_title_updated')
-  }
-  catch (err) {
+  } catch (err) {
     logger.warn({ issueId, err }, 'auto_title_update_failed')
   }
 }

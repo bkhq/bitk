@@ -97,8 +97,7 @@ export function ChatInput({
     if (!draftKey) return ''
     try {
       return localStorage.getItem(draftKey) ?? ''
-    }
-    catch {
+    } catch {
       return ''
     }
   })
@@ -119,8 +118,7 @@ export function ChatInput({
     }
     try {
       setInput(localStorage.getItem(draftKey) ?? '')
-    }
-    catch {
+    } catch {
       setInput('')
     }
   }, [draftKey])
@@ -135,12 +133,10 @@ export function ChatInput({
     try {
       if (input) {
         localStorage.setItem(draftKey, input)
-      }
-      else {
+      } else {
         localStorage.removeItem(draftKey)
       }
-    }
-    catch {
+    } catch {
       /* quota exceeded — ignore */
     }
   }, [draftKey, input])
@@ -304,8 +300,7 @@ export function ChatInput({
     if (draftKey) {
       try {
         localStorage.removeItem(draftKey)
-      }
-      catch {
+      } catch {
         /* ignore */
       }
     }
@@ -364,8 +359,7 @@ export function ChatInput({
           behavior: 'smooth',
         })
       }, 100)
-    }
-    catch (err) {
+    } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
       setSendError(msg)
       // Restore input and files on failure — only if still on the same issue.
@@ -376,8 +370,7 @@ export function ChatInput({
         setAttachedFiles(filesToSend)
       }
       setTimeout(setSendError, 5000, null)
-    }
-    finally {
+    } finally {
       isSendingRef.current = false
     }
   }

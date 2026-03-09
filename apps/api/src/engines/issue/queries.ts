@@ -50,8 +50,7 @@ function parseCategorized(raw: string): CategorizedCommands | null {
       }
     }
     return null
-  }
-  catch {
+  } catch {
     return null
   }
 }
@@ -64,8 +63,7 @@ export async function refreshSlashCommandsCache(): Promise<void> {
       const cat = raw ? parseCategorized(raw) : null
       if (cat) {
         cachedCommands.set(et, cat)
-      }
-      else {
+      } else {
         cachedCommands.delete(et)
       }
     }),
@@ -78,8 +76,7 @@ export async function refreshSlashCommandsCacheForEngine(engineType: EngineType)
   const cat = raw ? parseCategorized(raw) : null
   if (cat) {
     cachedCommands.set(engineType, cat)
-  }
-  else {
+  } else {
     cachedCommands.delete(engineType)
   }
 }

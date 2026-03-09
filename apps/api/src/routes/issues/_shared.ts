@@ -111,8 +111,7 @@ function parseTags(raw: string | null | undefined): string[] | null {
   try {
     const parsed = JSON.parse(raw)
     candidates = Array.isArray(parsed) ? parsed : [raw]
-  }
-  catch {
+  } catch {
     candidates = [raw]
   }
   const valid = candidates.filter(
@@ -157,8 +156,7 @@ export function parseProjectEnvVars(
   try {
     const parsed = JSON.parse(raw) as Record<string, string>
     return Object.keys(parsed).length > 0 ? parsed : undefined
-  }
-  catch {
+  } catch {
     return undefined
   }
 }
@@ -187,8 +185,7 @@ export function flushPendingAsFollowUp(issueId: string, issue: { model: string |
       // Notify frontend to remove old pending entry
       emitIssueLogRemoved(issueId, [relocated.oldId])
       logger.debug({ issueId, oldPendingId: relocated.oldId }, 'pending_flushed_as_followup')
-    }
-    catch (err) {
+    } catch (err) {
       logger.error({ issueId, err }, 'pending_flush_followup_failed')
       if (relocated) restorePendingVisibility(relocated.oldId)
     }
@@ -288,12 +285,10 @@ export function triggerIssueExecution(
           const s = await stat(resolvedDir)
           if (s.isDirectory()) {
             effectiveWorkingDir = resolvedDir
-          }
-          else {
+          } else {
             logger.warn({ issueId, resolvedDir }, 'auto_execute_workdir_not_directory')
           }
-        }
-        catch (error) {
+        } catch (error) {
           logger.warn({ issueId, resolvedDir, error }, 'auto_execute_workdir_prepare_failed')
         }
       }
@@ -320,8 +315,7 @@ export function triggerIssueExecution(
         emitIssueLogRemoved(issueId, [relocated.oldId])
       }
       logger.debug({ issueId, hadPending: !!relocated }, 'auto_execute_started')
-    }
-    catch (err) {
+    } catch (err) {
       logger.error({ issueId, err }, 'auto_execute_failed')
       if (relocated) restorePendingVisibility(relocated.oldId)
       issueEngine.setLastError(issueId, err instanceof Error ? err.message : 'auto_execute_failed')
@@ -332,8 +326,7 @@ export function triggerIssueExecution(
           .where(eq(issuesTable.id, issueId))
         // Notify frontend so it doesn't stay stuck in "working" state
         emitIssueUpdated(issueId, { sessionStatus: 'failed' })
-      }
-      catch (dbErr) {
+      } catch (dbErr) {
         logger.error({ issueId, err: dbErr }, 'auto_execute_status_update_failed')
       }
     }

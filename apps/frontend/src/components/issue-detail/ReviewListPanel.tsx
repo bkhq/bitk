@@ -50,8 +50,7 @@ export function ReviewListPanel({
       const existing = map.get(issue.projectId)
       if (existing) {
         existing.issues.push(issue)
-      }
-      else {
+      } else {
         map.set(issue.projectId, {
           projectId: issue.projectId,
           projectName: issue.projectName,

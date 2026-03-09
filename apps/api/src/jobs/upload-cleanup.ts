@@ -20,8 +20,7 @@ export function startUploadCleanup(intervalMs = 60 * 60 * 1000): () => void {
         }
       }
       if (cleaned > 0) logger.info({ cleaned }, 'upload_cleanup_done')
-    }
-    catch (err) {
+    } catch (err) {
       logger.error({ err }, 'upload_cleanup_error')
     }
   }, intervalMs)

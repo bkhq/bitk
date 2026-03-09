@@ -92,8 +92,7 @@ describe('withIssueLock deep behavior', () => {
 
       expect(ctx.issueOpLocks.get(issueId)).toBe(never)
       expect(ctx.lockDepth.get(issueId)).toBe(1)
-    }
-    finally {
+    } finally {
       ;(globalThis as any).setTimeout = originalSetTimeout
     }
   })

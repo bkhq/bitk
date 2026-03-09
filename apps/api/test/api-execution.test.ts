@@ -255,8 +255,7 @@ describe('POST /api/projects/:projectId/issues/:id/restart', () => {
     if (result.status === 200) {
       const data = expectSuccess(result)
       expect(data.executionId).toBeTruthy()
-    }
-    else {
+    } else {
       // Session was already completed, can't restart
       expect(result.status).toBe(400)
     }

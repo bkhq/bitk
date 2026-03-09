@@ -26,11 +26,9 @@ export async function settleIssue(
   try {
     await updateIssueSession(issueId, { sessionStatus: status })
     await autoMoveToReview(issueId)
-  }
-  catch (err) {
+  } catch (err) {
     logger.error({ issueId, executionId, status, err }, 'settle_issue_partial_failure')
-  }
-  finally {
+  } finally {
     cleanupDomainData(ctx, executionId)
     emitDiagnosticLog(issueId, executionId, `[BKD] Issue settled (status=${status})`, {
       event: 'issue_settled',

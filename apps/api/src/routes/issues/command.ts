@@ -75,8 +75,7 @@ command.post(
 
       try {
         await mkdir(resolvedDir, { recursive: true })
-      }
-      catch {
+      } catch {
         return c.json(
           {
             success: false,
@@ -91,8 +90,7 @@ command.post(
         if (!s.isDirectory()) {
           return c.json({ success: false, error: 'Project directory is not a directory' }, 400)
         }
-      }
-      catch {
+      } catch {
         return c.json(
           {
             success: false,
@@ -133,8 +131,7 @@ command.post(
           messageId: result.messageId,
         },
       })
-    }
-    catch (error) {
+    } catch (error) {
       logger.warn(
         {
           projectId: project.id,
@@ -183,8 +180,7 @@ command.post('/:id/restart', async (c) => {
       success: true,
       data: { executionId: result.executionId, issueId },
     })
-  }
-  catch (error) {
+  } catch (error) {
     logger.warn(
       {
         projectId: project.id,
@@ -220,8 +216,7 @@ command.post('/:id/cancel', async (c) => {
   try {
     const status = await issueEngine.cancelIssue(issueId)
     return c.json({ success: true, data: { issueId, status } })
-  }
-  catch (error) {
+  } catch (error) {
     logger.warn(
       {
         projectId: project.id,

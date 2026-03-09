@@ -58,8 +58,7 @@ class EventBus {
         }
         this.dispatch(data.issueId, h => h.onLog(data.entry))
         this.notifyActivity(data.issueId)
-      }
-      catch {
+      } catch {
         /* ignore parse errors */
       }
     })
@@ -72,8 +71,7 @@ class EventBus {
         }
         this.dispatch(data.issueId, h => h.onLogUpdated(data.entry))
         this.notifyActivity(data.issueId)
-      }
-      catch {
+      } catch {
         /* ignore parse errors */
       }
     })
@@ -86,8 +84,7 @@ class EventBus {
         }
         this.dispatch(data.issueId, h => h.onLogRemoved(data.messageIds))
         this.notifyActivity(data.issueId)
-      }
-      catch {
+      } catch {
         /* ignore parse errors */
       }
     })
@@ -102,8 +99,7 @@ class EventBus {
         this.dispatch(data.issueId, h =>
           h.onState({ executionId: data.executionId, state: data.state }))
         this.notifyActivity(data.issueId)
-      }
-      catch {
+      } catch {
         /* ignore */
       }
     })
@@ -116,8 +112,7 @@ class EventBus {
         }
         this.dispatch(data.issueId, h => h.onDone({ finalStatus: data.finalStatus }))
         this.notifyActivity(data.issueId)
-      }
-      catch {
+      } catch {
         /* ignore */
       }
     })
@@ -131,14 +126,12 @@ class EventBus {
         for (const cb of this.issueUpdatedListeners) {
           try {
             cb(data)
-          }
-          catch {
+          } catch {
             /* ignore */
           }
         }
         this.notifyActivity(data.issueId)
-      }
-      catch {
+      } catch {
         /* ignore parse errors */
       }
     })
@@ -149,13 +142,11 @@ class EventBus {
         for (const cb of this.changesSummaryListeners) {
           try {
             cb(data)
-          }
-          catch {
+          } catch {
             /* ignore */
           }
         }
-      }
-      catch {
+      } catch {
         /* ignore parse errors */
       }
     })
@@ -257,8 +248,7 @@ class EventBus {
     for (const handler of set) {
       try {
         fn(handler)
-      }
-      catch {
+      } catch {
         /* ignore handler errors */
       }
     }
@@ -289,8 +279,7 @@ class EventBus {
     for (const listener of this.issueActivityListeners) {
       try {
         listener(issueId)
-      }
-      catch {
+      } catch {
         /* ignore */
       }
     }
@@ -300,8 +289,7 @@ class EventBus {
     for (const listener of this.connectionListeners) {
       try {
         listener(connected)
-      }
-      catch {
+      } catch {
         /* ignore */
       }
     }

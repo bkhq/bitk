@@ -51,8 +51,7 @@ async function extractArchive(archivePath: string, destDir: string): Promise<voi
       if (existsSync(backupDir)) {
         await rm(backupDir, { recursive: true }).catch(() => {})
       }
-    }
-    catch (swapErr) {
+    } catch (swapErr) {
       // Rollback: restore the backup
       if (existsSync(backupDir)) {
         await rename(backupDir, destDir).catch(() => {})
@@ -60,8 +59,7 @@ async function extractArchive(archivePath: string, destDir: string): Promise<voi
       await rm(tmpDir, { recursive: true }).catch(() => {})
       throw swapErr
     }
-  }
-  catch (err) {
+  } catch (err) {
     // Clean up temp directory on any failure
     await rm(tmpDir, { recursive: true }).catch(() => {})
     throw err
@@ -129,8 +127,7 @@ export async function applyUpgradeAndRestart(): Promise<void> {
       // Graceful shutdown
       if (registeredShutdownFn) {
         await registeredShutdownFn()
-      }
-      else {
+      } else {
         logger.warn('upgrade_no_shutdown_fn_registered')
       }
 
@@ -143,8 +140,7 @@ export async function applyUpgradeAndRestart(): Promise<void> {
 
       logger.info('upgrade_shutting_down_for_restart')
       process.exit(0)
-    }
-    else {
+    } else {
       // Binary mode: spawn the new binary directly
       const upgradeBinary = status.filePath
 
@@ -158,8 +154,7 @@ export async function applyUpgradeAndRestart(): Promise<void> {
       // Graceful shutdown: stop server, cancel engine processes, release port
       if (registeredShutdownFn) {
         await registeredShutdownFn()
-      }
-      else {
+      } else {
         logger.warn('upgrade_no_shutdown_fn_registered')
       }
 
@@ -173,8 +168,7 @@ export async function applyUpgradeAndRestart(): Promise<void> {
       logger.info('upgrade_shutting_down_for_restart')
       process.exit(0)
     }
-  }
-  finally {
+  } finally {
     clearTimeout(safetyTimer)
     isApplying = false
   }

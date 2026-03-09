@@ -77,8 +77,7 @@ export async function executeIssue(
       try {
         worktreePath = await createWorktree(baseDir, issue.projectId, issueId)
         workingDir = worktreePath
-      }
-      catch (error) {
+      } catch (error) {
         logger.warn({ issueId, error }, 'worktree_creation_failed_fallback_to_base')
       }
     }
@@ -104,8 +103,7 @@ export async function executeIssue(
           issueId,
         },
       )
-    }
-    catch (spawnError) {
+    } catch (spawnError) {
       logger.error(
         { issueId, executionId, error: spawnError },
         'execute_spawn_failed_reverting_session',

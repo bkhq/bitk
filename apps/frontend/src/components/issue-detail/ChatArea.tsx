@@ -174,8 +174,7 @@ export function ChatArea({
                         if (e.key === 'Enter') {
                           e.preventDefault()
                           saveTitle()
-                        }
-                        else if (e.key === 'Escape') {
+                        } else if (e.key === 'Escape') {
                           setEditingTitle(false)
                         }
                       }}

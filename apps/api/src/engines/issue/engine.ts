@@ -83,8 +83,7 @@ export class IssueEngine {
     this.gcTimer = setInterval(() => {
       try {
         gcSweep(this.ctx)
-      }
-      catch (err) {
+      } catch (err) {
         logger.error({ err }, 'gc_sweep_failed')
       }
     }, GC_INTERVAL_MS)

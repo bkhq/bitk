@@ -41,8 +41,7 @@ function runMigrations(folder: string) {
     sqlite.run('PRAGMA foreign_keys = OFF')
     migrate(db, { migrationsFolder: folder })
     sqlite.run('PRAGMA foreign_keys = ON')
-  }
-  catch (err: unknown) {
+  } catch (err: unknown) {
     sqlite.run('PRAGMA foreign_keys = ON')
     const errObj = err as { message?: string, cause?: { message?: string } }
     const msg = String(errObj?.message ?? '') + String(errObj?.cause?.message ?? '')
@@ -57,8 +56,7 @@ function runMigrations(folder: string) {
 if (existsSync(journalPath)) {
   // Filesystem migrations available (dev / package mode / non-compiled mode)
   runMigrations(migrationsFolder)
-}
-else if (embeddedMigrations.size > 0) {
+} else if (embeddedMigrations.size > 0) {
   // Compiled binary — write embedded migrations to a temp directory
   // and let drizzle's standard migrator process them.
   const tmpMigrations = resolve(tmpdir(), 'bkd-migrations')
@@ -68,8 +66,7 @@ else if (embeddedMigrations.size > 0) {
   }
   runMigrations(tmpMigrations)
   logger.info({ count: embeddedMigrations.size }, 'embedded_migrations_applied')
-}
-else {
+} else {
   throw new Error('No migrations available (missing drizzle/ folder and no embedded migrations)')
 }
 

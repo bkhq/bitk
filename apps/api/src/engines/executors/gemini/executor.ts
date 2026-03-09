@@ -42,16 +42,14 @@ export class GeminiExecutor implements EngineExecutor {
     const timeout = setTimeout(() => {
       try {
         spawnedProcess.subprocess.kill(9)
-      }
-      catch {
+      } catch {
         /* already dead */
       }
     }, 5000)
 
     try {
       await spawnedProcess.subprocess.exited
-    }
-    finally {
+    } finally {
       clearTimeout(timeout)
     }
   }
@@ -80,14 +78,12 @@ export class GeminiExecutor implements EngineExecutor {
       let authStatus: EngineAvailability['authStatus'] = 'unknown'
       if (process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY) {
         authStatus = 'authenticated'
-      }
-      else {
+      } else {
         const home = process.env.HOME ?? '/root'
         const configFile = Bun.file(`${home}/.gemini/oauth_creds.json`)
         if (await configFile.exists()) {
           authStatus = 'authenticated'
-        }
-        else {
+        } else {
           authStatus = 'unauthenticated'
         }
       }
@@ -99,8 +95,7 @@ export class GeminiExecutor implements EngineExecutor {
         version,
         authStatus,
       }
-    }
-    catch (error) {
+    } catch (error) {
       return {
         engineType: 'gemini',
         installed: false,
@@ -140,8 +135,7 @@ export class GeminiExecutor implements EngineExecutor {
         }
       }
       return models
-    }
-    catch {
+    } catch {
       return []
     }
   }
@@ -181,8 +175,7 @@ export class GeminiExecutor implements EngineExecutor {
       }
 
       return null
-    }
-    catch {
+    } catch {
       if (rawLine.trim()) {
         return {
           entryType: 'system-message',

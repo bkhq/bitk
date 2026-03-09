@@ -50,8 +50,7 @@ async function getGitIgnoredNames(dir: string, names: string[]): Promise<Set<str
       if (name) ignored.add(name)
     }
     return ignored
-  }
-  catch {
+  } catch {
     return new Set()
   }
 }
@@ -88,8 +87,7 @@ async function resolveProjectPath(c: Context, relativePath: string) {
       || isValidWorktreeRoot(resolvedOverride, projectId)
     ) {
       root = resolvedOverride
-    }
-    else {
+    } else {
       return {
         error: c.json(
           {
@@ -100,8 +98,7 @@ async function resolveProjectPath(c: Context, relativePath: string) {
         ),
       }
     }
-  }
-  else {
+  } else {
     root = resolve(project.directory)
   }
 
@@ -210,8 +207,7 @@ async function handleShow(c: Context, relativePath: string) {
         const s = await stat(resolve(target, d.name))
         size = s.size
         modifiedAt = s.mtime.toISOString()
-      }
-      catch {
+      } catch {
         continue
       }
 
@@ -234,8 +230,7 @@ async function handleShow(c: Context, relativePath: string) {
       success: true,
       data: { path: relPath, type: 'directory' as const, entries },
     })
-  }
-  catch (err: unknown) {
+  } catch (err: unknown) {
     const code = (err as NodeJS.ErrnoException).code
     if (code === 'ENOENT') {
       return c.json({ success: false, error: 'Path not found' }, 404)
@@ -268,8 +263,7 @@ async function handleRaw(c: Context, relativePath: string) {
         'Content-Disposition': `attachment; filename="${encodeURIComponent(fileName)}"`,
       },
     })
-  }
-  catch (err: unknown) {
+  } catch (err: unknown) {
     const code = (err as NodeJS.ErrnoException).code
     if (code === 'ENOENT') {
       return c.json({ success: false, error: 'Path not found' }, 404)

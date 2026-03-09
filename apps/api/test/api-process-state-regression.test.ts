@@ -67,8 +67,7 @@ describe('Execute/Restart spawn failure rollback', () => {
         await get<Issue>(`/api/projects/${projectId}/issues/${issue.id}`),
       )
       expect(refreshed.sessionStatus).toBe('failed')
-    }
-    finally {
+    } finally {
       ;(executor as any).spawn = originalSpawn
     }
   })
@@ -104,8 +103,7 @@ describe('Execute/Restart spawn failure rollback', () => {
         await get<Issue>(`/api/projects/${projectId}/issues/${issue.id}`),
       )
       expect(refreshed.sessionStatus).toBe('failed')
-    }
-    finally {
+    } finally {
       ;(executor as any).spawnFollowUp = originalSpawnFollowUp
     }
   })
@@ -141,8 +139,7 @@ describe('Delete paths terminate active processes', () => {
 
       const deleted = await get<Issue>(`/api/projects/${projectId}/issues/${issue.id}`)
       expect(deleted.status).toBe(404)
-    }
-    finally {
+    } finally {
       ;(issueEngine as any).terminateProcess = originalTerminate
     }
   })
@@ -174,8 +171,7 @@ describe('Delete paths terminate active processes', () => {
 
       const deleted = await get<Issue>(`/api/projects/${projectId}/issues/${issue.id}`)
       expect(deleted.status).toBe(404)
-    }
-    finally {
+    } finally {
       ;(issueEngine as any).terminateProcess = originalTerminate
     }
   })
@@ -229,8 +225,7 @@ describe('Delete paths terminate active processes', () => {
 
       const projectAfter = await get<{ id: string }>(`/api/projects/${project.id}`)
       expect(projectAfter.status).toBe(404)
-    }
-    finally {
+    } finally {
       ;(issueEngine as any).terminateProcess = originalTerminate
     }
   })
@@ -264,8 +259,7 @@ describe('Delete paths terminate active processes', () => {
 
       const deleted = await get<{ id: string }>(`/api/projects/${project.id}`)
       expect(deleted.status).toBe(404)
-    }
-    finally {
+    } finally {
       ;(issueEngine as any).terminateProcess = originalTerminate
     }
   })
@@ -309,8 +303,7 @@ describe('Auto execute status fallback', () => {
         const r = await get<Issue>(`/api/projects/${project.id}/issues/${issue.id}`)
         return expectSuccess(r).sessionStatus === 'failed'
       }, 5000)
-    }
-    finally {
+    } finally {
       await api<{ path: string }>('PATCH', '/api/settings/workspace-path', {
         path: prevWorkspace,
       })

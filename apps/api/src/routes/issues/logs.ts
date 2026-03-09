@@ -28,8 +28,7 @@ logs.get('/:id/logs', async (c) => {
   let limit: number | undefined
   if (limitParam) {
     limit = Math.min(Math.max(Math.floor(Number(limitParam)) || 30, 1), 1000)
-  }
-  else {
+  } else {
     const pageSizeRaw = await getAppSetting(LOG_PAGE_SIZE_KEY)
     limit = pageSizeRaw ? Number(pageSizeRaw) || DEFAULT_LOG_PAGE_SIZE : DEFAULT_LOG_PAGE_SIZE
   }

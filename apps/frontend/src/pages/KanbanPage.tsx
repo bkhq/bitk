@@ -36,8 +36,7 @@ export default function KanbanPage() {
     (issue: { id: string }) => {
       if (isMobile) {
         void navigate(`/projects/${projectId}/issues/${issue.id}`)
-      }
-      else {
+      } else {
         openView(issue.id)
       }
     },

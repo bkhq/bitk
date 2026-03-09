@@ -53,8 +53,7 @@ general.patch(
       if (!s.isDirectory()) {
         return c.json({ success: false, error: 'Path is not a directory' }, 400)
       }
-    }
-    catch {
+    } catch {
       return c.json({ success: false, error: 'Path does not exist' }, 400)
     }
 
@@ -79,12 +78,10 @@ general.get('/write-filter-rules', async (c) => {
   if (raw) {
     try {
       rules = JSON.parse(raw) as WriteFilterRule[]
-    }
-    catch {
+    } catch {
       rules = []
     }
-  }
-  else {
+  } else {
     rules = DEFAULT_FILTER_RULES
   }
   return c.json({ success: true, data: rules })
@@ -134,12 +131,10 @@ general.patch(
     if (raw) {
       try {
         rules = JSON.parse(raw) as WriteFilterRule[]
-      }
-      catch {
+      } catch {
         rules = []
       }
-    }
-    else {
+    } else {
       rules = [...DEFAULT_FILTER_RULES]
     }
 
@@ -254,8 +249,7 @@ general.patch(
       const trimmed = name.trim()
       if (trimmed) {
         await setServerName(trimmed)
-      }
-      else {
+      } else {
         await deleteAppSetting('server:name')
       }
     }
@@ -264,8 +258,7 @@ general.patch(
       const trimmed = url.trim()
       if (trimmed) {
         await setServerUrl(trimmed)
-      }
-      else {
+      } else {
         await deleteAppSetting('server:url')
       }
     }

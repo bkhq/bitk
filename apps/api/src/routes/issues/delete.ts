@@ -49,8 +49,7 @@ del.delete('/:id', async (c) => {
           setTimeout(() => reject(new Error('terminate timeout')), 5_000),
         ),
       ])
-    }
-    catch (err) {
+    } catch (err) {
       logger.warn({ issueId, err }, 'delete_terminate_failed_proceeding')
     }
   }

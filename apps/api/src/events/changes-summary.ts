@@ -41,8 +41,7 @@ async function computeAndEmit(issueId: string): Promise<void> {
     try {
       const s = await stat(root)
       if (!s.isDirectory()) return
-    }
-    catch {
+    } catch {
       return
     }
 
@@ -95,8 +94,7 @@ async function computeAndEmit(issueId: string): Promise<void> {
       additions,
       deletions,
     })
-  }
-  catch (err) {
+  } catch (err) {
     logger.error({ err, issueId }, 'changes_summary_compute_error')
   }
 }

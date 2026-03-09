@@ -73,8 +73,7 @@ describe('startup probe deep behavior', () => {
       await getEngineDiscovery()
       expect(availabilityCalls).toBe(1)
       expect(modelsCalls).toBe(1)
-    }
-    finally {
+    } finally {
       ;(engineRegistry as any).getAll = originalGetAll
       await clearProbeState()
     }
@@ -122,8 +121,7 @@ describe('startup probe deep behavior', () => {
       await getEngineDiscovery()
       expect(availabilityCalls).toBe(2)
       expect(modelsCalls).toBe(2)
-    }
-    finally {
+    } finally {
       ;(engineRegistry as any).getAll = originalGetAll
       await clearProbeState()
     }

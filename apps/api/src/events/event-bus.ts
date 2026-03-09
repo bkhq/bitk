@@ -57,8 +57,7 @@ export class AppEventBus {
     for (const entry of list) {
       try {
         entry.callback(data)
-      }
-      catch (err) {
+      } catch (err) {
         logger.warn({ event: key, order: entry.order, err }, 'event_subscriber_error')
       }
     }

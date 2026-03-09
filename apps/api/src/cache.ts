@@ -53,8 +53,7 @@ export async function cacheSet<T>(key: string, value: T, ttlSeconds?: number): P
   accessOrder.set(key, Date.now())
   if (ttlSeconds !== undefined) {
     expiryMap.set(key, Date.now() + ttlSeconds * 1000)
-  }
-  else {
+  } else {
     expiryMap.delete(key)
   }
   evictLRU()

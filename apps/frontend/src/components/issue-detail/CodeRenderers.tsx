@@ -15,8 +15,7 @@ export function stringifyPretty(input: unknown): string {
   if (typeof input === 'string') return input
   try {
     return JSON.stringify(input, null, 2)
-  }
-  catch {
+  } catch {
     return String(input)
   }
 }

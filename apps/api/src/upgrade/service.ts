@@ -26,8 +26,7 @@ export async function setUpgradeEnabled(enabled: boolean): Promise<void> {
   await setAppSetting(UPGRADE_ENABLED_KEY, String(enabled))
   if (enabled) {
     startPeriodicCheck()
-  }
-  else {
+  } else {
     stopPeriodicCheck()
   }
 }

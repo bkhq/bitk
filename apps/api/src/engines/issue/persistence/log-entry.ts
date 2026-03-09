@@ -37,8 +37,7 @@ export function persistLogEntry(
       messageId,
       replyToMessageId: replyToMessageId ?? undefined,
     }
-  }
-  catch (error) {
+  } catch (error) {
     logger.warn({ err: error, issueId }, 'persistLogEntry failed')
     return null
   }

@@ -40,8 +40,7 @@ export class CodexLogNormalizer {
     let data: Record<string, unknown>
     try {
       data = JSON.parse(rawLine)
-    }
-    catch {
+    } catch {
       // Non-JSON — treat as plain text system message
       if (rawLine.trim()) {
         return {

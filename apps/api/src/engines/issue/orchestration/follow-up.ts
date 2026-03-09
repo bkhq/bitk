@@ -139,8 +139,7 @@ export async function followUpIssue(
           opts,
         )
         return { executionId: active.executionId, messageId: msgId }
-      }
-      catch (error) {
+      } catch (error) {
         logger.warn(
           {
             issueId,

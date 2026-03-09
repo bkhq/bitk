@@ -153,8 +153,7 @@ function WebhookForm({ webhook, onClose }: { webhook?: Webhook, onClose: () => v
         },
         { onSuccess: onClose },
       )
-    }
-    else {
+    } else {
       createWebhook.mutate(
         { channel, url, secret: secret || undefined, events, isActive },
         { onSuccess: onClose },

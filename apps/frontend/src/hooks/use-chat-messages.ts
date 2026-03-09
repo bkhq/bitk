@@ -178,8 +178,7 @@ function rebuildMessages(entries: NormalizedLogEntry[]): ChatMessage[] {
       const desc = savedThinking?.content
       pendingThinking = null
       messages.push(buildToolGroup(nonTodoItems, desc))
-    }
-    else if (pendingThinking) {
+    } else if (pendingThinking) {
       // No tool items consumed the thinking — flush it as standalone
       flushPendingThinking()
     }
@@ -349,8 +348,7 @@ export function useChatMessages(logs: NormalizedLogEntry[]): ChatMessagesResult 
     for (const msg of all) {
       if (msg.type === 'user' && (msg.status === 'pending' || msg.status === 'done')) {
         pendingMessages.push(msg)
-      }
-      else {
+      } else {
         messages.push(msg)
       }
     }

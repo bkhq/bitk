@@ -31,8 +31,7 @@ export async function codeToHtml(code: string, lang: string): Promise<string> {
       themes: THEMES,
       defaultColor: false,
     })
-  }
-  catch {
+  } catch {
     return await shikiCodeToHtml(code, {
       lang: 'text',
       themes: THEMES,

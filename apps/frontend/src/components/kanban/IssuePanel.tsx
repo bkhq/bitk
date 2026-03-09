@@ -71,8 +71,7 @@ export function IssuePanel({ projectId, issueId, onClose, hideHeaderActions }: I
       if (isEditable) {
         target.blur()
         e.stopPropagation()
-      }
-      else {
+      } else {
         onClose()
       }
     }
@@ -114,8 +113,7 @@ export function IssuePanel({ projectId, issueId, onClose, hideHeaderActions }: I
                       if (e.key === 'Enter') {
                         e.preventDefault()
                         saveTitle()
-                      }
-                      else if (e.key === 'Escape') {
+                      } else if (e.key === 'Escape') {
                         setEditingTitle(false)
                       }
                     }}

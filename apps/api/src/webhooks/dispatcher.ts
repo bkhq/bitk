@@ -67,8 +67,7 @@ async function getIssueMetadata(issueId: string): Promise<IssueMetadata | null> 
     }
 
     return result
-  }
-  catch (err) {
+  } catch (err) {
     logger.warn({ err, issueId }, 'webhook_get_issue_metadata_failed')
     return null
   }
@@ -94,8 +93,7 @@ async function getLastAgentLog(issueId: string): Promise<string | null> {
       .limit(1)
     if (!row?.content) return null
     return row.content.length > 500 ? `${row.content.slice(0, 500)}...` : row.content
-  }
-  catch (err) {
+  } catch (err) {
     logger.warn({ err, issueId }, 'webhook_get_last_log_failed')
     return null
   }
@@ -155,8 +153,7 @@ function formatTelegramMessage(event: WebhookEventType, payload: Record<string, 
       statusLine += ' (session completed)'
     }
     lines.push(statusLine)
-  }
-  else if (payload.statusId) {
+  } else if (payload.statusId) {
     lines.push(`Status: ${escapeTelegramHtml(String(payload.statusId))}`)
   }
 
@@ -270,8 +267,7 @@ export async function deliver(
       = webhook.channel === 'telegram'
         ? await deliverTelegram(webhook, event, payload)
         : await deliverWebhook(webhook, event, payload)
-  }
-  catch (err) {
+  } catch (err) {
     result = {
       statusCode: null,
       response: err instanceof Error ? err.message : String(err),
@@ -291,8 +287,7 @@ export async function deliver(
       success: result.success,
       duration,
     })
-  }
-  catch (err) {
+  } catch (err) {
     logger.warn({ err, webhookId: webhook.id }, 'webhook_delivery_log_failed')
   }
 }
@@ -311,8 +306,7 @@ export async function dispatch(event: WebhookEventType, payload: Record<string, 
       })
       .from(webhooks)
       .where(and(eq(webhooks.isActive, true), eq(webhooks.isDeleted, 0)))
-  }
-  catch (err) {
+  } catch (err) {
     logger.warn({ err }, 'webhook_query_failed')
     return
   }
@@ -321,8 +315,7 @@ export async function dispatch(event: WebhookEventType, payload: Record<string, 
     let subscribed: string[]
     try {
       subscribed = JSON.parse(row.events)
-    }
-    catch {
+    } catch {
       continue
     }
     if (!subscribed.includes(event)) continue
@@ -358,13 +351,11 @@ export function initWebhookDispatcher() {
               newStatus,
             }
             await dispatch('issue.status_changed', payload)
-          }
-          catch (err) {
+          } catch (err) {
             logger.warn({ err, issueId: data.issueId }, 'webhook_status_changed_failed')
           }
         })()
-      }
-      else {
+      } else {
         void (async () => {
           try {
             const meta = await getIssueMetadata(data.issueId)
@@ -374,8 +365,7 @@ export function initWebhookDispatcher() {
               ...(meta ? buildMetadataPayload(meta) : { issueId: data.issueId }),
               changes,
             })
-          }
-          catch (err) {
+          } catch (err) {
             logger.warn({ err, issueId: data.issueId }, 'webhook_updated_failed')
           }
         })()
@@ -412,8 +402,7 @@ export function initWebhookDispatcher() {
           }
 
           await dispatch(eventType, payload)
-        }
-        catch (err) {
+        } catch (err) {
           logger.warn({ err, issueId: data.issueId }, 'webhook_done_failed')
         }
       })()
@@ -439,8 +428,7 @@ export function initWebhookDispatcher() {
             if (meta?.model) payload.model = meta.model
 
             await dispatch('session.started', payload)
-          }
-          catch (err) {
+          } catch (err) {
             logger.warn({ err, issueId: data.issueId }, 'webhook_state_failed')
           }
         })()
@@ -473,8 +461,7 @@ export async function cleanupDeliveries() {
         await db.delete(webhookDeliveries).where(inArray(webhookDeliveries.id, ids))
       }
     }
-  }
-  catch (err) {
+  } catch (err) {
     logger.warn({ err }, 'webhook_delivery_cleanup_failed')
   }
 }

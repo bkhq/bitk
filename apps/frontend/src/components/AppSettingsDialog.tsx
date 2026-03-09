@@ -373,8 +373,7 @@ function parseLogLevel(line: string): number {
   try {
     const parsed = JSON.parse(line)
     return typeof parsed.level === 'number' ? parsed.level : 30
-  }
-  catch {
+  } catch {
     return 30
   }
 }
@@ -561,8 +560,7 @@ function HighlightText({ text, highlight }: { text: string, highlight: string })
           {part}
         </mark>,
       )
-    }
-    else {
+    } else {
       elements.push(part)
     }
   }
@@ -573,8 +571,7 @@ function LogLine({ line, highlight = '' }: { line: string, highlight?: string })
   let parsed: { level?: number, msg?: string, time?: number } | null = null
   try {
     parsed = JSON.parse(line)
-  }
-  catch {
+  } catch {
     // plain text line
   }
 
@@ -728,8 +725,7 @@ function RecycleBinSection({ open }: { open: boolean }) {
     if (!iso) return ''
     try {
       return new Date(iso).toLocaleString()
-    }
-    catch {
+    } catch {
       return iso
     }
   }
@@ -1025,8 +1021,7 @@ function UpgradeSection({ open }: { open: boolean }) {
   const formatTime = (iso: string) => {
     try {
       return new Date(iso).toLocaleString()
-    }
-    catch {
+    } catch {
       return iso
     }
   }

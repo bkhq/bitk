@@ -32,8 +32,7 @@ systemLogs.get('/system-logs', async (c) => {
     // Discard partial first line
     const firstNewline = content.indexOf('\n')
     if (firstNewline !== -1) content = content.slice(firstNewline + 1)
-  }
-  else {
+  } else {
     content = await file.text()
   }
 

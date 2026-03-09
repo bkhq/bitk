@@ -35,8 +35,7 @@ export async function listDownloadedUpdates(): Promise<
     return results.sort(
       (a, b) => new Date(b.modifiedAt).getTime() - new Date(a.modifiedAt).getTime(),
     )
-  }
-  catch {
+  } catch {
     return []
   }
 }
@@ -64,8 +63,7 @@ export async function cleanupTmpFiles(): Promise<void> {
         logger.info({ name }, 'upgrade_cleanup_tmp_file')
       }
     }
-  }
-  catch {
+  } catch {
     // ignore
   }
 }
@@ -85,8 +83,7 @@ export async function cleanupBackupDirs(): Promise<void> {
         }
       }
     }
-  }
-  catch {
+  } catch {
     // ignore
   }
 }

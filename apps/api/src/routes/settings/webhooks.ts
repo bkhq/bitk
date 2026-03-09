@@ -34,8 +34,7 @@ function serializeWebhook(row: typeof webhooks.$inferSelect) {
   let events: WebhookEventType[] = []
   try {
     events = JSON.parse(row.events) as WebhookEventType[]
-  }
-  catch {
+  } catch {
     events = []
   }
 
@@ -84,16 +83,14 @@ const createSchema = z
             message: 'URLs pointing to private/internal networks are not allowed',
           })
         }
-      }
-      catch {
+      } catch {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ['url'],
           message: 'Invalid URL format',
         })
       }
-    }
-    else if (data.channel === 'telegram') {
+    } else if (data.channel === 'telegram') {
       if (!data.secret || data.secret.trim().length === 0) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
@@ -210,8 +207,7 @@ webhooksRoute.patch(
             400,
           )
         }
-      }
-      catch {
+      } catch {
         return c.json({ success: false, error: 'Invalid URL format' }, 400)
       }
     }

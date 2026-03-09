@@ -122,8 +122,7 @@ class JsonRpcSession {
       let msg: Record<string, unknown>
       try {
         msg = JSON.parse(line)
-      }
-      catch {
+      } catch {
         logger.debug({ line: line.slice(0, 200) }, 'codex_rpc_non_json')
         continue
       }
@@ -230,8 +229,7 @@ async function queryCodexModels(): Promise<EngineModel[]> {
 
     logger.debug({ count: models.length, models: models.map(m => m.id) }, 'codex_models_done')
     return models
-  }
-  catch (error) {
+  } catch (error) {
     const stderr = await stderrReader.catch(() => '')
     logger.error(
       {
@@ -241,8 +239,7 @@ async function queryCodexModels(): Promise<EngineModel[]> {
       'codex_models_error',
     )
     throw error
-  }
-  finally {
+  } finally {
     session.destroy()
     clearTimeout(killTimer)
     proc.kill()
@@ -304,8 +301,7 @@ export class CodexExecutor implements EngineExecutor {
           'Codex authentication required. Set OPENAI_API_KEY or CODEX_API_KEY, or run `codex auth`.',
         )
       }
-    }
-    catch (authErr) {
+    } catch (authErr) {
       // account/read may not be supported on older versions — log and continue
       const msg = authErr instanceof Error ? authErr.message : String(authErr)
       if (msg.includes('authentication required')) throw authErr
@@ -421,24 +417,21 @@ export class CodexExecutor implements EngineExecutor {
 
     if (spawnedProcess.protocolHandler) {
       await spawnedProcess.protocolHandler.interrupt()
-    }
-    else {
+    } else {
       spawnedProcess.cancel()
     }
 
     const timeout = setTimeout(() => {
       try {
         spawnedProcess.subprocess.kill(9)
-      }
-      catch {
+      } catch {
         /* already dead */
       }
     }, 5000)
 
     try {
       await spawnedProcess.subprocess.exited
-    }
-    finally {
+    } finally {
       clearTimeout(timeout)
       spawnedProcess.protocolHandler?.close()
       logger.debug(
@@ -470,14 +463,12 @@ export class CodexExecutor implements EngineExecutor {
       let authStatus: EngineAvailability['authStatus'] = 'unknown'
       if (process.env.OPENAI_API_KEY || process.env.CODEX_API_KEY) {
         authStatus = 'authenticated'
-      }
-      else {
+      } else {
         const home = process.env.HOME ?? '/root'
         const configFile = Bun.file(`${home}/.codex/config.toml`)
         if (await configFile.exists()) {
           authStatus = 'authenticated'
-        }
-        else {
+        } else {
           authStatus = 'unauthenticated'
         }
       }
@@ -488,8 +479,7 @@ export class CodexExecutor implements EngineExecutor {
         version,
         authStatus,
       }
-    }
-    catch (error) {
+    } catch (error) {
       return {
         engineType: 'codex',
         installed: false,
@@ -502,8 +492,7 @@ export class CodexExecutor implements EngineExecutor {
   async getModels(): Promise<EngineModel[]> {
     try {
       return await queryCodexModels()
-    }
-    catch (error) {
+    } catch (error) {
       logger.error(
         {
           error: error instanceof Error ? error.message : String(error),

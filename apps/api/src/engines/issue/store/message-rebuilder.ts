@@ -74,14 +74,12 @@ function buildToolGroup(
   if (options.devMode) {
     // devMode: show everything
     visibleItems = items
-  }
-  else {
+  } else {
     visibleItems = []
     for (const item of items) {
       if (isFilteredTool(item.action, options.filterRules)) {
         hiddenCount++
-      }
-      else {
+      } else {
         visibleItems.push(item)
       }
     }

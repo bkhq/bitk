@@ -57,8 +57,7 @@ function terminateAndSettle(
     }
     try {
       await autoMoveToReview(issueId)
-    }
-    catch (err) {
+    } catch (err) {
       logger.error({ issueId, err }, 'gc_auto_move_failed')
     }
     emitIssueSettled(issueId, executionId, finalStatus)
@@ -77,8 +76,7 @@ function isProcessAlive(pid: number | undefined): boolean {
   try {
     process.kill(pid, 0)
     return true
-  }
-  catch {
+  } catch {
     return false
   }
 }
@@ -281,8 +279,7 @@ export function gcSweep(ctx: EngineContext): void {
           )
         }
       }
-    }
-    catch (err) {
+    } catch (err) {
       logger.error({ entryId: entry.id, issueId: entry.meta?.issueId, err }, 'gc_sweep_entry_error')
     }
   }

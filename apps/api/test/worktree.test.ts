@@ -54,16 +54,14 @@ afterAll(() => {
           cwd: gitRoot,
         })
       }
-    }
-    catch {
+    } catch {
       /* best effort */
     }
     try {
       Bun.spawnSync(['git', 'branch', '-D', `bkd/${issueId}`], {
         cwd: gitRoot,
       })
-    }
-    catch {
+    } catch {
       /* best effort */
     }
   }
@@ -74,8 +72,7 @@ afterAll(() => {
     if (existsSync(projectDir)) {
       rmSync(projectDir, { recursive: true, force: true })
     }
-  }
-  catch {
+  } catch {
     /* best effort */
   }
 
@@ -83,8 +80,7 @@ afterAll(() => {
     if (gitRoot && existsSync(gitRoot)) {
       rmSync(gitRoot, { recursive: true, force: true })
     }
-  }
-  catch {
+  } catch {
     /* best effort */
   }
 })

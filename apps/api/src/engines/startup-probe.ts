@@ -197,8 +197,7 @@ async function discoverSlashCommands(installed: EngineAvailability[]): Promise<v
         },
         'probe_discovery_completed',
       )
-    }
-    catch (err) {
+    } catch (err) {
       logger.warn({ engineType: engine.engineType, error: err }, 'probe_discovery_engine_failed')
     }
   }

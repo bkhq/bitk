@@ -26,8 +26,7 @@ function getDefaultShell(): string {
     const entry = new TextDecoder().decode(result.stdout).trim()
     const shell = entry.split(':').pop()
     if (shell && shell.startsWith('/')) return shell
-  }
-  catch {
+  } catch {
     // getent not available
   }
 
@@ -70,8 +69,7 @@ function killSession(id: string): void {
   if (entry.meta.graceTimer) clearTimeout(entry.meta.graceTimer)
   try {
     entry.subprocess.terminal?.close()
-  }
-  catch {
+  } catch {
     /* already closed */
   }
   terminalPM.forceKill(id)
@@ -84,8 +82,7 @@ terminalPM.onExit((entry) => {
   if (entry.meta.wsRaw) {
     try {
       entry.meta.wsRaw.close?.(1000, 'PTY exited')
-    }
-    catch {
+    } catch {
       /* already closed */
     }
   }
@@ -132,8 +129,7 @@ app.post('/terminal', (c) => {
         if (meta.wsRaw) {
           try {
             meta.wsRaw.send(data)
-          }
-          catch {
+          } catch {
             /* WS gone */
           }
         }
@@ -155,8 +151,7 @@ app.post('/terminal', (c) => {
       group: 'terminal',
       startAsRunning: true,
     })
-  }
-  catch {
+  } catch {
     // Concurrency limit reached
     proc.kill()
     return c.json({ success: false, error: 'Session limit reached' }, 429)
@@ -220,8 +215,7 @@ app.get(
           // Input: [0x00][...data]
           const input = new TextDecoder().decode(raw.slice(1))
           entry.subprocess.terminal.write(input)
-        }
-        else if (type === 1 && raw.length >= 5) {
+        } else if (type === 1 && raw.length >= 5) {
           // Resize: [0x01][cols:u16BE][rows:u16BE]
           const view = new DataView(raw.buffer, raw.byteOffset, raw.byteLength)
           const cols = view.getUint16(1, false)
@@ -279,8 +273,7 @@ app.post(
     const { cols, rows } = c.req.valid('json')
     try {
       entry.subprocess.terminal?.resize(cols, rows)
-    }
-    catch {
+    } catch {
       /* terminal closed */
     }
     return c.json({ success: true })

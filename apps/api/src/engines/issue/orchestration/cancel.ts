@@ -26,8 +26,7 @@ function waitForSettlement(managed: ManagedProcess, timeoutMs: number): Promise<
       ) {
         clearInterval(check)
         resolve(true)
-      }
-      else if (Date.now() - start >= timeoutMs) {
+      } else if (Date.now() - start >= timeoutMs) {
         clearInterval(check)
         resolve(false)
       }
@@ -109,8 +108,7 @@ async function escalateCancel(
         )
         try {
           managed.process.cancel()
-        }
-        catch (err) {
+        } catch (err) {
           logger.warn({ issueId, executionId, err }, 'cancel_escalation_interrupt_failed')
         }
       }

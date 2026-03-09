@@ -150,8 +150,7 @@ export function useIssueStream({
   const markSeen = useCallback((entry: NormalizedLogEntry) => {
     if (entry.messageId) {
       seenIdsRef.current.add(entry.messageId)
-    }
-    else {
+    } else {
       seenContentKeysRef.current.add(contentKey(entry))
     }
   }, [])
@@ -403,8 +402,7 @@ export function useIssueStream({
           activeExecutionRef.current = data.executionId
           doneReceivedRef.current = false
           setSessionStatus(data.state)
-        }
-        else if (TERMINAL.has(data.state)) {
+        } else if (TERMINAL.has(data.state)) {
           // Only mark done if this terminal event is from the current execution.
           // Stale settled events from a previous turn (arriving after a new
           // follow-up already emitted 'running') must be ignored to avoid

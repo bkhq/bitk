@@ -132,8 +132,7 @@ export function register(
       try {
         process.kill(pid, 0)
         alive = true
-      }
-      catch {
+      } catch {
         // process already dead — normal exit path
       }
       if (!alive) return

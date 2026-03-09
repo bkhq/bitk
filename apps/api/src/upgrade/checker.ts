@@ -38,8 +38,7 @@ export async function checkForUpdates(): Promise<UpgradeCheckResult> {
       a =>
         a.name.startsWith('bkd-app') && a.name.endsWith('.tar.gz') && !a.name.endsWith('.sha256'),
     )
-  }
-  else {
+  } else {
     const suffix = detectPlatformAssetSuffix()
     matchingAsset = release.assets.find(
       a => a.name.includes(suffix) && !a.name.endsWith('.sha256') && !a.name.endsWith('.tar.gz'),
@@ -94,8 +93,7 @@ export async function getLastCheckResult(): Promise<UpgradeCheckResult | null> {
   if (!raw) return null
   try {
     return JSON.parse(raw) as UpgradeCheckResult
-  }
-  catch {
+  } catch {
     return null
   }
 }

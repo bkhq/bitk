@@ -14,8 +14,7 @@ for (const file of candidates) {
   if (existsSync(file)) {
     rmSync(file, { force: true })
     deleted.push(file)
-  }
-  else {
+  } else {
     missing.push(file)
   }
 }

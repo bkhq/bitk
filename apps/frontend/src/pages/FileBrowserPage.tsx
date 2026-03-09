@@ -68,8 +68,7 @@ export default function FileBrowserPage() {
     (path: string) => {
       if (!path || path === '.') {
         void navigate(basePath)
-      }
-      else {
+      } else {
         void navigate(`${basePath}/${path}`)
       }
     },

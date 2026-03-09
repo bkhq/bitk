@@ -54,8 +54,7 @@ function rowToEntry(row: EntryRow): NormalizedLogEntry {
   if (row.metadata) {
     try {
       entry.metadata = JSON.parse(row.metadata)
-    }
-    catch {
+    } catch {
       // ignore malformed metadata
     }
   }
@@ -295,8 +294,7 @@ export class ExecutionStore {
     this.destroyed = true
     try {
       this.db.close()
-    }
-    catch {
+    } catch {
       // already closed
     }
   }

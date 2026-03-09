@@ -50,8 +50,7 @@ export async function fetchLatestRelease(): Promise<ReleaseInfo | null> {
         contentType: a.content_type,
       })),
     }
-  }
-  catch (err) {
+  } catch (err) {
     logger.warn(
       { error: err instanceof Error ? err.message : String(err) },
       'upgrade_fetch_release_error',

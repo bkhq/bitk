@@ -68,8 +68,7 @@ export async function removeWorktree(baseDir: string, worktreeDir: string): Prom
       throw new Error(`git worktree remove exited with code ${code}`)
     }
     logger.debug({ worktreeDir: resolved }, 'worktree_removed')
-  }
-  catch (error) {
+  } catch (error) {
     logger.warn({ worktreeDir: resolved, error }, 'worktree_remove_failed')
     // Containment guard: never rm outside the managed worktree directory
     if (!resolved.startsWith(WORKTREE_SAFE_ROOT + sep)) {
@@ -82,8 +81,7 @@ export async function removeWorktree(baseDir: string, worktreeDir: string): Prom
     // Fallback: just delete the directory
     try {
       await rm(resolved, { recursive: true, force: true })
-    }
-    catch {
+    } catch {
       /* best effort */
     }
   }
@@ -110,8 +108,7 @@ export async function isWorktreeRegistered(baseDir: string, worktreeDir: string)
       }
     }
     return false
-  }
-  catch {
+  } catch {
     return false
   }
 }

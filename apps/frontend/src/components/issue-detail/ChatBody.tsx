@@ -190,8 +190,7 @@ export function ChatBody({
       const result = await kanbanApi.deletePendingMessage(projectId, issueId)
       setPendingEditContent(result.content)
       removeEntries([result.id])
-    }
-    catch {
+    } catch {
       /* ignore — pending may have been consumed already */
     }
   }, [projectId, issueId, removeEntries])

@@ -54,8 +54,7 @@ create.post(
       const savedModel = await getEngineDefaultModel(resolvedEngine!)
       if (savedModel) {
         resolvedModel = savedModel
-      }
-      else {
+      } else {
         const models = await engineRegistry.getModels(resolvedEngine as EngineType)
         resolvedModel = models.find(m => m.isDefault)?.id ?? models[0]?.id ?? 'auto'
       }
@@ -167,8 +166,7 @@ create.post(
       }
 
       return c.json({ success: true, data: serializeIssue(newIssue!) }, shouldExecute ? 202 : 201)
-    }
-    catch (error) {
+    } catch (error) {
       logger.warn(
         {
           projectId: project.id,

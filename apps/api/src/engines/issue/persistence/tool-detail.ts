@@ -51,8 +51,7 @@ export function persistToolDetail(
       .run()
 
     return toolRecordId
-  }
-  catch (error) {
+  } catch (error) {
     logger.warn({ err: error, logId, issueId }, 'persistToolDetail failed')
     return null
   }

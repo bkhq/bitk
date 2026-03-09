@@ -33,8 +33,7 @@ describe('GET /api/filesystem/dirs', () => {
       const data = expectSuccess(result)
       expect(data.current).toBe('/tmp')
       expect(Array.isArray(data.dirs)).toBe(true)
-    }
-    else {
+    } else {
       expect(result.status).toBe(403)
     }
   })
@@ -80,12 +79,10 @@ describe('POST /api/filesystem/dirs', () => {
       // Cleanup
       try {
         rmdirSync(testDirPath)
-      }
-      catch {
+      } catch {
         // ignore
       }
-    }
-    else {
+    } else {
       expect(result.status).toBe(403)
     }
   })

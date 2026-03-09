@@ -37,6 +37,7 @@ export default antfu({
       varsIgnorePattern: '^_',
       caughtErrorsIgnorePattern: '^_',
     }],
+    'style/brace-style': ['error', '1tbs'],
     'antfu/if-newline': 'off',
     'antfu/top-level-function': 'off',
     'ts/no-require-imports': 'off',

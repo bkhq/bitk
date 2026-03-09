@@ -165,8 +165,7 @@ async function upsertAndNotify(
       let parsedMeta: Record<string, unknown> | undefined
       try {
         parsedMeta = updated.metadata ? JSON.parse(updated.metadata) : undefined
-      }
-      catch {
+      } catch {
         // ignore
       }
       emitIssueLogUpdated(issueId, {
@@ -313,8 +312,7 @@ message.post('/:id/follow-up', async (c) => {
         messageId: result.messageId,
       },
     })
-  }
-  catch (error) {
+  } catch (error) {
     // When follow-up fails (e.g. process failed to start), save the current
     // message as pending so it won't be lost. It will be auto-processed on
     // the next execute/restart.
@@ -331,8 +329,7 @@ message.post('/:id/follow-up', async (c) => {
         success: true,
         data: { issueId, messageId, queued: true },
       })
-    }
-    catch (persistError) {
+    } catch (persistError) {
       logger.error({ issueId, error: persistError }, 'followup_failed_persist_pending_failed')
     }
     return c.json(

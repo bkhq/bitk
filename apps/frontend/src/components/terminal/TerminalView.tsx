@@ -148,8 +148,7 @@ function tryLoadWebgl(terminal: Terminal): void {
       webglAddon.dispose()
     })
     terminal.loadAddon(webglAddon)
-  }
-  catch {
+  } catch {
     // WebGL not available — falls back to canvas renderer
   }
 }
@@ -243,15 +242,13 @@ async function initConnection(terminal: Terminal, fitAddon: FitAddon): Promise<v
 
       // Connect WS for bidirectional I/O
       connectWs(sessionId, terminal, fitAddon)
-    }
-    catch {
+    } catch {
       const timer = setTimeout(() => {
         store.getState().set({ reconnectTimer: null })
         void initConnection(terminal, fitAddon)
       }, 2000)
       store.getState().set({ reconnectTimer: timer })
-    }
-    finally {
+    } finally {
       store.getState().set({ connecting: null })
     }
   })()
@@ -274,8 +271,7 @@ export function TerminalView({ className }: { className?: string }) {
         const { cols, rows } = state.terminal
         state.ws.send(encodeResize(cols, rows))
       }
-    }
-    catch {
+    } catch {
       // fit() can throw if not visible
     }
   }, [])
@@ -297,8 +293,7 @@ export function TerminalView({ className }: { className?: string }) {
       }
       // Theme may have changed while terminal was hidden — sync now
       terminal.options.theme = getTerminalTheme()
-    }
-    else {
+    } else {
       terminal.open(container)
       store.getState().set({ initialized: true })
 

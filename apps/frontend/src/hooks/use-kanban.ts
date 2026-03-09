@@ -707,8 +707,7 @@ export function useRestartWithUpgrade() {
               window.location.reload()
               return
             }
-          }
-          catch {
+          } catch {
             // Server still down — keep polling
           }
           await new Promise(r => setTimeout(r, interval))

@@ -53,8 +53,7 @@ export async function reconcileStaleWorkingIssues(): Promise<number> {
 
     if (!isTerminal) {
       needsSessionFix.push(issue.id)
-    }
-    else {
+    } else {
       needsStatusOnly.push(issue.id)
     }
     reconciledIssues.push(issue)

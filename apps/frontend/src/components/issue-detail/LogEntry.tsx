@@ -87,8 +87,7 @@ function formatTime(timestamp?: string): string {
       second: '2-digit',
       hour12: false,
     })
-  }
-  catch {
+  } catch {
     return ''
   }
 }

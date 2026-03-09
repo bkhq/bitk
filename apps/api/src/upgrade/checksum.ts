@@ -32,8 +32,7 @@ export async function fetchExpectedChecksum(
       }
     }
     return null
-  }
-  catch {
+  } catch {
     return null
   }
 }

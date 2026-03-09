@@ -23,8 +23,7 @@ query.get('/', async (c) => {
   if (parentId === 'null' || parentId === '') {
     // Root issues only (no parent)
     conditions.push(isNull(issuesTable.parentIssueId))
-  }
-  else if (parentId) {
+  } else if (parentId) {
     // Children of a specific issue
     conditions.push(eq(issuesTable.parentIssueId, parentId))
   }

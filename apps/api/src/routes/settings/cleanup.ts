@@ -78,8 +78,7 @@ cleanup.post(
             results.deletedIssues = await cleanupDeletedIssues()
             break
         }
-      }
-      catch (err) {
+      } catch (err) {
         logger.error({ target, err }, 'cleanup_target_failed')
         results[target] = { cleaned: 0 }
       }
@@ -126,8 +125,7 @@ async function getOldVersionsStats() {
         const s = await stat(fp).catch(() => null)
         if (s) items.push({ name, size: s.size })
       }
-    }
-    catch {
+    } catch {
       // ignore
     }
   }
@@ -142,8 +140,7 @@ async function getOldVersionsStats() {
         try {
           const vj = await Bun.file(versionFile).json()
           if (vj?.version) currentVersionDir = `v${vj.version}`
-        }
-        catch {
+        } catch {
           // ignore
         }
       }
@@ -157,8 +154,7 @@ async function getOldVersionsStats() {
           items.push({ name, size: await getDirSize(fp) })
         }
       }
-    }
-    catch {
+    } catch {
       // ignore
     }
   }
@@ -186,8 +182,7 @@ async function getWorktreesStats() {
         totalSize += await getDirSize(resolve(projectDir, ie.name))
       }
     }
-  }
-  catch {
+  } catch {
     // ignore
   }
 
@@ -217,14 +212,12 @@ async function getDirSize(dirPath: string): Promise<number> {
       const fp = resolve(dirPath, entry.name)
       if (entry.isDirectory()) {
         size += await getDirSize(fp)
-      }
-      else {
+      } else {
         const s = await stat(fp).catch(() => null)
         if (s) size += s.size
       }
     }
-  }
-  catch {
+  } catch {
     // ignore
   }
   return size
@@ -272,8 +265,7 @@ async function cleanupOldVersions(): Promise<{ cleaned: number }> {
         await rm(fp, { recursive: true }).catch(() => {})
         cleaned++
       }
-    }
-    catch {
+    } catch {
       // ignore
     }
   }
@@ -288,8 +280,7 @@ async function cleanupOldVersions(): Promise<{ cleaned: number }> {
         try {
           const vj = await Bun.file(versionFile).json()
           if (vj?.version) currentVersionDir = `v${vj.version}`
-        }
-        catch {
+        } catch {
           // ignore
         }
       }
@@ -304,8 +295,7 @@ async function cleanupOldVersions(): Promise<{ cleaned: number }> {
           cleaned++
         }
       }
-    }
-    catch {
+    } catch {
       // ignore
     }
   }
@@ -333,8 +323,7 @@ async function cleanupWorktrees(): Promise<{ cleaned: number }> {
         try {
           await removeWorktree(process.cwd(), worktreePath)
           cleaned++
-        }
-        catch {
+        } catch {
           // Fallback: rm -rf if git worktree remove fails
           await rm(worktreePath, { recursive: true }).catch(() => {})
           cleaned++
@@ -346,8 +335,7 @@ async function cleanupWorktrees(): Promise<{ cleaned: number }> {
         await rm(projectDir, { recursive: true }).catch(() => {})
       }
     }
-  }
-  catch {
+  } catch {
     // ignore
   }
 

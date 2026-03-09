@@ -78,8 +78,7 @@ function detectLatestVersion(): string | null {
       .map(d => d.name.slice(1))
       .sort(compareSemver)
     return versions.length > 0 ? versions.at(-1) : null
-  }
-  catch (err) {
+  } catch (err) {
     console.error(
       `[launcher] Failed to scan ${APP_BASE}:`,
       err instanceof Error ? err.message : err,
@@ -92,8 +91,7 @@ function isAllowedHost(url: string): boolean {
   try {
     const host = new URL(url).hostname
     return ALLOWED_HOSTS.has(host)
-  }
-  catch {
+  } catch {
     return false
   }
 }
@@ -161,8 +159,7 @@ async function fetchLatestAppPackage(): Promise<AppPackageInfo | null> {
     }
 
     return { version: pkgVersion, asset: pkgAsset, checksumAsset }
-  }
-  catch (err) {
+  } catch (err) {
     console.error(
       '[launcher] Failed to fetch release info:',
       err instanceof Error ? err.message : err,
@@ -220,8 +217,7 @@ async function downloadToFile(url: string, destPath: string): Promise<Buffer | n
     const data = Buffer.concat(chunks)
     await Bun.write(destPath, data)
     return data
-  }
-  finally {
+  } finally {
     clearTimeout(timeout)
   }
 }
@@ -312,8 +308,7 @@ async function extractAndInstall(tmpFile: string, versionDir: string): Promise<b
     }
     await rename(tmpExtractDir, versionDir)
     return true
-  }
-  catch (err) {
+  } catch (err) {
     console.error('[launcher] Extract/install failed:', err instanceof Error ? err.message : err)
     rmSync(tmpExtractDir, { recursive: true, force: true })
     return false
@@ -391,8 +386,7 @@ async function downloadAndExtract(info: AppPackageInfo): Promise<boolean> {
     rmSync(tmpFile, { force: true })
     console.log(`[launcher] Version ${info.version} installed successfully`)
     return true
-  }
-  catch (err) {
+  } catch (err) {
     console.error('[launcher] Download/extract failed:', err instanceof Error ? err.message : err)
     rmSync(tmpFile, { force: true })
     return false
@@ -409,8 +403,7 @@ async function main() {
     try {
       const data = JSON.parse(await Bun.file(VERSION_FILE).text())
       version = typeof data.version === 'string' ? data.version : null
-    }
-    catch {
+    } catch {
       console.error('[launcher] Failed to parse data/app/version.json')
     }
   }
@@ -472,8 +465,7 @@ async function main() {
   // 5. Start server
   try {
     await import(serverPath)
-  }
-  catch (err) {
+  } catch (err) {
     console.error('[launcher] Failed to start server:', err)
     process.exit(1)
   }
