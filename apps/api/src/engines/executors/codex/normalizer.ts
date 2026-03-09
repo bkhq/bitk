@@ -261,7 +261,8 @@ export class CodexLogNormalizer {
         const callId = msg.call_id as string | undefined
         if (!changes) return null
         const entries: NormalizedLogEntry[] = []
-        for (const path of Object.keys(changes)) {
+        for (const [path, patchValue] of Object.entries(changes)) {
+          const patch = typeof patchValue === 'string' ? patchValue : undefined
           const toolAction: ToolAction = {
             kind: 'file-edit',
             path,
@@ -274,7 +275,7 @@ export class CodexLogNormalizer {
               toolName: 'Edit',
               toolCallId: callId,
               path,
-              input: { file_path: path },
+              input: { file_path: path, ...(patch ? { patch } : {}) },
             },
             toolAction,
           })
@@ -330,7 +331,8 @@ export class CodexLogNormalizer {
         const callId = msg.call_id as string | undefined
         if (!changes) return null
         const entries: NormalizedLogEntry[] = []
-        for (const path of Object.keys(changes)) {
+        for (const [path, patchValue] of Object.entries(changes)) {
+          const patch = typeof patchValue === 'string' ? patchValue : undefined
           entries.push({
             entryType: 'tool-use',
             content: `Tool: Edit`,
@@ -339,7 +341,7 @@ export class CodexLogNormalizer {
               toolName: 'Edit',
               toolCallId: callId,
               path,
-              input: { file_path: path },
+              input: { file_path: path, ...(patch ? { patch } : {}) },
             },
             toolAction: { kind: 'file-edit', path },
           })

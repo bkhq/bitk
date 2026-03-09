@@ -9,6 +9,10 @@ const LazyMultiFileDiff = lazy(() =>
   import('@pierre/diffs/react').then(m => ({ default: m.MultiFileDiff })),
 )
 
+const LazyPatchDiff = lazy(() =>
+  import('@pierre/diffs/react').then(m => ({ default: m.PatchDiff })),
+)
+
 // ── Shared helpers ───────────────────────────────────────
 
 export function stringifyPretty(input: unknown): string {
@@ -26,6 +30,7 @@ export interface ParsedFileToolInput {
   content?: string
   oldString?: string
   newString?: string
+  patch?: string
   hasOnlyFilePath: boolean
   raw: string
 }
@@ -43,6 +48,7 @@ export function parseFileToolInput(input: unknown): ParsedFileToolInput {
     content: typeof obj.content === 'string' ? obj.content : undefined,
     oldString: typeof obj.old_string === 'string' ? obj.old_string : undefined,
     newString: typeof obj.new_string === 'string' ? obj.new_string : undefined,
+    patch: typeof obj.patch === 'string' ? obj.patch : undefined,
     hasOnlyFilePath,
     raw,
   }
@@ -155,6 +161,40 @@ export function ShikiUnifiedDiff({
             diffIndicators: 'bars',
             expandUnchanged: false,
             hunkSeparators: 'line-info',
+            disableLineNumbers: false,
+            overflow: 'wrap',
+            theme: {
+              light: 'github-light-default',
+              dark: 'github-dark-default',
+            },
+            themeType,
+            disableFileHeader: true,
+          }}
+        />
+      </Suspense>
+    </div>
+  )
+}
+
+export function ShikiPatchDiff({ patch }: { patch: string }) {
+  const { resolved } = useTheme()
+  const themeType = resolved === 'dark' ? 'dark' : 'light'
+
+  return (
+    <div className="overflow-x-auto rounded-md border border-border/40">
+      <Suspense
+        fallback={
+          <pre className="px-2.5 py-2 text-[12px] font-mono overflow-x-auto whitespace-pre-wrap">
+            {patch}
+          </pre>
+        }
+      >
+        <LazyPatchDiff
+          patch={patch}
+          options={{
+            diffStyle: 'unified',
+            diffIndicators: 'bars',
+            expandUnchanged: true,
             disableLineNumbers: false,
             overflow: 'wrap',
             theme: {

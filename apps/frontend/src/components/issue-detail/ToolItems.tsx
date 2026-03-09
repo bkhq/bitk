@@ -15,6 +15,7 @@ import {
   CodeBlock,
   detectCodeLanguage,
   parseFileToolInput,
+  ShikiPatchDiff,
   ShikiUnifiedDiff,
   ToolPanel,
 } from './CodeRenderers'
@@ -32,12 +33,23 @@ function countLines(text: string | undefined | null): number | null {
   return text.split('\n').length
 }
 
-/** Compute +added / -removed line counts from old/new strings. */
+/** Compute +added / -removed line counts from old/new strings or patch. */
 function diffStats(
   oldStr: string | undefined,
   newStr: string | undefined,
+  patch?: string | undefined,
 ): { added: number, removed: number } | null {
-  if (oldStr === undefined && newStr === undefined) return null
+  if (oldStr === undefined && newStr === undefined && patch === undefined) return null
+  // Parse unified diff patch for line counts
+  if (patch !== undefined && oldStr === undefined && newStr === undefined) {
+    let added = 0
+    let removed = 0
+    for (const line of patch.split('\n')) {
+      if (line.startsWith('+') && !line.startsWith('+++')) added++
+      else if (line.startsWith('-') && !line.startsWith('---')) removed++
+    }
+    return (added > 0 || removed > 0) ? { added, removed } : null
+  }
   const oldLines = oldStr ? oldStr.split('\n').length : 0
   const newLines = newStr ? newStr.split('\n').length : 0
   if (oldStr !== undefined && newStr !== undefined) {
@@ -123,6 +135,7 @@ export function FileToolItem({ item }: { item: ToolGroupItem }) {
   const hasContent = parsed.content !== undefined
   const hasOldString = parsed.oldString !== undefined
   const hasNewString = parsed.newString !== undefined
+  const hasPatch = parsed.patch !== undefined
 
   if (!isEdit) {
     const resultContent = item.result?.content
@@ -160,7 +173,7 @@ export function FileToolItem({ item }: { item: ToolGroupItem }) {
   }
 
   // File edit / write
-  const stats = diffStats(parsed.oldString, parsed.newString ?? parsed.content)
+  const stats = diffStats(parsed.oldString, parsed.newString ?? parsed.content, parsed.patch)
 
   return (
     <ToolPanel
@@ -202,7 +215,11 @@ export function FileToolItem({ item }: { item: ToolGroupItem }) {
           ? <CodeBlock content={parsed.newString || ''} language={codeLanguage} collapsible={false} />
           : null}
 
-        {!hasContent && !hasOldString && !hasNewString && !parsed.hasOnlyFilePath
+        {!hasOldString && !hasNewString && hasPatch
+          ? <ShikiPatchDiff patch={parsed.patch!} />
+          : null}
+
+        {!hasContent && !hasOldString && !hasNewString && !hasPatch && !parsed.hasOnlyFilePath
           ? <CodeBlock content={parsed.raw || '(empty)'} language="json" collapsible={false} />
           : null}
       </div>
