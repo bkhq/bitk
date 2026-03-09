@@ -26,10 +26,9 @@ bun run dev:api          # API only (port 3010)
 bun run dev:frontend     # Frontend only (port 3000)
 
 # Code Quality
-bun run lint             # ESLint check (all workspaces)
+bun run lint             # ESLint check (linting + formatting, all workspaces)
 bun run lint:fix         # ESLint auto-fix
-bun run format           # Prettier format
-bun run format:check     # Prettier check
+bun run format           # Same as lint:fix (formatting is handled by ESLint stylistic rules)
 
 # Testing
 bun run test             # All tests (parallel)
@@ -71,7 +70,7 @@ bun scripts/package.ts --version 0.0.6 --skip-frontend
 | DnD      | [@dnd-kit/react](https://dndkit.com)                                            |
 | Terminal | [xterm.js](https://xtermjs.org)                                                 |
 | i18n     | [i18next](https://www.i18next.com)                                              |
-| Linting  | [ESLint](https://eslint.org) + [Prettier](https://prettier.io)                  |
+| Linting  | [@antfu/eslint-config](https://github.com/antfu/eslint-config) (ESLint + stylistic) |
 
 ## Project Structure
 

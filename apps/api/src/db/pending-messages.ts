@@ -26,7 +26,8 @@ export async function getPendingMessage(issueId: string) {
     rows.find((row) => {
       try {
         return JSON.parse(row.metadata!).type === 'pending'
-      } catch {
+      }
+      catch {
         return false
       }
     }) ?? null
@@ -50,7 +51,8 @@ export async function getPendingMessages(issueId: string) {
   return rows.filter((row) => {
     try {
       return JSON.parse(row.metadata!).type === 'pending'
-    } catch {
+    }
+    catch {
       return false
     }
   })
@@ -78,15 +80,16 @@ export async function upsertPendingMessage(
     let existingMeta: Record<string, unknown> = {}
     try {
       existingMeta = existing.metadata ? JSON.parse(existing.metadata) : {}
-    } catch {
+    }
+    catch {
       // ignore
     }
 
     // Merge displayPrompt: append if both have it
     const existingDisplay = existingMeta.displayPrompt as string | undefined
     const newDisplay = metadata.displayPrompt as string | undefined
-    const mergedDisplay =
-      existingDisplay && newDisplay
+    const mergedDisplay
+      = existingDisplay && newDisplay
         ? `${existingDisplay}\n\n${newDisplay}`
         : newDisplay || existingDisplay
 
@@ -165,7 +168,8 @@ export async function deletePendingMessage(issueId: string): Promise<{
   let meta: Record<string, unknown> = {}
   try {
     meta = pending.metadata ? JSON.parse(pending.metadata) : {}
-  } catch {
+  }
+  catch {
     // ignore
   }
 
@@ -186,7 +190,7 @@ export async function deletePendingMessage(issueId: string): Promise<{
     id: pending.id,
     content: pending.content,
     metadata: meta,
-    attachments: attachmentRows.map((a) => ({
+    attachments: attachmentRows.map(a => ({
       id: a.id,
       originalName: a.originalName,
       mimeType: a.mimeType,
@@ -226,7 +230,8 @@ export async function relocatePendingForProcessing(issueId: string): Promise<{
   let meta: Record<string, unknown> = {}
   try {
     meta = pending.metadata ? JSON.parse(pending.metadata) : {}
-  } catch {
+  }
+  catch {
     // ignore
   }
 
@@ -281,7 +286,7 @@ export function buildFileContextFromRows(
 ): string {
   if (rows.length === 0) return ''
   const parts = rows.map(
-    (f) => `[Attached file: ${f.originalName} at ${resolve(UPLOAD_DIR, f.storedName)}]`,
+    f => `[Attached file: ${f.originalName} at ${resolve(UPLOAD_DIR, f.storedName)}]`,
   )
   return `\n\n--- Attached files ---\n${parts.join('\n')}`
 }
@@ -319,16 +324,16 @@ export async function getAttachmentContextForLogIds(
  */
 export async function collectPendingWithAttachments(
   issueId: string,
-): Promise<{ prompt: string; pendingIds: string[] }> {
+): Promise<{ prompt: string, pendingIds: string[] }> {
   const pending = await getPendingMessages(issueId)
   if (pending.length === 0) return { prompt: '', pendingIds: [] }
-  const attachmentCtx = await getAttachmentContextForLogIds(pending.map((m) => m.id))
+  const attachmentCtx = await getAttachmentContextForLogIds(pending.map(m => m.id))
   const parts = pending.map((m) => {
     const fileCtx = attachmentCtx.get(m.id) ?? ''
     return (m.content + fileCtx).trim()
   })
   return {
     prompt: parts.filter(Boolean).join('\n\n'),
-    pendingIds: pending.map((m) => m.id),
+    pendingIds: pending.map(m => m.id),
   }
 }

@@ -103,9 +103,11 @@ export function MobileSidebar({ activeProjectId }: { activeProjectId: string }) 
                       {getProjectInitials(project.name)}
                     </div>
                     <span className="text-sm truncate">{project.name}</span>
-                    {isActive ? (
-                      <ChevronRight className="h-3.5 w-3.5 ml-auto text-primary shrink-0" />
-                    ) : null}
+                    {isActive
+                      ? (
+                          <ChevronRight className="h-3.5 w-3.5 ml-auto text-primary shrink-0" />
+                        )
+                      : null}
                   </button>
                 )
               })}

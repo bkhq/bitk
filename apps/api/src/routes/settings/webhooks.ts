@@ -34,7 +34,8 @@ function serializeWebhook(row: typeof webhooks.$inferSelect) {
   let events: WebhookEventType[] = []
   try {
     events = JSON.parse(row.events) as WebhookEventType[]
-  } catch {
+  }
+  catch {
     events = []
   }
 
@@ -83,14 +84,16 @@ const createSchema = z
             message: 'URLs pointing to private/internal networks are not allowed',
           })
         }
-      } catch {
+      }
+      catch {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ['url'],
           message: 'Invalid URL format',
         })
       }
-    } else if (data.channel === 'telegram') {
+    }
+    else if (data.channel === 'telegram') {
       if (!data.secret || data.secret.trim().length === 0) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
@@ -134,7 +137,7 @@ webhooksRoute.post(
       return c.json(
         {
           success: false,
-          error: result.error.issues.map((i) => i.message).join(', '),
+          error: result.error.issues.map(i => i.message).join(', '),
         },
         400,
       )
@@ -166,7 +169,7 @@ webhooksRoute.patch(
       return c.json(
         {
           success: false,
-          error: result.error.issues.map((i) => i.message).join(', '),
+          error: result.error.issues.map(i => i.message).join(', '),
         },
         400,
       )
@@ -189,8 +192,8 @@ webhooksRoute.patch(
     // Channel is immutable after creation — always use existing value
     const effectiveChannel = existing.channel
     const effectiveUrl = body.url ?? existing.url
-    const effectiveSecret =
-      body.secret !== undefined && body.secret !== SECRET_MASK ? body.secret : existing.secret
+    const effectiveSecret
+      = body.secret !== undefined && body.secret !== SECRET_MASK ? body.secret : existing.secret
 
     if (effectiveChannel === 'webhook' && body.url !== undefined) {
       try {
@@ -207,7 +210,8 @@ webhooksRoute.patch(
             400,
           )
         }
-      } catch {
+      }
+      catch {
         return c.json({ success: false, error: 'Invalid URL format' }, 400)
       }
     }
@@ -278,7 +282,7 @@ webhooksRoute.get('/webhooks/:id/deliveries', async (c) => {
 
   return c.json({
     success: true,
-    data: rows.map((r) => ({
+    data: rows.map(r => ({
       id: r.id,
       webhookId: r.webhookId,
       event: r.event,

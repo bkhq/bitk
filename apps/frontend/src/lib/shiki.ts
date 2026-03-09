@@ -5,7 +5,7 @@ const THEMES = {
   dark: 'github-dark-default' as const,
 }
 
-type ShikiModule = {
+interface ShikiModule {
   codeToHtml: typeof ShikiCodeToHtml
 }
 
@@ -13,7 +13,7 @@ let shikiPromise: Promise<ShikiModule> | null = null
 
 async function getShiki(): Promise<ShikiModule> {
   if (!shikiPromise) {
-    shikiPromise = import('shiki').then((m) => ({ codeToHtml: m.codeToHtml }))
+    shikiPromise = import('shiki').then(m => ({ codeToHtml: m.codeToHtml }))
   }
   return shikiPromise
 }
@@ -31,7 +31,8 @@ export async function codeToHtml(code: string, lang: string): Promise<string> {
       themes: THEMES,
       defaultColor: false,
     })
-  } catch {
+  }
+  catch {
     return await shikiCodeToHtml(code, {
       lang: 'text',
       themes: THEMES,

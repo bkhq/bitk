@@ -56,7 +56,8 @@ export async function restartIssue(
       try {
         worktreePath = await createWorktree(baseDir, issue.projectId, issueId)
         workingDir = worktreePath
-      } catch (error) {
+      }
+      catch (error) {
         logger.warn({ issueId, error }, 'worktree_creation_failed_fallback_to_base')
       }
     }
@@ -100,12 +101,13 @@ export async function restartIssue(
             },
           )
         : await spawnFresh(executor, issueId, spawnOpts)
-    } catch (spawnError) {
+    }
+    catch (spawnError) {
       logger.error(
         { issueId, executionId, error: spawnError },
         'restart_spawn_failed_reverting_session',
       )
-      await updateIssueSession(issueId, { sessionStatus: 'failed' }).catch((e) =>
+      await updateIssueSession(issueId, { sessionStatus: 'failed' }).catch(e =>
         logger.error({ issueId, error: e }, 'restart_spawn_failed_revert_session_error'),
       )
       emitStateChange(issueId, executionId, 'failed')
@@ -121,7 +123,7 @@ export async function restartIssue(
       issueId,
       engineType,
       spawned,
-      (line) => normalizer.parse(line),
+      line => normalizer.parse(line),
       turnIndex,
       worktreePath,
       false,
@@ -129,8 +131,8 @@ export async function restartIssue(
       worktreePath ? baseDir : undefined,
     )
     restartManaged.spawnCwd = workingDir
-    restartManaged.externalSessionId =
-      spawned.externalSessionId ?? issue.sessionFields.externalSessionId ?? undefined
+    restartManaged.externalSessionId
+      = spawned.externalSessionId ?? issue.sessionFields.externalSessionId ?? undefined
     monitorCompletion(ctx, executionId, issueId, engineType, false)
 
     // Mark pending messages as dispatched after successful spawn

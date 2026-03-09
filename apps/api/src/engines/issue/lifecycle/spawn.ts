@@ -66,7 +66,8 @@ export async function spawnWithSessionFallback(
       },
       spawnCtx,
     )
-  } catch (error) {
+  }
+  catch (error) {
     if (!isMissingExternalSessionError(error)) throw error
     const externalSessionId = crypto.randomUUID()
     logger.warn(
@@ -175,14 +176,16 @@ export async function spawnRetry(
         if (await isWorktreeRegistered(baseDir, candidatePath)) {
           worktreePath = candidatePath
           workingDir = candidatePath
-        } else {
+        }
+        else {
           logger.warn(
             { issueId, candidatePath, baseDir },
             'worktree_not_registered_follow_up_fallback',
           )
         }
       }
-    } catch {
+    }
+    catch {
       // Worktree doesn't exist — follow-up in base dir
     }
   }
@@ -216,7 +219,7 @@ export async function spawnRetry(
     issueId,
     engineType,
     spawned,
-    (line) => normalizer.parse(line),
+    line => normalizer.parse(line),
     turnIndex,
     worktreePath,
     false,
@@ -224,8 +227,8 @@ export async function spawnRetry(
     worktreePath ? baseDir : undefined,
   )
   retryManaged.spawnCwd = workingDir
-  retryManaged.externalSessionId =
-    spawned.externalSessionId ?? issue.sessionFields.externalSessionId ?? undefined
+  retryManaged.externalSessionId
+    = spawned.externalSessionId ?? issue.sessionFields.externalSessionId ?? undefined
   monitorCompletion(ctx, executionId, issueId, engineType, true)
   logger.debug({ issueId, executionId, engineType, turnIndex }, 'issue_retry_spawned')
 }
@@ -239,7 +242,7 @@ export async function spawnFollowUpProcess(
   displayPrompt?: string,
   metadata?: Record<string, unknown>,
   opts?: { skipPersistMessage?: boolean },
-): Promise<{ executionId: string; messageId?: string | null }> {
+): Promise<{ executionId: string, messageId?: string | null }> {
   logger.debug(
     { issueId, model, permissionMode, promptChars: prompt.length },
     'issue_followup_spawn_process_requested',
@@ -296,18 +299,21 @@ export async function spawnFollowUpProcess(
         if (await isWorktreeRegistered(baseDir, candidatePath)) {
           worktreePath = candidatePath
           workingDir = candidatePath
-        } else {
+        }
+        else {
           logger.warn({ issueId, candidatePath, baseDir }, 'worktree_not_registered_recreating')
           worktreePath = await createWorktree(baseDir, issue.projectId, issueId)
           workingDir = worktreePath
         }
       }
-    } catch {
+    }
+    catch {
       // Worktree dir doesn't exist — create fresh
       try {
         worktreePath = await createWorktree(baseDir, issue.projectId, issueId)
         workingDir = worktreePath
-      } catch (wtErr) {
+      }
+      catch (wtErr) {
         logger.warn({ issueId, error: wtErr }, 'worktree_creation_failed_fallback_to_base')
       }
     }
@@ -328,7 +334,8 @@ export async function spawnFollowUpProcess(
       envVars: projCtx.envVars,
       systemPrompt: projCtx.systemPrompt,
     })
-  } catch (spawnError) {
+  }
+  catch (spawnError) {
     // Spawn failed after we already emitted 'running' and persisted the user
     // message.  Revert the session status so the issue doesn't get stuck in
     // 'running' forever with no process to settle it.
@@ -344,11 +351,12 @@ export async function spawnFollowUpProcess(
     if (messageId) {
       try {
         removeLogEntry(messageId)
-      } catch (e) {
+      }
+      catch (e) {
         logger.error({ issueId, messageId, error: e }, 'spawn_failed_remove_user_message_error')
       }
     }
-    await updateIssueSession(issueId, { sessionStatus: 'failed' }).catch((e) =>
+    await updateIssueSession(issueId, { sessionStatus: 'failed' }).catch(e =>
       logger.error({ issueId, error: e }, 'spawn_failed_revert_session_error'),
     )
     emitStateChange(issueId, executionId, 'failed')
@@ -365,7 +373,7 @@ export async function spawnFollowUpProcess(
     issueId,
     engineType,
     spawned,
-    (line) => normalizer.parse(line),
+    line => normalizer.parse(line),
     turnIndex,
     worktreePath,
     metadata?.type === 'system',
@@ -373,8 +381,8 @@ export async function spawnFollowUpProcess(
     worktreePath ? baseDir : undefined,
   )
   followUpManaged.spawnCwd = workingDir
-  followUpManaged.externalSessionId =
-    spawned.externalSessionId ?? issue.sessionFields.externalSessionId ?? undefined
+  followUpManaged.externalSessionId
+    = spawned.externalSessionId ?? issue.sessionFields.externalSessionId ?? undefined
   // User message already persisted above (before spawn)
   monitorCompletion(ctx, executionId, issueId, engineType, false)
   const followUpPid = getPidFromSubprocess(spawned.subprocess)

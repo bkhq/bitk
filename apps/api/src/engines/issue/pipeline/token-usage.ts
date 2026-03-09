@@ -40,7 +40,8 @@ export function registerTokenUsageStage(
           })
           .where(sql`${issues.id} = ${data.issueId}`)
           .run()
-      } catch (error) {
+      }
+      catch (error) {
         logger.warn({ issueId: data.issueId, error }, 'token_usage_accumulate_failed')
       }
     },

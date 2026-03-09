@@ -74,11 +74,12 @@ function detectLatestVersion(): string | null {
   if (!existsSync(APP_BASE)) return null
   try {
     const versions = readdirSync(APP_BASE, { withFileTypes: true })
-      .filter((d) => d.isDirectory() && /^v\d+\.\d+\.\d+$/.test(d.name))
-      .map((d) => d.name.slice(1))
+      .filter(d => d.isDirectory() && /^v\d+\.\d+\.\d+$/.test(d.name))
+      .map(d => d.name.slice(1))
       .sort(compareSemver)
-    return versions.length > 0 ? versions[versions.length - 1] : null
-  } catch (err) {
+    return versions.length > 0 ? versions.at(-1) : null
+  }
+  catch (err) {
     console.error(
       `[launcher] Failed to scan ${APP_BASE}:`,
       err instanceof Error ? err.message : err,
@@ -91,7 +92,8 @@ function isAllowedHost(url: string): boolean {
   try {
     const host = new URL(url).hostname
     return ALLOWED_HOSTS.has(host)
-  } catch {
+  }
+  catch {
     return false
   }
 }
@@ -103,7 +105,7 @@ async function fetchLatestAppPackage(): Promise<AppPackageInfo | null> {
   try {
     const res = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`, {
       headers: {
-        Accept: 'application/vnd.github.v3+json',
+        'Accept': 'application/vnd.github.v3+json',
         'User-Agent': 'bkd-launcher',
       },
       signal: AbortSignal.timeout(15_000),
@@ -144,7 +146,7 @@ async function fetchLatestAppPackage(): Promise<AppPackageInfo | null> {
 
     // Fallback: legacy per-asset .sha256 file
     if (!checksumAsset && pkgAsset) {
-      const legacy = data.assets.find((a) => a.name === `${pkgAsset!.name}.sha256`)
+      const legacy = data.assets.find(a => a.name === `${pkgAsset!.name}.sha256`)
       if (legacy) {
         checksumAsset = {
           name: legacy.name,
@@ -159,7 +161,8 @@ async function fetchLatestAppPackage(): Promise<AppPackageInfo | null> {
     }
 
     return { version: pkgVersion, asset: pkgAsset, checksumAsset }
-  } catch (err) {
+  }
+  catch (err) {
     console.error(
       '[launcher] Failed to fetch release info:',
       err instanceof Error ? err.message : err,
@@ -217,7 +220,8 @@ async function downloadToFile(url: string, destPath: string): Promise<Buffer | n
     const data = Buffer.concat(chunks)
     await Bun.write(destPath, data)
     return data
-  } finally {
+  }
+  finally {
     clearTimeout(timeout)
   }
 }
@@ -308,7 +312,8 @@ async function extractAndInstall(tmpFile: string, versionDir: string): Promise<b
     }
     await rename(tmpExtractDir, versionDir)
     return true
-  } catch (err) {
+  }
+  catch (err) {
     console.error('[launcher] Extract/install failed:', err instanceof Error ? err.message : err)
     rmSync(tmpExtractDir, { recursive: true, force: true })
     return false
@@ -386,7 +391,8 @@ async function downloadAndExtract(info: AppPackageInfo): Promise<boolean> {
     rmSync(tmpFile, { force: true })
     console.log(`[launcher] Version ${info.version} installed successfully`)
     return true
-  } catch (err) {
+  }
+  catch (err) {
     console.error('[launcher] Download/extract failed:', err instanceof Error ? err.message : err)
     rmSync(tmpFile, { force: true })
     return false
@@ -403,7 +409,8 @@ async function main() {
     try {
       const data = JSON.parse(await Bun.file(VERSION_FILE).text())
       version = typeof data.version === 'string' ? data.version : null
-    } catch {
+    }
+    catch {
       console.error('[launcher] Failed to parse data/app/version.json')
     }
   }
@@ -465,7 +472,8 @@ async function main() {
   // 5. Start server
   try {
     await import(serverPath)
-  } catch (err) {
+  }
+  catch (err) {
     console.error('[launcher] Failed to start server:', err)
     process.exit(1)
   }

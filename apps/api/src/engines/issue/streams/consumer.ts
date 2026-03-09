@@ -20,11 +20,12 @@ async function saveCategorizedCommandsToSettings(
   categorized: CategorizedCommands,
 ): Promise<void> {
   if (
-    categorized.commands.length === 0 &&
-    categorized.agents.length === 0 &&
-    categorized.plugins.length === 0
-  )
+    categorized.commands.length === 0
+    && categorized.agents.length === 0
+    && categorized.plugins.length === 0
+  ) {
     return
+  }
   await setAppSetting(slashCommandsKey(engineType), JSON.stringify(categorized))
   await refreshSlashCommandsCacheForEngine(engineType)
 }
@@ -87,7 +88,7 @@ export async function consumeStream(
             : []
           managed.agents = Array.isArray(meta.agents) ? (meta.agents as string[]) : []
           managed.plugins = Array.isArray(meta.plugins)
-            ? (meta.plugins as Array<{ name: string; path: string }>)
+            ? (meta.plugins as Array<{ name: string, path: string }>)
             : []
           void saveCategorizedCommandsToSettings(managed.engineType, {
             commands: managed.slashCommands,
@@ -103,8 +104,8 @@ export async function consumeStream(
 
         // Claude may emit execution noise after interrupt (e.g. request aborted /
         // rust-analyzer crash). Suppress noise entries within 5s of the last interrupt.
-        const recentInterrupt =
-          managed.lastInterruptAt && Date.now() - managed.lastInterruptAt.getTime() < 5000
+        const recentInterrupt
+          = managed.lastInterruptAt && Date.now() - managed.lastInterruptAt.getTime() < 5000
         if (recentInterrupt && isCancelledNoiseEntry(entry)) {
           if (isTurnCompletionEntry(entry)) {
             callbacks.onTurnCompleted()
@@ -117,7 +118,8 @@ export async function consumeStream(
         if (isTurnCompletionEntry(entry)) {
           callbacks.onTurnCompleted()
         }
-      } catch (entryError) {
+      }
+      catch (entryError) {
         // Log and skip this entry — do not kill the stream consumer.
         // The stream is still readable; only the callback processing failed.
         logger.error({ issueId, executionId, entryError }, 'consume_stream_entry_processing_error')
@@ -125,7 +127,8 @@ export async function consumeStream(
     }
     // Stream ended normally (process closed stdout)
     logger.info({ issueId, executionId }, 'consume_stream_ended')
-  } catch (error) {
+  }
+  catch (error) {
     // Stream itself errored (reader.read() failed) — not recoverable
     logger.warn({ issueId, executionId, err: error }, 'consume_stream_error')
     callbacks.onStreamError(error)
@@ -163,7 +166,8 @@ export async function consumeStderr(
           if (managed.stallDetectedAt) managed.stallDetectedAt = undefined
           if (managed.stallProbeAt) managed.stallProbeAt = undefined
           pushStderrEntry(line, callbacks.getTurnIndex(), callbacks.onEntry)
-        } catch (entryError) {
+        }
+        catch (entryError) {
           logger.error(
             { issueId, executionId, entryError },
             'consume_stderr_entry_processing_error',
@@ -181,10 +185,12 @@ export async function consumeStderr(
         pushStderrEntry(buffer, callbacks.getTurnIndex(), callbacks.onEntry)
       }
     }
-  } catch (err) {
+  }
+  catch (err) {
     // Stderr stream closed or errored — log for diagnostics
     logger.debug({ issueId, executionId, err }, 'consume_stderr_stream_error')
-  } finally {
+  }
+  finally {
     reader.releaseLock()
   }
 }

@@ -50,19 +50,21 @@ function readTranscriptAfter(transcriptPath: string, afterTimestamp: string): st
   let raw: string
   try {
     raw = readFileSync(transcriptPath, 'utf-8')
-  } catch (err) {
+  }
+  catch (err) {
     logger.warn({ transcriptPath, err }, 'transcript_fallback_read_failed')
     return []
   }
 
-  const lines = raw.split('\n').filter((l) => l.trim())
+  const lines = raw.split('\n').filter(l => l.trim())
   const outputLines: string[] = []
 
   for (const line of lines) {
     let entry: TranscriptEntry
     try {
       entry = JSON.parse(line)
-    } catch {
+    }
+    catch {
       continue
     }
 
@@ -154,7 +156,8 @@ export function runTranscriptFallback(
           turnCompleted = true
         }
       }
-    } catch (err) {
+    }
+    catch (err) {
       logger.warn({ err, line: line.slice(0, 200) }, 'transcript_fallback_parse_error')
     }
   }

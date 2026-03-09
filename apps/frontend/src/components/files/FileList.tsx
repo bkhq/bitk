@@ -63,7 +63,7 @@ export function FileList({ entries, onNavigate }: FileListProps) {
           </tr>
         </thead>
         <tbody>
-          {entries.map((entry) => (
+          {entries.map(entry => (
             <tr
               key={entry.name}
               className="border-b border-border last:border-b-0 hover:bg-muted/30 transition-colors cursor-pointer"
@@ -71,11 +71,13 @@ export function FileList({ entries, onNavigate }: FileListProps) {
             >
               <td className="px-4 py-2">
                 <div className="flex items-center gap-2">
-                  {entry.type === 'directory' ? (
-                    <Folder className="h-4 w-4 text-blue-500 shrink-0" />
-                  ) : (
-                    <File className="h-4 w-4 text-muted-foreground shrink-0" />
-                  )}
+                  {entry.type === 'directory'
+                    ? (
+                        <Folder className="h-4 w-4 text-blue-500 shrink-0" />
+                      )
+                    : (
+                        <File className="h-4 w-4 text-muted-foreground shrink-0" />
+                      )}
                   <span
                     className={`truncate ${
                       entry.type === 'directory' ? 'text-foreground font-medium' : 'text-foreground'

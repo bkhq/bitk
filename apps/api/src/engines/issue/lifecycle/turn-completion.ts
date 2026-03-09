@@ -54,12 +54,12 @@ export function handleTurnCompleted(
       // network issues, etc.) don't clear a valid session.
       const hasAssistantOutput = managed.logs
         .toArray()
-        .some((l) => l.entryType === 'assistant-message')
+        .some(l => l.entryType === 'assistant-message')
       const reason = (managed.logicalFailureReason ?? '').toLowerCase()
-      const isSessionError =
-        finalStatus === 'failed' &&
-        !hasAssistantOutput &&
-        (reason.includes('no conversation found') || reason.includes('session'))
+      const isSessionError
+        = finalStatus === 'failed'
+          && !hasAssistantOutput
+          && (reason.includes('no conversation found') || reason.includes('session'))
       if (isSessionError) {
         logger.warn(
           { issueId, executionId, reason: managed.logicalFailureReason },
@@ -69,7 +69,8 @@ export function handleTurnCompleted(
           sessionStatus: finalStatus,
           externalSessionId: null,
         })
-      } else {
+      }
+      else {
         await updateIssueSession(issueId, { sessionStatus: finalStatus })
       }
 
@@ -98,7 +99,8 @@ export function handleTurnCompleted(
           emitIssueLogRemoved(issueId, [relocated.oldId])
           logger.debug({ issueId, executionId }, 'turn_deferred_to_followup')
           return
-        } catch (flushErr) {
+        }
+        catch (flushErr) {
           logger.error({ issueId, err: flushErr }, 'auto_flush_pending_failed')
           restorePendingVisibility(relocated.oldId)
           // Fall through to normal review flow
@@ -126,7 +128,8 @@ export function handleTurnCompleted(
       await autoMoveToReview(issueId)
       emitIssueSettled(issueId, executionId, finalStatus)
       logger.info({ issueId, executionId, finalStatus }, 'issue_turn_settled')
-    } catch (error) {
+    }
+    catch (error) {
       logger.error({ issueId, executionId, error }, 'issue_turn_settle_failed')
       // Safety net: ensure frontend is always notified even if settlement
       // partially failed. Without this, the frontend never receives the
@@ -142,12 +145,12 @@ export function handleTurnCompleted(
         const currentStatus = freshIssue?.sessionFields.sessionStatus
         const hasOtherActive = ctx.pm
           .getActive()
-          .some((e) => e.meta.issueId === issueId && e.id !== executionId)
+          .some(e => e.meta.issueId === issueId && e.id !== executionId)
         if (
-          hasOtherActive ||
-          (currentStatus !== finalStatus &&
-            currentStatus !== 'running' &&
-            currentStatus !== 'pending')
+          hasOtherActive
+          || (currentStatus !== finalStatus
+            && currentStatus !== 'running'
+            && currentStatus !== 'pending')
         ) {
           logger.debug(
             {
@@ -162,7 +165,8 @@ export function handleTurnCompleted(
           return
         }
         await updateIssueSession(issueId, { sessionStatus: finalStatus })
-      } catch (innerErr) {
+      }
+      catch (innerErr) {
         logger.error({ issueId, executionId, err: innerErr }, 'issue_turn_settle_catch_db_failed')
       }
       emitIssueSettled(issueId, executionId, finalStatus)
@@ -184,15 +188,15 @@ export async function flushQueuedInputs(
   // throws, the messages remain in pendingInputs for the next flush attempt.
   const all = [...managed.pendingInputs]
   const mergedPrompt = all
-    .map((i) => i.prompt)
+    .map(i => i.prompt)
     .filter(Boolean)
     .join('\n\n')
   // Use the latest model override (last wins)
   const lastModel = all.reduce<string | undefined>((acc, i) => i.model ?? acc, undefined)
   // Merge display prompts for the UI message bubble
-  const mergedDisplay =
-    all
-      .map((i) => i.displayPrompt)
+  const mergedDisplay
+    = all
+      .map(i => i.displayPrompt)
       .filter(Boolean)
       .join('\n\n') || undefined
 
@@ -216,12 +220,13 @@ export async function flushQueuedInputs(
       managed,
       mergedPrompt,
       mergedDisplay,
-      all[all.length - 1]?.metadata,
+      all.at(-1)?.metadata,
     )
     // Remove only the consumed messages — new inputs queued during the
     // await above are preserved for the next flush cycle.
     dispatch(managed, { type: 'SPLICE_PENDING_INPUTS', count: all.length })
-  } catch (err) {
+  }
+  catch (err) {
     // Messages preserved in managed.pendingInputs for next flush attempt
     logger.error(
       { issueId, executionId: managed.executionId, err },

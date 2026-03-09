@@ -430,7 +430,7 @@ Release platforms: `linux-x64`, `linux-arm64`, `darwin-arm64`. All builds includ
 
 ## Tooling
 
-- **Linting/Formatting**: ESLint (`eslint.config.js`) + Prettier (`.prettierrc`) — no semicolons, single quotes, 2-space indent
+- **Linting/Formatting**: @antfu/eslint-config (`eslint.config.js`) — no semicolons, single quotes, 2-space indent
 - **Frontend tests**: vitest + @testing-library/react
 - **Backend tests**: `bun:test` with preload for isolated temp DB
 - **TypeScript**: shared configs in `packages/tsconfig` (strict mode, ESNext target)

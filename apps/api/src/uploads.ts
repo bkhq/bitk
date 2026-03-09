@@ -38,7 +38,7 @@ export async function saveUploadedFile(file: File): Promise<SavedFile> {
   }
 }
 
-export function validateFiles(files: File[]): { ok: true } | { ok: false; error: string } {
+export function validateFiles(files: File[]): { ok: true } | { ok: false, error: string } {
   if (files.length > MAX_FILES) {
     return { ok: false, error: `Too many files (max ${MAX_FILES})` }
   }

@@ -31,11 +31,12 @@ export async function loadFilterRules(): Promise<WriteFilterRule[]> {
   try {
     const parsed = writeFilterRulesSchema.safeParse(JSON.parse(raw))
     return parsed.success ? parsed.data : DEFAULT_FILTER_RULES
-  } catch {
+  }
+  catch {
     return DEFAULT_FILTER_RULES
   }
 }
 
 export function isToolFiltered(toolName: string, rules: WriteFilterRule[]): boolean {
-  return rules.some((r) => r.enabled && r.type === 'tool-name' && r.match === toolName)
+  return rules.some(r => r.enabled && r.type === 'tool-name' && r.match === toolName)
 }

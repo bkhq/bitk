@@ -31,7 +31,7 @@ import { useTerminalStore } from '@/stores/terminal-store'
 import { useViewModeStore } from '@/stores/view-mode-store'
 import type { Project } from '@/types/kanban'
 
-function ProjectCard({ project, onClick }: { project: Project; onClick: () => void }) {
+function ProjectCard({ project, onClick }: { project: Project, onClick: () => void }) {
   const { t } = useTranslation()
   const stats = useProjectStats(project.id)
   const [showSettings, setShowSettings] = useState(false)
@@ -42,7 +42,7 @@ function ProjectCard({ project, onClick }: { project: Project; onClick: () => vo
     if (!project.directory) return
     void navigator.clipboard.writeText(project.directory).then(() => {
       setCopied(true)
-      setTimeout(() => setCopied(false), 1500)
+      setTimeout(setCopied, 1500, false)
     })
   }
 
@@ -86,22 +86,26 @@ function ProjectCard({ project, onClick }: { project: Project; onClick: () => vo
         </CardHeader>
         <CardContent className="mt-auto">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            {project.directory ? (
-              <button
-                type="button"
-                onClick={handleCopyPath}
-                className="group/path flex min-w-0 items-center gap-1 hover:text-foreground transition-colors text-left"
-                title={t('project.copyPath')}
-              >
-                <FolderOpen className="h-3 w-3 shrink-0" />
-                <span className="truncate font-mono">{project.directory}</span>
-                {copied ? (
-                  <Check className="h-3 w-3 shrink-0 text-green-500" />
-                ) : (
-                  <Copy className="h-3 w-3 shrink-0 opacity-0 group-hover/path:opacity-100 transition-opacity" />
-                )}
-              </button>
-            ) : null}
+            {project.directory
+              ? (
+                  <button
+                    type="button"
+                    onClick={handleCopyPath}
+                    className="group/path flex min-w-0 items-center gap-1 hover:text-foreground transition-colors text-left"
+                    title={t('project.copyPath')}
+                  >
+                    <FolderOpen className="h-3 w-3 shrink-0" />
+                    <span className="truncate font-mono">{project.directory}</span>
+                    {copied
+                      ? (
+                          <Check className="h-3 w-3 shrink-0 text-green-500" />
+                        )
+                      : (
+                          <Copy className="h-3 w-3 shrink-0 opacity-0 group-hover/path:opacity-100 transition-opacity" />
+                        )}
+                  </button>
+                )
+              : null}
             <span className="ml-auto flex shrink-0 items-center gap-1">
               <Hash className="h-3 w-3" />
               {stats.issueCount}
@@ -286,7 +290,7 @@ export default function HomePage() {
   const [showCreate, setShowCreate] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const isMobile = useIsMobile()
-  const globalProjectPath = useViewModeStore((s) => s.projectPath)
+  const globalProjectPath = useViewModeStore(s => s.projectPath)
 
   // Mobile always uses list mode
   const projectPath = useCallback(
@@ -303,63 +307,69 @@ export default function HomePage() {
           <h1 className="text-xl font-semibold tracking-tight md:text-2xl">
             {t('project.projects')}
           </h1>
-          {projects ? (
-            <Badge variant="secondary" className="ml-1">
-              {projects.length}
-            </Badge>
-          ) : null}
+          {projects
+            ? (
+                <Badge variant="secondary" className="ml-1">
+                  {projects.length}
+                </Badge>
+              )
+            : null}
 
           {/* Mobile: right-side menu sheet */}
-          {isMobile ? (
-            <div className="ml-auto">
-              <MobileHomeMenu
-                onCreateProject={() => setShowCreate(true)}
-                onOpenSettings={() => setShowSettings(true)}
-              />
-            </div>
-          ) : (
-            <DesktopHeaderControls
-              onCreateProject={() => setShowCreate(true)}
-              onOpenSettings={() => setShowSettings(true)}
-            />
-          )}
+          {isMobile
+            ? (
+                <div className="ml-auto">
+                  <MobileHomeMenu
+                    onCreateProject={() => setShowCreate(true)}
+                    onOpenSettings={() => setShowSettings(true)}
+                  />
+                </div>
+              )
+            : (
+                <DesktopHeaderControls
+                  onCreateProject={() => setShowCreate(true)}
+                  onOpenSettings={() => setShowSettings(true)}
+                />
+              )}
         </div>
 
-        {isLoading ? (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <Card key={i} className="bg-card/30 animate-pulse min-h-[140px]">
-                <CardHeader>
-                  <div className="flex items-start gap-3">
-                    <div className="h-10 w-10 rounded-lg bg-muted" />
-                    <div className="flex-1 space-y-2">
-                      <div className="h-4 w-24 rounded bg-muted" />
-                      <div className="h-4 w-12 rounded bg-muted" />
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-3 w-32 rounded bg-muted" />
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {projects?.map((project, index) => (
-              <div
-                key={project.id}
-                className="animate-card-enter"
-                style={{ animationDelay: `${index * 60}ms` }}
-              >
-                <ProjectCard
-                  project={project}
-                  onClick={() => navigate(projectPath(project.alias))}
-                />
+        {isLoading
+          ? (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <Card key={i} className="bg-card/30 animate-pulse min-h-[140px]">
+                    <CardHeader>
+                      <div className="flex items-start gap-3">
+                        <div className="h-10 w-10 rounded-lg bg-muted" />
+                        <div className="flex-1 space-y-2">
+                          <div className="h-4 w-24 rounded bg-muted" />
+                          <div className="h-4 w-12 rounded bg-muted" />
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="h-3 w-32 rounded bg-muted" />
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
-            ))}
-          </div>
-        )}
+            )
+          : (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {projects?.map((project, index) => (
+                  <div
+                    key={project.id}
+                    className="animate-card-enter"
+                    style={{ animationDelay: `${index * 60}ms` }}
+                  >
+                    <ProjectCard
+                      project={project}
+                      onClick={() => navigate(projectPath(project.alias))}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
       </section>
 
       <CreateProjectDialog open={showCreate} onOpenChange={setShowCreate} />

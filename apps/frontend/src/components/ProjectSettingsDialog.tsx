@@ -86,7 +86,7 @@ function DeleteProjectDialog({
           <Input
             type="text"
             value={confirmName}
-            onChange={(e) => setConfirmName(e.target.value)}
+            onChange={e => setConfirmName(e.target.value)}
             placeholder={t('project.deleteConfirmPlaceholder')}
             className="w-full"
           />
@@ -104,7 +104,7 @@ function DeleteProjectDialog({
               setError('')
               deleteProject.mutate(project.id, {
                 onSuccess: onDeleted,
-                onError: (err) => setError(err.message),
+                onError: err => setError(err.message),
               })
             }}
           >
@@ -141,19 +141,21 @@ function WorktreeSection({ project }: { project: Project }) {
   return (
     <>
       <div className="space-y-2">
-        {worktrees.map((wt) => (
+        {worktrees.map(wt => (
           <div
             key={wt.issueId}
             className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2"
           >
             <div className="min-w-0 flex-1 space-y-0.5">
               <p className="truncate text-sm font-medium font-mono">{wt.issueId}</p>
-              {wt.branch ? (
-                <p className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <GitBranch className="size-3" />
-                  <span className="truncate">{wt.branch}</span>
-                </p>
-              ) : null}
+              {wt.branch
+                ? (
+                    <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <GitBranch className="size-3" />
+                      <span className="truncate">{wt.branch}</span>
+                    </p>
+                  )
+                : null}
             </div>
             <Button
               variant="ghost"
@@ -162,11 +164,13 @@ function WorktreeSection({ project }: { project: Project }) {
               disabled={deleteWorktree.isPending && deletingId === wt.issueId}
               onClick={() => setConfirmId(wt.issueId)}
             >
-              {deleteWorktree.isPending && deletingId === wt.issueId ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <Trash2 className="size-4" />
-              )}
+              {deleteWorktree.isPending && deletingId === wt.issueId
+                ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  )
+                : (
+                    <Trash2 className="size-4" />
+                  )}
             </Button>
           </div>
         ))}
@@ -265,13 +269,13 @@ export function ProjectSettingsDialog({
     }
   }, [open, project])
 
-  const hasChanges =
-    name.trim() !== project.name ||
-    description.trim() !== (project.description ?? '') ||
-    directory.trim() !== (project.directory ?? '') ||
-    repositoryUrl.trim() !== (project.repositoryUrl ?? '') ||
-    systemPrompt !== (project.systemPrompt ?? '') ||
-    envVarsText !== envVarsToText(project.envVars ?? {})
+  const hasChanges
+    = name.trim() !== project.name
+      || description.trim() !== (project.description ?? '')
+      || directory.trim() !== (project.directory ?? '')
+      || repositoryUrl.trim() !== (project.repositoryUrl ?? '')
+      || systemPrompt !== (project.systemPrompt ?? '')
+      || envVarsText !== envVarsToText(project.envVars ?? {})
 
   const handleSave = () => {
     const trimmedName = name.trim()
@@ -293,7 +297,8 @@ export function ProjectSettingsDialog({
         onError: (err) => {
           if (err.message === 'directory_already_used') {
             setError(t('project.directoryAlreadyUsed'))
-          } else {
+          }
+          else {
             setError(err.message)
           }
         },
@@ -319,37 +324,38 @@ export function ProjectSettingsDialog({
         title={t('project.settings')}
         items={navItems}
         defaultItem="general"
-        sidebarFooter={
+        sidebarFooter={(
           <div className="flex items-center gap-1.5 rounded-md border border-border/60 bg-muted/30 px-2.5 py-1.5">
             <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/50">
               {t('project.projectId')}
             </span>
             <CopyableId value={project.id} />
           </div>
-        }
-        footer={(active) =>
-          active !== 'worktrees' ? (
-            <div className="flex items-center justify-between border-t px-5 py-3">
-              <Button variant="destructive" size="sm" onClick={() => setDeleteDialogOpen(true)}>
-                {t('project.delete')}
-              </Button>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
-                  {t('common.cancel')}
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={handleSave}
-                  disabled={updateProject.isPending || !name.trim() || !hasChanges}
-                >
-                  {updateProject.isPending ? t('project.saving') : t('project.saveChanges')}
-                </Button>
-              </div>
-            </div>
-          ) : null
-        }
+        )}
+        footer={active =>
+          active !== 'worktrees'
+            ? (
+                <div className="flex items-center justify-between border-t px-5 py-3">
+                  <Button variant="destructive" size="sm" onClick={() => setDeleteDialogOpen(true)}>
+                    {t('project.delete')}
+                  </Button>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
+                      {t('common.cancel')}
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={handleSave}
+                      disabled={updateProject.isPending || !name.trim() || !hasChanges}
+                    >
+                      {updateProject.isPending ? t('project.saving') : t('project.saveChanges')}
+                    </Button>
+                  </div>
+                </div>
+              )
+            : null}
       >
-        {(active) => (
+        {active => (
           <>
             {active === 'general' && (
               <GeneralSection
@@ -403,18 +409,20 @@ function CopyableId({ value }: { value: string }) {
       onClick={() => {
         void navigator.clipboard.writeText(value).then(() => {
           setCopied(true)
-          setTimeout(() => setCopied(false), 1500)
+          setTimeout(setCopied, 1500, false)
         })
       }}
       className="group/id inline-flex items-center gap-1 rounded px-1.5 py-0.5 font-mono text-xs text-muted-foreground hover:bg-muted transition-colors"
       title={t('project.copyId')}
     >
       {value}
-      {copied ? (
-        <Check className="size-3 text-green-500" />
-      ) : (
-        <Copy className="size-3 opacity-0 group-hover/id:opacity-100 transition-opacity" />
-      )}
+      {copied
+        ? (
+            <Check className="size-3 text-green-500" />
+          )
+        : (
+            <Copy className="size-3 opacity-0 group-hover/id:opacity-100 transition-opacity" />
+          )}
     </button>
   )
 }
@@ -454,12 +462,14 @@ function GeneralSection({
     <FieldGroup>
       <Field>
         <Label>
-          {t('project.name')} <span className="text-destructive">*</span>
+          {t('project.name')}
+          {' '}
+          <span className="text-destructive">*</span>
         </Label>
         <Input
           type="text"
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          onChange={e => setName(e.target.value)}
           placeholder={t('project.namePlaceholder')}
           autoFocus
           className="w-full"
@@ -470,7 +480,7 @@ function GeneralSection({
         <Label>{t('project.description')}</Label>
         <Textarea
           value={description}
-          onChange={(e) => setDescription(e.target.value)}
+          onChange={e => setDescription(e.target.value)}
           placeholder={t('project.descriptionPlaceholder')}
           rows={3}
           className="w-full resize-none"
@@ -483,7 +493,7 @@ function GeneralSection({
           <Input
             type="text"
             value={directory}
-            onChange={(e) => setDirectory(e.target.value)}
+            onChange={e => setDirectory(e.target.value)}
             placeholder={t('project.directoryPlaceholder')}
             className="w-full"
           />
@@ -510,7 +520,7 @@ function GeneralSection({
           <Input
             type="text"
             value={repositoryUrl}
-            onChange={(e) => setRepositoryUrl(e.target.value)}
+            onChange={e => setRepositoryUrl(e.target.value)}
             placeholder={t('project.repositoryUrlPlaceholder')}
             className="w-full"
           />
@@ -522,9 +532,11 @@ function GeneralSection({
               try {
                 const result = await kanbanApi.detectGitRemote(dir)
                 setRepositoryUrl(result.url)
-              } catch {
+              }
+              catch {
                 // silently ignore — directory may not be a git repo
-              } finally {
+              }
+              finally {
                 setDetectingRemote(false)
               }
             }}
@@ -559,7 +571,7 @@ function PromptSection({
         <Label>{t('project.systemPrompt')}</Label>
         <Textarea
           value={systemPrompt}
-          onChange={(e) => setSystemPrompt(e.target.value)}
+          onChange={e => setSystemPrompt(e.target.value)}
           placeholder={t('project.systemPromptPlaceholder')}
           className="w-full flex-1 resize-none font-mono text-xs"
         />
@@ -585,7 +597,7 @@ function EnvVarsSection({
         <p className="text-xs text-muted-foreground mb-2">{t('project.envVarsHint')}</p>
         <Textarea
           value={envVarsText}
-          onChange={(e) => setEnvVarsText(e.target.value)}
+          onChange={e => setEnvVarsText(e.target.value)}
           placeholder={t('project.envVarsPlaceholder')}
           className="w-full flex-1 resize-none font-mono text-xs"
         />

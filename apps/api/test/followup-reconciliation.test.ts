@@ -60,7 +60,7 @@ describe('Follow-up queuing behavior', () => {
     expect(issue.statusId).toBe('todo')
 
     // Send follow-up on todo issue
-    const result = await post<{ issueId: string; queued: boolean }>(
+    const result = await post<{ issueId: string, queued: boolean }>(
       `/api/projects/${projectId}/issues/${issue.id}/follow-up`,
       { prompt: 'queued follow-up message' },
     )
@@ -74,7 +74,7 @@ describe('Follow-up queuing behavior', () => {
     const logsResult = await get<LogsResponse>(`/api/projects/${projectId}/issues/${issue.id}/logs`)
     const logs = expectSuccess(logsResult)
     const pendingMsgs = logs.logs.filter(
-      (l) => l.entryType === 'user-message' && l.metadata?.type === 'pending',
+      l => l.entryType === 'user-message' && l.metadata?.type === 'pending',
     )
     expect(pendingMsgs.length).toBeGreaterThanOrEqual(1)
     expect(pendingMsgs[0]!.content).toBe('queued follow-up message')
@@ -92,7 +92,7 @@ describe('Follow-up queuing behavior', () => {
 
     // Send 3 follow-ups
     for (const msg of ['first', 'second', 'third']) {
-      const result = await post<{ issueId: string; queued: boolean }>(
+      const result = await post<{ issueId: string, queued: boolean }>(
         `/api/projects/${projectId}/issues/${issue.id}/follow-up`,
         { prompt: msg },
       )
@@ -106,10 +106,10 @@ describe('Follow-up queuing behavior', () => {
     const logsResult = await get<LogsResponse>(`/api/projects/${projectId}/issues/${issue.id}/logs`)
     const logs = expectSuccess(logsResult)
     const pendingMsgs = logs.logs.filter(
-      (l) => l.entryType === 'user-message' && l.metadata?.type === 'pending',
+      l => l.entryType === 'user-message' && l.metadata?.type === 'pending',
     )
     expect(pendingMsgs.length).toBe(3)
-    const pendingContents = pendingMsgs.map((m) => m.content).sort()
+    const pendingContents = pendingMsgs.map(m => m.content).sort()
     expect(pendingContents).toEqual(['first', 'second', 'third'])
   })
 })
@@ -138,7 +138,7 @@ describe('Pending messages are consumed on transition to working', () => {
     let logsResult = await get<LogsResponse>(`/api/projects/${projectId}/issues/${issue.id}/logs`)
     let logs = expectSuccess(logsResult)
     const pendingBefore = logs.logs.filter(
-      (l) => l.entryType === 'user-message' && l.metadata?.type === 'pending',
+      l => l.entryType === 'user-message' && l.metadata?.type === 'pending',
     )
     expect(pendingBefore.length).toBe(1)
 
@@ -158,7 +158,7 @@ describe('Pending messages are consumed on transition to working', () => {
     logsResult = await get<LogsResponse>(`/api/projects/${projectId}/issues/${issue.id}/logs`)
     logs = expectSuccess(logsResult)
     const pendingAfter = logs.logs.filter(
-      (l) => l.entryType === 'user-message' && l.metadata?.type === 'pending',
+      l => l.entryType === 'user-message' && l.metadata?.type === 'pending',
     )
     expect(pendingAfter.length).toBe(0)
   })
@@ -344,7 +344,7 @@ describe('Follow-up collects and merges pending messages', () => {
     const logsResult = await get<LogsResponse>(`/api/projects/${projectId}/issues/${issue.id}/logs`)
     const logs = expectSuccess(logsResult)
     const pendingMsgs = logs.logs.filter(
-      (l) => l.entryType === 'user-message' && l.metadata?.type === 'pending',
+      l => l.entryType === 'user-message' && l.metadata?.type === 'pending',
     )
     expect(pendingMsgs.length).toBe(0)
   })
@@ -367,7 +367,7 @@ describe('Follow-up collects and merges pending messages', () => {
     }, 5000)
 
     // Follow-up on review — should dispatch immediately, not queue
-    const result = await post<{ executionId: string; issueId: string }>(
+    const result = await post<{ executionId: string, issueId: string }>(
       `/api/projects/${projectId}/issues/${issue.id}/follow-up`,
       { prompt: 'immediate dispatch' },
     )

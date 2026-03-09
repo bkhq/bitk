@@ -23,8 +23,8 @@ import { Glob } from 'bun'
 
 const { values: args } = parseArgs({
   options: {
-    version: { type: 'string' },
-    outfile: { type: 'string' },
+    'version': { type: 'string' },
+    'outfile': { type: 'string' },
     'skip-frontend': { type: 'boolean', default: false },
   },
   strict: false,
@@ -70,7 +70,8 @@ const outfile = resolve(OUT_DIR, args.outfile ?? defaultOutfile)
 
 if (args['skip-frontend']) {
   step('Skipping frontend build (--skip-frontend)')
-} else {
+}
+else {
   step('Building frontend...')
   const vite = Bun.spawn(['bun', 'run', 'build'], {
     cwd: ROOT,

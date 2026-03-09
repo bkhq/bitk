@@ -8,7 +8,7 @@ const detectRemoteSchema = z.object({
   directory: z.string().min(1).max(1000),
 })
 
-async function runGit(args: string[], cwd: string): Promise<{ code: number; stdout: string }> {
+async function runGit(args: string[], cwd: string): Promise<{ code: number, stdout: string }> {
   const proc = Bun.spawn(['git', ...args], {
     cwd,
     stdout: 'pipe',
@@ -29,7 +29,7 @@ git.post(
       return c.json(
         {
           success: false,
-          error: result.error.issues.map((i) => i.message).join(', '),
+          error: result.error.issues.map(i => i.message).join(', '),
         },
         400,
       )
@@ -45,7 +45,8 @@ git.post(
       if (!s.isDirectory()) {
         return c.json({ success: false, error: 'not_a_directory' }, 400)
       }
-    } catch {
+    }
+    catch {
       return c.json({ success: false, error: 'directory_not_found' }, 404)
     }
 

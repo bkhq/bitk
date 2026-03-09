@@ -157,7 +157,7 @@ describe('DELETE /api/projects/:id', () => {
     expect(getDeleted.status).toBe(404)
 
     const list = expectSuccess(await get<Project[]>('/api/projects'))
-    expect(list.some((p) => p.id === created.id)).toBe(false)
+    expect(list.some(p => p.id === created.id)).toBe(false)
   })
 
   test('deleting project also makes scoped issue routes inaccessible', async () => {

@@ -12,7 +12,8 @@ export class RingBuffer<T> {
     this.buf[idx] = item
     if (this.count < this.capacity) {
       this.count++
-    } else {
+    }
+    else {
       this.head = (this.head + 1) % this.capacity
     }
   }

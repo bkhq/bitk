@@ -24,10 +24,10 @@ export default function KanbanPage() {
   const { data: project, isLoading, isError } = useProject(projectId)
   const { data: issues } = useIssues(projectId)
 
-  const panel = usePanelStore((s) => s.panel)
-  const width = usePanelStore((s) => s.width)
-  const close = usePanelStore((s) => s.close)
-  const openView = usePanelStore((s) => s.openView)
+  const panel = usePanelStore(s => s.panel)
+  const width = usePanelStore(s => s.width)
+  const close = usePanelStore(s => s.close)
+  const openView = usePanelStore(s => s.openView)
   const isPanelOpen = useIsPanelOpen()
   const isMobile = useIsMobile()
   const [searchQuery, setSearchQuery] = useState('')
@@ -36,7 +36,8 @@ export default function KanbanPage() {
     (issue: { id: string }) => {
       if (isMobile) {
         void navigate(`/projects/${projectId}/issues/${issue.id}`)
-      } else {
+      }
+      else {
         openView(issue.id)
       }
     },
@@ -92,35 +93,39 @@ export default function KanbanPage() {
       </div>
 
       {/* Overlay — covers entire page, click to close panel (desktop only) */}
-      {!isMobile && isPanelOpen ? (
-        <div className="fixed inset-0 z-20 bg-black/50" onClick={close} />
-      ) : null}
+      {!isMobile && isPanelOpen
+        ? (
+            <div className="fixed inset-0 z-20 bg-black/50" onClick={close} />
+          )
+        : null}
 
       {/* Create Issue Dialog */}
       <CreateIssueDialog />
 
       {/* Issue Side Panel — desktop only; mobile navigates to detail page */}
-      {!isMobile && isPanelOpen && panel.kind === 'view' ? (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label={t('kanban.issueDetails')}
-          className="fixed inset-y-0 right-0 z-30 border-l border-border bg-card"
-          style={{ width }}
-        >
-          <ResizeHandle />
-          <IssuePanel projectId={projectId} issueId={panel.issueId} onClose={close} />
-        </div>
-      ) : null}
+      {!isMobile && isPanelOpen && panel.kind === 'view'
+        ? (
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-label={t('kanban.issueDetails')}
+              className="fixed inset-y-0 right-0 z-30 border-l border-border bg-card"
+              style={{ width }}
+            >
+              <ResizeHandle />
+              <IssuePanel projectId={projectId} issueId={panel.issueId} onClose={close} />
+            </div>
+          )
+        : null}
     </div>
   )
 }
 
 function ResizeHandle() {
   const { t } = useTranslation()
-  const width = usePanelStore((s) => s.width)
+  const width = usePanelStore(s => s.width)
   const setWidth = usePanelStore.getState().setWidth
-  const dragRef = useRef<{ startX: number; startWidth: number } | null>(null)
+  const dragRef = useRef<{ startX: number, startWidth: number } | null>(null)
 
   const maxWidth = Math.round(
     (typeof window === 'undefined' ? 800 : window.innerWidth) * PANEL_MAX_WIDTH_RATIO,
@@ -136,7 +141,7 @@ function ResizeHandle() {
       aria-valuemax={maxWidth}
       tabIndex={0}
       className="absolute left-0 top-0 bottom-0 w-2 -translate-x-1/2 z-10 cursor-col-resize group select-none outline-none"
-      onClick={(e) => e.stopPropagation()}
+      onClick={e => e.stopPropagation()}
       onPointerDown={(e) => {
         if (e.button !== 0) return
         e.preventDefault()

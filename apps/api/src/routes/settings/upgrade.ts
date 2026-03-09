@@ -22,7 +22,8 @@ function isAllowedDownloadHost(url: string): boolean {
   try {
     const hostname = new URL(url).hostname
     return ALLOWED_DOWNLOAD_HOSTS.has(hostname)
-  } catch {
+  }
+  catch {
     return false
   }
 }
@@ -57,7 +58,7 @@ upgrade.patch(
       return c.json(
         {
           success: false,
-          error: result.error.issues.map((i) => i.message).join(', '),
+          error: result.error.issues.map(i => i.message).join(', '),
         },
         400,
       )
@@ -97,7 +98,7 @@ upgrade.post(
         return c.json(
           {
             success: false,
-            error: result.error.issues.map((i) => i.message).join(', '),
+            error: result.error.issues.map(i => i.message).join(', '),
           },
           400,
         )
@@ -136,7 +137,8 @@ upgrade.post('/restart', async (c) => {
       success: true,
       data: { status: 'restarting' },
     })
-  } catch (err) {
+  }
+  catch (err) {
     logger.error({ error: err }, 'upgrade_restart_failed')
     return c.json(
       {
@@ -167,7 +169,7 @@ upgrade.delete(
         return c.json(
           {
             success: false,
-            error: result.error.issues.map((i) => i.message).join(', '),
+            error: result.error.issues.map(i => i.message).join(', '),
           },
           400,
         )
@@ -179,7 +181,8 @@ upgrade.delete(
     try {
       await deleteDownloadedUpdate(fileName)
       return c.json({ success: true, data: { deleted: fileName } })
-    } catch (err) {
+    }
+    catch (err) {
       logger.error({ error: err, fileName }, 'upgrade_delete_failed')
       return c.json(
         {

@@ -3,7 +3,7 @@ import { GitBranchPlus } from 'lucide-react'
 import { memo } from 'react'
 import type { Issue } from '@/types/kanban'
 
-export const KanbanCard = memo(function KanbanCard({
+export const KanbanCard = memo(({
   issue,
   index,
   columnStatusId,
@@ -15,7 +15,7 @@ export const KanbanCard = memo(function KanbanCard({
   columnStatusId: string
   isSelected?: boolean
   onCardClick?: (issue: Issue) => void
-}) {
+}) => {
   const { ref, isDragging } = useSortable({
     id: issue.id,
     index,
@@ -42,7 +42,8 @@ export const KanbanCard = memo(function KanbanCard({
       {/* Issue number */}
       <div className="flex items-center mb-1">
         <span className="text-[11px] font-medium text-muted-foreground font-mono">
-          #{issue.issueNumber}
+          #
+          {issue.issueNumber}
         </span>
       </div>
 
@@ -50,26 +51,30 @@ export const KanbanCard = memo(function KanbanCard({
       <p className="text-sm font-medium leading-snug text-foreground">{issue.title}</p>
 
       {/* Tags */}
-      {issue.tags && issue.tags.length > 0 ? (
-        <div className="mt-1.5 flex flex-wrap gap-1">
-          {issue.tags.map((t) => (
-            <span
-              key={t}
-              className="inline-flex items-center rounded-full border border-border/50 bg-muted/40 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground"
-            >
-              {t}
-            </span>
-          ))}
-        </div>
-      ) : null}
+      {issue.tags && issue.tags.length > 0
+        ? (
+            <div className="mt-1.5 flex flex-wrap gap-1">
+              {issue.tags.map(t => (
+                <span
+                  key={t}
+                  className="inline-flex items-center rounded-full border border-border/50 bg-muted/40 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground"
+                >
+                  {t}
+                </span>
+              ))}
+            </div>
+          )
+        : null}
 
       {/* Sub-issue count badge */}
-      {issue.childCount && issue.childCount > 0 ? (
-        <div className="mt-1.5 flex items-center gap-1 text-[10px] text-muted-foreground/60">
-          <GitBranchPlus className="h-3 w-3" />
-          <span>{issue.childCount}</span>
-        </div>
-      ) : null}
+      {issue.childCount && issue.childCount > 0
+        ? (
+            <div className="mt-1.5 flex items-center gap-1 text-[10px] text-muted-foreground/60">
+              <GitBranchPlus className="h-3 w-3" />
+              <span>{issue.childCount}</span>
+            </div>
+          )
+        : null}
     </div>
   )
 })

@@ -50,7 +50,8 @@ function parseCategorized(raw: string): CategorizedCommands | null {
       }
     }
     return null
-  } catch {
+  }
+  catch {
     return null
   }
 }
@@ -63,7 +64,8 @@ export async function refreshSlashCommandsCache(): Promise<void> {
       const cat = raw ? parseCategorized(raw) : null
       if (cat) {
         cachedCommands.set(et, cat)
-      } else {
+      }
+      else {
         cachedCommands.delete(et)
       }
     }),
@@ -76,7 +78,8 @@ export async function refreshSlashCommandsCacheForEngine(engineType: EngineType)
   const cat = raw ? parseCategorized(raw) : null
   if (cat) {
     cachedCommands.set(engineType, cat)
-  } else {
+  }
+  else {
     cachedCommands.delete(engineType)
   }
 }
@@ -147,7 +150,7 @@ export function getLogs(
 
   const persisted = result.entries
   const seen = new Set(
-    persisted.map((entry) =>
+    persisted.map(entry =>
       entry.messageId
         ? `id:${entry.messageId}`
         : `${entry.turnIndex ?? 0}:${entry.timestamp ?? ''}:${entry.entryType}:${entry.content}`,
@@ -164,7 +167,7 @@ export function getLogs(
   //   cursor mode  → entries must be after the cursor (forward pagination)
   //   reverse mode → entries must be after the DB page's newest entry
   //   neither      → no bound (include all ring buffer entries)
-  const newestDbId = persisted.length > 0 ? persisted[persisted.length - 1].messageId : undefined
+  const newestDbId = persisted.length > 0 ? persisted.at(-1).messageId : undefined
   const lowerBound = opts?.cursor ?? newestDbId
 
   const merged = [...persisted]
@@ -218,8 +221,8 @@ export function getCategorizedCommands(
 ): CategorizedCommands {
   const active = getActiveProcessForIssue(ctx, issueId)
   if (
-    active &&
-    (active.slashCommands.length > 0 || active.agents.length > 0 || active.plugins.length > 0)
+    active
+    && (active.slashCommands.length > 0 || active.agents.length > 0 || active.plugins.length > 0)
   ) {
     return {
       commands: active.slashCommands,
@@ -242,5 +245,5 @@ export function getSlashCommands(
 
 export async function cancelAll(ctx: EngineContext): Promise<void> {
   const active = getActiveProcesses(ctx)
-  await Promise.all(active.map((p) => cancel(ctx, p.executionId, { hard: true })))
+  await Promise.all(active.map(p => cancel(ctx, p.executionId, { hard: true })))
 }

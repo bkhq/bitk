@@ -55,8 +55,8 @@ app.onError((err, c) => {
   // or "Unexpected token ... in JSON at position ...".
   if (err instanceof SyntaxError) {
     const msg = err.message
-    const isBodyParse =
-      msg.startsWith('JSON Parse error') || /^Unexpected (token|end of JSON)/.test(msg)
+    const isBodyParse
+      = msg.startsWith('JSON Parse error') || /^Unexpected (token|end of JSON)/.test(msg)
     if (isBodyParse) {
       return c.json({ success: false, error: 'Invalid JSON' }, 400)
     }

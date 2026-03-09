@@ -37,7 +37,7 @@ general.patch(
       return c.json(
         {
           success: false,
-          error: result.error.issues.map((i) => i.message).join(', '),
+          error: result.error.issues.map(i => i.message).join(', '),
         },
         400,
       )
@@ -53,7 +53,8 @@ general.patch(
       if (!s.isDirectory()) {
         return c.json({ success: false, error: 'Path is not a directory' }, 400)
       }
-    } catch {
+    }
+    catch {
       return c.json({ success: false, error: 'Path does not exist' }, 400)
     }
 
@@ -78,10 +79,12 @@ general.get('/write-filter-rules', async (c) => {
   if (raw) {
     try {
       rules = JSON.parse(raw) as WriteFilterRule[]
-    } catch {
+    }
+    catch {
       rules = []
     }
-  } else {
+  }
+  else {
     rules = DEFAULT_FILTER_RULES
   }
   return c.json({ success: true, data: rules })
@@ -95,7 +98,7 @@ general.put(
       return c.json(
         {
           success: false,
-          error: result.error.issues.map((i) => i.message).join(', '),
+          error: result.error.issues.map(i => i.message).join(', '),
         },
         400,
       )
@@ -116,7 +119,7 @@ general.patch(
       return c.json(
         {
           success: false,
-          error: result.error.issues.map((i) => i.message).join(', '),
+          error: result.error.issues.map(i => i.message).join(', '),
         },
         400,
       )
@@ -131,23 +134,25 @@ general.patch(
     if (raw) {
       try {
         rules = JSON.parse(raw) as WriteFilterRule[]
-      } catch {
+      }
+      catch {
         rules = []
       }
-    } else {
+    }
+    else {
       rules = [...DEFAULT_FILTER_RULES]
     }
 
-    const rule = rules.find((r) => r.id === ruleId)
+    const rule = rules.find(r => r.id === ruleId)
     if (!rule) {
       return c.json({ success: false, error: `Rule not found: ${ruleId}` }, 404)
     }
 
-    const updatedRules = rules.map((r) => (r.id === ruleId ? { ...r, enabled } : r))
+    const updatedRules = rules.map(r => (r.id === ruleId ? { ...r, enabled } : r))
     await setAppSetting(WRITE_FILTER_RULES_KEY, JSON.stringify(updatedRules))
     return c.json({
       success: true,
-      data: updatedRules.find((r) => r.id === ruleId),
+      data: updatedRules.find(r => r.id === ruleId),
     })
   },
 )
@@ -168,7 +173,7 @@ general.patch(
       return c.json(
         {
           success: false,
-          error: result.error.issues.map((i) => i.message).join(', '),
+          error: result.error.issues.map(i => i.message).join(', '),
         },
         400,
       )
@@ -200,7 +205,7 @@ general.patch(
       return c.json(
         {
           success: false,
-          error: result.error.issues.map((i) => i.message).join(', '),
+          error: result.error.issues.map(i => i.message).join(', '),
         },
         400,
       )
@@ -235,7 +240,7 @@ general.patch(
         return c.json(
           {
             success: false,
-            error: result.error.issues.map((i) => i.message).join(', '),
+            error: result.error.issues.map(i => i.message).join(', '),
           },
           400,
         )
@@ -249,7 +254,8 @@ general.patch(
       const trimmed = name.trim()
       if (trimmed) {
         await setServerName(trimmed)
-      } else {
+      }
+      else {
         await deleteAppSetting('server:name')
       }
     }
@@ -258,7 +264,8 @@ general.patch(
       const trimmed = url.trim()
       if (trimmed) {
         await setServerUrl(trimmed)
-      } else {
+      }
+      else {
         await deleteAppSetting('server:url')
       }
     }
@@ -284,9 +291,9 @@ general.get('/slash-commands', async (c) => {
   let categorized = getCachedCategorizedCommands(engine)
   // If cache is cold (empty result), try refreshing from DB before responding
   if (
-    categorized.commands.length === 0 &&
-    categorized.agents.length === 0 &&
-    categorized.plugins.length === 0
+    categorized.commands.length === 0
+    && categorized.agents.length === 0
+    && categorized.plugins.length === 0
   ) {
     const { refreshSlashCommandsCache } = await import('@/engines/issue/queries')
     await refreshSlashCommandsCache()

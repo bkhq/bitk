@@ -13,8 +13,8 @@ export function persistEntry(
 ): NormalizedLogEntry | null {
   const idx = ctx.entryCounters.get(executionId) ?? 0
   const turnIdx = ctx.turnIndexes.get(executionId) ?? 0
-  const replyTo =
-    entry.entryType !== 'user-message'
+  const replyTo
+    = entry.entryType !== 'user-message'
       ? (ctx.userMessageIds.get(`${issueId}:${turnIdx}`) ?? null)
       : null
   const persisted = persistLogEntry(issueId, executionId, entry, idx, turnIdx, replyTo)

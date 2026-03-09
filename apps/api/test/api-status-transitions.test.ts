@@ -112,7 +112,7 @@ describe('Execute status guards', () => {
     const issue = await createIssueInStatus('review')
     expect(issue.statusId).toBe('review')
 
-    const result = await post<{ executionId: string; issueId: string }>(
+    const result = await post<{ executionId: string, issueId: string }>(
       `/api/projects/${projectId}/issues/${issue.id}/execute`,
       { engineType: 'echo', prompt: 'test from review' },
     )
@@ -131,7 +131,7 @@ describe('Execute status guards', () => {
 describe('Follow-up status guards', () => {
   test('queues follow-up on todo issue instead of rejecting', async () => {
     const issue = await createIssueInStatus('todo')
-    const result = await post<{ issueId: string; queued: boolean }>(
+    const result = await post<{ issueId: string, queued: boolean }>(
       `/api/projects/${projectId}/issues/${issue.id}/follow-up`,
       { prompt: 'hello' },
     )
@@ -145,7 +145,7 @@ describe('Follow-up status guards', () => {
   test('queues follow-up on done issue instead of rejecting', async () => {
     // The follow-up route queues messages for done issues (same as todo) rather than rejecting them
     const issue = await createIssueInStatus('done')
-    const result = await post<{ issueId: string; queued: boolean }>(
+    const result = await post<{ issueId: string, queued: boolean }>(
       `/api/projects/${projectId}/issues/${issue.id}/follow-up`,
       { prompt: 'hello' },
     )

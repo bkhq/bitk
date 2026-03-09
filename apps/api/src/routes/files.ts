@@ -32,7 +32,7 @@ function isBinaryBuffer(buf: Buffer): boolean {
 async function getGitIgnoredNames(dir: string, names: string[]): Promise<Set<string>> {
   if (names.length === 0) return new Set()
   try {
-    const paths = names.map((n) => resolve(dir, n))
+    const paths = names.map(n => resolve(dir, n))
     const proc = Bun.spawn(['git', 'check-ignore', '--', ...paths], {
       cwd: dir,
       stdout: 'pipe',
@@ -50,7 +50,8 @@ async function getGitIgnoredNames(dir: string, names: string[]): Promise<Set<str
       if (name) ignored.add(name)
     }
     return ignored
-  } catch {
+  }
+  catch {
     return new Set()
   }
 }
@@ -83,11 +84,12 @@ async function resolveProjectPath(c: Context, relativePath: string) {
   if (rootOverride) {
     const resolvedOverride = resolve(rootOverride)
     if (
-      resolvedOverride === resolve(project.directory) ||
-      isValidWorktreeRoot(resolvedOverride, projectId)
+      resolvedOverride === resolve(project.directory)
+      || isValidWorktreeRoot(resolvedOverride, projectId)
     ) {
       root = resolvedOverride
-    } else {
+    }
+    else {
       return {
         error: c.json(
           {
@@ -98,7 +100,8 @@ async function resolveProjectPath(c: Context, relativePath: string) {
         ),
       }
     }
-  } else {
+  }
+  else {
     root = resolve(project.directory)
   }
 
@@ -188,7 +191,7 @@ async function handleShow(c: Context, relativePath: string) {
 
     // ── Directory: return entry listing ──
     const dirents = await readdir(target, { withFileTypes: true })
-    const validNames = dirents.filter((d) => d.isFile() || d.isDirectory()).map((d) => d.name)
+    const validNames = dirents.filter(d => d.isFile() || d.isDirectory()).map(d => d.name)
 
     const ignoredNames = hideIgnored
       ? await getGitIgnoredNames(target, validNames)
@@ -207,7 +210,8 @@ async function handleShow(c: Context, relativePath: string) {
         const s = await stat(resolve(target, d.name))
         size = s.size
         modifiedAt = s.mtime.toISOString()
-      } catch {
+      }
+      catch {
         continue
       }
 
@@ -230,7 +234,8 @@ async function handleShow(c: Context, relativePath: string) {
       success: true,
       data: { path: relPath, type: 'directory' as const, entries },
     })
-  } catch (err: unknown) {
+  }
+  catch (err: unknown) {
     const code = (err as NodeJS.ErrnoException).code
     if (code === 'ENOENT') {
       return c.json({ success: false, error: 'Path not found' }, 404)
@@ -263,7 +268,8 @@ async function handleRaw(c: Context, relativePath: string) {
         'Content-Disposition': `attachment; filename="${encodeURIComponent(fileName)}"`,
       },
     })
-  } catch (err: unknown) {
+  }
+  catch (err: unknown) {
     const code = (err as NodeJS.ErrnoException).code
     if (code === 'ENOENT') {
       return c.json({ success: false, error: 'Path not found' }, 404)
@@ -275,11 +281,11 @@ async function handleRaw(c: Context, relativePath: string) {
 const files = new Hono()
 
 // GET /files/show — root directory listing
-files.get('/show', (c) => handleShow(c, '.'))
+files.get('/show', c => handleShow(c, '.'))
 // GET /files/show/* — browse any sub-path
-files.get('/show/*', (c) => handleShow(c, extractPathAfter(c, '/show/')))
+files.get('/show/*', c => handleShow(c, extractPathAfter(c, '/show/')))
 
 // GET /files/raw/* — download raw file
-files.get('/raw/*', (c) => handleRaw(c, extractPathAfter(c, '/raw/')))
+files.get('/raw/*', c => handleRaw(c, extractPathAfter(c, '/raw/')))
 
 export default files

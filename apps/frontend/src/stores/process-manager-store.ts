@@ -32,16 +32,16 @@ interface ProcessManagerStore {
 export { MIN_WIDTH as PROCESS_MANAGER_MIN_WIDTH }
 export const PROCESS_MANAGER_MAX_WIDTH_RATIO = MAX_WIDTH_RATIO
 
-export const useProcessManagerStore = create<ProcessManagerStore>((set) => ({
+export const useProcessManagerStore = create<ProcessManagerStore>(set => ({
   isOpen: false,
   isMinimized: false,
   isFullscreen: false,
   width: Math.round(getViewportWidth() * DEFAULT_WIDTH_RATIO),
   projectId: null,
 
-  open: (projectId) => set({ isOpen: true, isMinimized: false, projectId }),
+  open: projectId => set({ isOpen: true, isMinimized: false, projectId }),
   close: () => set({ isOpen: false }),
-  toggle: (projectId) =>
+  toggle: projectId =>
     set((s) => {
       if (s.isMinimized) return { isOpen: true, isMinimized: false, projectId }
       if (s.isOpen && s.projectId === projectId) return { isOpen: false }
@@ -49,8 +49,8 @@ export const useProcessManagerStore = create<ProcessManagerStore>((set) => ({
     }),
   minimize: () => set({ isOpen: false, isMinimized: true, isFullscreen: false }),
   restore: () => set({ isOpen: true, isMinimized: false }),
-  toggleFullscreen: () => set((s) => ({ isFullscreen: !s.isFullscreen })),
-  setWidth: (w) => set({ width: clampWidth(w) }),
+  toggleFullscreen: () => set(s => ({ isFullscreen: !s.isFullscreen })),
+  setWidth: w => set({ width: clampWidth(w) }),
 }))
 
 // Re-clamp width on window resize

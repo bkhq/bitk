@@ -71,7 +71,7 @@ export const issues = sqliteTable(
       .$defaultFn(() => new Date()),
     ...commonFields,
   },
-  (table) => [
+  table => [
     index('issues_project_id_idx').on(table.projectId),
     index('issues_status_id_idx').on(table.statusId),
     index('issues_parent_issue_id_idx').on(table.parentIssueId),
@@ -113,7 +113,7 @@ export const issueLogs = sqliteTable(
     visible: integer('visible').notNull().default(1),
     ...commonFields,
   },
-  (table) => [
+  table => [
     index('issues_logs_issue_id_idx').on(table.issueId),
     index('issues_logs_issue_id_turn_entry_idx').on(
       table.issueId,
@@ -143,7 +143,7 @@ export const attachments = sqliteTable(
     storagePath: text('storage_path').notNull(),
     ...commonFields,
   },
-  (table) => [
+  table => [
     index('attachments_issue_id_idx').on(table.issueId),
     index('attachments_log_id_idx').on(table.logId),
   ],
@@ -176,7 +176,7 @@ export const webhookDeliveries = sqliteTable(
       .notNull()
       .$defaultFn(() => new Date()),
   },
-  (table) => [
+  table => [
     index('webhook_deliveries_webhook_id_idx').on(table.webhookId),
     index('webhook_deliveries_created_at_idx').on(table.createdAt),
   ],
@@ -199,7 +199,7 @@ export const issuesLogsToolsCall = sqliteTable(
     raw: text('raw'), // Full original JSON (entry metadata + input + result, for future analysis)
     ...commonFields,
   },
-  (table) => [
+  table => [
     index('issues_logs_tools_call_log_id_idx').on(table.logId),
     index('issues_logs_tools_call_issue_id_idx').on(table.issueId),
     index('issues_logs_tools_call_kind_idx').on(table.kind),

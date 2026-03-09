@@ -62,13 +62,13 @@ async function postFormData<T>(url: string, formData: FormData): Promise<T> {
 export const kanbanApi = {
   // Git
   detectGitRemote: (directory: string) =>
-    post<{ url: string; remote: string }>('/api/git/detect-remote', {
+    post<{ url: string, remote: string }>('/api/git/detect-remote', {
       directory,
     }),
 
   // Filesystem
   listDirs: (path?: string) =>
-    get<{ current: string; parent: string | null; dirs: string[] }>(
+    get<{ current: string, parent: string | null, dirs: string[] }>(
       `/api/filesystem/dirs${path ? `?path=${encodeURIComponent(path)}` : ''}`,
     ),
   createDir: (path: string, name: string) =>
@@ -101,7 +101,7 @@ export const kanbanApi = {
 
   // Worktrees
   getWorktrees: (projectId: string) =>
-    get<Array<{ issueId: string; path: string; branch: string | null }>>(
+    get<Array<{ issueId: string, path: string, branch: string | null }>>(
       `/api/projects/${projectId}/worktrees`,
     ),
   deleteWorktree: (projectId: string, issueId: string) =>
@@ -109,7 +109,7 @@ export const kanbanApi = {
 
   // Issues
   getReviewIssues: () =>
-    get<Array<Issue & { projectName: string; projectAlias: string }>>('/api/issues/review'),
+    get<Array<Issue & { projectName: string, projectAlias: string }>>('/api/issues/review'),
   getIssues: (projectId: string) => get<Issue[]>(`/api/projects/${projectId}/issues`),
   getChildIssues: (projectId: string, parentId: string) =>
     get<Issue[]>(`/api/projects/${projectId}/issues?parentId=${encodeURIComponent(parentId)}`),
@@ -185,7 +185,7 @@ export const kanbanApi = {
   },
 
   cancelIssue: (projectId: string, issueId: string) =>
-    post<{ issueId: string; status: string }>(
+    post<{ issueId: string, status: string }>(
       `/api/projects/${projectId}/issues/${issueId}/cancel`,
       {},
     ),
@@ -217,7 +217,7 @@ export const kanbanApi = {
   getIssueLogs: (
     projectId: string,
     issueId: string,
-    opts?: { before?: string; cursor?: string; limit?: number },
+    opts?: { before?: string, cursor?: string, limit?: number },
   ) => {
     const params = new URLSearchParams()
     if (opts?.before) params.set('before', opts.before)
@@ -242,7 +242,7 @@ export const kanbanApi = {
   getEngineProfiles: () => get<EngineProfile[]>('/api/engines/profiles'),
   getEngineSettings: () => get<EngineSettings>('/api/engines/settings'),
   updateEngineModelSetting: (engineType: string, data: { defaultModel: string }) =>
-    patch<{ engineType: string; defaultModel: string }>(
+    patch<{ engineType: string, defaultModel: string }>(
       `/api/engines/${encodeURIComponent(engineType)}/settings`,
       data,
     ),
@@ -270,13 +270,13 @@ export const kanbanApi = {
     }),
   getCleanupStats: () =>
     get<{
-      logs: { logCount: number; toolCallCount: number }
+      logs: { logCount: number, toolCallCount: number }
       oldVersions: {
-        items: Array<{ name: string; size: number }>
+        items: Array<{ name: string, size: number }>
         totalSize: number
       }
-      worktrees: { count: number; totalSize: number }
-      deletedIssues: { issueCount: number; projectCount: number }
+      worktrees: { count: number, totalSize: number }
+      deletedIssues: { issueCount: number, projectCount: number }
     }>('/api/settings/cleanup/stats'),
   runCleanup: (targets: Array<'logs' | 'oldVersions' | 'worktrees' | 'deletedIssues'>) =>
     post<Record<string, { cleaned: number }>>('/api/settings/cleanup', {
@@ -298,13 +298,13 @@ export const kanbanApi = {
 
   // Server Info
   getServerInfo: () =>
-    get<{ name: string | null; url: string | null }>('/api/settings/server-info'),
-  updateServerInfo: (data: { name?: string; url?: string }) =>
-    patch<{ name: string | null; url: string | null }>('/api/settings/server-info', data),
+    get<{ name: string | null, url: string | null }>('/api/settings/server-info'),
+  updateServerInfo: (data: { name?: string, url?: string }) =>
+    patch<{ name: string | null, url: string | null }>('/api/settings/server-info', data),
 
   // System Logs
   getSystemLogs: (lines = 200) =>
-    get<{ lines: string[]; fileSize: number; totalLines: number }>(
+    get<{ lines: string[], fileSize: number, totalLines: number }>(
       `/api/settings/system-logs?lines=${lines}`,
     ),
   downloadSystemLogs: () => `/api/settings/system-logs/download`,
@@ -378,7 +378,7 @@ export const kanbanApi = {
       checkedAt: string
     }>('/api/settings/upgrade/check', {}),
   downloadUpdate: (url: string, fileName: string, checksumUrl?: string) =>
-    post<{ status: string; fileName: string }>('/api/settings/upgrade/download', {
+    post<{ status: string, fileName: string }>('/api/settings/upgrade/download', {
       url,
       fileName,
       ...(checksumUrl ? { checksumUrl } : {}),
@@ -396,8 +396,8 @@ export const kanbanApi = {
 
   // File Browser
   listFiles: (projectId: string, path?: string, hideIgnored?: boolean, root?: string | null) => {
-    const encodedPath =
-      path && path !== '.' ? `/${path.split('/').map(encodeURIComponent).join('/')}` : ''
+    const encodedPath
+      = path && path !== '.' ? `/${path.split('/').map(encodeURIComponent).join('/')}` : ''
     const params = new URLSearchParams()
     if (hideIgnored) params.set('hideIgnored', 'true')
     if (root) params.set('root', root)
@@ -410,7 +410,7 @@ export const kanbanApi = {
     get<ProjectProcessesResponse>(`/api/projects/${projectId}/processes`),
 
   terminateProcess: (projectId: string, issueId: string) =>
-    post<{ issueId: string; status: string }>(
+    post<{ issueId: string, status: string }>(
       `/api/projects/${projectId}/processes/${issueId}/terminate`,
       {},
     ),
@@ -447,8 +447,8 @@ export const kanbanApi = {
 
   // Notes
   getNotes: () => get<Note[]>('/api/notes'),
-  createNote: (data: { title?: string; content?: string }) => post<Note>('/api/notes', data),
-  updateNote: (id: string, data: { title?: string; content?: string; isPinned?: boolean }) =>
+  createNote: (data: { title?: string, content?: string }) => post<Note>('/api/notes', data),
+  updateNote: (id: string, data: { title?: string, content?: string, isPinned?: boolean }) =>
     patch<Note>(`/api/notes/${id}`, data),
   deleteNote: (id: string) => del<{ id: string }>(`/api/notes/${id}`),
 }

@@ -113,7 +113,7 @@ function wsUrl(sessionId: string): string {
 
 const store = useTerminalSessionStore
 
-function getOrCreateTerminal(): { terminal: Terminal; fitAddon: FitAddon } {
+function getOrCreateTerminal(): { terminal: Terminal, fitAddon: FitAddon } {
   const state = store.getState()
   if (state.terminal && state.fitAddon) {
     return { terminal: state.terminal, fitAddon: state.fitAddon }
@@ -148,7 +148,8 @@ function tryLoadWebgl(terminal: Terminal): void {
       webglAddon.dispose()
     })
     terminal.loadAddon(webglAddon)
-  } catch {
+  }
+  catch {
     // WebGL not available — falls back to canvas renderer
   }
 }
@@ -157,8 +158,8 @@ function connectWs(sessionId: string, terminal: Terminal, fitAddon: FitAddon): v
   const state = store.getState()
   if (state.disposed) return
   if (
-    state.ws &&
-    (state.ws.readyState === WebSocket.OPEN || state.ws.readyState === WebSocket.CONNECTING)
+    state.ws
+    && (state.ws.readyState === WebSocket.OPEN || state.ws.readyState === WebSocket.CONNECTING)
   ) {
     return
   }
@@ -186,7 +187,7 @@ function connectWs(sessionId: string, terminal: Terminal, fitAddon: FitAddon): v
     if (evt.reason === 'PTY exited') {
       store.getState().set({ sessionId: null })
       if (!store.getState().disposed) {
-        terminal.writeln('\r\n\x1b[90m[session ended, reconnecting...]\x1b[0m')
+        terminal.writeln('\r\n\x1B[90m[session ended, reconnecting...]\x1B[0m')
         const timer = setTimeout(() => {
           store.getState().set({ reconnectTimer: null })
           void initConnection(terminal, fitAddon)
@@ -221,9 +222,9 @@ async function initConnection(terminal: Terminal, fitAddon: FitAddon): Promise<v
 
   // Already have a live session + WS — skip
   if (
-    state.sessionId &&
-    state.ws &&
-    (state.ws.readyState === WebSocket.OPEN || state.ws.readyState === WebSocket.CONNECTING)
+    state.sessionId
+    && state.ws
+    && (state.ws.readyState === WebSocket.OPEN || state.ws.readyState === WebSocket.CONNECTING)
   ) {
     return
   }
@@ -242,13 +243,15 @@ async function initConnection(terminal: Terminal, fitAddon: FitAddon): Promise<v
 
       // Connect WS for bidirectional I/O
       connectWs(sessionId, terminal, fitAddon)
-    } catch {
+    }
+    catch {
       const timer = setTimeout(() => {
         store.getState().set({ reconnectTimer: null })
         void initConnection(terminal, fitAddon)
       }, 2000)
       store.getState().set({ reconnectTimer: timer })
-    } finally {
+    }
+    finally {
       store.getState().set({ connecting: null })
     }
   })()
@@ -271,7 +274,8 @@ export function TerminalView({ className }: { className?: string }) {
         const { cols, rows } = state.terminal
         state.ws.send(encodeResize(cols, rows))
       }
-    } catch {
+    }
+    catch {
       // fit() can throw if not visible
     }
   }, [])
@@ -293,7 +297,8 @@ export function TerminalView({ className }: { className?: string }) {
       }
       // Theme may have changed while terminal was hidden — sync now
       terminal.options.theme = getTerminalTheme()
-    } else {
+    }
+    else {
       terminal.open(container)
       store.getState().set({ initialized: true })
 

@@ -17,7 +17,7 @@ processes.get('/', async (c) => {
   }
 
   const activeProcesses = issueEngine.getActiveProcesses()
-  const issueIds = activeProcesses.map((p) => p.issueId)
+  const issueIds = activeProcesses.map(p => p.issueId)
 
   // Build result from in-memory active processes (PM is the source of truth)
   const result: Array<{
@@ -47,7 +47,7 @@ processes.get('/', async (c) => {
         ),
       )
 
-    const issueMap = new Map(projectIssues.map((i) => [i.id, i]))
+    const issueMap = new Map(projectIssues.map(i => [i.id, i]))
 
     for (const p of activeProcesses) {
       const issue = issueMap.get(p.issueId)
@@ -101,7 +101,8 @@ processes.post('/:issueId/terminate', async (c) => {
   try {
     await issueEngine.terminateProcess(issueId)
     return c.json({ success: true, data: { issueId, status: 'terminated' } })
-  } catch (error) {
+  }
+  catch (error) {
     logger.error({ issueId, error }, 'terminate_process_failed')
     return c.json(
       {

@@ -58,7 +58,7 @@ describe('Follow-up queuing on todo issues', () => {
     )
     expect(issue.statusId).toBe('todo')
 
-    const result = await post<{ issueId: string; queued: boolean }>(
+    const result = await post<{ issueId: string, queued: boolean }>(
       `/api/projects/${projectId}/issues/${issue.id}/follow-up`,
       { prompt: 'first queued message' },
     )
@@ -88,7 +88,7 @@ describe('Follow-up queuing on todo issues', () => {
     expect(logsResult.status).toBe(200)
     const logs = expectSuccess(logsResult)
     const pendingMsgs = logs.logs.filter(
-      (l) => l.entryType === 'user-message' && l.metadata?.type === 'pending',
+      l => l.entryType === 'user-message' && l.metadata?.type === 'pending',
     )
     expect(pendingMsgs.length).toBeGreaterThanOrEqual(1)
     expect(pendingMsgs[0]!.content).toBe('pending log check')
@@ -117,10 +117,10 @@ describe('Follow-up queuing on todo issues', () => {
     const logsResult = await get<LogsResponse>(`/api/projects/${projectId}/issues/${issue.id}/logs`)
     const logs = expectSuccess(logsResult)
     const pendingMsgs = logs.logs.filter(
-      (l) => l.entryType === 'user-message' && l.metadata?.type === 'pending',
+      l => l.entryType === 'user-message' && l.metadata?.type === 'pending',
     )
     expect(pendingMsgs.length).toBe(3)
-    const contents = pendingMsgs.map((m) => m.content).sort()
+    const contents = pendingMsgs.map(m => m.content).sort()
     expect(contents).toEqual(['message one', 'message three', 'message two'])
   })
 })
@@ -164,7 +164,7 @@ describe('Pending messages consumed on transition to working', () => {
     const logsResult = await get<LogsResponse>(`/api/projects/${projectId}/issues/${issue.id}/logs`)
     const logs = expectSuccess(logsResult)
     const pendingMsgs = logs.logs.filter(
-      (l) => l.entryType === 'user-message' && l.metadata?.type === 'pending',
+      l => l.entryType === 'user-message' && l.metadata?.type === 'pending',
     )
     expect(pendingMsgs.length).toBe(0)
   })
@@ -199,7 +199,7 @@ describe('Pending messages consumed on transition to working', () => {
     const logsResult = await get<LogsResponse>(`/api/projects/${projectId}/issues/${issue.id}/logs`)
     const logs = expectSuccess(logsResult)
     const pendingMsgs = logs.logs.filter(
-      (l) => l.entryType === 'user-message' && l.metadata?.type === 'pending',
+      l => l.entryType === 'user-message' && l.metadata?.type === 'pending',
     )
     expect(pendingMsgs.length).toBe(0)
   })
@@ -241,7 +241,7 @@ describe('No message duplication after pending consumption', () => {
     const logsResult = await get<LogsResponse>(`/api/projects/${projectId}/issues/${issue.id}/logs`)
     const logs = expectSuccess(logsResult)
     const matchingMsgs = logs.logs.filter(
-      (l) => l.entryType === 'user-message' && l.content.includes(queuedPrompt),
+      l => l.entryType === 'user-message' && l.content.includes(queuedPrompt),
     )
     // Message is preserved (not deleted) — at least the dispatched pending entry
     expect(matchingMsgs.length).toBeGreaterThanOrEqual(1)
@@ -280,7 +280,7 @@ describe('Flush pending messages for existing sessions', () => {
     })
 
     // Queue a message while in todo
-    const flushResult = await post<{ issueId: string; queued: boolean }>(
+    const flushResult = await post<{ issueId: string, queued: boolean }>(
       `/api/projects/${projectId}/issues/${issue.id}/follow-up`,
       { prompt: 'flush this message' },
     )
@@ -299,7 +299,7 @@ describe('Flush pending messages for existing sessions', () => {
       )
       const logs = expectSuccess(logsResult)
       const pending = logs.logs.filter(
-        (l) => l.entryType === 'user-message' && l.metadata?.type === 'pending',
+        l => l.entryType === 'user-message' && l.metadata?.type === 'pending',
       )
       return pending.length === 0
     }, 5000)
@@ -346,10 +346,10 @@ describe('Flush pending messages for existing sessions', () => {
     const logsResult = await get<LogsResponse>(`/api/projects/${projectId}/issues/${issue.id}/logs`)
     const logs = expectSuccess(logsResult)
     const pending = logs.logs.filter(
-      (l) =>
-        l.entryType === 'user-message' &&
-        l.content.includes(pendingPrompt) &&
-        l.metadata?.type === 'pending',
+      l =>
+        l.entryType === 'user-message'
+        && l.content.includes(pendingPrompt)
+        && l.metadata?.type === 'pending',
     )
     expect(pending.length).toBeGreaterThanOrEqual(1)
   })
@@ -419,7 +419,7 @@ describe('Execute endpoint consumes pending messages', () => {
     const logsResult = await get<LogsResponse>(`/api/projects/${projectId}/issues/${issue.id}/logs`)
     const logs = expectSuccess(logsResult)
     const pendingMsgs = logs.logs.filter(
-      (l) => l.entryType === 'user-message' && l.metadata?.type === 'pending',
+      l => l.entryType === 'user-message' && l.metadata?.type === 'pending',
     )
     expect(pendingMsgs.length).toBe(0)
   })

@@ -26,7 +26,7 @@ export default function ReviewPage() {
   const { data: reviewIssues } = useReviewIssues()
 
   // Find the matching issue to get its projectId (alias)
-  const activeIssue = reviewIssues?.find((i) => i.id === issueId)
+  const activeIssue = reviewIssues?.find(i => i.id === issueId)
   const projectId = activeIssue?.projectAlias ?? projectAlias
 
   const [showDiff, setShowDiff] = useState(false)
@@ -88,39 +88,45 @@ export default function ReviewPage() {
     if (!showDiff) return
     const viewport = typeof window !== 'undefined' ? window.innerWidth : 1600
     const maxList = Math.min(MAX_LIST_WIDTH, viewport - SIDEBAR_WIDTH - diffWidth - MIN_CHAT_WIDTH)
-    setListWidth((prev) => Math.max(MIN_LIST_WIDTH, Math.min(prev, maxList)))
+    setListWidth(prev => Math.max(MIN_LIST_WIDTH, Math.min(prev, maxList)))
   }, [showDiff, diffWidth])
 
   return (
     <div className="flex h-full text-foreground overflow-hidden animate-page-enter">
       {!isMobile ? <AppSidebar activeProjectId="" /> : null}
 
-      {!hideListPanel ? (
-        <ReviewListPanel
-          activeIssueId={issueId}
-          width={isMobile ? undefined : listWidth}
-          onResizeStart={isMobile ? undefined : handleListResizeStart}
-          mobileNav={isMobile ? <MobileSidebar activeProjectId="" /> : undefined}
-        />
-      ) : null}
+      {!hideListPanel
+        ? (
+            <ReviewListPanel
+              activeIssueId={issueId}
+              width={isMobile ? undefined : listWidth}
+              onResizeStart={isMobile ? undefined : handleListResizeStart}
+              mobileNav={isMobile ? <MobileSidebar activeProjectId="" /> : undefined}
+            />
+          )
+        : null}
 
-      {issueId && projectId ? (
-        <ChatArea
-          projectId={projectId}
-          issueId={issueId}
-          showDiff={showDiff}
-          diffWidth={diffWidth}
-          onToggleDiff={() => setShowDiff((v) => !v)}
-          onDiffWidthChange={handleDiffWidthChange}
-          onCloseDiff={() => setShowDiff(false)}
-          showBackToList
-          backPath="/review"
-        />
-      ) : !hideListPanel ? (
-        <div className="flex flex-1 items-center justify-center">
-          <p className="text-sm text-muted-foreground">{t('review.selectToStart')}</p>
-        </div>
-      ) : null}
+      {issueId && projectId
+        ? (
+            <ChatArea
+              projectId={projectId}
+              issueId={issueId}
+              showDiff={showDiff}
+              diffWidth={diffWidth}
+              onToggleDiff={() => setShowDiff(v => !v)}
+              onDiffWidthChange={handleDiffWidthChange}
+              onCloseDiff={() => setShowDiff(false)}
+              showBackToList
+              backPath="/review"
+            />
+          )
+        : !hideListPanel
+            ? (
+                <div className="flex flex-1 items-center justify-center">
+                  <p className="text-sm text-muted-foreground">{t('review.selectToStart')}</p>
+                </div>
+              )
+            : null}
     </div>
   )
 }

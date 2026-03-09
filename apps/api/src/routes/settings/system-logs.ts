@@ -32,16 +32,17 @@ systemLogs.get('/system-logs', async (c) => {
     // Discard partial first line
     const firstNewline = content.indexOf('\n')
     if (firstNewline !== -1) content = content.slice(firstNewline + 1)
-  } else {
+  }
+  else {
     content = await file.text()
   }
 
-  const allLines = content.split('\n').filter((l) => l.length > 0)
+  const allLines = content.split('\n').filter(l => l.length > 0)
   const tailLines = allLines.slice(-clampedLines)
 
   // For totalLines, estimate from file size if we only read a chunk
-  const totalLines =
-    fileSize > MAX_TAIL_BYTES
+  const totalLines
+    = fileSize > MAX_TAIL_BYTES
       ? Math.round((fileSize / MAX_TAIL_BYTES) * allLines.length)
       : allLines.length
 

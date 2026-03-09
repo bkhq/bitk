@@ -79,9 +79,9 @@ export function register(
   const stdoutCallbacks: StreamCallbacks = {
     getManaged: () => ctx.pm.get(executionId)?.meta,
     getTurnIndex: () => ctx.turnIndexes.get(executionId) ?? 0,
-    onEntry: (entry) => handleStreamEntry(issueId, executionId, entry),
+    onEntry: entry => handleStreamEntry(issueId, executionId, entry),
     onTurnCompleted,
-    onStreamError: (error) => handleStreamError(ctx, issueId, executionId, error),
+    onStreamError: error => handleStreamError(ctx, issueId, executionId, error),
   }
   const stderrCallbacks = {
     getManaged: () => ctx.pm.get(executionId)?.meta,
@@ -132,7 +132,8 @@ export function register(
       try {
         process.kill(pid, 0)
         alive = true
-      } catch {
+      }
+      catch {
         // process already dead — normal exit path
       }
       if (!alive) return

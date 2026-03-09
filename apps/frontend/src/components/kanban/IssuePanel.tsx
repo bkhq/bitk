@@ -10,7 +10,7 @@ import { getIssueUrl } from '@/stores/server-store'
 
 const DEFAULT_DIFF_WIDTH = 360
 const LazyDiffPanel = lazy(() =>
-  import('@/components/issue-detail/DiffPanel').then((m) => ({
+  import('@/components/issue-detail/DiffPanel').then(m => ({
     default: m.DiffPanel,
   })),
 )
@@ -66,12 +66,13 @@ export function IssuePanel({ projectId, issueId, onClose, hideHeaderActions }: I
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
       const target = e.target as HTMLElement
-      const isEditable =
-        target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable
+      const isEditable
+        = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable
       if (isEditable) {
         target.blur()
         e.stopPropagation()
-      } else {
+      }
+      else {
         onClose()
       }
     }
@@ -83,7 +84,7 @@ export function IssuePanel({ projectId, issueId, onClose, hideHeaderActions }: I
       .writeText(getIssueUrl(projectId, issueId))
       .then(() => {
         setCopied(true)
-        setTimeout(() => setCopied(false), 2000)
+        setTimeout(setCopied, 2000, false)
       })
       .catch(() => {})
   }
@@ -102,70 +103,77 @@ export function IssuePanel({ projectId, issueId, onClose, hideHeaderActions }: I
             <span className="text-[11px] font-mono text-muted-foreground/70 bg-muted/50 rounded px-1.5 py-0.5 shrink-0 tabular-nums">
               {displayId}
             </span>
-            {editingTitle ? (
-              <input
-                className="text-sm font-semibold bg-transparent border-b-2 border-primary outline-none min-w-0 flex-1 tracking-tight"
-                value={titleDraft}
-                onChange={(e) => setTitleDraft(e.target.value)}
-                onBlur={saveTitle}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault()
-                    saveTitle()
-                  } else if (e.key === 'Escape') {
-                    setEditingTitle(false)
-                  }
-                }}
-                autoFocus
-              />
-            ) : (
-              <span
-                className="text-sm font-semibold truncate cursor-pointer hover:text-primary transition-colors duration-200 tracking-tight decoration-primary/30 hover:underline underline-offset-2"
-                onClick={startEditingTitle}
-                title={t('issue.editTitle')}
-              >
-                {effectiveIssue?.title}
-              </span>
-            )}
+            {editingTitle
+              ? (
+                  <input
+                    className="text-sm font-semibold bg-transparent border-b-2 border-primary outline-none min-w-0 flex-1 tracking-tight"
+                    value={titleDraft}
+                    onChange={e => setTitleDraft(e.target.value)}
+                    onBlur={saveTitle}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        saveTitle()
+                      }
+                      else if (e.key === 'Escape') {
+                        setEditingTitle(false)
+                      }
+                    }}
+                    autoFocus
+                  />
+                )
+              : (
+                  <span
+                    className="text-sm font-semibold truncate cursor-pointer hover:text-primary transition-colors duration-200 tracking-tight decoration-primary/30 hover:underline underline-offset-2"
+                    onClick={startEditingTitle}
+                    title={t('issue.editTitle')}
+                  >
+                    {effectiveIssue?.title}
+                  </span>
+                )}
           </div>
         </div>
         <div className="flex items-center gap-0.5 shrink-0">
-          {!effectiveIssue?.parentIssueId && issueId ? (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 text-muted-foreground hover:text-foreground transition-colors"
-              title={t('issue.createSubIssue')}
-              onClick={() => setShowSubIssue(true)}
-            >
-              <Plus className="h-3.5 w-3.5" />
-            </Button>
-          ) : null}
-          {!hideHeaderActions ? (
-            <>
-              <Button
-                variant="ghost"
-                size="icon"
-                className={`h-7 w-7 transition-all duration-200 ${copied ? 'text-emerald-500 scale-110' : 'text-muted-foreground hover:text-foreground'}`}
-                title={t('issue.copyLink')}
-                onClick={handleCopyLink}
-              >
-                {copied ? <Check className="h-3.5 w-3.5" /> : <Link className="h-3.5 w-3.5" />}
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 text-muted-foreground hover:text-foreground transition-colors"
-                title={t('issue.openFullPage')}
-                onClick={() => {
-                  void navigate(`/projects/${projectId}/issues/${issueId}`)
-                  onClose()
-                }}
-              >
-                <Maximize2 className="h-3.5 w-3.5" />
-              </Button>
-            </>
-          ) : null}
+          {!effectiveIssue?.parentIssueId && issueId
+            ? (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 text-muted-foreground hover:text-foreground transition-colors"
+                  title={t('issue.createSubIssue')}
+                  onClick={() => setShowSubIssue(true)}
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                </Button>
+              )
+            : null}
+          {!hideHeaderActions
+            ? (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={`h-7 w-7 transition-all duration-200 ${copied ? 'text-emerald-500 scale-110' : 'text-muted-foreground hover:text-foreground'}`}
+                    title={t('issue.copyLink')}
+                    onClick={handleCopyLink}
+                  >
+                    {copied ? <Check className="h-3.5 w-3.5" /> : <Link className="h-3.5 w-3.5" />}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-muted-foreground hover:text-foreground transition-colors"
+                    title={t('issue.openFullPage')}
+                    onClick={() => {
+                      void navigate(`/projects/${projectId}/issues/${issueId}`)
+                      onClose()
+                    }}
+                  >
+                    <Maximize2 className="h-3.5 w-3.5" />
+                  </Button>
+                </>
+              )
+            : null}
           <Button
             variant="ghost"
             size="icon"
@@ -179,49 +187,55 @@ export function IssuePanel({ projectId, issueId, onClose, hideHeaderActions }: I
       </div>
 
       {/* Shared chat body: messages + metadata bar + input */}
-      {effectiveIssue && issueId ? (
-        <ChatBody
-          projectId={projectId}
-          issueId={issueId}
-          issue={effectiveIssue}
-          showDiff={showDiff}
-          onToggleDiff={() => setShowDiff((v) => !v)}
-          scrollRef={scrollRef}
-          onAfterDelete={onClose}
-        />
-      ) : null}
-
-      {/* Diff panel — full-screen overlay within the panel */}
-      {showDiff && issueId ? (
-        <div className="absolute inset-0 z-40 bg-background flex flex-col">
-          <Suspense
-            fallback={
-              <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-                {t('common.loading')}
-              </div>
-            }
-          >
-            <LazyDiffPanel
+      {effectiveIssue && issueId
+        ? (
+            <ChatBody
               projectId={projectId}
               issueId={issueId}
-              width={diffWidth}
-              onWidthChange={setDiffWidth}
-              onClose={() => setShowDiff(false)}
-              fullScreen
+              issue={effectiveIssue}
+              showDiff={showDiff}
+              onToggleDiff={() => setShowDiff(v => !v)}
+              scrollRef={scrollRef}
+              onAfterDelete={onClose}
             />
-          </Suspense>
-        </div>
-      ) : null}
+          )
+        : null}
+
+      {/* Diff panel — full-screen overlay within the panel */}
+      {showDiff && issueId
+        ? (
+            <div className="absolute inset-0 z-40 bg-background flex flex-col">
+              <Suspense
+                fallback={(
+                  <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+                    {t('common.loading')}
+                  </div>
+                )}
+              >
+                <LazyDiffPanel
+                  projectId={projectId}
+                  issueId={issueId}
+                  width={diffWidth}
+                  onWidthChange={setDiffWidth}
+                  onClose={() => setShowDiff(false)}
+                  fullScreen
+                />
+              </Suspense>
+            </div>
+          )
+        : null}
 
       {/* Sub-issue dialog */}
-      {issueId ? (
-        <SubIssueDialog
-          projectId={projectId}
-          parentIssueId={issueId}
-          open={showSubIssue}
-          onOpenChange={setShowSubIssue}
-        />
-      ) : null}
+      {issueId
+        ? (
+            <SubIssueDialog
+              projectId={projectId}
+              parentIssueId={issueId}
+              open={showSubIssue}
+              onOpenChange={setShowSubIssue}
+            />
+          )
+        : null}
     </div>
   )
 }

@@ -24,9 +24,9 @@ export function KanbanHeader({
   mobileNav?: React.ReactNode
 }) {
   const { t } = useTranslation()
-  const openCreateDialog = usePanelStore((s) => s.openCreateDialog)
-  const toggleFileBrowser = useFileBrowserStore((s) => s.toggle)
-  const toggleProcessManager = useProcessManagerStore((s) => s.toggle)
+  const openCreateDialog = usePanelStore(s => s.openCreateDialog)
+  const toggleFileBrowser = useFileBrowserStore(s => s.toggle)
+  const toggleProcessManager = useProcessManagerStore(s => s.toggle)
   const [showSettings, setShowSettings] = useState(false)
 
   return (
@@ -77,7 +77,7 @@ export function KanbanHeader({
             <input
               type="text"
               value={searchQuery ?? ''}
-              onChange={(e) => onSearchChange?.(e.target.value)}
+              onChange={e => onSearchChange?.(e.target.value)}
               placeholder={t('common.search')}
               className="w-28 bg-transparent text-xs outline-none placeholder:text-muted-foreground"
             />

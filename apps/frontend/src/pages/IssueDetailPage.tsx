@@ -89,7 +89,7 @@ export default function IssueDetailPage() {
     if (!showDiff) return
     const viewport = typeof window !== 'undefined' ? window.innerWidth : 1600
     const maxList = Math.min(MAX_LIST_WIDTH, viewport - SIDEBAR_WIDTH - diffWidth - MIN_CHAT_WIDTH)
-    setListWidth((prev) => Math.max(MIN_LIST_WIDTH, Math.min(prev, maxList)))
+    setListWidth(prev => Math.max(MIN_LIST_WIDTH, Math.min(prev, maxList)))
   }, [showDiff, diffWidth])
 
   useEffect(() => {
@@ -116,34 +116,40 @@ export default function IssueDetailPage() {
       {!isMobile ? <AppSidebar activeProjectId={projectId} /> : null}
 
       {/* Issue list panel — hidden on mobile (replaced by full-page views) */}
-      {!hideListPanel ? (
-        <IssueListPanel
-          projectId={projectId}
-          activeIssueId={issueId}
-          projectName={project.name}
-          width={isMobile ? undefined : listWidth}
-          onResizeStart={isMobile ? undefined : handleListResizeStart}
-          mobileNav={isMobile ? <MobileSidebar activeProjectId={projectId} /> : undefined}
-        />
-      ) : null}
+      {!hideListPanel
+        ? (
+            <IssueListPanel
+              projectId={projectId}
+              activeIssueId={issueId}
+              projectName={project.name}
+              width={isMobile ? undefined : listWidth}
+              onResizeStart={isMobile ? undefined : handleListResizeStart}
+              mobileNav={isMobile ? <MobileSidebar activeProjectId={projectId} /> : undefined}
+            />
+          )
+        : null}
 
       {/* Chat area when issue is selected */}
-      {issueId ? (
-        <ChatArea
-          projectId={projectId}
-          issueId={issueId}
-          showDiff={showDiff}
-          diffWidth={diffWidth}
-          onToggleDiff={() => setShowDiff((v) => !v)}
-          onDiffWidthChange={handleDiffWidthChange}
-          onCloseDiff={() => setShowDiff(false)}
-          showBackToList
-        />
-      ) : !hideListPanel ? (
-        <div className="flex flex-1 items-center justify-center">
-          <p className="text-sm text-muted-foreground">{t('issue.selectToStart')}</p>
-        </div>
-      ) : null}
+      {issueId
+        ? (
+            <ChatArea
+              projectId={projectId}
+              issueId={issueId}
+              showDiff={showDiff}
+              diffWidth={diffWidth}
+              onToggleDiff={() => setShowDiff(v => !v)}
+              onDiffWidthChange={handleDiffWidthChange}
+              onCloseDiff={() => setShowDiff(false)}
+              showBackToList
+            />
+          )
+        : !hideListPanel
+            ? (
+                <div className="flex flex-1 items-center justify-center">
+                  <p className="text-sm text-muted-foreground">{t('issue.selectToStart')}</p>
+                </div>
+              )
+            : null}
       <CreateIssueDialog />
     </div>
   )

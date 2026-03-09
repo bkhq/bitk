@@ -187,7 +187,8 @@ export class EchoExecutor implements EngineExecutor {
         default:
           return null
       }
-    } catch {
+    }
+    catch {
       if (rawLine.trim()) {
         return { entryType: 'system-message', content: rawLine }
       }

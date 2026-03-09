@@ -38,7 +38,7 @@ function createMockStdout() {
 }
 
 /** Small delay for async background reader processing. */
-const tick = () => new Promise((r) => setTimeout(r, 30))
+const tick = () => new Promise(r => setTimeout(r, 30))
 
 describe('CodexProtocolHandler', () => {
   test('initialize sends request and resolves on response', async () => {
@@ -166,7 +166,8 @@ describe('CodexProtocolHandler', () => {
       try {
         const p = JSON.parse(w)
         return p.id === 99 && p.result?.decision === 'accept'
-      } catch {
+      }
+      catch {
         return false
       }
     })
@@ -197,7 +198,8 @@ describe('CodexProtocolHandler', () => {
       try {
         const p = JSON.parse(w)
         return p.id === 100 && p.result?.decision === 'accept'
-      } catch {
+      }
+      catch {
         return false
       }
     })
@@ -228,7 +230,8 @@ describe('CodexProtocolHandler', () => {
       try {
         const p = JSON.parse(w)
         return p.id === 200 && p.error?.code === -32601
-      } catch {
+      }
+      catch {
         return false
       }
     })
@@ -408,7 +411,8 @@ describe('CodexProtocolHandler', () => {
       try {
         const p = JSON.parse(w)
         return p.method === 'turn/start' && p.params.input?.[0]?.text === 'follow up question'
-      } catch {
+      }
+      catch {
         return false
       }
     })
@@ -556,7 +560,8 @@ describe('CodexProtocolHandler', () => {
       try {
         const p = JSON.parse(w)
         return p.id === 300 && p.result?.decision === 'accept'
-      } catch {
+      }
+      catch {
         return false
       }
     })

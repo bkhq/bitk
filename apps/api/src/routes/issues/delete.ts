@@ -37,10 +37,10 @@ del.delete('/:id', async (c) => {
   // Use a short timeout (5s) so the DELETE request doesn't block on lock
   // contention. If termination fails or times out, proceed with deletion
   // anyway — the reconciler will clean up orphaned processes on its next run.
-  const shouldTerminate =
-    existing.sessionStatus === 'running' ||
-    existing.sessionStatus === 'pending' ||
-    issueEngine.hasActiveProcessForIssue(issueId)
+  const shouldTerminate
+    = existing.sessionStatus === 'running'
+      || existing.sessionStatus === 'pending'
+      || issueEngine.hasActiveProcessForIssue(issueId)
   if (shouldTerminate) {
     try {
       await Promise.race([
@@ -49,7 +49,8 @@ del.delete('/:id', async (c) => {
           setTimeout(() => reject(new Error('terminate timeout')), 5_000),
         ),
       ])
-    } catch (err) {
+    }
+    catch (err) {
       logger.warn({ issueId, err }, 'delete_terminate_failed_proceeding')
     }
   }
@@ -66,7 +67,7 @@ del.delete('/:id', async (c) => {
           eq(issuesTable.isDeleted, 0),
         ),
       )
-    const childIds = childIssues.map((c) => c.id)
+    const childIds = childIssues.map(c => c.id)
 
     // Soft-delete the issue only — keep logs/tools/attachments intact for restore
     await tx.update(issuesTable).set({ isDeleted: 1 }).where(eq(issuesTable.id, issueId))

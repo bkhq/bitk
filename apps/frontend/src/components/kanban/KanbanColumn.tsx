@@ -23,7 +23,7 @@ export function KanbanColumn({
   onCardClick?: (issue: Issue) => void
 }) {
   const { t } = useTranslation()
-  const openCreateDialog = usePanelStore((s) => s.openCreateDialog)
+  const openCreateDialog = usePanelStore(s => s.openCreateDialog)
 
   const { ref, isDropTarget } = useDroppable({
     id: status.id,

@@ -14,7 +14,8 @@ afterAll(() => {
     rmSync(testDbPath, { force: true })
     rmSync(`${testDbPath}-wal`, { force: true })
     rmSync(`${testDbPath}-shm`, { force: true })
-  } catch {
+  }
+  catch {
     // ignore cleanup errors
   }
 })

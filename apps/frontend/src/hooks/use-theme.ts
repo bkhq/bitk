@@ -8,7 +8,8 @@ function getStoredTheme(): Theme {
   try {
     const v = localStorage.getItem(STORAGE_KEY)
     if (v === 'light' || v === 'dark' || v === 'system') return v
-  } catch {
+  }
+  catch {
     // localStorage unavailable
   }
   return 'system'
@@ -41,7 +42,8 @@ function setTheme(next: Theme) {
   currentTheme = next
   try {
     localStorage.setItem(STORAGE_KEY, next)
-  } catch {
+  }
+  catch {
     // noop
   }
   applyTheme(next)

@@ -5,12 +5,12 @@ type IconProps = SVGProps<SVGSVGElement>
 /** Claude Code — starburst / sunburst logo */
 export function ClaudeIcon(props: IconProps) {
   // 16 rays from center, alternating long/short, rounded caps
-  const cx = 12,
-    cy = 12,
-    rInner = 2.5,
-    rLong = 10.5,
-    rShort = 7.5,
-    rays = 16
+  const cx = 12
+  const cy = 12
+  const rInner = 2.5
+  const rLong = 10.5
+  const rShort = 7.5
+  const rays = 16
   const paths: string[] = []
   for (let i = 0; i < rays; i++) {
     const angle = (Math.PI * 2 * i) / rays - Math.PI / 2
@@ -111,9 +111,9 @@ export function EchoIcon(props: IconProps) {
 
 const ENGINE_ICONS: Partial<Record<string, React.FC<IconProps>>> = {
   'claude-code': ClaudeIcon,
-  codex: CodexIcon,
-  gemini: GeminiIcon,
-  echo: EchoIcon,
+  'codex': CodexIcon,
+  'gemini': GeminiIcon,
+  'echo': EchoIcon,
 }
 
 export function EngineIcon({ engineType, ...props }: IconProps & { engineType: string }) {

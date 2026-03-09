@@ -38,7 +38,7 @@ export async function withIssueLock<T>(
   const acquired = await Promise.race([
     tail.then(() => true as const),
     new Promise<'timeout'>((resolve) => {
-      acquireTimer = setTimeout(() => resolve('timeout'), LOCK_ACQUIRE_TIMEOUT_MS)
+      acquireTimer = setTimeout(resolve, LOCK_ACQUIRE_TIMEOUT_MS, 'timeout')
     }),
   ])
   if (acquireTimer !== undefined) clearTimeout(acquireTimer)
@@ -53,7 +53,8 @@ export async function withIssueLock<T>(
       // Restore the previous tail so an already-running lock holder remains visible.
       if (currentTail) {
         ctx.issueOpLocks.set(issueId, currentTail)
-      } else {
+      }
+      else {
         ctx.issueOpLocks.delete(issueId)
       }
     }
@@ -83,7 +84,8 @@ export async function withIssueLock<T>(
       }),
     ])
     return result
-  } finally {
+  }
+  finally {
     if (execTimer !== undefined) clearTimeout(execTimer)
     const heldMs = Date.now() - execStart
     if (heldMs > 30_000) {

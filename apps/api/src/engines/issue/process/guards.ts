@@ -14,9 +14,11 @@ export function ensureNoActiveProcess(ctx: EngineContext, issueId: string): void
   }
 }
 
-/** Kill any existing subprocess for this issue (regardless of managed state).
+/**
+ * Kill any existing subprocess for this issue (regardless of managed state).
  *  Used as a safety guard before spawning a new follow-up process to prevent
- *  duplicate CLI processes for the same session. */
+ *  duplicate CLI processes for the same session.
+ */
 export async function killExistingSubprocessForIssue(
   ctx: EngineContext,
   issueId: string,

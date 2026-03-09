@@ -28,7 +28,7 @@ update.patch(
       return c.json(
         {
           success: false,
-          error: result.error.issues.map((i) => i.message).join(', '),
+          error: result.error.issues.map(i => i.message).join(', '),
         },
         400,
       )
@@ -44,7 +44,7 @@ update.patch(
     const body = c.req.valid('json')
 
     // Validate ownership: only check requested IDs against this project
-    const requestedIds = body.updates.map((u) => u.id)
+    const requestedIds = body.updates.map(u => u.id)
     const ownedRows = await db
       .select({ id: issuesTable.id })
       .from(issuesTable)
@@ -55,10 +55,10 @@ update.patch(
           eq(issuesTable.isDeleted, 0),
         ),
       )
-    const projectIssueIdSet = new Set(ownedRows.map((r) => r.id))
+    const projectIssueIdSet = new Set(ownedRows.map(r => r.id))
 
     const updated: ReturnType<typeof serializeIssue>[] = []
-    const skippedIds = requestedIds.filter((id) => !projectIssueIdSet.has(id))
+    const skippedIds = requestedIds.filter(id => !projectIssueIdSet.has(id))
     // Collect issues that need execution after transaction commits
     const toExecute: Array<{
       id: string
@@ -67,7 +67,7 @@ update.patch(
       model: string | null
     }> = []
     // Collect issues that already have a session but need pending messages flushed
-    const toFlush: Array<{ id: string; model: string | null }> = []
+    const toFlush: Array<{ id: string, model: string | null }> = []
     // Collect issues transitioning to done that need active processes cancelled
     const toCancel: string[] = []
     // Track which issues actually had a status change (not just reorder within same column)
@@ -108,7 +108,8 @@ update.patch(
               prompt: existing.prompt,
               model: existing.model,
             })
-          } else if (['completed', 'failed', 'cancelled'].includes(existing.sessionStatus)) {
+          }
+          else if (['completed', 'failed', 'cancelled'].includes(existing.sessionStatus)) {
             // Session already finished — flush pending messages as follow-up
             toFlush.push({ id: u.id, model: existing.model })
           }
@@ -186,7 +187,7 @@ update.patch(
       return c.json(
         {
           success: false,
-          error: result.error.issues.map((i) => i.message).join(', '),
+          error: result.error.issues.map(i => i.message).join(', '),
         },
         400,
       )
@@ -233,7 +234,8 @@ update.patch(
     if (body.parentIssueId !== undefined) {
       if (body.parentIssueId === null) {
         updates.parentIssueId = null
-      } else {
+      }
+      else {
         if (body.parentIssueId === issueId) {
           return c.json({ success: false, error: 'Issue cannot be its own parent' }, 400)
         }
@@ -272,12 +274,12 @@ update.patch(
 
     // Check if transitioning to working → trigger execution or flush
     const transitioningToWorking = body.statusId === 'working' && existing.statusId !== 'working'
-    const shouldExecute =
-      transitioningToWorking && (!existing.sessionStatus || existing.sessionStatus === 'pending')
-    const shouldFlush =
-      transitioningToWorking &&
-      !shouldExecute &&
-      ['completed', 'failed', 'cancelled'].includes(existing.sessionStatus ?? '')
+    const shouldExecute
+      = transitioningToWorking && (!existing.sessionStatus || existing.sessionStatus === 'pending')
+    const shouldFlush
+      = transitioningToWorking
+        && !shouldExecute
+        && ['completed', 'failed', 'cancelled'].includes(existing.sessionStatus ?? '')
 
     // Check if transitioning to done → cancel active processes
     const transitioningToDone = body.statusId === 'done' && existing.statusId !== 'done'
@@ -316,7 +318,8 @@ update.patch(
         project.systemPrompt,
         parseProjectEnvVars(project.envVars),
       )
-    } else if (shouldFlush) {
+    }
+    else if (shouldFlush) {
       flushPendingAsFollowUp(issueId, { model: existing.model })
     }
 

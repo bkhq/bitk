@@ -83,7 +83,8 @@ export class IssueEngine {
     this.gcTimer = setInterval(() => {
       try {
         gcSweep(this.ctx)
-      } catch (err) {
+      }
+      catch (err) {
         logger.error({ err }, 'gc_sweep_failed')
       }
     }, GC_INTERVAL_MS)
@@ -107,7 +108,7 @@ export class IssueEngine {
       permissionMode?: PermissionPolicy
       envVars?: Record<string, string>
     },
-  ): Promise<{ executionId: string; messageId?: string | null }> {
+  ): Promise<{ executionId: string, messageId?: string | null }> {
     return executeIssue(this.ctx, issueId, opts)
   }
 
@@ -120,7 +121,7 @@ export class IssueEngine {
     displayPrompt?: string,
     metadata?: Record<string, unknown>,
     opts?: { skipPersistMessage?: boolean },
-  ): Promise<{ executionId: string; messageId?: string | null }> {
+  ): Promise<{ executionId: string, messageId?: string | null }> {
     return followUpIssue(
       this.ctx,
       issueId,

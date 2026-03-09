@@ -58,7 +58,7 @@ describe('withIssueLock deep behavior', () => {
     await Bun.sleep(5)
 
     // Current implementation counts active holder + queued entries in lockDepth.
-    const queued = Array.from({ length: 9 }, () => withIssueLock(ctx, issueId, async () => {}))
+    const queued = Array.from({ length: 9 }).fill(withIssueLock(ctx, issueId, async () => {}))
 
     await expect(withIssueLock(ctx, issueId, async () => {})).rejects.toThrow('Lock queue full')
 
@@ -92,7 +92,8 @@ describe('withIssueLock deep behavior', () => {
 
       expect(ctx.issueOpLocks.get(issueId)).toBe(never)
       expect(ctx.lockDepth.get(issueId)).toBe(1)
-    } finally {
+    }
+    finally {
       ;(globalThis as any).setTimeout = originalSetTimeout
     }
   })

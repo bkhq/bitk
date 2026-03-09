@@ -61,7 +61,7 @@ export function CreateIssueForm({
   const { data: engineSettings } = useEngineSettings(true)
 
   const installedEngines = useMemo(
-    () => discovery?.engines.filter((a) => a.installed && a.executable !== false) ?? [],
+    () => discovery?.engines.filter(a => a.installed && a.executable !== false) ?? [],
     [discovery],
   )
   const allModels = discovery?.models ?? {}
@@ -81,7 +81,7 @@ export function CreateIssueForm({
   const resolvedEngineType = useMemo(() => {
     if (engineType) return engineType
     const defaultEng = engineSettings?.defaultEngine
-    if (defaultEng && installedEngines.some((e) => e.engineType === defaultEng)) return defaultEng
+    if (defaultEng && installedEngines.some(e => e.engineType === defaultEng)) return defaultEng
     return installedEngines[0]?.engineType ?? ''
   }, [engineType, engineSettings, installedEngines])
 
@@ -120,7 +120,7 @@ export function CreateIssueForm({
         tags: (() => {
           const arr = tag
             .split(',')
-            .map((s) => s.trim())
+            .map(s => s.trim())
             .filter(Boolean)
           return arr.length > 0 ? arr : undefined
         })(),
@@ -186,7 +186,9 @@ export function CreateIssueForm({
         <div className="flex items-center justify-between px-3 py-2">
           <span className="text-[11px] text-muted-foreground/50">{t('issue.cmdEnterSubmit')}</span>
           <span className="text-[11px] text-muted-foreground/50 tabular-nums">
-            {input.length} / 2000
+            {input.length}
+            {' '}
+            / 2000
           </span>
         </div>
       </div>
@@ -199,7 +201,7 @@ export function CreateIssueForm({
             <input
               type="text"
               value={tag}
-              onChange={(e) => setTag(e.target.value)}
+              onChange={e => setTag(e.target.value)}
               placeholder={t('issue.tagPlaceholder')}
               className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground/50"
             />
@@ -230,11 +232,13 @@ export function CreateIssueForm({
       {/* ─── Footer ─────────────────────────────── */}
       <div className="flex items-center justify-end pt-4">
         <div className="flex items-center gap-2">
-          {onCancel ? (
-            <Button variant="secondary" onClick={onCancel}>
-              {t('common.cancel')}
-            </Button>
-          ) : null}
+          {onCancel
+            ? (
+                <Button variant="secondary" onClick={onCancel}>
+                  {t('common.cancel')}
+                </Button>
+              )
+            : null}
           <Button onClick={handleSubmit} disabled={createIssue.isPending || !input.trim()}>
             {createIssue.isPending ? t('createIssue.creating') : t('createIssue.create')}
           </Button>
@@ -278,7 +282,7 @@ export function CreateIssueDialog() {
 
 // ── Property row ──────────────────────────────────────
 
-function PropertyRow({ label, children }: { label: string; children: React.ReactNode }) {
+function PropertyRow({ label, children }: { label: string, children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-2 rounded-lg border bg-muted/20 px-3 py-2">
       <span className="text-xs text-muted-foreground w-10 shrink-0">{label}</span>
@@ -300,17 +304,17 @@ function StatusSelect({
   onChange: (id: string) => void
 }) {
   const { t } = useTranslation()
-  const current = statuses.find((s) => s.id === value)
+  const current = statuses.find(s => s.id === value)
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        render={
+        render={(
           <button
             type="button"
             className="flex items-center gap-1.5 text-sm hover:text-foreground transition-colors w-full"
           />
-        }
+        )}
       >
         <span
           className="h-2 w-2 rounded-full shrink-0"
@@ -322,7 +326,7 @@ function StatusSelect({
         <ChevronDown className="h-3 w-3 text-muted-foreground ml-auto shrink-0" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="min-w-[160px]">
-        {statuses.map((s) => (
+        {statuses.map(s => (
           <DropdownMenuItem
             key={s.id}
             onSelect={() => onChange(s.id)}
@@ -351,22 +355,24 @@ function EngineSelect({
   const { t } = useTranslation()
 
   const isDefault = !value
-  const currentProfile = profiles.find((p) => p.engineType === value)
+  const currentProfile = profiles.find(p => p.engineType === value)
   const currentName = isDefault ? t('createIssue.modelDefault') : (currentProfile?.name ?? value)
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        render={
+        render={(
           <button
             type="button"
             className="flex items-center gap-1.5 text-sm hover:text-foreground transition-colors w-full"
           />
-        }
+        )}
       >
-        {value ? (
-          <EngineIcon engineType={value} className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-        ) : null}
+        {value
+          ? (
+              <EngineIcon engineType={value} className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+            )
+          : null}
         <span className="truncate">{currentName}</span>
         <ChevronDown className="h-3 w-3 text-muted-foreground ml-auto shrink-0" />
       </DropdownMenuTrigger>
@@ -374,11 +380,13 @@ function EngineSelect({
         <DropdownMenuItem onSelect={() => onChange('')} className={isDefault ? 'bg-accent/50' : ''}>
           <span className="font-medium">{t('createIssue.modelDefault')}</span>
           <span className="text-[10px] text-muted-foreground ml-1">
-            ({t('createIssue.modelDefaultHint')})
+            (
+            {t('createIssue.modelDefaultHint')}
+            )
           </span>
         </DropdownMenuItem>
         {engines.map((a) => {
-          const profile = profiles.find((p) => p.engineType === a.engineType)
+          const profile = profiles.find(p => p.engineType === a.engineType)
           return (
             <DropdownMenuItem
               key={a.engineType}
@@ -401,7 +409,7 @@ function EngineSelect({
 // ── WorktreeToggle ────────────────────────────────────
 // Replaced manual button with shadcn Switch for better semantics & accessibility
 
-function WorktreeToggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
+function WorktreeToggle({ value, onChange }: { value: boolean, onChange: (v: boolean) => void }) {
   return (
     <div className="flex items-center w-full">
       <Switch checked={value} onCheckedChange={onChange} className="shrink-0" />
@@ -419,18 +427,18 @@ function ModelSelect({
   onChange: (v: string) => void
 }) {
   const { t } = useTranslation()
-  const current = value ? models.find((m) => m.id === value) : null
+  const current = value ? models.find(m => m.id === value) : null
   const isDefault = !value
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        render={
+        render={(
           <button
             type="button"
             className="flex items-center gap-1.5 text-sm hover:text-foreground transition-colors w-full"
           />
-        }
+        )}
       >
         <span className="truncate">
           {isDefault ? t('createIssue.modelDefault') : (current?.name ?? '—')}
@@ -441,21 +449,27 @@ function ModelSelect({
         <DropdownMenuItem onSelect={() => onChange('')} className={isDefault ? 'bg-accent/50' : ''}>
           <span className="font-medium">{t('createIssue.modelDefault')}</span>
           <span className="text-[10px] text-muted-foreground ml-1">
-            ({t('createIssue.modelDefaultHint')})
+            (
+            {t('createIssue.modelDefaultHint')}
+            )
           </span>
         </DropdownMenuItem>
-        {models.map((m) => (
+        {models.map(m => (
           <DropdownMenuItem
             key={m.id}
             onSelect={() => onChange(m.id)}
             className={m.id === value ? 'bg-accent/50' : ''}
           >
             <span className="font-medium">{m.name}</span>
-            {m.isDefault ? (
-              <span className="text-[10px] text-muted-foreground ml-1">
-                ({t('createIssue.engineLabel.default')})
-              </span>
-            ) : null}
+            {m.isDefault
+              ? (
+                  <span className="text-[10px] text-muted-foreground ml-1">
+                    (
+                    {t('createIssue.engineLabel.default')}
+                    )
+                  </span>
+                )
+              : null}
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>
@@ -473,18 +487,18 @@ function PermissionSelect({
   onChange: (v: PermissionId) => void
 }) {
   const { t } = useTranslation()
-  const current = PERMISSIONS.find((p) => p.id === value) ?? PERMISSIONS[0]
+  const current = PERMISSIONS.find(p => p.id === value) ?? PERMISSIONS[0]
   const Icon = current.icon
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        render={
+        render={(
           <button
             type="button"
             className="flex items-center gap-1.5 text-sm hover:text-foreground transition-colors w-full"
           />
-        }
+        )}
       >
         <Icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
         <span className="truncate">{t(`createIssue.perm.${current.id}`)}</span>

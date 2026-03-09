@@ -6,7 +6,7 @@ import { removeWorktree, WORKTREE_BASE } from '@/engines/issue/utils/worktree'
 import { logger } from '@/logger'
 
 /** Only accept IDs that match the nanoid/ULID patterns used in the project */
-const VALID_ID = /^[a-zA-Z0-9_-]{4,32}$/
+const VALID_ID = /^[\w-]{4,32}$/
 
 interface WorktreeEntry {
   issueId: string
@@ -19,7 +19,8 @@ async function listProjectWorktrees(projectId: string): Promise<WorktreeEntry[]>
   let entries: string[]
   try {
     entries = await readdir(projectDir)
-  } catch {
+  }
+  catch {
     return []
   }
 
@@ -32,7 +33,8 @@ async function listProjectWorktrees(projectId: string): Promise<WorktreeEntry[]>
     try {
       const s = await stat(fullPath)
       if (!s.isDirectory()) continue
-    } catch {
+    }
+    catch {
       continue
     }
 
@@ -51,7 +53,8 @@ async function listProjectWorktrees(projectId: string): Promise<WorktreeEntry[]>
           branch = head.replace('ref: refs/heads/', '').trim()
         }
       }
-    } catch {
+    }
+    catch {
       // Not a valid git worktree — still list it
     }
 
@@ -104,7 +107,8 @@ worktrees.delete('/:issueId', async (c) => {
     if (!s.isDirectory()) {
       return c.json({ success: false, error: 'Worktree not found' }, 404)
     }
-  } catch {
+  }
+  catch {
     return c.json({ success: false, error: 'Worktree not found' }, 404)
   }
 
@@ -113,7 +117,8 @@ worktrees.delete('/:issueId', async (c) => {
   try {
     await removeWorktree(baseDir, worktreePath)
     logger.info({ projectId: project.id, issueId, worktreePath }, 'worktree_force_deleted')
-  } catch (err) {
+  }
+  catch (err) {
     logger.error(
       { projectId: project.id, issueId, worktreePath, err },
       'worktree_force_delete_failed',

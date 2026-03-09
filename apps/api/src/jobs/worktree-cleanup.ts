@@ -30,13 +30,14 @@ async function runWorktreeCleanup(): Promise<void> {
   let projectEntries: import('node:fs').Dirent[]
   try {
     projectEntries = await readdir(worktreeBaseDir, { withFileTypes: true })
-  } catch {
+  }
+  catch {
     return // No worktree directory at all
   }
 
   const projectDirNames = projectEntries
-    .filter((e) => e.isDirectory())
-    .map((e) => e.name)
+    .filter(e => e.isDirectory())
+    .map(e => e.name)
     .slice(0, MAX_BATCH)
 
   if (projectDirNames.length === 0) return
@@ -46,7 +47,7 @@ async function runWorktreeCleanup(): Promise<void> {
     .select({ id: projectsTable.id, directory: projectsTable.directory })
     .from(projectsTable)
     .where(inArray(projectsTable.id, projectDirNames))
-  const projectMap = new Map(projectRows.map((p) => [p.id, p.directory]))
+  const projectMap = new Map(projectRows.map(p => [p.id, p.directory]))
 
   const cutoff = new Date(Date.now() - DONE_AGE_MS)
   let cleaned = 0
@@ -58,13 +59,14 @@ async function runWorktreeCleanup(): Promise<void> {
     let issueEntries: import('node:fs').Dirent[]
     try {
       issueEntries = await readdir(projectWorktreeDir, { withFileTypes: true })
-    } catch {
+    }
+    catch {
       continue
     }
 
     const issueIds = issueEntries
-      .filter((e) => e.isDirectory())
-      .map((e) => e.name)
+      .filter(e => e.isDirectory())
+      .map(e => e.name)
       .slice(0, MAX_BATCH)
 
     if (issueIds.length === 0) continue
@@ -106,7 +108,8 @@ async function runWorktreeCleanup(): Promise<void> {
           { projectId: issue.projectId, issueId: issue.id, worktreePath },
           'worktree_auto_cleaned',
         )
-      } catch (err) {
+      }
+      catch (err) {
         logger.warn(
           { projectId: issue.projectId, issueId: issue.id, err },
           'worktree_auto_cleanup_failed',

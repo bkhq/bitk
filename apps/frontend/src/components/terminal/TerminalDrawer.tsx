@@ -11,10 +11,10 @@ import { disposeTerminal, TerminalView } from './TerminalView'
 
 export function TerminalDrawer() {
   const { t } = useTranslation()
-  const { isOpen, isFullscreen, width, close, minimize, toggleFullscreen, setWidth } =
-    useTerminalStore()
+  const { isOpen, isFullscreen, width, close, minimize, toggleFullscreen, setWidth }
+    = useTerminalStore()
   const isMobile = useIsMobile()
-  const dragRef = useRef<{ startX: number; startWidth: number } | null>(null)
+  const dragRef = useRef<{ startX: number, startWidth: number } | null>(null)
 
   if (!isOpen) return null
 
@@ -25,9 +25,11 @@ export function TerminalDrawer() {
   return (
     <>
       {/* Backdrop overlay */}
-      {fullscreen ? null : (
-        <div aria-hidden="true" className="fixed inset-0 z-[39] bg-black/20" onClick={close} />
-      )}
+      {fullscreen
+        ? null
+        : (
+            <div aria-hidden="true" className="fixed inset-0 z-[39] bg-black/20" onClick={close} />
+          )}
       <div
         className={`fixed top-0 bottom-0 right-0 z-40 flex flex-col border-l border-border bg-background shadow-2xl ${
           fullscreen ? 'left-0' : ''
@@ -104,11 +106,13 @@ export function TerminalDrawer() {
                 aria-label={t('terminal.maximize')}
                 title={isFullscreen ? t('terminal.back') : t('terminal.maximize')}
               >
-                {isFullscreen ? (
-                  <Minimize2 className="h-3.5 w-3.5" />
-                ) : (
-                  <Maximize2 className="h-3.5 w-3.5" />
-                )}
+                {isFullscreen
+                  ? (
+                      <Minimize2 className="h-3.5 w-3.5" />
+                    )
+                  : (
+                      <Maximize2 className="h-3.5 w-3.5" />
+                    )}
               </button>
             )}
             <button

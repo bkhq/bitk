@@ -57,7 +57,7 @@ describe('ExecutionStore', () => {
 
     const all = store.getAllEntries()
     expect(all).toHaveLength(3)
-    expect(all.map((e) => e.content)).toEqual(['first', 'second', 'third'])
+    expect(all.map(e => e.content)).toEqual(['first', 'second', 'third'])
 
     store.destroy()
   })

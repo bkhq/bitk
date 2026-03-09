@@ -41,7 +41,7 @@ function terminateAndSettle(
     // DB still shows running/pending but no other active process exists,
     // the status is stale from the process we killed — settle it.
     if (priorStatus === 'running' || priorStatus === 'pending') {
-      const hasActiveProcess = ctx.pm.getActive().some((e) => e.meta.issueId === issueId)
+      const hasActiveProcess = ctx.pm.getActive().some(e => e.meta.issueId === issueId)
       if (hasActiveProcess) {
         logger.debug({ issueId, priorStatus }, 'gc_settle_skipped_reactivated')
         return
@@ -57,7 +57,8 @@ function terminateAndSettle(
     }
     try {
       await autoMoveToReview(issueId)
-    } catch (err) {
+    }
+    catch (err) {
       logger.error({ issueId, err }, 'gc_auto_move_failed')
     }
     emitIssueSettled(issueId, executionId, finalStatus)
@@ -76,7 +77,8 @@ function isProcessAlive(pid: number | undefined): boolean {
   try {
     process.kill(pid, 0)
     return true
-  } catch {
+  }
+  catch {
     return false
   }
 }
@@ -95,7 +97,7 @@ export function gcSweep(ctx: EngineContext): void {
   // Note: issueOpLocks are NOT GC'd here — withIssueLock() self-cleans in its
   // finally block. Deleting them externally would break the per-issue mutex.
   // Clean orphaned userMessageIds entries for issues no longer tracked
-  const activeIssueIds = new Set(ctx.pm.getActive().map((e) => e.meta.issueId))
+  const activeIssueIds = new Set(ctx.pm.getActive().map(e => e.meta.issueId))
   for (const key of ctx.userMessageIds.keys()) {
     const issueId = key.split(':')[0] ?? key
     if (!activeIssueIds.has(issueId)) {
@@ -114,9 +116,9 @@ export function gcSweep(ctx: EngineContext): void {
 
       // --- Check 1: Idle timeout (turn completed, process still alive) ---
       if (
-        managed.lastIdleAt &&
-        !managed.turnInFlight &&
-        now - managed.lastIdleAt.getTime() > IDLE_TIMEOUT_MS
+        managed.lastIdleAt
+        && !managed.turnInFlight
+        && now - managed.lastIdleAt.getTime() > IDLE_TIMEOUT_MS
       ) {
         logger.info(
           {
@@ -146,8 +148,8 @@ export function gcSweep(ctx: EngineContext): void {
 
         // Tier 3: interrupt was sent but process still hasn't responded
         if (
-          managed.stallProbeAt &&
-          now - managed.stallProbeAt.getTime() > STALL_INTERRUPT_GRACE_MS
+          managed.stallProbeAt
+          && now - managed.stallProbeAt.getTime() > STALL_INTERRUPT_GRACE_MS
         ) {
           const stallMinutes = Math.round(silenceMs / 60000)
           logger.warn(
@@ -178,9 +180,9 @@ export function gcSweep(ctx: EngineContext): void {
 
         // Tier 2: stall detected for STALL_LIVENESS_GRACE_MS, process still alive → send interrupt
         if (
-          managed.stallDetectedAt &&
-          !managed.stallProbeAt &&
-          now - managed.stallDetectedAt.getTime() > STALL_LIVENESS_GRACE_MS
+          managed.stallDetectedAt
+          && !managed.stallProbeAt
+          && now - managed.stallDetectedAt.getTime() > STALL_LIVENESS_GRACE_MS
         ) {
           const stallMinutes = Math.round(silenceMs / 60000)
           const alive = isProcessAlive(pid)
@@ -238,9 +240,9 @@ export function gcSweep(ctx: EngineContext): void {
 
         // Tier 1: no output for STREAM_STALL_TIMEOUT_MS — non-destructive liveness check
         if (
-          !managed.stallDetectedAt &&
-          !managed.stallProbeAt &&
-          silenceMs > STREAM_STALL_TIMEOUT_MS
+          !managed.stallDetectedAt
+          && !managed.stallProbeAt
+          && silenceMs > STREAM_STALL_TIMEOUT_MS
         ) {
           const alive = isProcessAlive(pid)
           const stallMinutes = Math.round(silenceMs / 60000)
@@ -279,7 +281,8 @@ export function gcSweep(ctx: EngineContext): void {
           )
         }
       }
-    } catch (err) {
+    }
+    catch (err) {
       logger.error({ entryId: entry.id, issueId: entry.meta?.issueId, err }, 'gc_sweep_entry_error')
     }
   }

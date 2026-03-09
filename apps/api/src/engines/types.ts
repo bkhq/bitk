@@ -7,13 +7,13 @@ export type EngineType = 'claude-code' | 'codex' | 'gemini' | 'echo'
 export type EngineProtocol = 'stream-json' | 'json-rpc' | 'acp'
 
 // Engine capabilities
-export type EngineCapability =
-  | 'session-fork'
-  | 'setup-helper'
-  | 'context-usage'
-  | 'plan-mode'
-  | 'sandbox'
-  | 'reasoning'
+export type EngineCapability
+  = | 'session-fork'
+    | 'setup-helper'
+    | 'context-usage'
+    | 'plan-mode'
+    | 'sandbox'
+    | 'reasoning'
 
 // Permission policies
 export type PermissionPolicy = 'auto' | 'supervised' | 'plan'
@@ -25,15 +25,15 @@ export type SessionStatus = 'pending' | 'running' | 'completed' | 'failed' | 'ca
 export type ProcessStatus = 'spawning' | 'running' | 'completed' | 'failed' | 'cancelled'
 
 // Normalized log entry types
-export type LogEntryType =
-  | 'user-message'
-  | 'assistant-message'
-  | 'tool-use'
-  | 'system-message'
-  | 'error-message'
-  | 'thinking'
-  | 'loading'
-  | 'token-usage'
+export type LogEntryType
+  = | 'user-message'
+    | 'assistant-message'
+    | 'tool-use'
+    | 'system-message'
+    | 'error-message'
+    | 'thinking'
+    | 'loading'
+    | 'token-usage'
 
 // Shell command categories
 export type CommandCategory = 'read' | 'search' | 'edit' | 'fetch' | 'other'
@@ -46,19 +46,19 @@ export interface FileChange {
 }
 
 // Tool action discriminated union
-export type ToolAction =
-  | { kind: 'file-read'; path: string }
-  | { kind: 'file-edit'; path: string; changes?: FileChange[] }
-  | {
+export type ToolAction
+  = | { kind: 'file-read', path: string }
+    | { kind: 'file-edit', path: string, changes?: FileChange[] }
+    | {
       kind: 'command-run'
       command: string
       result?: string
       category?: CommandCategory
     }
-  | { kind: 'search'; query: string }
-  | { kind: 'web-fetch'; url: string }
-  | { kind: 'tool'; toolName: string; arguments?: unknown; result?: unknown }
-  | { kind: 'other'; description: string }
+    | { kind: 'search', query: string }
+    | { kind: 'web-fetch', url: string }
+    | { kind: 'tool', toolName: string, arguments?: unknown, result?: unknown }
+    | { kind: 'other', description: string }
 
 // Engine availability (discovery result)
 export interface EngineAvailability {
@@ -225,7 +225,7 @@ export const BUILT_IN_PROFILES: Record<EngineType, EngineProfile> = {
     capabilities: ['session-fork', 'context-usage', 'plan-mode'],
     permissionPolicy: 'auto',
   },
-  codex: {
+  'codex': {
     engineType: 'codex',
     name: 'Codex',
     baseCommand: 'npx -y @openai/codex@latest app-server',
@@ -233,7 +233,7 @@ export const BUILT_IN_PROFILES: Record<EngineType, EngineProfile> = {
     capabilities: ['session-fork', 'setup-helper', 'context-usage', 'sandbox', 'reasoning'],
     permissionPolicy: 'auto',
   },
-  gemini: {
+  'gemini': {
     engineType: 'gemini',
     name: 'Gemini CLI',
     baseCommand: 'npx -y @google/gemini-cli@latest',
@@ -241,7 +241,7 @@ export const BUILT_IN_PROFILES: Record<EngineType, EngineProfile> = {
     capabilities: ['session-fork'],
     permissionPolicy: 'auto',
   },
-  echo: {
+  'echo': {
     engineType: 'echo',
     name: 'Echo',
     baseCommand: 'echo',

@@ -41,7 +41,8 @@ title.post('/:id/auto-title', async (c) => {
       success: true,
       data: { executionId: result.executionId, issueId },
     })
-  } catch (error) {
+  }
+  catch (error) {
     logger.warn(
       {
         projectId: project.id,

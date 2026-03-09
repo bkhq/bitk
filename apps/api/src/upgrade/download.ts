@@ -94,7 +94,8 @@ export async function downloadUpdate(
           }
         }
       }
-    } finally {
+    }
+    finally {
       await sink.end()
     }
     // Only set executable permissions for binary downloads, not archives
@@ -133,7 +134,8 @@ export async function downloadUpdate(
           return
         }
         logger.info({ sha256: actual, fileName }, 'upgrade_checksum_verified')
-      } else {
+      }
+      else {
         // Checksum URL was provided but we couldn't fetch it — fail safe
         logger.error({ checksumUrl }, 'upgrade_checksum_fetch_failed')
         await unlink(tmpPath).catch(() => {})
@@ -164,7 +166,8 @@ export async function downloadUpdate(
 
     isDownloading = false
     logger.info({ fileName, filePath, size: received, checksumMatch }, 'upgrade_download_completed')
-  } catch (err) {
+  }
+  catch (err) {
     const errorMsg = err instanceof Error ? err.message : String(err)
     // Clean up partial .tmp file
     await unlink(tmpPath).catch(() => {})

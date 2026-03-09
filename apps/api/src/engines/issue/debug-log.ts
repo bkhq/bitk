@@ -45,7 +45,8 @@ export class IssueDebugLog {
   private write(data: string): void {
     try {
       appendFileSync(this.filePath, data)
-    } catch {
+    }
+    catch {
       // best-effort — don't crash the process
     }
   }
@@ -55,21 +56,26 @@ function ts(): string {
   return new Date().toISOString()
 }
 
-/** Create an IssueDebugLog if LOG_LEVEL=debug|trace, otherwise return a no-op.
+/**
+ * Create an IssueDebugLog if LOG_LEVEL=debug|trace, otherwise return a no-op.
  *  Fails open: if directory creation or initial write fails, returns no-op
- *  so debug instrumentation never breaks the execution path. */
+ *  so debug instrumentation never breaks the execution path.
+ */
 export function createIssueDebugLog(issueId: string, executionId: string): IssueDebugLog {
   if (!ENABLED) return NOOP_LOG
   try {
     return new IssueDebugLog(issueId, executionId)
-  } catch {
+  }
+  catch {
     return NOOP_LOG
   }
 }
 
-/** Pipe stream through a TransformStream that logs each chunk to the debug file.
+/**
+ * Pipe stream through a TransformStream that logs each chunk to the debug file.
  *  Uses TransformStream for proper backpressure — downstream pull rate controls
- *  how fast upstream is read, preventing unbounded in-memory buffering. */
+ *  how fast upstream is read, preventing unbounded in-memory buffering.
+ */
 export function teeStreamToDebug(
   stream: ReadableStream<Uint8Array>,
   log: IssueDebugLog,

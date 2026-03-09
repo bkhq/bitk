@@ -38,7 +38,7 @@ interface FileBrowserStore {
 export { MIN_WIDTH as FILE_BROWSER_MIN_WIDTH }
 export const FILE_BROWSER_MAX_WIDTH_RATIO = MAX_WIDTH_RATIO
 
-export const useFileBrowserStore = create<FileBrowserStore>((set) => ({
+export const useFileBrowserStore = create<FileBrowserStore>(set => ({
   isOpen: false,
   isMinimized: false,
   isFullscreen: false,
@@ -49,7 +49,7 @@ export const useFileBrowserStore = create<FileBrowserStore>((set) => ({
   hideIgnored: false,
 
   open: (projectId, rootPath) =>
-    set((s) => ({
+    set(s => ({
       isOpen: true,
       isMinimized: false,
       projectId,
@@ -58,7 +58,7 @@ export const useFileBrowserStore = create<FileBrowserStore>((set) => ({
         s.projectId === projectId && s.rootPath === (rootPath ?? null) ? s.currentPath : '.',
     })),
   openFullscreen: (projectId, rootPath) =>
-    set((s) => ({
+    set(s => ({
       isOpen: true,
       isMinimized: false,
       isFullscreen: true,
@@ -68,7 +68,7 @@ export const useFileBrowserStore = create<FileBrowserStore>((set) => ({
         s.projectId === projectId && s.rootPath === (rootPath ?? null) ? s.currentPath : '.',
     })),
   close: () => set({ isOpen: false }),
-  toggle: (projectId) =>
+  toggle: projectId =>
     set((s) => {
       if (s.isMinimized) {
         return {
@@ -89,10 +89,10 @@ export const useFileBrowserStore = create<FileBrowserStore>((set) => ({
     }),
   minimize: () => set({ isOpen: false, isMinimized: true, isFullscreen: false }),
   restore: () => set({ isOpen: true, isMinimized: false }),
-  toggleFullscreen: () => set((s) => ({ isFullscreen: !s.isFullscreen })),
-  setWidth: (w) => set({ width: clampWidth(w) }),
-  navigateTo: (path) => set({ currentPath: path }),
-  toggleHideIgnored: () => set((s) => ({ hideIgnored: !s.hideIgnored })),
+  toggleFullscreen: () => set(s => ({ isFullscreen: !s.isFullscreen })),
+  setWidth: w => set({ width: clampWidth(w) }),
+  navigateTo: path => set({ currentPath: path }),
+  toggleHideIgnored: () => set(s => ({ hideIgnored: !s.hideIgnored })),
 }))
 
 // Re-clamp width on window resize

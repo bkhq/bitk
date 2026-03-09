@@ -15,7 +15,7 @@ export default function FileBrowserPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { projectId = 'default', '*': splatPath = '' } = useParams<{
-    projectId: string
+    'projectId': string
     '*': string
   }>()
   const { data: project, isLoading, isError } = useProject(projectId)
@@ -35,7 +35,7 @@ export default function FileBrowserPage() {
   const handleCopyPath = useCallback(() => {
     navigator.clipboard.writeText(currentPath === '.' ? '/' : currentPath)
     setCopied(true)
-    setTimeout(() => setCopied(false), 1500)
+    setTimeout(setCopied, 1500, false)
   }, [currentPath])
 
   const handleDownload = useCallback(() => {
@@ -68,7 +68,8 @@ export default function FileBrowserPage() {
     (path: string) => {
       if (!path || path === '.') {
         void navigate(basePath)
-      } else {
+      }
+      else {
         void navigate(`${basePath}/${path}`)
       }
     },
@@ -167,19 +168,27 @@ export default function FileBrowserPage() {
 
         {/* Content */}
         <div className="flex-1 overflow-auto p-6">
-          {isListingLoading ? (
-            <div className="flex items-center justify-center py-16">
-              <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-            </div>
-          ) : isListingError ? (
-            <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">
-              {(listingError as Error)?.message || t('fileBrowser.loadError')}
-            </div>
-          ) : listing?.type === 'file' ? (
-            <FileViewer file={listing} onBack={handleFileBack} />
-          ) : listing?.type === 'directory' ? (
-            <FileList entries={listing.entries} onNavigate={handleEntryClick} />
-          ) : null}
+          {isListingLoading
+            ? (
+                <div className="flex items-center justify-center py-16">
+                  <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                </div>
+              )
+            : isListingError
+              ? (
+                  <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">
+                    {(listingError as Error)?.message || t('fileBrowser.loadError')}
+                  </div>
+                )
+              : listing?.type === 'file'
+                ? (
+                    <FileViewer file={listing} onBack={handleFileBack} />
+                  )
+                : listing?.type === 'directory'
+                  ? (
+                      <FileList entries={listing.entries} onNavigate={handleEntryClick} />
+                    )
+                  : null}
         </div>
       </div>
     </div>

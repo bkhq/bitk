@@ -50,7 +50,8 @@ function sanitizeResultLine(line: string): string {
     }
 
     return JSON.stringify(sanitized)
-  } catch {
+  }
+  catch {
     return line
   }
 }
@@ -65,9 +66,9 @@ function shouldSkipStdoutIoLog(line: string): boolean {
     return true
   }
   return (
-    line.includes('"type":"assistant"') &&
-    line.includes('"role":"assistant"') &&
-    line.includes('"type":"thinking"')
+    line.includes('"type":"assistant"')
+    && line.includes('"role":"assistant"')
+    && line.includes('"type":"thinking"')
   )
 }
 
@@ -91,10 +92,12 @@ interface ControlRequest {
 export class ClaudeProtocolHandler {
   private stdin: FileSink
   private closed = false
-  /** Called when ANY stdout data is received from the process, signaling it is alive.
+  /**
+   * Called when ANY stdout data is received from the process, signaling it is alive.
    *  Used by the engine layer to update lastActivityAt at the earliest possible point,
    *  before downstream consumers (consumeStream) process the data. This prevents
-   *  false stall detection when downstream processing (DB writes, etc.) is slow. */
+   *  false stall detection when downstream processing (DB writes, etc.) is slow.
+   */
   onActivity?: () => void
   /** Called when a Result message is received, signaling turn completion. */
   onResult?: (data: unknown) => void
@@ -170,7 +173,8 @@ export class ClaudeProtocolHandler {
             if (buffer.trim()) {
               if (!isControlReq(buffer)) {
                 controller.enqueue(encoder.encode(`${buffer}\n`))
-              } else {
+              }
+              else {
                 processControlReq(buffer)
               }
             }
@@ -198,7 +202,8 @@ export class ClaudeProtocolHandler {
     try {
       const data = JSON.parse(line)
       return data.type === 'control_request' && data.request_id && data.request
-    } catch {
+    }
+    catch {
       return false
     }
   }
@@ -207,7 +212,8 @@ export class ClaudeProtocolHandler {
     if (!line.includes('"type":"result"')) return false
     try {
       return JSON.parse(line)?.type === 'result'
-    } catch {
+    }
+    catch {
       return false
     }
   }
@@ -235,7 +241,8 @@ export class ClaudeProtocolHandler {
       // to ensure the timestamp is fresh for the completed control_request.
       this.onActivity?.()
       this.handleControlRequest(request_id, request)
-    } catch (error) {
+    }
+    catch (error) {
       logger.warn({ error }, 'Failed to parse control request')
     }
   }
@@ -257,7 +264,8 @@ export class ClaudeProtocolHandler {
               },
             ],
           })
-        } else {
+        }
+        else {
           this.sendResponse(requestId, {
             behavior: 'allow',
             updatedInput: request.input ?? {},
@@ -277,7 +285,8 @@ export class ClaudeProtocolHandler {
               permissionDecisionReason: 'Forwarding to can_use_tool for permission handling',
             },
           })
-        } else {
+        }
+        else {
           this.sendResponse(requestId, {
             hookSpecificOutput: {
               hookEventName: 'PreToolUse',
@@ -370,7 +379,8 @@ export class ClaudeProtocolHandler {
     this.closed = true
     try {
       this.stdin.end()
-    } catch {
+    }
+    catch {
       /* already closed */
     }
   }
@@ -387,7 +397,8 @@ export class ClaudeProtocolHandler {
       }
       this.stdin.write(`${json}\n`)
       this.stdin.flush?.()
-    } catch (error) {
+    }
+    catch (error) {
       logger.error({ error }, 'stdin_write_failed_closing')
       // Close stdin so Claude Code detects broken pipe and exits,
       // rather than waiting forever for a response that was never delivered.

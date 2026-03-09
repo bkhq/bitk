@@ -71,7 +71,7 @@ export function ViewModeSelect({
     )
   }
 
-  const CurrentIcon = VIEW_MODES.find((m) => m.id === mode)?.icon ?? LayoutGrid
+  const CurrentIcon = VIEW_MODES.find(m => m.id === mode)?.icon ?? LayoutGrid
 
   return (
     <DropdownMenu>

@@ -40,11 +40,11 @@ If you prefer not to use Tailwind CSS:
 
 ## Linting & Formatting
 
-This project uses [ESLint](https://eslint.org/) for linting and [Prettier](https://prettier.io/) for formatting. Configuration files are `eslint.config.js` and `.prettierrc` at the monorepo root. Run from the root:
+This project uses [@antfu/eslint-config](https://github.com/antfu/eslint-config) for linting and formatting (ESLint + stylistic rules, no Prettier). Configuration is in `eslint.config.js` at the monorepo root. Run from the root:
 
 ```bash
 bun run lint
-bun run format
+bun run lint:fix
 ```
 
 ## Routing

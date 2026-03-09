@@ -8,11 +8,11 @@ import type { IssueChangedFile } from '@/types/kanban'
 import { DIFF_MIN_WIDTH } from './diff-constants'
 
 const LazyMultiFileDiff = lazy(() =>
-  import('@pierre/diffs/react').then((m) => ({ default: m.MultiFileDiff })),
+  import('@pierre/diffs/react').then(m => ({ default: m.MultiFileDiff })),
 )
 
 const LazyPatchDiff = lazy(() =>
-  import('@pierre/diffs/react').then((m) => ({ default: m.PatchDiff })),
+  import('@pierre/diffs/react').then(m => ({ default: m.PatchDiff })),
 )
 
 function getPatchStats(patch: string): {
@@ -76,7 +76,7 @@ export function DiffPanel({
   const changesQuery = useIssueChanges(projectId, issueId, true)
   const files = changesQuery.data?.files ?? []
   const changesRoot = changesQuery.data?.root
-  const openFileBrowser = useFileBrowserStore((s) => s.open)
+  const openFileBrowser = useFileBrowserStore(s => s.open)
 
   return (
     <div
@@ -115,41 +115,49 @@ export function DiffPanel({
           </button>
         </div>
 
-        {changesQuery.isLoading ? (
-          <div className="flex-1 flex items-center justify-center px-4">
-            <span className="text-sm text-muted-foreground text-center">{t('common.loading')}</span>
-          </div>
-        ) : changesQuery.isError ? (
-          <div className="flex-1 flex items-center justify-center px-4">
-            <span className="text-sm text-muted-foreground text-center">
-              {String(changesQuery.error.message || t('diff.loadFailed'))}
-            </span>
-          </div>
-        ) : !changesQuery.data?.gitRepo ? (
-          <div className="flex-1 flex items-center justify-center px-4">
-            <span className="text-sm text-muted-foreground text-center">
-              {t('diff.notGitRepo')}
-            </span>
-          </div>
-        ) : files.length === 0 ? (
-          <div className="flex-1 flex items-center justify-center px-4">
-            <span className="text-sm text-muted-foreground text-center">{t('diff.noChanges')}</span>
-          </div>
-        ) : (
-          <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-y-contain touch-pan-y p-2 space-y-2">
-            {files.map((file) => (
-              <DiffFileCard
-                key={file.path}
-                projectId={projectId}
-                issueId={issueId}
-                path={file.path}
-                type={file.type}
-                additions={file.additions}
-                deletions={file.deletions}
-              />
-            ))}
-          </div>
-        )}
+        {changesQuery.isLoading
+          ? (
+              <div className="flex-1 flex items-center justify-center px-4">
+                <span className="text-sm text-muted-foreground text-center">{t('common.loading')}</span>
+              </div>
+            )
+          : changesQuery.isError
+            ? (
+                <div className="flex-1 flex items-center justify-center px-4">
+                  <span className="text-sm text-muted-foreground text-center">
+                    {String(changesQuery.error.message || t('diff.loadFailed'))}
+                  </span>
+                </div>
+              )
+            : !changesQuery.data?.gitRepo
+                ? (
+                    <div className="flex-1 flex items-center justify-center px-4">
+                      <span className="text-sm text-muted-foreground text-center">
+                        {t('diff.notGitRepo')}
+                      </span>
+                    </div>
+                  )
+                : files.length === 0
+                  ? (
+                      <div className="flex-1 flex items-center justify-center px-4">
+                        <span className="text-sm text-muted-foreground text-center">{t('diff.noChanges')}</span>
+                      </div>
+                    )
+                  : (
+                      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-y-contain touch-pan-y p-2 space-y-2">
+                        {files.map(file => (
+                          <DiffFileCard
+                            key={file.path}
+                            projectId={projectId}
+                            issueId={issueId}
+                            path={file.path}
+                            type={file.type}
+                            additions={file.additions}
+                            deletions={file.deletions}
+                          />
+                        ))}
+                      </div>
+                    )}
       </div>
     </div>
   )
@@ -183,8 +191,8 @@ function DiffFileCard({
   const displayAdditions = additions ?? stats.additions
   const displayDeletions = deletions ?? stats.deletions
   const themeType = resolved === 'dark' ? 'dark' : 'light'
-  const fullFilePair =
-    patch && patch.oldText !== undefined && patch.newText !== undefined
+  const fullFilePair
+    = patch && patch.oldText !== undefined && patch.newText !== undefined
       ? { oldText: patch.oldText, newText: patch.newText }
       : null
 
@@ -198,7 +206,7 @@ function DiffFileCard({
         .then(() => {
           setCopied(true)
           if (copyTimerRef.current) clearTimeout(copyTimerRef.current)
-          copyTimerRef.current = setTimeout(() => setCopied(false), 1500)
+          copyTimerRef.current = setTimeout(setCopied, 1500, false)
         })
         .catch(() => {})
     },
@@ -209,7 +217,7 @@ function DiffFileCard({
     <details
       className="group/card rounded-xl border border-border/40 bg-card/60 overflow-hidden transition-all duration-150 open:bg-card open:border-border/50 open:shadow-sm"
       open={isOpen}
-      onToggle={(e) => setIsOpen((e.currentTarget as HTMLDetailsElement).open)}
+      onToggle={e => setIsOpen((e.currentTarget as HTMLDetailsElement).open)}
     >
       <summary className="list-none cursor-pointer select-none px-3 py-2.5 transition-colors duration-150 hover:bg-muted/25">
         <div className="flex items-center gap-2">
@@ -227,67 +235,89 @@ function DiffFileCard({
               <Copy className={`h-3 w-3 ${copied ? 'text-emerald-500' : ''}`} />
             </button>
             <span className="flex items-center gap-0.5 text-[11px] font-medium tabular-nums">
-              {displayAdditions > 0 ? (
-                <span className="text-emerald-600 dark:text-emerald-400">+{displayAdditions}</span>
-              ) : null}
-              {displayDeletions > 0 ? (
-                <span className="text-red-600 dark:text-red-400">-{displayDeletions}</span>
-              ) : null}
+              {displayAdditions > 0
+                ? (
+                    <span className="text-emerald-600 dark:text-emerald-400">
+                      +
+                      {displayAdditions}
+                    </span>
+                  )
+                : null}
+              {displayDeletions > 0
+                ? (
+                    <span className="text-red-600 dark:text-red-400">
+                      -
+                      {displayDeletions}
+                    </span>
+                  )
+                : null}
             </span>
           </div>
         </div>
       </summary>
-      {isOpen ? (
-        <div className="min-w-0 border-t border-border/30">
-          {patchQuery.isLoading ? (
-            <div className="px-3 py-2.5 text-[11px] text-muted-foreground">
-              {t('common.loading')}
+      {isOpen
+        ? (
+            <div className="min-w-0 border-t border-border/30">
+              {patchQuery.isLoading
+                ? (
+                    <div className="px-3 py-2.5 text-[11px] text-muted-foreground">
+                      {t('common.loading')}
+                    </div>
+                  )
+                : patchQuery.isError
+                  ? (
+                      <div className="px-3 py-2.5 text-[11px] text-destructive">
+                        {String(patchQuery.error.message || t('diff.loadFailed'))}
+                      </div>
+                    )
+                  : fullFilePair
+                    ? (
+                        <div className="overflow-x-auto">
+                          <Suspense
+                            fallback={(
+                              <div className="px-3 py-2.5 text-[11px] text-muted-foreground">
+                                {t('common.loading')}
+                              </div>
+                            )}
+                          >
+                            <LazyMultiFileDiff
+                              oldFile={{ name: path, contents: fullFilePair.oldText }}
+                              newFile={{ name: path, contents: fullFilePair.newText }}
+                              options={{
+                                diffStyle: 'unified',
+                                diffIndicators: 'bars',
+                                expandUnchanged: false,
+                                hunkSeparators: 'line-info',
+                                disableLineNumbers: false,
+                                overflow: 'wrap',
+                                theme: {
+                                  light: 'github-light-default',
+                                  dark: 'github-dark-default',
+                                },
+                                themeType,
+                                disableFileHeader: true,
+                              }}
+                            />
+                          </Suspense>
+                        </div>
+                      )
+                    : patchText.trim()
+                      ? (
+                          <PatchDiffView patch={patchText} />
+                        )
+                      : (
+                          <div className="px-3 py-2.5 text-[11px] text-muted-foreground">
+                            {t('diff.emptyPatch')}
+                          </div>
+                        )}
+              {patch?.truncated
+                ? (
+                    <div className="px-3 pb-2 text-[11px] text-muted-foreground">{t('diff.truncated')}</div>
+                  )
+                : null}
             </div>
-          ) : patchQuery.isError ? (
-            <div className="px-3 py-2.5 text-[11px] text-destructive">
-              {String(patchQuery.error.message || t('diff.loadFailed'))}
-            </div>
-          ) : fullFilePair ? (
-            <div className="overflow-x-auto">
-              <Suspense
-                fallback={
-                  <div className="px-3 py-2.5 text-[11px] text-muted-foreground">
-                    {t('common.loading')}
-                  </div>
-                }
-              >
-                <LazyMultiFileDiff
-                  oldFile={{ name: path, contents: fullFilePair.oldText }}
-                  newFile={{ name: path, contents: fullFilePair.newText }}
-                  options={{
-                    diffStyle: 'unified',
-                    diffIndicators: 'bars',
-                    expandUnchanged: false,
-                    hunkSeparators: 'line-info',
-                    disableLineNumbers: false,
-                    overflow: 'wrap',
-                    theme: {
-                      light: 'github-light-default',
-                      dark: 'github-dark-default',
-                    },
-                    themeType,
-                    disableFileHeader: true,
-                  }}
-                />
-              </Suspense>
-            </div>
-          ) : patchText.trim() ? (
-            <PatchDiffView patch={patchText} />
-          ) : (
-            <div className="px-3 py-2.5 text-[11px] text-muted-foreground">
-              {t('diff.emptyPatch')}
-            </div>
-          )}
-          {patch?.truncated ? (
-            <div className="px-3 pb-2 text-[11px] text-muted-foreground">{t('diff.truncated')}</div>
-          ) : null}
-        </div>
-      ) : null}
+          )
+        : null}
     </details>
   )
 }
@@ -311,11 +341,11 @@ function PatchDiffView({ patch }: { patch: string }) {
   return (
     <div className="overflow-x-auto">
       <Suspense
-        fallback={
+        fallback={(
           <pre className="px-2.5 py-2 text-xs font-mono overflow-x-auto whitespace-pre-wrap">
             {patch}
           </pre>
-        }
+        )}
       >
         <LazyPatchDiff
           patch={patch}
@@ -345,7 +375,7 @@ function ResizeHandle({
   width: number
   onWidthChange: (w: number) => void
 }) {
-  const dragRef = useRef<{ startX: number; startWidth: number } | null>(null)
+  const dragRef = useRef<{ startX: number, startWidth: number } | null>(null)
 
   return (
     <div

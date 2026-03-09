@@ -27,10 +27,10 @@ import { Glob } from 'bun'
 
 const { values: args } = parseArgs({
   options: {
-    mode: { type: 'string', default: 'full' },
-    target: { type: 'string' },
-    outfile: { type: 'string' },
-    version: { type: 'string' },
+    'mode': { type: 'string', default: 'full' },
+    'target': { type: 'string' },
+    'outfile': { type: 'string' },
+    'version': { type: 'string' },
     'skip-frontend': { type: 'boolean', default: false },
   },
   strict: false,
@@ -109,7 +109,8 @@ if (compileMode === 'launcher') {
   await Bun.write(checksumFile, existing + entry)
   console.log(`[compile] SHA-256: ${sha256}`)
   console.log(`[compile] Checksum file: ${checksumFile}`)
-} else {
+}
+else {
   // ============================================================
   // FULL MODE: build frontend, embed assets, embed migrations,
   //            compile everything into a single standalone binary
@@ -131,7 +132,8 @@ if (compileMode === 'launcher') {
   // ---------- 1. Build frontend ----------
   if (args['skip-frontend']) {
     console.log('[compile] Skipping frontend build (--skip-frontend)')
-  } else {
+  }
+  else {
     console.log('[compile] Building frontend...')
     const vite = Bun.spawn(['bun', 'run', 'build'], {
       cwd: ROOT,
@@ -242,12 +244,14 @@ ${migrationEntries.join('\n')}
   copyFileSync(STATIC_BACKUP, STATIC_FILE)
   try {
     unlinkSync(STATIC_BACKUP)
-  } catch {}
+  }
+  catch {}
 
   copyFileSync(MIGRATIONS_BACKUP, MIGRATIONS_FILE)
   try {
     unlinkSync(MIGRATIONS_BACKUP)
-  } catch {}
+  }
+  catch {}
 
   if (buildCode !== 0) {
     console.error('[compile] Binary compilation failed')

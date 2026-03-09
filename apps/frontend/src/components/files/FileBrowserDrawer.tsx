@@ -42,7 +42,7 @@ export function FileBrowserDrawer() {
     toggleHideIgnored,
   } = useFileBrowserStore()
   const isMobile = useIsMobile()
-  const dragRef = useRef<{ startX: number; startWidth: number } | null>(null)
+  const dragRef = useRef<{ startX: number, startWidth: number } | null>(null)
 
   const [copied, setCopied] = useState(false)
 
@@ -55,7 +55,7 @@ export function FileBrowserDrawer() {
   const handleCopyPath = useCallback(() => {
     navigator.clipboard.writeText(currentPath === '.' ? '/' : currentPath)
     setCopied(true)
-    setTimeout(() => setCopied(false), 1500)
+    setTimeout(setCopied, 1500, false)
   }, [currentPath])
 
   const handleDownload = useCallback(() => {
@@ -100,9 +100,11 @@ export function FileBrowserDrawer() {
   return (
     <>
       {/* Backdrop overlay */}
-      {fullscreen ? null : (
-        <div className="fixed inset-0 z-[39] bg-black/20" onClick={close} onKeyDown={undefined} />
-      )}
+      {fullscreen
+        ? null
+        : (
+            <div className="fixed inset-0 z-[39] bg-black/20" onClick={close} onKeyDown={undefined} />
+          )}
       <div
         className={`fixed top-0 bottom-0 right-0 z-40 flex flex-col border-l border-border bg-background shadow-2xl ${
           fullscreen ? 'left-0' : ''
@@ -167,11 +169,13 @@ export function FileBrowserDrawer() {
               aria-label={t('fileBrowser.copyPath')}
               title={t('fileBrowser.copyPath')}
             >
-              {copied ? (
-                <Check className="h-3.5 w-3.5 text-green-500" />
-              ) : (
-                <Copy className="h-3.5 w-3.5" />
-              )}
+              {copied
+                ? (
+                    <Check className="h-3.5 w-3.5 text-green-500" />
+                  )
+                : (
+                    <Copy className="h-3.5 w-3.5" />
+                  )}
             </button>
             {listing?.type === 'file' && (
               <button
@@ -214,11 +218,13 @@ export function FileBrowserDrawer() {
                 aria-label={t('terminal.maximize')}
                 title={isFullscreen ? t('terminal.back') : t('terminal.maximize')}
               >
-                {isFullscreen ? (
-                  <Minimize2 className="h-3.5 w-3.5" />
-                ) : (
-                  <Maximize2 className="h-3.5 w-3.5" />
-                )}
+                {isFullscreen
+                  ? (
+                      <Minimize2 className="h-3.5 w-3.5" />
+                    )
+                  : (
+                      <Maximize2 className="h-3.5 w-3.5" />
+                    )}
               </button>
             )}
             <button
@@ -244,24 +250,34 @@ export function FileBrowserDrawer() {
 
         {/* Content */}
         <div className="flex-1 overflow-auto min-h-0 p-4 flex flex-col">
-          {!project?.directory ? (
-            <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
-              <FolderOpen className="h-12 w-12" />
-              <p className="text-sm">{t('fileBrowser.noDirectory')}</p>
-            </div>
-          ) : isLoading ? (
-            <div className="flex items-center justify-center py-16">
-              <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-            </div>
-          ) : isError ? (
-            <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">
-              {(error as Error)?.message || t('fileBrowser.loadError')}
-            </div>
-          ) : listing?.type === 'file' ? (
-            <FileViewer file={listing} onBack={handleFileBack} />
-          ) : listing?.type === 'directory' ? (
-            <FileList entries={listing.entries} onNavigate={handleEntryClick} />
-          ) : null}
+          {!project?.directory
+            ? (
+                <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
+                  <FolderOpen className="h-12 w-12" />
+                  <p className="text-sm">{t('fileBrowser.noDirectory')}</p>
+                </div>
+              )
+            : isLoading
+              ? (
+                  <div className="flex items-center justify-center py-16">
+                    <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                  </div>
+                )
+              : isError
+                ? (
+                    <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">
+                      {(error as Error)?.message || t('fileBrowser.loadError')}
+                    </div>
+                  )
+                : listing?.type === 'file'
+                  ? (
+                      <FileViewer file={listing} onBack={handleFileBack} />
+                    )
+                  : listing?.type === 'directory'
+                    ? (
+                        <FileList entries={listing.entries} onNavigate={handleEntryClick} />
+                      )
+                    : null}
         </div>
       </div>
     </>

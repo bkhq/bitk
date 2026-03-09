@@ -22,7 +22,7 @@ import { spawnFollowUpProcess, spawnRetry } from './spawn'
  * so other failures (API errors, network issues, etc.) don't clear a valid session.
  */
 function isSessionIdError(managed: ManagedProcess): boolean {
-  if (managed.logs.toArray().some((l) => l.entryType === 'assistant-message')) return false
+  if (managed.logs.toArray().some(l => l.entryType === 'assistant-message')) return false
   const reason = (managed.logicalFailureReason ?? '').toLowerCase()
   return reason.includes('no conversation found') || reason.includes('session')
 }
@@ -32,7 +32,7 @@ function isSessionIdError(managed: ManagedProcess): boolean {
  */
 async function resetBrokenSession(issueId: string, executionId: string): Promise<void> {
   logger.warn({ issueId, executionId }, 'session_init_failure_resetting_session')
-  await updateIssueSession(issueId, { externalSessionId: null }).catch((e) =>
+  await updateIssueSession(issueId, { externalSessionId: null }).catch(e =>
     logger.error({ issueId, error: e }, 'session_reset_failed'),
   )
 }
@@ -65,8 +65,8 @@ export function monitorCompletion(
         },
         'issue_process_exited',
       )
-      const signal =
-        exitCode !== null && exitCode > 128
+      const signal
+        = exitCode !== null && exitCode > 128
           ? `SIG${exitCode === 137 ? 'KILL' : exitCode === 143 ? 'TERM' : exitCode - 128}`
           : undefined
       managed.debugLog?.event(
@@ -102,7 +102,8 @@ export function monitorCompletion(
               await withIssueLock(ctx, issueId, async () => {
                 await spawnRetry(ctx, issueId, engineType)
               })
-            } catch (retryErr) {
+            }
+            catch (retryErr) {
               logger.error({ issueId, err: retryErr }, 'auto_retry_failed')
             }
             return
@@ -121,7 +122,7 @@ export function monitorCompletion(
         cleanupDomainData(ctx, executionId)
         try {
           const mergedPrompt = queued
-            .map((i) => i.prompt)
+            .map(i => i.prompt)
             .filter(Boolean)
             .join('\n\n')
           // Use the latest model override (last wins)
@@ -147,10 +148,11 @@ export function monitorCompletion(
             lastModel,
             lastPermission,
             undefined,
-            queued[queued.length - 1]?.metadata,
+            queued.at(-1)?.metadata,
           )
           return
-        } catch (error) {
+        }
+        catch (error) {
           logger.error({ issueId, executionId, error }, 'queued_followup_spawn_failed')
         }
       }
@@ -167,7 +169,8 @@ export function monitorCompletion(
         syncPmState(ctx, executionId, 'completed')
         emitStateChange(issueId, executionId, 'completed')
         await settleIssue(ctx, issueId, executionId, 'completed')
-      } else {
+      }
+      else {
         dispatch(managed, { type: 'MARK_FAILED' })
         syncPmState(ctx, executionId, 'failed')
         emitStateChange(issueId, executionId, 'failed')
@@ -203,15 +206,18 @@ export function monitorCompletion(
             await withIssueLock(ctx, issueId, async () => {
               await spawnRetry(ctx, issueId, engineType)
             })
-          } catch (retryErr) {
+          }
+          catch (retryErr) {
             logger.error({ issueId, err: retryErr }, 'auto_retry_failed')
             await settleIssue(ctx, issueId, executionId, 'failed')
           }
-        } else {
+        }
+        else {
           await settleIssue(ctx, issueId, executionId, 'failed')
         }
       }
-    } catch (outerErr) {
+    }
+    catch (outerErr) {
       logger.error({ issueId, executionId, err: outerErr }, 'monitor_completion_outer_error')
       dispatch(managed, { type: 'MARK_FAILED' })
       syncPmState(ctx, executionId, 'failed')
@@ -220,7 +226,8 @@ export function monitorCompletion(
       // but wrap in try-catch to prevent unhandled rejection in the void async.
       try {
         await settleIssue(ctx, issueId, executionId, 'failed')
-      } catch (settleErr) {
+      }
+      catch (settleErr) {
         logger.error({ issueId, executionId, err: settleErr }, 'monitor_completion_settle_failed')
       }
     }

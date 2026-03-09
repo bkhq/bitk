@@ -7,8 +7,8 @@ import { resolve } from 'node:path'
  * to false.
  */
 declare const __BITK_PACKAGE_MODE__: boolean | undefined
-const IS_PACKAGE_MODE: boolean =
-  typeof __BITK_PACKAGE_MODE__ !== 'undefined' ? __BITK_PACKAGE_MODE__ : false
+const IS_PACKAGE_MODE: boolean
+  = typeof __BITK_PACKAGE_MODE__ !== 'undefined' ? __BITK_PACKAGE_MODE__ : false
 
 /**
  * Monorepo / installation root directory.

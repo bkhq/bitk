@@ -12,17 +12,21 @@ function parseCommandTokens(command: string): string[] {
     if (quote) {
       if (ch === quote) {
         quote = null
-      } else {
+      }
+      else {
         current += ch
       }
-    } else if (ch === '"' || ch === "'") {
+    }
+    else if (ch === '"' || ch === '\'') {
       quote = ch
-    } else if (/\s/.test(ch)) {
+    }
+    else if (/\s/.test(ch)) {
       if (current) {
         tokens.push(current)
         current = ''
       }
-    } else {
+    }
+    else {
       current += ch
     }
   }
@@ -52,7 +56,8 @@ export class CommandBuilder {
   param(key: string, value?: string): this {
     if (value !== undefined) {
       this.args.push(`${key}=${value}`)
-    } else {
+    }
+    else {
       this.args.push(key)
     }
     return this

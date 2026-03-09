@@ -9,7 +9,7 @@ import { getIssueUrl } from '@/stores/server-store'
 import { ChatBody } from './ChatBody'
 import { SubIssueDialog } from './SubIssueDialog'
 
-const LazyDiffPanel = lazy(() => import('./DiffPanel').then((m) => ({ default: m.DiffPanel })))
+const LazyDiffPanel = lazy(() => import('./DiffPanel').then(m => ({ default: m.DiffPanel })))
 
 export function ChatArea({
   projectId,
@@ -160,33 +160,37 @@ export function ChatArea({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <span className="text-[11px] font-mono text-muted-foreground/70 bg-muted/50 rounded px-1.5 py-0.5 shrink-0 tabular-nums">
-                #{issue.issueNumber}
+                #
+                {issue.issueNumber}
               </span>
-              {editingTitle ? (
-                <input
-                  className="text-sm font-semibold bg-transparent border-b-2 border-primary outline-none min-w-0 flex-1 tracking-tight"
-                  value={titleDraft}
-                  onChange={(e) => setTitleDraft(e.target.value)}
-                  onBlur={saveTitle}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault()
-                      saveTitle()
-                    } else if (e.key === 'Escape') {
-                      setEditingTitle(false)
-                    }
-                  }}
-                  autoFocus
-                />
-              ) : (
-                <span
-                  className="text-sm font-semibold truncate cursor-pointer hover:text-primary transition-colors duration-200 tracking-tight decoration-primary/30 hover:underline underline-offset-2"
-                  onClick={startEditingTitle}
-                  title={t('issue.editTitle')}
-                >
-                  {issue.title}
-                </span>
-              )}
+              {editingTitle
+                ? (
+                    <input
+                      className="text-sm font-semibold bg-transparent border-b-2 border-primary outline-none min-w-0 flex-1 tracking-tight"
+                      value={titleDraft}
+                      onChange={e => setTitleDraft(e.target.value)}
+                      onBlur={saveTitle}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault()
+                          saveTitle()
+                        }
+                        else if (e.key === 'Escape') {
+                          setEditingTitle(false)
+                        }
+                      }}
+                      autoFocus
+                    />
+                  )
+                : (
+                    <span
+                      className="text-sm font-semibold truncate cursor-pointer hover:text-primary transition-colors duration-200 tracking-tight decoration-primary/30 hover:underline underline-offset-2"
+                      onClick={startEditingTitle}
+                      title={t('issue.editTitle')}
+                    >
+                      {issue.title}
+                    </span>
+                  )}
             </div>
           </div>
           <Button
@@ -205,17 +209,19 @@ export function ChatArea({
           >
             <Sparkles className="h-3.5 w-3.5" />
           </Button>
-          {!issue.parentIssueId ? (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground transition-colors"
-              title={t('issue.createSubIssue')}
-              onClick={() => setShowSubIssue(true)}
-            >
-              <Plus className="h-3.5 w-3.5" />
-            </Button>
-          ) : null}
+          {!issue.parentIssueId
+            ? (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+                  title={t('issue.createSubIssue')}
+                  onClick={() => setShowSubIssue(true)}
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                </Button>
+              )
+            : null}
           <Button
             variant="ghost"
             size="icon"
@@ -226,7 +232,7 @@ export function ChatArea({
                 .writeText(getIssueUrl(projectId, issueId))
                 .then(() => {
                   setCopied(true)
-                  setTimeout(() => setCopied(false), 2000)
+                  setTimeout(setCopied, 2000, false)
                 })
                 .catch(() => {})
             }}
@@ -248,44 +254,48 @@ export function ChatArea({
       </div>
 
       {/* Diff panel — full-screen overlay on mobile, inline on desktop */}
-      {showDiff ? (
-        isMobile ? (
-          <div className="fixed inset-0 z-40 bg-background flex flex-col">
-            <Suspense
-              fallback={
-                <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-                  {t('common.loading')}
-                </div>
-              }
-            >
-              <LazyDiffPanel
-                projectId={projectId}
-                issueId={issueId}
-                width={0}
-                onWidthChange={onDiffWidthChange}
-                onClose={onCloseDiff}
-                fullScreen
-              />
-            </Suspense>
-          </div>
-        ) : (
-          <Suspense
-            fallback={
-              <div className="flex w-[360px] shrink-0 items-center justify-center border-l border-border bg-background text-sm text-muted-foreground">
-                {t('common.loading')}
-              </div>
-            }
-          >
-            <LazyDiffPanel
-              projectId={projectId}
-              issueId={issueId}
-              width={diffWidth}
-              onWidthChange={onDiffWidthChange}
-              onClose={onCloseDiff}
-            />
-          </Suspense>
-        )
-      ) : null}
+      {showDiff
+        ? (
+            isMobile
+              ? (
+                  <div className="fixed inset-0 z-40 bg-background flex flex-col">
+                    <Suspense
+                      fallback={(
+                        <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+                          {t('common.loading')}
+                        </div>
+                      )}
+                    >
+                      <LazyDiffPanel
+                        projectId={projectId}
+                        issueId={issueId}
+                        width={0}
+                        onWidthChange={onDiffWidthChange}
+                        onClose={onCloseDiff}
+                        fullScreen
+                      />
+                    </Suspense>
+                  </div>
+                )
+              : (
+                  <Suspense
+                    fallback={(
+                      <div className="flex w-[360px] shrink-0 items-center justify-center border-l border-border bg-background text-sm text-muted-foreground">
+                        {t('common.loading')}
+                      </div>
+                    )}
+                  >
+                    <LazyDiffPanel
+                      projectId={projectId}
+                      issueId={issueId}
+                      width={diffWidth}
+                      onWidthChange={onDiffWidthChange}
+                      onClose={onCloseDiff}
+                    />
+                  </Suspense>
+                )
+          )
+        : null}
 
       {/* Sub-issue dialog */}
       <SubIssueDialog

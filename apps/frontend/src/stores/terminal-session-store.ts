@@ -26,8 +26,8 @@ const initialState = {
   disposed: false,
 }
 
-export const useTerminalSessionStore = create<TerminalSessionStore>((set) => ({
+export const useTerminalSessionStore = create<TerminalSessionStore>(set => ({
   ...initialState,
-  set: (partial) => set(partial),
+  set: partial => set(partial),
   reset: () => set(initialState),
 }))

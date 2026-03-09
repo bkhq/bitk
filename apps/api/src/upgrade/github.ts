@@ -7,7 +7,7 @@ export async function fetchLatestRelease(): Promise<ReleaseInfo | null> {
   try {
     const res = await fetch('https://api.github.com/repos/bkhq/bkd/releases/latest', {
       headers: {
-        Accept: 'application/vnd.github.v3+json',
+        'Accept': 'application/vnd.github.v3+json',
         'User-Agent': `bkd/${VERSION}`,
       },
       signal: AbortSignal.timeout(15_000),
@@ -43,14 +43,15 @@ export async function fetchLatestRelease(): Promise<ReleaseInfo | null> {
       tag: data.tag_name,
       publishedAt: data.published_at,
       htmlUrl: data.html_url,
-      assets: data.assets.map((a) => ({
+      assets: data.assets.map(a => ({
         name: a.name,
         size: a.size,
         downloadUrl: a.browser_download_url,
         contentType: a.content_type,
       })),
     }
-  } catch (err) {
+  }
+  catch (err) {
     logger.warn(
       { error: err instanceof Error ? err.message : String(err) },
       'upgrade_fetch_release_error',

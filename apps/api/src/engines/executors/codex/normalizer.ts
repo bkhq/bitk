@@ -40,7 +40,8 @@ export class CodexLogNormalizer {
     let data: Record<string, unknown>
     try {
       data = JSON.parse(rawLine)
-    } catch {
+    }
+    catch {
       // Non-JSON — treat as plain text system message
       if (rawLine.trim()) {
         return {
@@ -352,10 +353,10 @@ export class CodexLogNormalizer {
         this.resetStreamingState()
         const invocation = msg.invocation as
           | {
-              server?: string
-              tool?: string
-              arguments?: unknown
-            }
+            server?: string
+            tool?: string
+            arguments?: unknown
+          }
           | undefined
         if (!invocation) return null
         const toolName = `mcp:${invocation.server ?? 'unknown'}:${invocation.tool ?? 'unknown'}`
@@ -380,11 +381,11 @@ export class CodexLogNormalizer {
       case 'mcp_tool_call_end': {
         const invocation = msg.invocation as
           | {
-              server?: string
-              tool?: string
-            }
+            server?: string
+            tool?: string
+          }
           | undefined
-        const result = msg.result as { content?: unknown[]; is_error?: boolean } | undefined
+        const result = msg.result as { content?: unknown[], is_error?: boolean } | undefined
         const toolName = `mcp:${invocation?.server ?? 'unknown'}:${invocation?.tool ?? 'unknown'}`
         const isError = result?.is_error ?? false
         // Extract text content from MCP result
@@ -477,7 +478,7 @@ export class CodexLogNormalizer {
       // --- Plan update (todo-like step list) ---
       case 'plan_update': {
         this.resetStreamingState()
-        const plan = msg.plan as Array<{ step: string; status: string }> | undefined
+        const plan = msg.plan as Array<{ step: string, status: string }> | undefined
         const explanation = msg.explanation as string | undefined
         if (!plan) return null
         const content = explanation?.trim() || `Plan updated (${plan.length} steps)`
@@ -535,9 +536,9 @@ export class CodexLogNormalizer {
       case 'token_count': {
         const info = msg.info as
           | {
-              last_token_usage?: { total_tokens?: number }
-              model_context_window?: number
-            }
+            last_token_usage?: { total_tokens?: number }
+            model_context_window?: number
+          }
           | undefined
         if (!info?.last_token_usage) return null
         const totalTokens = info.last_token_usage.total_tokens ?? 0

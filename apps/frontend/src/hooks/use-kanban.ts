@@ -117,7 +117,7 @@ export function useProjectWorktrees(projectId: string) {
 export function useDeleteWorktree() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (data: { projectId: string; issueId: string }) =>
+    mutationFn: (data: { projectId: string, issueId: string }) =>
       kanbanApi.deleteWorktree(data.projectId, data.issueId),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({
@@ -241,7 +241,7 @@ export function useBulkUpdateIssues(projectId: string) {
 
       if (previous) {
         const updated = previous.map((issue) => {
-          const update = updates.find((u) => u.id === issue.id)
+          const update = updates.find(u => u.id === issue.id)
           if (update) {
             const { id: _, ...fields } = update
             return {
@@ -284,7 +284,7 @@ export function useDeleteIssue(projectId: string) {
 export function useExecuteIssue(projectId: string) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (args: { issueId: string; data: ExecuteIssueRequest }) =>
+    mutationFn: (args: { issueId: string, data: ExecuteIssueRequest }) =>
       kanbanApi.executeIssue(projectId, args.issueId, args.data),
     onSuccess: (_data, args) => {
       queryClient.invalidateQueries({
@@ -414,7 +414,7 @@ export function useEngineSettings(enabled = false) {
 export function useUpdateEngineModelSetting() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (args: { engineType: string; defaultModel: string }) =>
+    mutationFn: (args: { engineType: string, defaultModel: string }) =>
       kanbanApi.updateEngineModelSetting(args.engineType, {
         defaultModel: args.defaultModel,
       }),
@@ -526,7 +526,7 @@ export function useServerInfo(enabled = false) {
 export function useUpdateServerInfo() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (data: { name?: string; url?: string }) => kanbanApi.updateServerInfo(data),
+    mutationFn: (data: { name?: string, url?: string }) => kanbanApi.updateServerInfo(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.serverInfo() })
       queryClient.invalidateQueries({ queryKey: queryKeys.systemInfo() })
@@ -664,7 +664,7 @@ export function useCheckForUpdates() {
 export function useDownloadUpdate() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (args: { url: string; fileName: string; checksumUrl?: string }) =>
+    mutationFn: (args: { url: string, fileName: string, checksumUrl?: string }) =>
       kanbanApi.downloadUpdate(args.url, args.fileName, args.checksumUrl),
     onSuccess: () => {
       queryClient.invalidateQueries({
@@ -699,7 +699,7 @@ export function useRestartWithUpgrade() {
         const timeout = 60_000
         const interval = 1_500
         // Wait for the server to fully shut down
-        await new Promise((r) => setTimeout(r, 2_000))
+        await new Promise(r => setTimeout(r, 2_000))
         while (Date.now() - start < timeout) {
           try {
             const res = await fetch('/api/settings/upgrade/version')
@@ -707,10 +707,11 @@ export function useRestartWithUpgrade() {
               window.location.reload()
               return
             }
-          } catch {
+          }
+          catch {
             // Server still down — keep polling
           }
-          await new Promise((r) => setTimeout(r, interval))
+          await new Promise(r => setTimeout(r, interval))
         }
         // Timeout — reload anyway
         window.location.reload()
@@ -723,8 +724,8 @@ export function useRestartWithUpgrade() {
 // --- File Browser hooks ---
 
 export function useProjectFiles(projectId: string, path: string, enabled = true) {
-  const hideIgnored = useFileBrowserStore((s) => s.hideIgnored)
-  const rootPath = useFileBrowserStore((s) => s.rootPath)
+  const hideIgnored = useFileBrowserStore(s => s.hideIgnored)
+  const rootPath = useFileBrowserStore(s => s.rootPath)
   return useQuery({
     queryKey: queryKeys.projectFiles(projectId, path, hideIgnored, rootPath),
     queryFn: () => kanbanApi.listFiles(projectId, path || undefined, hideIgnored, rootPath),

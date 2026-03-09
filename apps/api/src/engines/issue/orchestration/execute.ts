@@ -30,7 +30,7 @@ export async function executeIssue(
     permissionMode?: PermissionPolicy
     envVars?: Record<string, string>
   },
-): Promise<{ executionId: string; messageId?: string | null }> {
+): Promise<{ executionId: string, messageId?: string | null }> {
   return withIssueLock(ctx, issueId, async () => {
     logger.debug(
       {
@@ -77,7 +77,8 @@ export async function executeIssue(
       try {
         worktreePath = await createWorktree(baseDir, issue.projectId, issueId)
         workingDir = worktreePath
-      } catch (error) {
+      }
+      catch (error) {
         logger.warn({ issueId, error }, 'worktree_creation_failed_fallback_to_base')
       }
     }
@@ -103,7 +104,8 @@ export async function executeIssue(
           issueId,
         },
       )
-    } catch (spawnError) {
+    }
+    catch (spawnError) {
       logger.error(
         { issueId, executionId, error: spawnError },
         'execute_spawn_failed_reverting_session',
@@ -114,7 +116,7 @@ export async function executeIssue(
         `[BKD] Process spawn failed: ${spawnError instanceof Error ? spawnError.message : String(spawnError)}`,
         { event: 'spawn_failed' },
       )
-      await updateIssueSession(issueId, { sessionStatus: 'failed' }).catch((e) =>
+      await updateIssueSession(issueId, { sessionStatus: 'failed' }).catch(e =>
         logger.error({ issueId, error: e }, 'execute_spawn_failed_revert_session_error'),
       )
       emitStateChange(issueId, executionId, 'failed')
@@ -146,7 +148,7 @@ export async function executeIssue(
       issueId,
       opts.engineType,
       spawned,
-      (line) => normalizer.parse(line),
+      line => normalizer.parse(line),
       0,
       worktreePath,
       false,

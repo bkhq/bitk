@@ -43,7 +43,7 @@ function getBaseCommand(): string {
   const home = process.env.HOME ?? ''
   if (home) {
     const homeCandidates = [join(home, '.local/bin/claude'), join(home, '.bun/bin/claude')]
-    const found = homeCandidates.find((p) => existsSync(p))
+    const found = homeCandidates.find(p => existsSync(p))
     if (found) {
       _cachedBaseCommand = found
       return _cachedBaseCommand
@@ -115,7 +115,8 @@ export class ClaudeCodeExecutor implements EngineExecutor {
     // The process stays alive and can accept new user messages.
     if (spawnedProcess.protocolHandler) {
       spawnedProcess.protocolHandler.interrupt()
-    } else {
+    }
+    else {
       spawnedProcess.cancel()
     }
 
@@ -155,12 +156,14 @@ export class ClaudeCodeExecutor implements EngineExecutor {
       let authStatus: EngineAvailability['authStatus'] = 'unknown'
       if (process.env.ANTHROPIC_API_KEY) {
         authStatus = 'authenticated'
-      } else {
+      }
+      else {
         const home = process.env.HOME ?? '/root'
         const configFile = Bun.file(`${home}/.claude.json`)
         if (await configFile.exists()) {
           authStatus = 'authenticated'
-        } else {
+        }
+        else {
           authStatus = 'unauthenticated'
         }
       }
@@ -172,7 +175,8 @@ export class ClaudeCodeExecutor implements EngineExecutor {
         binaryPath: resolved.resolvedPath,
         authStatus,
       }
-    } catch (error) {
+    }
+    catch (error) {
       return {
         engineType: 'claude-code',
         installed: false,
@@ -234,7 +238,8 @@ export class ClaudeCodeExecutor implements EngineExecutor {
     const killTimer = setTimeout(() => {
       try {
         proc.kill()
-      } catch {
+      }
+      catch {
         /* already dead */
       }
     }, DISCOVERY_TIMEOUT_MS)
@@ -264,7 +269,7 @@ export class ClaudeCodeExecutor implements EngineExecutor {
               type?: string
               subtype?: string
               slash_commands?: string[]
-              plugins?: Array<{ name: string; path: string }>
+              plugins?: Array<{ name: string, path: string }>
               agents?: string[]
             }
             if (data.type === 'system' && data.subtype === 'init') {
@@ -277,7 +282,8 @@ export class ClaudeCodeExecutor implements EngineExecutor {
               proc.kill()
               return result
             }
-          } catch {
+          }
+          catch {
             // Not JSON or not the message we want — skip
           }
         }
@@ -290,7 +296,7 @@ export class ClaudeCodeExecutor implements EngineExecutor {
             type?: string
             subtype?: string
             slash_commands?: string[]
-            plugins?: Array<{ name: string; path: string }>
+            plugins?: Array<{ name: string, path: string }>
             agents?: string[]
           }
           if (data.type === 'system' && data.subtype === 'init') {
@@ -299,17 +305,20 @@ export class ClaudeCodeExecutor implements EngineExecutor {
             result.agents = data.agents ?? []
             result.initReceived = true
           }
-        } catch {
+        }
+        catch {
           // Not JSON — ignore
         }
       }
 
       reader.releaseLock()
-    } finally {
+    }
+    finally {
       clearTimeout(killTimer)
       try {
         proc.kill()
-      } catch {
+      }
+      catch {
         /* already dead */
       }
     }
@@ -349,7 +358,8 @@ export class ClaudeCodeExecutor implements EngineExecutor {
         const debugFile = join(issueLogDir, 'claude-debug.log')
         builder.param('--debug')
         builder.param('--debug-file', debugFile)
-      } catch {
+      }
+      catch {
         // Fail open — debug logging is best-effort
       }
     }
@@ -453,9 +463,11 @@ export class ClaudeCodeExecutor implements EngineExecutor {
 export interface DiscoveryResult {
   slashCommands: string[]
   agents: string[]
-  plugins: Array<{ name: string; path: string }>
-  /** True when the system/init message was actually parsed.
-   *  False means the process exited or timed out before sending init. */
+  plugins: Array<{ name: string, path: string }>
+  /**
+   * True when the system/init message was actually parsed.
+   *  False means the process exited or timed out before sending init.
+   */
   initReceived: boolean
 }
 

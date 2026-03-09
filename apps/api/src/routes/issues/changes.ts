@@ -60,7 +60,8 @@ async function resolveChangesDir(
   try {
     const s = await stat(wtPath)
     if (s.isDirectory()) return wtPath
-  } catch {
+  }
+  catch {
     // worktree dir doesn't exist — fall back
   }
   return projectRoot
@@ -69,7 +70,7 @@ async function resolveChangesDir(
 async function runGit(
   args: string[],
   cwd: string,
-): Promise<{ code: number; stdout: string; stderr: string }> {
+): Promise<{ code: number, stdout: string, stderr: string }> {
   const proc = Bun.spawn(['git', ...args], {
     cwd,
     stdout: 'pipe',
@@ -115,7 +116,7 @@ async function listChangedFiles(cwd: string): Promise<GitChangedFile[]> {
   if (code !== 0) return []
   return stdout
     .split('\n')
-    .map((line) => line.trimEnd())
+    .map(line => line.trimEnd())
     .filter(Boolean)
     .map(parsePorcelainLine)
     .filter((f): f is GitChangedFile => !!f)
@@ -125,13 +126,14 @@ async function listChangedFiles(cwd: string): Promise<GitChangedFile[]> {
 async function summarizeFileLines(
   cwd: string,
   file: GitChangedFile,
-): Promise<{ additions: number; deletions: number }> {
+): Promise<{ additions: number, deletions: number }> {
   if (file.type === 'untracked') {
     if (!isPathInsideRoot(cwd, file.path)) return { additions: 0, deletions: 0 }
     try {
       const content = await Bun.file(resolve(cwd, file.path)).text()
       return { additions: countTextLines(content), deletions: 0 }
-    } catch {
+    }
+    catch {
       return { additions: 0, deletions: 0 }
     }
   }
@@ -145,7 +147,7 @@ async function summarizeFileLines(
 
     const firstLine = stdout
       .split('\n')
-      .map((line) => line.trim())
+      .map(line => line.trim())
       .find(Boolean)
     if (!firstLine) return { additions: 0, deletions: 0 }
 
@@ -153,7 +155,8 @@ async function summarizeFileLines(
     const additions = Number.isNaN(Number(addRaw)) ? 0 : Number(addRaw)
     const deletions = Number.isNaN(Number(delRaw)) ? 0 : Number(delRaw)
     return { additions, deletions }
-  } catch {
+  }
+  catch {
     return { additions: 0, deletions: 0 }
   }
 }
@@ -188,7 +191,7 @@ changes.get('/:id/changes', async (c) => {
   const files = await listChangedFiles(root)
 
   const filesWithStats = await Promise.all(
-    files.map(async (file) => ({
+    files.map(async file => ({
       ...file,
       ...(await summarizeFileLines(root, file)),
     })),
@@ -234,14 +237,15 @@ changes.get('/:id/changes/file', async (c) => {
   }
 
   const gitRepo = await isGitRepo(root)
-  if (!gitRepo)
+  if (!gitRepo) {
     return c.json({
       success: true,
       data: { path, patch: '', truncated: false },
     })
+  }
 
   const changedFiles = await listChangedFiles(root)
-  const file = changedFiles.find((f) => f.path === path)
+  const file = changedFiles.find(f => f.path === path)
   if (!file) {
     return c.json({
       success: true,
@@ -266,7 +270,8 @@ changes.get('/:id/changes/file', async (c) => {
     const content = await Bun.file(abs).text()
     oldText = ''
     newText = content
-  } else {
+  }
+  else {
     const { stdout } = await runGit(['diff', '--no-color', '--no-ext-diff', '--', path], root)
     patch = stdout
 
@@ -287,7 +292,8 @@ changes.get('/:id/changes/file', async (c) => {
       const abs = resolve(root, path)
       try {
         newText = await Bun.file(abs).text()
-      } catch {
+      }
+      catch {
         newText = ''
       }
     }

@@ -5,7 +5,8 @@ import { emitIssueSettled } from '@/engines/issue/events'
 import { cleanupDomainData } from '@/engines/issue/process/state'
 import { logger } from '@/logger'
 
-/** Common settle flow: persist status, auto-move, clean domain data, emit event.
+/**
+ * Common settle flow: persist status, auto-move, clean domain data, emit event.
  *
  * NOTE: Worktree cleanup is NOT done here. Worktrees are preserved across
  * completed/failed settlements so follow-ups can reuse them. Cleanup is
@@ -25,9 +26,11 @@ export async function settleIssue(
   try {
     await updateIssueSession(issueId, { sessionStatus: status })
     await autoMoveToReview(issueId)
-  } catch (err) {
+  }
+  catch (err) {
     logger.error({ issueId, executionId, status, err }, 'settle_issue_partial_failure')
-  } finally {
+  }
+  finally {
     cleanupDomainData(ctx, executionId)
     emitDiagnosticLog(issueId, executionId, `[BKD] Issue settled (status=${status})`, {
       event: 'issue_settled',

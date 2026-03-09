@@ -4,13 +4,13 @@ import type { NormalizedLogEntry } from '@/engines/types'
 
 export function isTurnCompletionEntry(entry: NormalizedLogEntry): boolean {
   if (entry.metadata?.turnCompleted === true) return true
-  if (entry.metadata && Object.prototype.hasOwnProperty.call(entry.metadata, 'resultSubtype')) {
+  if (entry.metadata && Object.hasOwn(entry.metadata, 'resultSubtype')) {
     return true
   }
   return (
-    entry.entryType === 'system-message' &&
-    !!entry.metadata &&
-    Object.prototype.hasOwnProperty.call(entry.metadata, 'duration')
+    entry.entryType === 'system-message'
+    && !!entry.metadata
+    && Object.hasOwn(entry.metadata, 'duration')
   )
 }
 
@@ -19,9 +19,9 @@ export function isCancelledNoiseEntry(entry: NormalizedLogEntry): boolean {
   if (typeof subtype !== 'string' || subtype !== 'error_during_execution') return false
   const raw = `${entry.content ?? ''} ${String(entry.metadata?.error ?? '')}`.toLowerCase()
   return (
-    raw.includes('request was aborted') ||
-    raw.includes('request interrupted by user') ||
-    raw.includes('rust analyzer lsp crashed') ||
-    raw.includes('rust-analyzer-lsp')
+    raw.includes('request was aborted')
+    || raw.includes('request interrupted by user')
+    || raw.includes('rust analyzer lsp crashed')
+    || raw.includes('rust-analyzer-lsp')
   )
 }

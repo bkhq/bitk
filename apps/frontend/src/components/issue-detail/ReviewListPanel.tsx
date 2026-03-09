@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import { useReviewIssues } from '@/hooks/use-kanban'
 import type { Issue } from '@/types/kanban'
 
-type ReviewIssue = Issue & { projectName: string; projectAlias: string }
+type ReviewIssue = Issue & { projectName: string, projectAlias: string }
 
 export function ReviewListPanel({
   activeIssueId,
@@ -29,9 +29,9 @@ export function ReviewListPanel({
     if (!issues) return []
     if (!searchTerm) return issues
     return issues.filter(
-      (issue) =>
-        issue.title.toLowerCase().includes(searchTerm) ||
-        issue.projectName.toLowerCase().includes(searchTerm),
+      issue =>
+        issue.title.toLowerCase().includes(searchTerm)
+        || issue.projectName.toLowerCase().includes(searchTerm),
     )
   }, [issues, searchTerm])
 
@@ -50,7 +50,8 @@ export function ReviewListPanel({
       const existing = map.get(issue.projectId)
       if (existing) {
         existing.issues.push(issue)
-      } else {
+      }
+      else {
         map.set(issue.projectId, {
           projectId: issue.projectId,
           projectName: issue.projectName,
@@ -59,11 +60,11 @@ export function ReviewListPanel({
         })
       }
     }
-    return Array.from(map.values())
+    return [...map.values()]
   }, [filtered])
 
   const toggleCollapse = (projectId: string) => {
-    setCollapsed((prev) => ({ ...prev, [projectId]: !prev[projectId] }))
+    setCollapsed(prev => ({ ...prev, [projectId]: !prev[projectId] }))
   }
 
   return (
@@ -77,11 +78,13 @@ export function ReviewListPanel({
           {mobileNav}
           <span className="text-sm font-semibold truncate tracking-tight">{t('review.title')}</span>
         </div>
-        {issues ? (
-          <span className="text-[10px] font-medium text-muted-foreground/50 shrink-0 tabular-nums">
-            {issues.length}
-          </span>
-        ) : null}
+        {issues
+          ? (
+              <span className="text-[10px] font-medium text-muted-foreground/50 shrink-0 tabular-nums">
+                {issues.length}
+              </span>
+            )
+          : null}
       </div>
 
       {/* Search */}
@@ -91,7 +94,7 @@ export function ReviewListPanel({
           <input
             type="text"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={e => setSearch(e.target.value)}
             placeholder={t('common.search')}
             className="flex-1 bg-transparent text-xs outline-none placeholder:text-muted-foreground/40"
           />
@@ -100,38 +103,44 @@ export function ReviewListPanel({
 
       {/* Grouped issue list by project */}
       <div className="flex-1 overflow-y-auto">
-        {isLoading ? (
-          <div className="flex items-center justify-center py-8">
-            <p className="text-xs text-muted-foreground">{t('common.loading')}</p>
-          </div>
-        ) : grouped.length === 0 ? (
-          <div className="flex items-center justify-center py-8">
-            <p className="text-xs text-muted-foreground/55">{t('review.empty')}</p>
-          </div>
-        ) : (
-          grouped.map((group) => (
-            <ProjectGroup
-              key={group.projectId}
-              projectName={group.projectName}
-              projectAlias={group.projectAlias}
-              issues={group.issues}
-              isCollapsed={!!collapsed[group.projectId]}
-              onToggle={() => toggleCollapse(group.projectId)}
-              activeIssueId={activeIssueId}
-              onNavigate={(projectAlias, issueId) => navigate(`/review/${projectAlias}/${issueId}`)}
-            />
-          ))
-        )}
+        {isLoading
+          ? (
+              <div className="flex items-center justify-center py-8">
+                <p className="text-xs text-muted-foreground">{t('common.loading')}</p>
+              </div>
+            )
+          : grouped.length === 0
+            ? (
+                <div className="flex items-center justify-center py-8">
+                  <p className="text-xs text-muted-foreground/55">{t('review.empty')}</p>
+                </div>
+              )
+            : (
+                grouped.map(group => (
+                  <ProjectGroup
+                    key={group.projectId}
+                    projectName={group.projectName}
+                    projectAlias={group.projectAlias}
+                    issues={group.issues}
+                    isCollapsed={!!collapsed[group.projectId]}
+                    onToggle={() => toggleCollapse(group.projectId)}
+                    activeIssueId={activeIssueId}
+                    onNavigate={(projectAlias, issueId) => navigate(`/review/${projectAlias}/${issueId}`)}
+                  />
+                ))
+              )}
       </div>
 
       {/* Resize handle */}
-      {onResizeStart ? (
-        <div
-          role="separator"
-          onMouseDown={onResizeStart}
-          className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-primary/20 active:bg-primary/30 transition-colors z-20"
-        />
-      ) : null}
+      {onResizeStart
+        ? (
+            <div
+              role="separator"
+              onMouseDown={onResizeStart}
+              className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-primary/20 active:bg-primary/30 transition-colors z-20"
+            />
+          )
+        : null}
     </div>
   )
 }
@@ -178,23 +187,25 @@ function ProjectGroup({
         </span>
       </button>
 
-      {!isCollapsed ? (
-        <div>
-          {issues.map((issue) => (
-            <ReviewIssueRow
-              key={issue.id}
-              issue={issue}
-              isActive={issue.id === activeIssueId}
-              onNavigate={() => onNavigate(projectAlias, issue.id)}
-            />
-          ))}
-        </div>
-      ) : null}
+      {!isCollapsed
+        ? (
+            <div>
+              {issues.map(issue => (
+                <ReviewIssueRow
+                  key={issue.id}
+                  issue={issue}
+                  isActive={issue.id === activeIssueId}
+                  onNavigate={() => onNavigate(projectAlias, issue.id)}
+                />
+              ))}
+            </div>
+          )
+        : null}
     </div>
   )
 }
 
-const ReviewIssueRow = memo(function ReviewIssueRow({
+const ReviewIssueRow = memo(({
   issue,
   isActive,
   onNavigate,
@@ -202,7 +213,7 @@ const ReviewIssueRow = memo(function ReviewIssueRow({
   issue: ReviewIssue
   isActive: boolean
   onNavigate: () => void
-}) {
+}) => {
   return (
     <div
       role="button"
@@ -224,7 +235,8 @@ const ReviewIssueRow = memo(function ReviewIssueRow({
           isActive ? 'text-primary font-medium' : 'text-muted-foreground/70'
         }`}
       >
-        #{issue.issueNumber}
+        #
+        {issue.issueNumber}
       </span>
       <span
         title={issue.title}

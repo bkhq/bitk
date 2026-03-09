@@ -22,7 +22,7 @@ export async function followUpIssue(
   displayPrompt?: string,
   metadata?: Record<string, unknown>,
   opts?: { skipPersistMessage?: boolean },
-): Promise<{ executionId: string; messageId?: string | null }> {
+): Promise<{ executionId: string, messageId?: string | null }> {
   return withIssueLock(ctx, issueId, async () => {
     logger.debug(
       {
@@ -139,7 +139,8 @@ export async function followUpIssue(
           opts,
         )
         return { executionId: active.executionId, messageId: msgId }
-      } catch (error) {
+      }
+      catch (error) {
         logger.warn(
           {
             issueId,

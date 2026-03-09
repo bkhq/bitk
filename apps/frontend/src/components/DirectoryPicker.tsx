@@ -44,9 +44,11 @@ export function DirectoryPicker({
     try {
       const data = await kanbanApi.listDirs(path)
       setDirData(data)
-    } catch (e) {
+    }
+    catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load directories')
-    } finally {
+    }
+    finally {
       setLoading(false)
     }
   }
@@ -54,7 +56,8 @@ export function DirectoryPicker({
   useEffect(() => {
     if (open) {
       void fetchDirs(initialPath || undefined)
-    } else {
+    }
+    else {
       setDirData(null)
       setError(null)
       setShowNewFolder(false)
@@ -89,9 +92,11 @@ export function DirectoryPicker({
       setShowNewFolder(false)
       setNewFolderName('')
       void fetchDirs(result.path)
-    } catch (e) {
+    }
+    catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to create directory')
-    } finally {
+    }
+    finally {
       setCreating(false)
     }
   }
@@ -135,7 +140,7 @@ export function DirectoryPicker({
                 className="flex-1 rounded-md border bg-background px-3 py-1.5 text-sm outline-none focus:ring-1 focus:ring-ring"
                 placeholder={t('directory.folderName')}
                 value={newFolderName}
-                onChange={(e) => setNewFolderName(e.target.value)}
+                onChange={e => setNewFolderName(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') void handleCreateFolder()
                   if (e.key === 'Escape') {
@@ -157,42 +162,46 @@ export function DirectoryPicker({
 
           {/* Directory listing */}
           <div className="mb-4 max-h-64 overflow-y-auto rounded-md border">
-            {loading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-              </div>
-            ) : error ? (
-              <div className="px-3 py-4 text-center text-sm text-destructive">{error}</div>
-            ) : (
-              <div className="divide-y">
-                {dirData?.parent && (
-                  <button
-                    type="button"
-                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent transition-colors"
-                    onClick={handleParent}
-                  >
-                    <ArrowUp className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">..</span>
-                  </button>
-                )}
-                {dirData?.dirs.length === 0 && !dirData.parent && (
-                  <div className="px-3 py-4 text-center text-sm text-muted-foreground">
-                    {t('directory.noSubdirs')}
+            {loading
+              ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                   </div>
-                )}
-                {dirData?.dirs.map((dir) => (
-                  <button
-                    key={dir}
-                    type="button"
-                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent transition-colors"
-                    onClick={() => handleNavigate(dir)}
-                  >
-                    <Folder className="h-4 w-4 text-blue-500" />
-                    <span>{dir}</span>
-                  </button>
-                ))}
-              </div>
-            )}
+                )
+              : error
+                ? (
+                    <div className="px-3 py-4 text-center text-sm text-destructive">{error}</div>
+                  )
+                : (
+                    <div className="divide-y">
+                      {dirData?.parent && (
+                        <button
+                          type="button"
+                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent transition-colors"
+                          onClick={handleParent}
+                        >
+                          <ArrowUp className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-muted-foreground">..</span>
+                        </button>
+                      )}
+                      {dirData?.dirs.length === 0 && !dirData.parent && (
+                        <div className="px-3 py-4 text-center text-sm text-muted-foreground">
+                          {t('directory.noSubdirs')}
+                        </div>
+                      )}
+                      {dirData?.dirs.map(dir => (
+                        <button
+                          key={dir}
+                          type="button"
+                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent transition-colors"
+                          onClick={() => handleNavigate(dir)}
+                        >
+                          <Folder className="h-4 w-4 text-blue-500" />
+                          <span>{dir}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
           </div>
 
           {/* Actions */}

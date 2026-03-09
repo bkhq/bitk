@@ -100,7 +100,8 @@ events.get('/', async (c) => {
       // Wait until stream ends (client disconnect or write error)
       try {
         await donePromise
-      } finally {
+      }
+      finally {
         clearInterval(heartbeat)
         unsubLog()
         unsubLogUpdated()
@@ -112,7 +113,8 @@ events.get('/', async (c) => {
         logger.debug('global_sse_closed')
       }
     })
-  } catch (err) {
+  }
+  catch (err) {
     logger.error(
       {
         err: err instanceof Error ? { message: err.message, stack: err.stack } : err,

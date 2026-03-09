@@ -87,10 +87,10 @@ const bundledLanguagesInfo = [
   },
 ]
 
-const bundledLanguagesBase = Object.fromEntries(bundledLanguagesInfo.map((i) => [i.id, i.import]))
+const bundledLanguagesBase = Object.fromEntries(bundledLanguagesInfo.map(i => [i.id, i.import]))
 
 const bundledLanguagesAlias = Object.fromEntries(
-  bundledLanguagesInfo.flatMap((i) => i.aliases?.map((a) => [a, i.import]) || []),
+  bundledLanguagesInfo.flatMap(i => i.aliases?.map(a => [a, i.import]) || []),
 )
 
 const bundledLanguages = {

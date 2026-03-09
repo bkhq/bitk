@@ -30,8 +30,8 @@ function entryId(entry: NormalizedLogEntry, fallback: string): string {
 
 function hasResultFlag(entry: NormalizedLogEntry): boolean {
   return (
-    entry.toolDetail?.isResult === true ||
-    (entry.metadata?.isResult as boolean | undefined) === true
+    entry.toolDetail?.isResult === true
+    || (entry.metadata?.isResult as boolean | undefined) === true
   )
 }
 
@@ -74,12 +74,14 @@ function buildToolGroup(
   if (options.devMode) {
     // devMode: show everything
     visibleItems = items
-  } else {
+  }
+  else {
     visibleItems = []
     for (const item of items) {
       if (isFilteredTool(item.action, options.filterRules)) {
         hiddenCount++
-      } else {
+      }
+      else {
         visibleItems.push(item)
       }
     }
@@ -104,12 +106,12 @@ function extractTodos(entry: NormalizedLogEntry): TaskPlanChatMessage['todos'] |
   // TodoWrite arguments contain the todos array
   const args = (meta.arguments ?? meta.input) as
     | {
-        todos?: Array<{ content: string; status: string; activeForm?: string }>
-      }
+      todos?: Array<{ content: string, status: string, activeForm?: string }>
+    }
     | undefined
   if (!args?.todos || !Array.isArray(args.todos)) return null
 
-  return args.todos.map((t) => ({
+  return args.todos.map(t => ({
     content: t.content ?? '',
     status: t.status ?? 'pending',
     activeForm: typeof t.activeForm === 'string' ? t.activeForm : undefined,
@@ -155,8 +157,8 @@ export function rebuildMessages(
   const resultMap = new Map<string, NormalizedLogEntry>()
   for (const entry of entries) {
     if (isToolUseResult(entry)) {
-      const callId =
-        entry.toolDetail?.toolCallId ?? (entry.metadata?.toolCallId as string | undefined)
+      const callId
+        = entry.toolDetail?.toolCallId ?? (entry.metadata?.toolCallId as string | undefined)
       if (callId) resultMap.set(callId, entry)
     }
   }
@@ -165,12 +167,12 @@ export function rebuildMessages(
     if (toolBuffer.length === 0) return
 
     // Check if the entire group is just TodoWrite calls
-    const todoItems = toolBuffer.filter((item) => isTodoWriteEntry(item.action))
-    const nonTodoItems = toolBuffer.filter((item) => !isTodoWriteEntry(item.action))
+    const todoItems = toolBuffer.filter(item => isTodoWriteEntry(item.action))
+    const nonTodoItems = toolBuffer.filter(item => !isTodoWriteEntry(item.action))
 
     // Extract task plan from last TodoWrite in the group
     if (todoItems.length > 0) {
-      const lastTodo = todoItems[todoItems.length - 1]
+      const lastTodo = todoItems.at(-1)
       const todos = extractTodos(lastTodo.action)
       if (todos) {
         messages.push({
@@ -178,7 +180,7 @@ export function rebuildMessages(
           id: entryId(lastTodo.action, nextId('tp')),
           entry: lastTodo.action,
           todos,
-          completedCount: todos.filter((t) => t.status === 'completed').length,
+          completedCount: todos.filter(t => t.status === 'completed').length,
         } satisfies TaskPlanChatMessage)
       }
     }
@@ -197,8 +199,8 @@ export function rebuildMessages(
 
     // Tool action: buffer it with its paired result
     if (isToolUseAction(entry)) {
-      const callId =
-        entry.toolDetail?.toolCallId ?? (entry.metadata?.toolCallId as string | undefined)
+      const callId
+        = entry.toolDetail?.toolCallId ?? (entry.metadata?.toolCallId as string | undefined)
       let result: NormalizedLogEntry | null = null
       if (callId) {
         result = resultMap.get(callId) ?? null

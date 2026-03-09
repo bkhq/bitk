@@ -108,7 +108,7 @@ describe('getPendingMessages', () => {
 
     const pending = await getPendingMessages(issue.id)
     expect(pending.length).toBe(2)
-    expect(pending.map((m) => m.content)).toEqual(['pending one', 'pending two'])
+    expect(pending.map(m => m.content)).toEqual(['pending one', 'pending two'])
   })
 
   test('returns empty array when no pending messages exist', async () => {
@@ -198,7 +198,7 @@ describe('markPendingMessagesDispatched', () => {
     const pending = await getPendingMessages(issue.id)
     expect(pending.length).toBe(3)
 
-    await markPendingMessagesDispatched(pending.map((m) => m.id))
+    await markPendingMessagesDispatched(pending.map(m => m.id))
 
     const after = await getPendingMessages(issue.id)
     expect(after.length).toBe(0)
@@ -221,7 +221,7 @@ describe('markPendingMessagesDispatched', () => {
     let pending = await getPendingMessages(issue.id)
     expect(pending.length).toBe(1)
 
-    await markPendingMessagesDispatched(pending.map((m) => m.id))
+    await markPendingMessagesDispatched(pending.map(m => m.id))
 
     pending = await getPendingMessages(issue.id)
     expect(pending.length).toBe(0)
@@ -247,11 +247,11 @@ describe('Pending message lifecycle', () => {
 
     // 3. Merge into a prompt (simulates collectPendingMessages logic)
     const basePrompt = 'base instruction'
-    const merged = [basePrompt, ...pending.map((m) => m.content)].filter(Boolean).join('\n\n')
+    const merged = [basePrompt, ...pending.map(m => m.content)].filter(Boolean).join('\n\n')
     expect(merged).toBe('base instruction\n\nfirst message\n\nsecond message\n\nthird message')
 
     // 4. Mark as dispatched after successful dispatch
-    await markPendingMessagesDispatched(pending.map((m) => m.id))
+    await markPendingMessagesDispatched(pending.map(m => m.id))
 
     // 5. Verify no pending messages remain
     const after = await getPendingMessages(issue.id)
@@ -277,7 +277,7 @@ describe('Pending message lifecycle', () => {
     await insertPendingMessage(issue.id, 'only message')
 
     const pending = await getPendingMessages(issue.id)
-    const merged = ['', ...pending.map((m) => m.content)].filter(Boolean).join('\n\n')
+    const merged = ['', ...pending.map(m => m.content)].filter(Boolean).join('\n\n')
     expect(merged).toBe('only message')
   })
 
@@ -288,10 +288,10 @@ describe('Pending message lifecycle', () => {
     expect(pending.length).toBe(0)
 
     const basePrompt = 'just the base'
-    const merged =
-      pending.length === 0
+    const merged
+      = pending.length === 0
         ? basePrompt
-        : [basePrompt, ...pending.map((m) => m.content)].filter(Boolean).join('\n\n')
+        : [basePrompt, ...pending.map(m => m.content)].filter(Boolean).join('\n\n')
     expect(merged).toBe('just the base')
   })
 })

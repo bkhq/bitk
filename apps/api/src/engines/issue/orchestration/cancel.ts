@@ -19,14 +19,15 @@ function waitForSettlement(managed: ManagedProcess, timeoutMs: number): Promise<
     const start = Date.now()
     const check = setInterval(() => {
       if (
-        managed.turnSettled ||
-        managed.state === 'completed' ||
-        managed.state === 'failed' ||
-        managed.state === 'cancelled'
+        managed.turnSettled
+        || managed.state === 'completed'
+        || managed.state === 'failed'
+        || managed.state === 'cancelled'
       ) {
         clearInterval(check)
         resolve(true)
-      } else if (Date.now() - start >= timeoutMs) {
+      }
+      else if (Date.now() - start >= timeoutMs) {
         clearInterval(check)
         resolve(false)
       }
@@ -52,9 +53,9 @@ function isEscalationStale(
   if (!ctx.pm.get(managed.executionId)) return true
   // Already terminal
   if (
-    managed.state === 'completed' ||
-    managed.state === 'failed' ||
-    managed.state === 'cancelled'
+    managed.state === 'completed'
+    || managed.state === 'failed'
+    || managed.state === 'cancelled'
   ) {
     return true
   }
@@ -72,7 +73,7 @@ function isEscalationStale(
 async function escalateCancel(
   ctx: EngineContext,
   issueId: string,
-  processes: Array<{ managed: ManagedProcess; escalationId: string }>,
+  processes: Array<{ managed: ManagedProcess, escalationId: string }>,
 ): Promise<void> {
   for (const { managed, escalationId } of processes) {
     const { executionId } = managed
@@ -108,7 +109,8 @@ async function escalateCancel(
         )
         try {
           managed.process.cancel()
-        } catch (err) {
+        }
+        catch (err) {
           logger.warn({ issueId, executionId, err }, 'cancel_escalation_interrupt_failed')
         }
       }
@@ -169,7 +171,7 @@ export async function cancelIssue(
 
   const result = await withIssueLock(ctx, issueId, async () => {
     logger.info({ issueId }, 'issue_cancel_requested')
-    const active = getActiveProcesses(ctx).filter((p) => p.issueId === issueId)
+    const active = getActiveProcesses(ctx).filter(p => p.issueId === issueId)
     for (const p of active) {
       logger.debug(
         { issueId, executionId: p.executionId, pid: getPidFromManaged(p) },

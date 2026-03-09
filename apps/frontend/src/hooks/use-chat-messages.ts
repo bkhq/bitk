@@ -16,8 +16,8 @@ import { useMemo } from 'react'
 
 function hasResultFlag(entry: NormalizedLogEntry): boolean {
   return (
-    entry.toolDetail?.isResult === true ||
-    (entry.metadata?.isResult as boolean | undefined) === true
+    entry.toolDetail?.isResult === true
+    || (entry.metadata?.isResult as boolean | undefined) === true
   )
 }
 
@@ -48,11 +48,11 @@ function extractTodos(entry: NormalizedLogEntry): TaskPlanChatMessage['todos'] |
   if (!meta) return null
   const args = (meta.arguments ?? meta.input) as
     | {
-        todos?: Array<{ content: string; status: string; activeForm?: string }>
-      }
+      todos?: Array<{ content: string, status: string, activeForm?: string }>
+    }
     | undefined
   if (!args?.todos || !Array.isArray(args.todos)) return null
-  return args.todos.map((t) => ({
+  return args.todos.map(t => ({
     content: t.content ?? '',
     status: t.status ?? 'pending',
     activeForm: typeof t.activeForm === 'string' ? t.activeForm : undefined,
@@ -71,7 +71,7 @@ function rebuildMessages(entries: NormalizedLogEntry[]): ChatMessage[] {
   let toolBuffer: ToolGroupItem[] = []
   // Deferred thinking entry — consumed by the next tool group as its description,
   // or flushed as a standalone thinking message if no tool calls follow.
-  let pendingThinking: { content: string; entry: NormalizedLogEntry } | null = null
+  let pendingThinking: { content: string, entry: NormalizedLogEntry } | null = null
 
   // Build turn → duration map from system-message metadata
   const turnDuration = new Map<number, number>()
@@ -87,8 +87,8 @@ function rebuildMessages(entries: NormalizedLogEntry[]): ChatMessage[] {
   const pairedResultCallIds = new Set<string>()
   for (const entry of entries) {
     if (isToolUseResult(entry)) {
-      const callId =
-        entry.toolDetail?.toolCallId ?? (entry.metadata?.toolCallId as string | undefined)
+      const callId
+        = entry.toolDetail?.toolCallId ?? (entry.metadata?.toolCallId as string | undefined)
       if (callId) resultMap.set(callId, entry)
     }
   }
@@ -104,9 +104,9 @@ function rebuildMessages(entries: NormalizedLogEntry[]): ChatMessage[] {
       for (let j = i + 1; j < entries.length; j++) {
         const c = entries[j]
         if (
-          c.entryType === 'system-message' &&
-          c.metadata?.subtype === 'command_output' &&
-          !consumedOutputIdx.has(j)
+          c.entryType === 'system-message'
+          && c.metadata?.subtype === 'command_output'
+          && !consumedOutputIdx.has(j)
         ) {
           commandOutputByIdx.set(i, j)
           consumedOutputIdx.add(j)
@@ -149,14 +149,14 @@ function rebuildMessages(entries: NormalizedLogEntry[]): ChatMessage[] {
   function flushToolBuffer(): void {
     if (toolBuffer.length === 0) return
 
-    const todoItems = toolBuffer.filter((item) => isTodoWriteEntry(item.action))
-    const nonTodoItems = toolBuffer.filter((item) => !isTodoWriteEntry(item.action))
+    const todoItems = toolBuffer.filter(item => isTodoWriteEntry(item.action))
+    const nonTodoItems = toolBuffer.filter(item => !isTodoWriteEntry(item.action))
 
     // Save thinking before task-plan flush so non-todo tools can still use it
     const savedThinking = pendingThinking
 
     if (todoItems.length > 0) {
-      const lastTodo = todoItems[todoItems.length - 1]
+      const lastTodo = todoItems.at(-1)
       const todos = extractTodos(lastTodo.action)
       if (todos) {
         if (nonTodoItems.length === 0) {
@@ -168,7 +168,7 @@ function rebuildMessages(entries: NormalizedLogEntry[]): ChatMessage[] {
           id: entryId(lastTodo.action, nextId('tp')),
           entry: lastTodo.action,
           todos,
-          completedCount: todos.filter((t) => t.status === 'completed').length,
+          completedCount: todos.filter(t => t.status === 'completed').length,
         } satisfies TaskPlanChatMessage)
       }
     }
@@ -178,7 +178,8 @@ function rebuildMessages(entries: NormalizedLogEntry[]): ChatMessage[] {
       const desc = savedThinking?.content
       pendingThinking = null
       messages.push(buildToolGroup(nonTodoItems, desc))
-    } else if (pendingThinking) {
+    }
+    else if (pendingThinking) {
       // No tool items consumed the thinking — flush it as standalone
       flushPendingThinking()
     }
@@ -191,8 +192,8 @@ function rebuildMessages(entries: NormalizedLogEntry[]): ChatMessage[] {
 
     // Skip result entries that were paired with their action
     if (isToolUseResult(entry)) {
-      const callId =
-        entry.toolDetail?.toolCallId ?? (entry.metadata?.toolCallId as string | undefined)
+      const callId
+        = entry.toolDetail?.toolCallId ?? (entry.metadata?.toolCallId as string | undefined)
       if (callId && pairedResultCallIds.has(callId)) continue
       // Unpaired result (action not in this slice) — render as standalone
       flushToolBuffer()
@@ -202,8 +203,8 @@ function rebuildMessages(entries: NormalizedLogEntry[]): ChatMessage[] {
     }
 
     if (isToolUseAction(entry)) {
-      const callId =
-        entry.toolDetail?.toolCallId ?? (entry.metadata?.toolCallId as string | undefined)
+      const callId
+        = entry.toolDetail?.toolCallId ?? (entry.metadata?.toolCallId as string | undefined)
       let result: NormalizedLogEntry | null = null
       if (callId) {
         result = resultMap.get(callId) ?? null
@@ -283,8 +284,8 @@ function rebuildMessages(entries: NormalizedLogEntry[]): ChatMessage[] {
           mimeType: string
           size: number
         }>
-        const status =
-          metaType === 'pending'
+        const status
+          = metaType === 'pending'
             ? 'pending'
             : metaType === 'done'
               ? 'done'
@@ -348,7 +349,8 @@ export function useChatMessages(logs: NormalizedLogEntry[]): ChatMessagesResult 
     for (const msg of all) {
       if (msg.type === 'user' && (msg.status === 'pending' || msg.status === 'done')) {
         pendingMessages.push(msg)
-      } else {
+      }
+      else {
         messages.push(msg)
       }
     }

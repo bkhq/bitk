@@ -26,7 +26,8 @@ export async function setUpgradeEnabled(enabled: boolean): Promise<void> {
   await setAppSetting(UPGRADE_ENABLED_KEY, String(enabled))
   if (enabled) {
     startPeriodicCheck()
-  } else {
+  }
+  else {
     stopPeriodicCheck()
   }
 }
@@ -63,9 +64,9 @@ export function startPeriodicCheck(): void {
 
   // Allow the process to exit without waiting for this timer
   if (
-    periodicCheckTimer &&
-    typeof periodicCheckTimer === 'object' &&
-    'unref' in periodicCheckTimer
+    periodicCheckTimer
+    && typeof periodicCheckTimer === 'object'
+    && 'unref' in periodicCheckTimer
   ) {
     periodicCheckTimer.unref()
   }

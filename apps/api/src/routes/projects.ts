@@ -110,7 +110,7 @@ projects.post(
       return c.json(
         {
           success: false,
-          error: result.error.issues.map((i) => i.message).join(', '),
+          error: result.error.issues.map(i => i.message).join(', '),
         },
         400,
       )
@@ -157,7 +157,7 @@ projects.patch(
       return c.json(
         {
           success: false,
-          error: result.error.issues.map((i) => i.message).join(', '),
+          error: result.error.issues.map(i => i.message).join(', '),
         },
         400,
       )
@@ -227,18 +227,18 @@ projects.delete('/:projectId', async (c) => {
 
   const toTerminate = activeIssues
     .filter(
-      (issue) =>
-        issue.sessionStatus === 'running' ||
-        issue.sessionStatus === 'pending' ||
-        issueEngine.hasActiveProcessForIssue(issue.id),
+      issue =>
+        issue.sessionStatus === 'running'
+        || issue.sessionStatus === 'pending'
+        || issueEngine.hasActiveProcessForIssue(issue.id),
     )
-    .map((issue) => issue.id)
+    .map(issue => issue.id)
 
   // Best-effort terminate with short timeout (5s per issue). Use allSettled
   // so a single failure doesn't block other terminations or abort the delete.
   if (toTerminate.length > 0) {
     const results = await Promise.allSettled(
-      toTerminate.map((issueId) =>
+      toTerminate.map(issueId =>
         Promise.race([
           issueEngine.terminateProcess(issueId),
           new Promise<never>((_, reject) =>
@@ -247,7 +247,7 @@ projects.delete('/:projectId', async (c) => {
         ]),
       ),
     )
-    const failures = results.filter((r) => r.status === 'rejected')
+    const failures = results.filter(r => r.status === 'rejected')
     if (failures.length > 0) {
       logger.warn(
         {
@@ -266,7 +266,7 @@ projects.delete('/:projectId', async (c) => {
       .select({ id: issuesTable.id })
       .from(issuesTable)
       .where(and(eq(issuesTable.projectId, existing.id), eq(issuesTable.isDeleted, 0)))
-    const issueIds = projectIssues.map((i) => i.id)
+    const issueIds = projectIssues.map(i => i.id)
 
     // Soft-delete all issues in this project — keep logs/tools/attachments intact for restore
     if (issueIds.length > 0) {

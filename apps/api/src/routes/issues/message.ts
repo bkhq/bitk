@@ -25,7 +25,7 @@ import {
 function buildFileContext(savedFiles: SavedFile[]): string {
   if (savedFiles.length === 0) return ''
   const parts = savedFiles.map(
-    (f) =>
+    f =>
       `[Attached file: ${f.originalName.replace(/[\r\n]/g, ' ').slice(0, 255)} at ${f.absolutePath.replace(/[\r\n]/g, '')}]`,
   )
   return `\n\n--- Attached files ---\n${parts.join('\n')}`
@@ -42,16 +42,16 @@ async function parseFollowUpBody(c: {
   }
 }): Promise<
   | {
-      ok: true
-      prompt: string
-      model?: string
-      permissionMode?: string
-      busyAction?: string
-      meta?: boolean
-      displayPrompt?: string
-      files: File[]
-    }
-  | { ok: false; error: string }
+    ok: true
+    prompt: string
+    model?: string
+    permissionMode?: string
+    busyAction?: string
+    meta?: boolean
+    displayPrompt?: string
+    files: File[]
+  }
+  | { ok: false, error: string }
 > {
   const contentType = c.req.header('content-type') ?? ''
   if (contentType.includes('multipart/form-data')) {
@@ -108,7 +108,7 @@ async function parseFollowUpBody(c: {
   if (!parsed.success) {
     return {
       ok: false,
-      error: parsed.error.issues.map((i) => i.message).join(', '),
+      error: parsed.error.issues.map(i => i.message).join(', '),
     }
   }
   return { ok: true, ...parsed.data, files: [] }
@@ -125,7 +125,7 @@ async function insertAttachmentRecords(
 ): Promise<void> {
   if (savedFiles.length === 0) return
   await db.insert(attachments).values(
-    savedFiles.map((f) => ({
+    savedFiles.map(f => ({
       id: f.id,
       issueId,
       logId,
@@ -165,7 +165,8 @@ async function upsertAndNotify(
       let parsedMeta: Record<string, unknown> | undefined
       try {
         parsedMeta = updated.metadata ? JSON.parse(updated.metadata) : undefined
-      } catch {
+      }
+      catch {
         // ignore
       }
       emitIssueLogUpdated(issueId, {
@@ -229,8 +230,8 @@ message.post('/:id/follow-up', async (c) => {
   // Build file context for AI engine only
   const fileContext = buildFileContext(savedFiles)
   const fullPrompt = prompt + fileContext
-  const attachmentsMeta =
-    savedFiles.length > 0 ? { attachments: savedFiles.map(savedFileToMeta) } : {}
+  const attachmentsMeta
+    = savedFiles.length > 0 ? { attachments: savedFiles.map(savedFileToMeta) } : {}
 
   // Queue message for todo/done issues instead of rejecting
   // Always store original prompt for engine use; displayPrompt goes in metadata for UI display
@@ -276,9 +277,9 @@ message.post('/:id/follow-up', async (c) => {
     const knownCommands = [
       ...categorized.commands,
       ...categorized.agents,
-      ...categorized.plugins.map((p) => p.name),
-    ].map((cmd) => (cmd.startsWith('/') ? cmd : `/${cmd}`))
-    const isCommand = firstWord.startsWith('/') && knownCommands.some((cmd) => cmd === firstWord)
+      ...categorized.plugins.map(p => p.name),
+    ].map(cmd => (cmd.startsWith('/') ? cmd : `/${cmd}`))
+    const isCommand = firstWord.startsWith('/') && knownCommands.includes(firstWord)
     const followUpMeta: Record<string, unknown> = {
       ...attachmentsMeta,
       ...(parsed.meta ? { type: 'system' } : isCommand ? { type: 'command' } : {}),
@@ -312,7 +313,8 @@ message.post('/:id/follow-up', async (c) => {
         messageId: result.messageId,
       },
     })
-  } catch (error) {
+  }
+  catch (error) {
     // When follow-up fails (e.g. process failed to start), save the current
     // message as pending so it won't be lost. It will be auto-processed on
     // the next execute/restart.
@@ -329,7 +331,8 @@ message.post('/:id/follow-up', async (c) => {
         success: true,
         data: { issueId, messageId, queued: true },
       })
-    } catch (persistError) {
+    }
+    catch (persistError) {
       logger.error({ issueId, error: persistError }, 'followup_failed_persist_pending_failed')
     }
     return c.json(

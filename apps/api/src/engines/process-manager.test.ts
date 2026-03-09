@@ -288,7 +288,7 @@ describe('ProcessManager', () => {
     })
 
     test('onExit fires when process exits', async () => {
-      const exits: Array<{ id: string; code: number }> = []
+      const exits: Array<{ id: string, code: number }> = []
       pm.onExit((entry, code) => {
         exits.push({ id: entry.id, code })
       })
@@ -306,7 +306,7 @@ describe('ProcessManager', () => {
     })
 
     test('onExit fires with non-zero exit code', async () => {
-      const exits: Array<{ id: string; code: number }> = []
+      const exits: Array<{ id: string, code: number }> = []
       pm.onExit((entry, code) => {
         exits.push({ id: entry.id, code })
       })
