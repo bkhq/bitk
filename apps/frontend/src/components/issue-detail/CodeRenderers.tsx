@@ -185,11 +185,11 @@ export function ShikiPatchDiff({ patch }: { patch: string }) {
   return (
     <div className="overflow-x-auto rounded-md border border-border/40">
       <Suspense
-        fallback={
+        fallback={(
           <pre className="px-2.5 py-2 text-[12px] font-mono overflow-x-auto whitespace-pre-wrap">
             {patch}
           </pre>
-        }
+        )}
       >
         <LazyPatchDiff
           patch={patch}

@@ -88,7 +88,7 @@ function CopyPathButton({ path }: { path: string }) {
   const handleCopy = useCallback(() => {
     navigator.clipboard.writeText(path)
     setCopied(true)
-    setTimeout(() => setCopied(false), 1500)
+    setTimeout(setCopied, 1500, false)
   }, [path])
   const Icon = copied ? Check : Copy
   return (
