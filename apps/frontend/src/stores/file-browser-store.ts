@@ -14,6 +14,11 @@ function clampWidth(w: number): number {
   return Math.max(min, Math.min(w, max))
 }
 
+/** Build a cache key for per-context path persistence. */
+function contextKey(projectId: string, rootPath: string | null): string {
+  return rootPath ? `${projectId}:${rootPath}` : projectId
+}
+
 interface FileBrowserStore {
   isOpen: boolean
   isMinimized: boolean
@@ -27,6 +32,8 @@ interface FileBrowserStore {
   rootPath: string | null
   currentPath: string
   hideIgnored: boolean
+  /** Per-context path cache so switching contexts restores the last position. */
+  pathCache: Map<string, string>
   open: (projectId: string, rootPath?: string) => void
   openFullscreen: (projectId: string, rootPath?: string) => void
   close: () => void
@@ -45,6 +52,31 @@ interface FileBrowserStore {
 export { MIN_WIDTH as FILE_BROWSER_MIN_WIDTH }
 export const FILE_BROWSER_MAX_WIDTH_RATIO = MAX_WIDTH_RATIO
 
+/**
+ * Save current path to cache and resolve the path for a new context.
+ * Returns the cached path or '.' if the context is new.
+ */
+function switchContext(
+  s: FileBrowserStore,
+  projectId: string,
+  rootPath: string | null,
+): { currentPath: string, pathCache: Map<string, string> } {
+  const newKey = contextKey(projectId, rootPath)
+  const oldKey = s.projectId ? contextKey(s.projectId, s.rootPath) : null
+
+  // Same context — keep current path, no cache update needed
+  if (oldKey === newKey) {
+    return { currentPath: s.currentPath, pathCache: s.pathCache }
+  }
+
+  // Save current path for the old context
+  const cache = new Map(s.pathCache)
+  if (oldKey) cache.set(oldKey, s.currentPath)
+
+  // Restore cached path for the new context
+  return { currentPath: cache.get(newKey) ?? '.', pathCache: cache }
+}
+
 export const useFileBrowserStore = create<FileBrowserStore>(set => ({
   isOpen: false,
   isMinimized: false,
@@ -56,46 +88,54 @@ export const useFileBrowserStore = create<FileBrowserStore>(set => ({
   rootPath: null,
   currentPath: '.',
   hideIgnored: false,
+  pathCache: new Map(),
 
   open: (projectId, rootPath) =>
-    set(s => ({
-      isOpen: true,
-      isMinimized: false,
-      projectId,
-      rootPath: rootPath ?? null,
-      currentPath:
-        s.projectId === projectId && s.rootPath === (rootPath ?? null) ? s.currentPath : '.',
-    })),
+    set((s) => {
+      const ctx = switchContext(s, projectId, rootPath ?? null)
+      return {
+        isOpen: true,
+        isMinimized: false,
+        projectId,
+        rootPath: rootPath ?? null,
+        ...ctx,
+      }
+    }),
   openFullscreen: (projectId, rootPath) =>
-    set(s => ({
-      isOpen: true,
-      isMinimized: false,
-      isFullscreen: true,
-      projectId,
-      rootPath: rootPath ?? null,
-      currentPath:
-        s.projectId === projectId && s.rootPath === (rootPath ?? null) ? s.currentPath : '.',
-    })),
+    set((s) => {
+      const ctx = switchContext(s, projectId, rootPath ?? null)
+      return {
+        isOpen: true,
+        isMinimized: false,
+        isFullscreen: true,
+        projectId,
+        rootPath: rootPath ?? null,
+        ...ctx,
+      }
+    }),
   close: () => set({ isOpen: false, forceDrawer: false }),
   toggle: projectId =>
     set((s) => {
       if (s.isMinimized) {
+        const ctx = switchContext(s, projectId, s.projectId === projectId ? s.rootPath : null)
         return {
           isOpen: true,
           isMinimized: false,
           projectId,
           rootPath: s.projectId === projectId ? s.rootPath : null,
-          currentPath: s.projectId === projectId ? s.currentPath : '.',
+          ...ctx,
         }
       }
       if (s.isOpen && s.projectId === projectId) {
         return { isOpen: false }
       }
+      const newRoot = s.projectId === projectId ? s.rootPath : null
+      const ctx = switchContext(s, projectId, newRoot)
       return {
         isOpen: true,
         projectId,
-        rootPath: s.projectId === projectId ? s.rootPath : null,
-        currentPath: s.projectId === projectId ? s.currentPath : '.',
+        rootPath: newRoot,
+        ...ctx,
       }
     }),
   toggleDrawer: (projectId, rootPath) =>
@@ -103,13 +143,15 @@ export const useFileBrowserStore = create<FileBrowserStore>(set => ({
       if (s.isOpen && s.forceDrawer && s.projectId === projectId) {
         return { isOpen: false, forceDrawer: false }
       }
+      const effectiveRoot = rootPath ?? (s.projectId === projectId ? s.rootPath : null)
+      const ctx = switchContext(s, projectId, effectiveRoot)
       return {
         isOpen: true,
         isMinimized: false,
         forceDrawer: true,
         projectId,
-        rootPath: rootPath ?? (s.projectId === projectId ? s.rootPath : null),
-        currentPath: s.projectId === projectId && s.rootPath === (rootPath ?? null) ? s.currentPath : '.',
+        rootPath: effectiveRoot,
+        ...ctx,
       }
     }),
   minimize: () => set({ isOpen: false, isMinimized: true, isFullscreen: false }),

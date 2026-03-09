@@ -166,7 +166,7 @@ export function ChatInput({
   const additions = changesSummary?.additions ?? 0
   const deletions = changesSummary?.deletions ?? 0
   const changesRoot = (changesSummary as { root?: string } | null)?.root
-  const openFileBrowser = useFileBrowserStore(s => s.open)
+  const openFileBrowser = useFileBrowserStore(s => s.toggleDrawer)
 
   // Fetch models for current engine
   const { data: discovery } = useEngineAvailability(!!engineType)
