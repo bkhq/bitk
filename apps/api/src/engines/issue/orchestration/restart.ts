@@ -115,7 +115,7 @@ export async function restartIssue(
     const normalizer = createLogNormalizer(executor)
 
     const turnIndex = getNextTurnIndex(issueId)
-    const restartManaged = register(
+    register(
       ctx,
       executionId,
       issueId,

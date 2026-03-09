@@ -137,7 +137,7 @@ export async function executeIssue(
     )
     const normalizer = createLogNormalizer(executor)
 
-    const execManaged = register(
+    register(
       ctx,
       executionId,
       issueId,

@@ -66,10 +66,8 @@ function buildToolGroup(
   }
 
   // Apply write filter: mark items as hidden rather than dropping
-  let visibleItems: ToolGroupItem[]
+  const visibleItems: ToolGroupItem[] = []
   let hiddenCount = 0
-
-  visibleItems = []
   for (const item of items) {
     if (isFilteredTool(item.action, options.filterRules)) {
       hiddenCount++

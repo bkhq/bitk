@@ -209,7 +209,7 @@ export async function spawnRetry(
   const normalizer = createLogNormalizer(executor)
 
   const turnIndex = getNextTurnIndex(issueId)
-  const retryManaged = register(
+  register(
     ctx,
     executionId,
     issueId,
@@ -356,7 +356,7 @@ export async function spawnFollowUpProcess(
 
   const normalizer = createLogNormalizer(executor)
 
-  const followUpManaged = register(
+  register(
     ctx,
     executionId,
     issueId,
