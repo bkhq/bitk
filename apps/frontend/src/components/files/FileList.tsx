@@ -67,10 +67,10 @@ export function FileList({ entries, onNavigate, breadcrumb }: FileListProps) {
             <th className="text-left font-medium text-muted-foreground px-4 py-2">
               {t('fileBrowser.name')}
             </th>
-            <th className="text-right font-medium text-muted-foreground px-4 py-2 w-24 hidden sm:table-cell">
+            <th className="text-right font-medium text-muted-foreground px-4 py-2 w-24">
               {t('fileBrowser.size')}
             </th>
-            <th className="text-right font-medium text-muted-foreground px-4 py-2 w-28 hidden md:table-cell">
+            <th className="text-right font-medium text-muted-foreground px-4 py-2 w-28 hidden sm:table-cell">
               {t('fileBrowser.modified')}
             </th>
           </tr>
@@ -100,10 +100,10 @@ export function FileList({ entries, onNavigate, breadcrumb }: FileListProps) {
                   </span>
                 </div>
               </td>
-              <td className="px-4 py-2 text-right text-muted-foreground hidden sm:table-cell">
+              <td className="px-4 py-2 text-right text-muted-foreground">
                 {entry.type === 'file' ? formatSize(entry.size) : '—'}
               </td>
-              <td className="px-4 py-2 text-right text-muted-foreground hidden md:table-cell">
+              <td className="px-4 py-2 text-right text-muted-foreground hidden sm:table-cell">
                 {formatDate(entry.modifiedAt)}
               </td>
             </tr>
