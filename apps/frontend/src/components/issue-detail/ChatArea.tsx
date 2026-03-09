@@ -49,6 +49,14 @@ export function ChatArea({
   const isMobile = useIsMobile()
   const showFileBrowser = useFileBrowserStore(s => s.isOpen)
   const closeFileBrowser = useFileBrowserStore(s => s.close)
+  const setInlineMode = useFileBrowserStore(s => s.setInlineMode)
+
+  // Suppress the global drawer while this inline panel is mounted
+  useEffect(() => {
+    setInlineMode(true)
+    return () => setInlineMode(false)
+  }, [setInlineMode])
+
   const updateIssue = useUpdateIssue(projectId)
   const autoTitle = useAutoTitleIssue(projectId)
   const [isAutoTitling, setIsAutoTitling] = useState(false)
