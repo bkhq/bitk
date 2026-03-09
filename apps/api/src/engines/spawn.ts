@@ -51,6 +51,10 @@ export function spawnNode(
       options?.stderr ?? 'pipe',
     ],
     env: options?.env as NodeJS.ProcessEnv,
+    // Create a new process group so that kill(-pid) terminates the entire
+    // tree (claude + MCP servers + any other children) instead of only the
+    // top-level process, which would orphan grandchildren.
+    detached: true,
   })
 
   // Wrap stdin as StdinWriter (compatible with Bun FileSink interface)
@@ -106,6 +110,18 @@ export function spawnNode(
     stderr,
     exited,
     kill(signal?: number) {
+      // Kill the entire process group (negative PID) so that child processes
+      // spawned by claude (MCP servers, tools, etc.) are also terminated.
+      // Falls back to killing just the child if group kill fails.
+      const pid = child.pid
+      if (pid) {
+        try {
+          process.kill(-pid, signal ?? 9)
+          return
+        } catch {
+          // Process group may already be dead, or OS doesn't support it
+        }
+      }
       try {
         child.kill(signal)
       } catch {
