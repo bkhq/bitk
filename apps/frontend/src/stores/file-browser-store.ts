@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 
 const MIN_WIDTH = 320
+const DEFAULT_WIDTH_RATIO = 0.35
 const MAX_WIDTH_RATIO = 0.6
 
 function getViewportWidth(): number {
@@ -15,13 +16,20 @@ function clampWidth(w: number): number {
 
 interface FileBrowserStore {
   isOpen: boolean
+  isMinimized: boolean
+  isFullscreen: boolean
+  width: number
   projectId: string | null
   rootPath: string | null
   currentPath: string
   hideIgnored: boolean
   open: (projectId: string, rootPath?: string) => void
+  openFullscreen: (projectId: string, rootPath?: string) => void
   close: () => void
   toggle: (projectId: string) => void
+  minimize: () => void
+  restore: () => void
+  toggleFullscreen: () => void
   setWidth: (w: number) => void
   navigateTo: (path: string) => void
   toggleHideIgnored: () => void
@@ -32,6 +40,9 @@ export const FILE_BROWSER_MAX_WIDTH_RATIO = MAX_WIDTH_RATIO
 
 export const useFileBrowserStore = create<FileBrowserStore>(set => ({
   isOpen: false,
+  isMinimized: false,
+  isFullscreen: false,
+  width: Math.round(getViewportWidth() * DEFAULT_WIDTH_RATIO),
   projectId: null,
   rootPath: null,
   currentPath: '.',
@@ -40,6 +51,17 @@ export const useFileBrowserStore = create<FileBrowserStore>(set => ({
   open: (projectId, rootPath) =>
     set(s => ({
       isOpen: true,
+      isMinimized: false,
+      projectId,
+      rootPath: rootPath ?? null,
+      currentPath:
+        s.projectId === projectId && s.rootPath === (rootPath ?? null) ? s.currentPath : '.',
+    })),
+  openFullscreen: (projectId, rootPath) =>
+    set(s => ({
+      isOpen: true,
+      isMinimized: false,
+      isFullscreen: true,
       projectId,
       rootPath: rootPath ?? null,
       currentPath:
@@ -48,6 +70,14 @@ export const useFileBrowserStore = create<FileBrowserStore>(set => ({
   close: () => set({ isOpen: false }),
   toggle: projectId =>
     set((s) => {
+      if (s.isMinimized) {
+        return {
+          isOpen: true,
+          isMinimized: false,
+          projectId,
+          currentPath: s.projectId === projectId ? s.currentPath : '.',
+        }
+      }
       if (s.isOpen && s.projectId === projectId) {
         return { isOpen: false }
       }
@@ -58,7 +88,25 @@ export const useFileBrowserStore = create<FileBrowserStore>(set => ({
         currentPath: s.projectId === projectId ? s.currentPath : '.',
       }
     }),
-  setWidth: w => set({ width: clampWidth(w) } as Partial<FileBrowserStore>),
+  minimize: () => set({ isOpen: false, isMinimized: true, isFullscreen: false }),
+  restore: () => set({ isOpen: true, isMinimized: false }),
+  toggleFullscreen: () => set(s => ({ isFullscreen: !s.isFullscreen })),
+  setWidth: w => set({ width: clampWidth(w) }),
   navigateTo: path => set({ currentPath: path }),
   toggleHideIgnored: () => set(s => ({ hideIgnored: !s.hideIgnored })),
 }))
+
+// Re-clamp width on window resize
+if (typeof window !== 'undefined') {
+  const KEY = '__fileBrowserStoreResizeAttached'
+  if (!(window as unknown as Record<string, unknown>)[KEY]) {
+    ;(window as unknown as Record<string, unknown>)[KEY] = true
+    window.addEventListener('resize', () => {
+      const store = useFileBrowserStore.getState()
+      const clamped = clampWidth(store.width)
+      if (clamped !== store.width) {
+        store.setWidth(clamped)
+      }
+    })
+  }
+}
