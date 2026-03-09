@@ -1,5 +1,6 @@
 import type { ToolGroupChatMessage, ToolGroupItem } from '@bkd/shared'
 import {
+  Check,
   ChevronRight,
   Copy,
   FileEdit,
@@ -9,9 +10,9 @@ import {
   Users,
   Wrench,
 } from 'lucide-react'
+import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getCommandPreview } from '@/lib/command-preview'
-import { formatFileSize } from '@/lib/format'
 import {
   CodeBlock,
   detectCodeLanguage,
@@ -27,11 +28,6 @@ function getItemToolName(item: ToolGroupItem): string | undefined {
     item.action.toolDetail?.toolName
     ?? (typeof item.action.metadata?.toolName === 'string' ? item.action.metadata.toolName : undefined)
   )
-}
-
-function countLines(text: string | undefined | null): number | null {
-  if (!text) return null
-  return text.split('\n').length
 }
 
 /** Compute +added / -removed line counts from old/new strings or patch. */
@@ -84,6 +80,25 @@ function ToolLabel({ label, icon: Icon }: { label: string, icon: React.Component
 function PathBadge({ path }: { path: string }) {
   return (
     <code className="rounded bg-muted/50 px-1.5 py-0.5 text-[11px] font-mono overflow-x-auto whitespace-nowrap scrollbar-none">{path}</code>
+  )
+}
+
+function CopyPathButton({ path }: { path: string }) {
+  const [copied, setCopied] = useState(false)
+  const handleCopy = useCallback(() => {
+    navigator.clipboard.writeText(path)
+    setCopied(true)
+    setTimeout(setCopied, 1500, false)
+  }, [path])
+  const Icon = copied ? Check : Copy
+  return (
+    <button
+      type="button"
+      onClick={handleCopy}
+      className="shrink-0 p-0.5 rounded text-muted-foreground/40 hover:text-muted-foreground transition-colors"
+    >
+      <Icon className="h-3 w-3" />
+    </button>
   )
 }
 
@@ -142,27 +157,18 @@ export function FileToolItem({ item }: { item: ToolGroupItem }) {
   if (!isEdit) {
     const resultContent = item.result?.content
     const hasError = isItemError(item)
-    const lineCount = countLines(resultContent)
     const showResultText = resultContent && hasError
 
-    const summary = (
-      <div className="flex items-center gap-2 min-w-0">
-        <ToolLabel label="Read" icon={FileText} />
-        <PathBadge path={filePath} />
-      </div>
-    )
-
-    const sizeInfo = lineCount
-      ? `${lineCount} lines`
-      : resultContent
-        ? formatFileSize(resultContent.length)
-        : null
-
     return (
-      <ToolPanel collapsible summary={summary}>
-        {sizeInfo
-          ? <div className="text-[11px] text-muted-foreground/50">{sizeInfo}</div>
-          : null}
+      <ToolPanel
+        summary={(
+          <div className="flex items-center gap-2 min-w-0">
+            <ToolLabel label="Read" icon={FileText} />
+            <PathBadge path={filePath} />
+          </div>
+        )}
+        actions={<CopyPathButton path={filePath} />}
+      >
         {showResultText
           ? (
               <div className="text-[11px] font-mono whitespace-pre-wrap text-red-600 dark:text-red-400">

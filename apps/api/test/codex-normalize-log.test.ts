@@ -795,13 +795,14 @@ describe('CodexLogNormalizer (codex/event/*)', () => {
       expect(r!.metadata?.turnCompleted).toBe(true)
     })
 
-    test('extracts turn_id and last_agent_message', () => {
+    test('extracts turn_id and ignores last_agent_message (already streamed)', () => {
       const n = new CodexLogNormalizer()
       const r = n.parse(codexEvent('turn_complete', {
         turn_id: 'turn-42',
         last_agent_message: 'Done!',
       }))
-      expect(r!.content).toBe('Done!')
+      // last_agent_message is NOT used — the same text was already streamed via agent_message_delta
+      expect(r!.content).toBe('Turn completed')
       expect(r!.metadata?.turnId).toBe('turn-42')
     })
 
