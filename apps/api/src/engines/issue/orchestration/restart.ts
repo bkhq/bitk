@@ -130,9 +130,7 @@ export async function restartIssue(
     )
     restartManaged.spawnCwd = workingDir
     restartManaged.externalSessionId =
-      spawned.externalSessionId ??
-      issue.sessionFields.externalSessionId ??
-      undefined
+      spawned.externalSessionId ?? issue.sessionFields.externalSessionId ?? undefined
     monitorCompletion(ctx, executionId, issueId, engineType, false)
 
     // Mark pending messages as dispatched after successful spawn

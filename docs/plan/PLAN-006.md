@@ -63,6 +63,7 @@ Claude CLI 进程的 stdout pipe 偶发性异常关闭（Bun pipe bug 或 Claude
 ## 调查发现
 
 ### 时间线（真实案例）
+
 - `21:59:24` — stdout_stream_ended（pipe 断裂），consumeStream resolve
 - `21:59:24-21:59:33` — Claude CLI 继续执行：Bash(git commit)、新 API 请求、Stop hook
 - `22:02:11` — stall_detected（3min 静默）
@@ -70,12 +71,14 @@ Claude CLI 进程的 stdout pipe 偶发性异常关闭（Bun pipe bug 或 Claude
 - `22:08:11` — stall_force_kill（9min，SIGKILL）
 
 ### transcript JSONL
+
 - 路径：`~/.claude/projects/${cwd.replaceAll('/', '-')}/${sessionId}.jsonl`
 - 格式：每行一个 JSON 对象，`type` 字段有 `assistant`/`user`/`system`/`progress`/`queue-operation`
 - 由 Claude CLI 内部直接写入（appendFileSync），与 stdout fd 无关
 - stdout 断裂时仍在正常写入
 
 ### 关键代码路径
+
 - `register.ts:125-142` — consumeStream resolve 后只记日志，不做任何恢复
 - `completion-monitor.ts:61` — 等待 subprocess.exited（如果进程不退出就一直等）
 - `gc.ts:142-289` — stall detection 三阶段（2+2+2=6min 检测 + force kill）
@@ -117,6 +120,7 @@ Claude CLI 进程的 stdout pipe 偶发性异常关闭（Bun pipe bug 或 Claude
 ### transcript 格式转换
 
 transcript JSONL 的 `assistant` 条目结构：
+
 ```json
 {
   "type": "assistant",
@@ -127,6 +131,7 @@ transcript JSONL 的 `assistant` 条目结构：
 ```
 
 stream-json stdout 的 `assistant` 条目结构：
+
 ```json
 {
   "type": "assistant",

@@ -225,9 +225,7 @@ export async function spawnRetry(
   )
   retryManaged.spawnCwd = workingDir
   retryManaged.externalSessionId =
-    spawned.externalSessionId ??
-    issue.sessionFields.externalSessionId ??
-    undefined
+    spawned.externalSessionId ?? issue.sessionFields.externalSessionId ?? undefined
   monitorCompletion(ctx, executionId, issueId, engineType, true)
   logger.debug({ issueId, executionId, engineType, turnIndex }, 'issue_retry_spawned')
 }
@@ -376,9 +374,7 @@ export async function spawnFollowUpProcess(
   )
   followUpManaged.spawnCwd = workingDir
   followUpManaged.externalSessionId =
-    spawned.externalSessionId ??
-    issue.sessionFields.externalSessionId ??
-    undefined
+    spawned.externalSessionId ?? issue.sessionFields.externalSessionId ?? undefined
   // User message already persisted above (before spawn)
   monitorCompletion(ctx, executionId, issueId, engineType, false)
   const followUpPid = getPidFromSubprocess(spawned.subprocess)

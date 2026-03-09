@@ -13,10 +13,7 @@ import {
   setServerName,
   setServerUrl,
 } from '@/db/helpers'
-import {
-  DEFAULT_LOG_PAGE_SIZE,
-  LOG_PAGE_SIZE_KEY,
-} from '@/engines/issue/constants'
+import { DEFAULT_LOG_PAGE_SIZE, LOG_PAGE_SIZE_KEY } from '@/engines/issue/constants'
 import { getCachedCategorizedCommands } from '@/engines/issue/queries'
 import type { WriteFilterRule } from '@/engines/write-filter'
 import { DEFAULT_FILTER_RULES, WRITE_FILTER_RULES_KEY } from '@/engines/write-filter'
@@ -198,21 +195,17 @@ general.get('/log-page-size', async (c) => {
 // PATCH /api/settings/log-page-size
 general.patch(
   '/log-page-size',
-  zValidator(
-    'json',
-    z.object({ size: z.number().int().min(5).max(200) }),
-    (result, c) => {
-      if (!result.success) {
-        return c.json(
-          {
-            success: false,
-            error: result.error.issues.map((i) => i.message).join(', '),
-          },
-          400,
-        )
-      }
-    },
-  ),
+  zValidator('json', z.object({ size: z.number().int().min(5).max(200) }), (result, c) => {
+    if (!result.success) {
+      return c.json(
+        {
+          success: false,
+          error: result.error.issues.map((i) => i.message).join(', '),
+        },
+        400,
+      )
+    }
+  }),
   async (c) => {
     const { size } = c.req.valid('json')
     await setAppSetting(LOG_PAGE_SIZE_KEY, String(size))

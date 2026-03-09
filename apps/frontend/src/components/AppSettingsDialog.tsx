@@ -298,9 +298,7 @@ function GeneralSection({ open }: { open: boolean }) {
             ))}
           </SelectContent>
         </Select>
-        <p className="text-[11px] text-muted-foreground">
-          {t('settings.logPageSizeHint')}
-        </p>
+        <p className="text-[11px] text-muted-foreground">{t('settings.logPageSizeHint')}</p>
       </Field>
     </div>
   )

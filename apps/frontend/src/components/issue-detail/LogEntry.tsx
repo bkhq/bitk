@@ -334,10 +334,7 @@ export function LogEntry({
       )
 
     case 'thinking': {
-      const preview =
-        entry.content.length > 80
-          ? `${entry.content.slice(0, 80)}…`
-          : entry.content
+      const preview = entry.content.length > 80 ? `${entry.content.slice(0, 80)}…` : entry.content
       return (
         <div className="my-0.5 animate-message-enter">
           <details className="rounded-lg bg-violet-500/[0.04] border border-violet-300/20 dark:border-violet-500/15 transition-all duration-200 open:bg-violet-500/[0.06]">

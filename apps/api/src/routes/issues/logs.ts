@@ -1,10 +1,7 @@
 import { Hono } from 'hono'
 import { findProject, getAppSetting } from '@/db/helpers'
 import { issueEngine } from '@/engines/issue'
-import {
-  DEFAULT_LOG_PAGE_SIZE,
-  LOG_PAGE_SIZE_KEY,
-} from '@/engines/issue/constants'
+import { DEFAULT_LOG_PAGE_SIZE, LOG_PAGE_SIZE_KEY } from '@/engines/issue/constants'
 import { getProjectOwnedIssue, serializeIssue } from './_shared'
 
 const logs = new Hono()
@@ -33,9 +30,7 @@ logs.get('/:id/logs', async (c) => {
     limit = Math.min(Math.max(Math.floor(Number(limitParam)) || 30, 1), 1000)
   } else {
     const pageSizeRaw = await getAppSetting(LOG_PAGE_SIZE_KEY)
-    limit = pageSizeRaw
-      ? Number(pageSizeRaw) || DEFAULT_LOG_PAGE_SIZE
-      : DEFAULT_LOG_PAGE_SIZE
+    limit = pageSizeRaw ? Number(pageSizeRaw) || DEFAULT_LOG_PAGE_SIZE : DEFAULT_LOG_PAGE_SIZE
   }
 
   // Pagination now counts only conversation messages (user + assistant)
