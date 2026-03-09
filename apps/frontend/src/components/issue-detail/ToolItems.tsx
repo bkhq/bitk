@@ -10,6 +10,7 @@ import {
   ShikiUnifiedDiff,
   ToolPanel,
 } from './CodeRenderers'
+import { MarkdownContent } from './MarkdownContent'
 
 function getItemToolName(item: ToolGroupItem): string | undefined {
   return (
@@ -264,11 +265,11 @@ export function AgentToolItem({ item }: { item: ToolGroupItem }) {
     >
       {resultContent ?
           (
-            <pre
-              className={`text-[11px] whitespace-pre-wrap font-mono leading-relaxed overflow-x-auto max-h-48 overflow-y-auto ${isResultError ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground/70'}`}
+            <div
+              className={`overflow-y-auto max-h-96 ${isResultError ? 'text-red-600 dark:text-red-400' : ''}`}
             >
-              {resultContent}
-            </pre>
+              <MarkdownContent content={resultContent} className="text-[12px] leading-[1.7]" />
+            </div>
           ) :
         null}
     </ToolPanel>
