@@ -56,9 +56,10 @@ function formatSize(bytes: number): string {
 interface FileViewerProps {
   file: FileContent
   onBack: () => void
+  breadcrumb?: React.ReactNode
 }
 
-export function FileViewer({ file, onBack }: FileViewerProps) {
+export function FileViewer({ file, onBack, breadcrumb }: FileViewerProps) {
   const { t } = useTranslation()
   const [html, setHtml] = useState<string>('')
   const [loading, setLoading] = useState(true)
@@ -104,6 +105,11 @@ export function FileViewer({ file, onBack }: FileViewerProps) {
   if (file.isBinary) {
     return (
       <div className="border border-border rounded-lg overflow-hidden">
+        {breadcrumb && (
+          <div className="bg-muted/50 border-b border-border px-4 py-1.5">
+            {breadcrumb}
+          </div>
+        )}
         <div className="flex items-center justify-between px-4 py-2 bg-muted/50 border-b border-border">
           <div className="flex items-center gap-2">
             <button
@@ -128,6 +134,11 @@ export function FileViewer({ file, onBack }: FileViewerProps) {
 
   return (
     <div className="flex flex-col h-full border border-border rounded-lg overflow-hidden">
+      {breadcrumb && (
+        <div className="bg-muted/50 border-b border-border px-4 py-1.5 shrink-0">
+          {breadcrumb}
+        </div>
+      )}
       <div className="flex items-center justify-between px-4 py-2 bg-muted/50 border-b border-border shrink-0">
         <div className="flex items-center gap-2">
           <button

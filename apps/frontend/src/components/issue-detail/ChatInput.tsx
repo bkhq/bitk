@@ -166,7 +166,7 @@ export function ChatInput({
   const additions = changesSummary?.additions ?? 0
   const deletions = changesSummary?.deletions ?? 0
   const changesRoot = (changesSummary as { root?: string } | null)?.root
-  const openFileBrowser = useFileBrowserStore(s => s.toggleDrawer)
+  const openFileBrowser = useFileBrowserStore(s => s.openForIssue)
 
   // Fetch models for current engine
   const { data: discovery } = useEngineAvailability(!!engineType)
@@ -542,6 +542,14 @@ export function ChatInput({
         <div className="flex items-center gap-1.5 px-2 py-1.5 border-b border-border/30">
           <button
             type="button"
+            onClick={() => projectId && issueId && openFileBrowser(projectId, issueId, changesRoot)}
+            className="inline-flex items-center justify-center rounded-lg px-1.5 py-1 text-muted-foreground bg-muted/40 hover:bg-muted/60 transition-all duration-200"
+            title={t('diff.openFiles')}
+          >
+            <FolderOpen className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
             onClick={onToggleDiff}
             className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs transition-all duration-200 ${
               diffOpen ?
@@ -561,15 +569,6 @@ export function ChatInput({
               </span>
             </span>
           </button>
-          <button
-            type="button"
-            onClick={() => projectId && openFileBrowser(projectId, changesRoot)}
-            className="inline-flex items-center justify-center rounded-lg px-1.5 py-1 text-muted-foreground bg-muted/40 hover:bg-muted/60 transition-all duration-200"
-            title={t('diff.openFiles')}
-          >
-            <FolderOpen className="h-3.5 w-3.5" />
-          </button>
-
           <div className="ml-auto flex items-center gap-1">
             {isSessionActive && !isThinking ?
                 (

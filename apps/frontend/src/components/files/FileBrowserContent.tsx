@@ -78,15 +78,16 @@ export function FileBrowserContent({
 
   return (
     <>
+      {/* Header + Breadcrumb */}
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-1.5 border-b border-border shrink-0">
-        <div className="flex items-center gap-2 min-w-0">
-          <FolderOpen className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-          <span className="text-xs font-medium text-muted-foreground truncate font-mono">
-            {effectiveRoot ?? project?.name ?? t('fileBrowser.title')}
+      <div className="flex items-center justify-between gap-2 px-3 py-1.5 border-b border-border shrink-0">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <FolderOpen className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />
+          <span className="text-xs font-medium text-muted-foreground truncate font-mono" title={effectiveRoot ?? undefined}>
+            {effectiveRoot ?? t('fileBrowser.title')}
           </span>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 shrink-0">
           <button
             type="button"
             onClick={handleCopyPath}
@@ -126,16 +127,6 @@ export function FileBrowserContent({
         </div>
       </div>
 
-      {/* Breadcrumb */}
-      <div className="px-3 py-2 border-b border-border shrink-0">
-        <FileBreadcrumb
-          projectName={project?.name ?? ''}
-          rootPath={effectiveRoot ?? undefined}
-          path={currentPath}
-          onNavigate={navigateTo}
-        />
-      </div>
-
       {/* Content */}
       <div className="flex-1 overflow-auto min-h-0 p-4 flex flex-col">
         {!effectiveRoot
@@ -158,9 +149,21 @@ export function FileBrowserContent({
                   </div>
                 )
               : listing?.type === 'file'
-                ? <FileViewer file={listing} onBack={handleFileBack} />
+                ? (
+                    <FileViewer
+                      file={listing}
+                      onBack={handleFileBack}
+                      breadcrumb={<FileBreadcrumb path={currentPath} onNavigate={navigateTo} />}
+                    />
+                  )
                 : listing?.type === 'directory'
-                  ? <FileList entries={listing.entries} onNavigate={handleEntryClick} />
+                  ? (
+                      <FileList
+                        entries={listing.entries}
+                        onNavigate={handleEntryClick}
+                        breadcrumb={<FileBreadcrumb path={currentPath} onNavigate={navigateTo} />}
+                      />
+                    )
                   : null}
       </div>
     </>

@@ -33,23 +33,36 @@ function formatDate(iso: string): string {
 interface FileListProps {
   entries: FileEntry[]
   onNavigate: (name: string, type: 'file' | 'directory') => void
+  breadcrumb?: React.ReactNode
 }
 
-export function FileList({ entries, onNavigate }: FileListProps) {
+export function FileList({ entries, onNavigate, breadcrumb }: FileListProps) {
   const { t } = useTranslation()
 
   if (entries.length === 0) {
     return (
-      <div className="flex items-center justify-center py-16 text-muted-foreground text-sm">
-        {t('fileBrowser.emptyDirectory')}
+      <div className="border border-border rounded-lg overflow-auto flex-1 min-h-0">
+        {breadcrumb && (
+          <div className="sticky top-0 z-[2] bg-muted/50 border-b border-border px-4 py-1.5">
+            {breadcrumb}
+          </div>
+        )}
+        <div className="flex items-center justify-center py-16 text-muted-foreground text-sm">
+          {t('fileBrowser.emptyDirectory')}
+        </div>
       </div>
     )
   }
 
   return (
     <div className="border border-border rounded-lg overflow-auto flex-1 min-h-0">
+      {breadcrumb && (
+        <div className="sticky top-0 z-[2] bg-muted/50 border-b border-border px-4 py-1.5">
+          {breadcrumb}
+        </div>
+      )}
       <table className="w-full text-sm">
-        <thead className="sticky top-0 z-[1]">
+        <thead className={`sticky ${breadcrumb ? 'top-[33px]' : 'top-0'} z-[1]`}>
           <tr className="bg-muted/50 border-b border-border">
             <th className="text-left font-medium text-muted-foreground px-4 py-2">
               {t('fileBrowser.name')}

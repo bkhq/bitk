@@ -15,7 +15,8 @@ function clampWidth(w: number): number {
 }
 
 /** Build a cache key for per-context path persistence. */
-function contextKey(projectId: string, rootPath: string | null): string {
+function contextKey(projectId: string, rootPath: string | null, issueId?: string | null): string {
+  if (issueId) return `${projectId}:issue:${issueId}`
   return rootPath ? `${projectId}:${rootPath}` : projectId
 }
 
@@ -23,28 +24,28 @@ interface FileBrowserStore {
   isOpen: boolean
   isMinimized: boolean
   isFullscreen: boolean
-  /** When true, an inline panel handles rendering (suppresses the global drawer) */
-  inlineMode: boolean
-  /** When true, force drawer rendering even if inlineMode is on */
-  forceDrawer: boolean
+  /** Whether the current view is a drawer (true) or inline panel (false). */
+  isDrawer: boolean
   width: number
   projectId: string | null
+  issueId: string | null
   rootPath: string | null
   currentPath: string
   hideIgnored: boolean
   /** Per-context path cache so switching contexts restores the last position. */
   pathCache: Map<string, string>
   open: (projectId: string, rootPath?: string) => void
+  /** Open for a specific issue — tracks path per issue, opens as inline panel. */
+  openForIssue: (projectId: string, issueId: string, rootPath?: string) => void
   openFullscreen: (projectId: string, rootPath?: string) => void
   close: () => void
   toggle: (projectId: string) => void
-  /** Toggle as drawer, overriding inlineMode so the global drawer renders. */
+  /** Toggle as drawer (global overlay). */
   toggleDrawer: (projectId: string, rootPath?: string) => void
   minimize: () => void
   restore: () => void
   toggleFullscreen: () => void
   setWidth: (w: number) => void
-  setInlineMode: (inline: boolean) => void
   navigateTo: (path: string) => void
   toggleHideIgnored: () => void
 }
@@ -60,9 +61,10 @@ function switchContext(
   s: FileBrowserStore,
   projectId: string,
   rootPath: string | null,
+  issueId?: string | null,
 ): { currentPath: string, pathCache: Map<string, string> } {
-  const newKey = contextKey(projectId, rootPath)
-  const oldKey = s.projectId ? contextKey(s.projectId, s.rootPath) : null
+  const newKey = contextKey(projectId, rootPath, issueId)
+  const oldKey = s.projectId ? contextKey(s.projectId, s.rootPath, s.issueId) : null
 
   // Same context — keep current path, no cache update needed
   if (oldKey === newKey) {
@@ -81,10 +83,10 @@ export const useFileBrowserStore = create<FileBrowserStore>(set => ({
   isOpen: false,
   isMinimized: false,
   isFullscreen: false,
-  inlineMode: false,
-  forceDrawer: false,
+  isDrawer: true,
   width: Math.round(getViewportWidth() * DEFAULT_WIDTH_RATIO),
   projectId: null,
+  issueId: null,
   rootPath: null,
   currentPath: '.',
   hideIgnored: false,
@@ -96,7 +98,26 @@ export const useFileBrowserStore = create<FileBrowserStore>(set => ({
       return {
         isOpen: true,
         isMinimized: false,
+        isDrawer: true,
         projectId,
+        issueId: null,
+        rootPath: rootPath ?? null,
+        ...ctx,
+      }
+    }),
+  openForIssue: (projectId, issueId, rootPath) =>
+    set((s) => {
+      // Toggle off if already open as inline for the same issue
+      if (s.isOpen && !s.isDrawer && s.issueId === issueId) {
+        return { isOpen: false }
+      }
+      const ctx = switchContext(s, projectId, rootPath ?? null, issueId)
+      return {
+        isOpen: true,
+        isMinimized: false,
+        isDrawer: false,
+        projectId,
+        issueId,
         rootPath: rootPath ?? null,
         ...ctx,
       }
@@ -108,12 +129,14 @@ export const useFileBrowserStore = create<FileBrowserStore>(set => ({
         isOpen: true,
         isMinimized: false,
         isFullscreen: true,
+        isDrawer: true,
         projectId,
+        issueId: null,
         rootPath: rootPath ?? null,
         ...ctx,
       }
     }),
-  close: () => set({ isOpen: false, forceDrawer: false }),
+  close: () => set({ isOpen: false }),
   toggle: projectId =>
     set((s) => {
       if (s.isMinimized) {
@@ -121,7 +144,9 @@ export const useFileBrowserStore = create<FileBrowserStore>(set => ({
         return {
           isOpen: true,
           isMinimized: false,
+          isDrawer: true,
           projectId,
+          issueId: null,
           rootPath: s.projectId === projectId ? s.rootPath : null,
           ...ctx,
         }
@@ -133,22 +158,25 @@ export const useFileBrowserStore = create<FileBrowserStore>(set => ({
       const ctx = switchContext(s, projectId, newRoot)
       return {
         isOpen: true,
+        isDrawer: true,
         projectId,
+        issueId: null,
         rootPath: newRoot,
         ...ctx,
       }
     }),
   toggleDrawer: (projectId, rootPath) =>
     set((s) => {
-      if (s.isOpen && s.forceDrawer && s.projectId === projectId) {
-        return { isOpen: false, forceDrawer: false }
+      if (s.isOpen && s.isDrawer && s.projectId === projectId) {
+        return { isOpen: false }
       }
       const effectiveRoot = rootPath ?? (s.projectId === projectId ? s.rootPath : null)
       const ctx = switchContext(s, projectId, effectiveRoot)
       return {
         isOpen: true,
         isMinimized: false,
-        forceDrawer: true,
+        isDrawer: true,
+        issueId: null,
         projectId,
         rootPath: effectiveRoot,
         ...ctx,
@@ -158,7 +186,6 @@ export const useFileBrowserStore = create<FileBrowserStore>(set => ({
   restore: () => set({ isOpen: true, isMinimized: false }),
   toggleFullscreen: () => set(s => ({ isFullscreen: !s.isFullscreen })),
   setWidth: w => set({ width: clampWidth(w) }),
-  setInlineMode: inline => set({ inlineMode: inline }),
   navigateTo: path => set({ currentPath: path }),
   toggleHideIgnored: () => set(s => ({ hideIgnored: !s.hideIgnored })),
 }))

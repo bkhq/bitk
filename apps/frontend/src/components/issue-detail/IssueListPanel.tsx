@@ -41,7 +41,7 @@ export function IssueListPanel({
   const { data: issues } = useIssues(projectId)
   const { data: project } = useProject(projectId)
   const openCreateDialog = usePanelStore(s => s.openCreateDialog)
-  const toggleFileBrowser = useFileBrowserStore(s => s.toggle)
+  const toggleFileBrowser = useFileBrowserStore(s => s.toggleDrawer)
   const toggleProcessManager = useProcessManagerStore(s => s.toggle)
   const [search, setSearch] = useState('')
   const [showSettings, setShowSettings] = useState(false)
@@ -121,7 +121,7 @@ export function IssueListPanel({
               variant="ghost"
               size="icon"
               className="h-7 w-7 text-muted-foreground hover:text-foreground"
-              onClick={() => toggleFileBrowser(projectId)}
+              onClick={() => toggleFileBrowser(projectId, project?.directory ?? undefined)}
               aria-label={t('viewMode.files')}
               title={t('viewMode.files')}
             >
