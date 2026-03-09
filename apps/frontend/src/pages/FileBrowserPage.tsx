@@ -126,7 +126,6 @@ export default function FileBrowserPage() {
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-3 border-b border-border bg-background shrink-0">
           <FileBreadcrumb
-            projectName={project.name}
             path={currentPath}
             onNavigate={navigateToPath}
           />
