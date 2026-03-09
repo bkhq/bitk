@@ -148,6 +148,15 @@ function GeneralSection({ open }: { open: boolean }) {
   const [serverInfoLoaded, setServerInfoLoaded] = useState(false)
   const { data: maxConcurrentData } = useMaxConcurrentExecutions(open)
   const setMaxConcurrent = useSetMaxConcurrentExecutions()
+  const [maxConcurrentInput, setMaxConcurrentInput] = useState('')
+  const maxConcurrentLoaded = useRef(false)
+
+  useEffect(() => {
+    if (maxConcurrentData && !maxConcurrentLoaded.current) {
+      setMaxConcurrentInput(String(maxConcurrentData.value))
+      maxConcurrentLoaded.current = true
+    }
+  }, [maxConcurrentData])
 
   const handleSelectWorkspace = (path: string) => {
     updateWsPath.mutate(path)
@@ -163,7 +172,10 @@ function GeneralSection({ open }: { open: boolean }) {
 
   // Reset loaded flag when dialog closes
   useEffect(() => {
-    if (!open) setServerInfoLoaded(false)
+    if (!open) {
+      setServerInfoLoaded(false)
+      maxConcurrentLoaded.current = false
+    }
   }, [open])
 
   const serverInfoDirty =
@@ -312,11 +324,14 @@ function GeneralSection({ open }: { open: boolean }) {
           min={1}
           max={20}
           className="w-24"
-          value={maxConcurrentData?.value ?? 5}
-          onChange={(e) => {
-            const v = Number.parseInt(e.target.value, 10)
+          value={maxConcurrentInput}
+          onChange={(e) => setMaxConcurrentInput(e.target.value)}
+          onBlur={() => {
+            const v = Number.parseInt(maxConcurrentInput, 10)
             if (v >= 1 && v <= 20) {
               setMaxConcurrent.mutate(v)
+            } else {
+              setMaxConcurrentInput(String(maxConcurrentData?.value ?? 5))
             }
           }}
         />
