@@ -224,11 +224,11 @@ export function FileToolItem({ item }: { item: ToolGroupItem }) {
           : null}
 
         {!hasOldString && !hasNewString && hasPatch
-          ? <ShikiPatchDiff patch={parsed.patch!} />
+          ? <ShikiPatchDiff patch={parsed.patch!} filePath={filePath} />
           : null}
 
         {!hasPatch && hasUnifiedDiff && !hasContent && !hasOldString && !hasNewString
-          ? <ShikiPatchDiff patch={parsed.unifiedDiff!} />
+          ? <ShikiPatchDiff patch={parsed.unifiedDiff!} filePath={filePath} />
           : null}
 
         {!hasContent && !hasOldString && !hasNewString && !hasPatch && !hasUnifiedDiff && !parsed.hasOnlyFilePath

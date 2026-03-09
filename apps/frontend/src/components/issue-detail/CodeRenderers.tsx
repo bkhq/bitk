@@ -9,9 +9,11 @@ const LazyMultiFileDiff = lazy(() =>
   import('@pierre/diffs/react').then(m => ({ default: m.MultiFileDiff })),
 )
 
-const LazyPatchDiff = lazy(() =>
-  import('@pierre/diffs/react').then(m => ({ default: m.PatchDiff })),
+const LazyFileDiff = lazy(() =>
+  import('@pierre/diffs/react').then(m => ({ default: m.FileDiff })),
 )
+
+const lazyParsePatchFiles = () => import('@pierre/diffs').then(m => m.parsePatchFiles)
 
 // ── Shared helpers ───────────────────────────────────────
 
@@ -178,9 +180,60 @@ export function ShikiUnifiedDiff({
   )
 }
 
-export function ShikiPatchDiff({ patch }: { patch: string }) {
+/**
+ * Ensure a patch string has `--- a/...` / `+++ b/...` file headers.
+ * Codex `unified_diff` sometimes only contains `@@ ... @@` hunks without headers,
+ * which causes parsePatchFiles to return 0 files.
+ */
+function ensurePatchHeaders(patch: string, filePath?: string): string {
+  // Already has file headers — `--- ` followed by non-whitespace
+  if (/^---\s+\S/m.test(patch)) return patch
+  // Already a git diff
+  if (/^diff --git/m.test(patch)) return patch
+  // Prepend minimal headers — use only the basename to keep headers short
+  const name = filePath ? filePath.split('/').pop() || filePath : 'file'
+  return `--- a/${name}\n+++ b/${name}\n${patch}`
+}
+
+export function ShikiPatchDiff({ patch, filePath }: { patch: string, filePath?: string }) {
   const { resolved } = useTheme()
   const themeType = resolved === 'dark' ? 'dark' : 'light'
+  const [fileDiffs, setFileDiffs] = useState<import('@pierre/diffs').FileDiffMetadata[] | null>(null)
+  const normalizedPatch = ensurePatchHeaders(patch, filePath)
+
+  useEffect(() => {
+    let cancelled = false
+    void lazyParsePatchFiles().then((parsePatchFiles) => {
+      if (cancelled) return
+      try {
+        const parsed = parsePatchFiles(normalizedPatch)
+        const files = parsed.flatMap(p => p.files)
+        if (files.length > 0) setFileDiffs(files)
+      }
+      catch {
+        // parsing failed — stay null, fallback to code block
+      }
+    })
+    return () => { cancelled = true }
+  }, [normalizedPatch])
+
+  if (!fileDiffs) {
+    return <ShikiCodeBlock content={patch} language="diff" maxHeightClass="max-h-80" />
+  }
+
+  const options = {
+    diffStyle: 'unified' as const,
+    diffIndicators: 'bars' as const,
+    expandUnchanged: true,
+    disableLineNumbers: false,
+    overflow: 'wrap' as const,
+    theme: {
+      light: 'github-light-default' as const,
+      dark: 'github-dark-default' as const,
+    },
+    themeType: themeType as 'dark' | 'light',
+    disableFileHeader: true,
+  }
 
   return (
     <div className="overflow-x-auto rounded-md border border-border/40">
@@ -191,22 +244,9 @@ export function ShikiPatchDiff({ patch }: { patch: string }) {
           </pre>
         )}
       >
-        <LazyPatchDiff
-          patch={patch}
-          options={{
-            diffStyle: 'unified',
-            diffIndicators: 'bars',
-            expandUnchanged: true,
-            disableLineNumbers: false,
-            overflow: 'wrap',
-            theme: {
-              light: 'github-light-default',
-              dark: 'github-dark-default',
-            },
-            themeType,
-            disableFileHeader: true,
-          }}
-        />
+        {fileDiffs.map((fd, i) => (
+          <LazyFileDiff key={i} fileDiff={fd} options={options} />
+        ))}
       </Suspense>
     </div>
   )
