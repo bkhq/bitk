@@ -47,7 +47,6 @@ export interface Issue {
   totalInputTokens: number
   totalOutputTokens: number
   totalCostUsd: string
-  devMode: boolean
   statusUpdatedAt: string
   createdAt: string
   updatedAt: string
@@ -385,6 +384,7 @@ export interface ProcessInfo {
   spawnCommand: string | null
   lastIdleAt: string | null
   pid: number | null
+  transcriptPath: string | null
 }
 
 export interface ProjectProcessesResponse {

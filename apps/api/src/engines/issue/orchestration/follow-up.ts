@@ -8,7 +8,6 @@ import { getActiveProcessForIssue } from '@/engines/issue/process/state'
 import { dispatch } from '@/engines/issue/state'
 import { sendInputToRunningProcess } from '@/engines/issue/user-message'
 import { getPidFromManaged } from '@/engines/issue/utils/pid'
-import { setIssueDevMode } from '@/engines/issue/utils/visibility'
 import type { PermissionPolicy } from '@/engines/types'
 import { logger } from '@/logger'
 
@@ -36,8 +35,6 @@ export async function followUpIssue(
     )
     const issue = await getIssueWithSession(issueId)
     if (!issue) throw new Error(`Issue not found: ${issueId}`)
-    setIssueDevMode(issueId, issue.devMode)
-
     if (!issue.sessionFields.externalSessionId)
       throw new Error('No external session ID for follow-up')
     if (!issue.sessionFields.engineType) throw new Error('No engine type set on issue')

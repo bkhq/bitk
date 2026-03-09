@@ -9,8 +9,8 @@ const DEFAULT_RULES: WriteFilterRule[] = [
   { id: 'grep', type: 'tool-name', match: 'Grep', enabled: true },
 ]
 
-const opts = { devMode: false, filterRules: DEFAULT_RULES }
-const devOpts = { devMode: true, filterRules: DEFAULT_RULES }
+const opts = { filterRules: DEFAULT_RULES }
+const noFilterOpts = { filterRules: [] as WriteFilterRule[] }
 
 function entry(overrides: Partial<NormalizedLogEntry> = {}): NormalizedLogEntry {
   return {
@@ -77,7 +77,7 @@ describe('rebuildMessages', () => {
     expect(tg.items[1].result).not.toBeNull()
   })
 
-  test('filters Read/Glob/Grep in normal mode, shows in devMode', () => {
+  test('filters Read/Glob/Grep with rules, shows all without rules', () => {
     const entries = [
       toolCall('tc-1', 'Read', 'file-read'),
       toolResult('tc-1', 'Read', 'file-read'),
@@ -87,7 +87,7 @@ describe('rebuildMessages', () => {
       toolResult('tc-3', 'Glob', 'search'),
     ]
 
-    // Normal mode: Read and Glob are hidden
+    // With filter rules: Read and Glob are hidden
     const msgs = rebuildMessages(entries, opts)
     expect(msgs).toHaveLength(1)
     const tg = msgs[0]
@@ -96,12 +96,12 @@ describe('rebuildMessages', () => {
     expect(tg.hiddenCount).toBe(2) // Read + Glob hidden
     expect(tg.count).toBe(3) // Total is still 3
 
-    // Dev mode: all visible
-    const devMsgs = rebuildMessages(entries, devOpts)
-    const devTg = devMsgs[0]
-    if (devTg.type !== 'tool-group') throw new Error('expected tool-group')
-    expect(devTg.items).toHaveLength(3)
-    expect(devTg.hiddenCount).toBe(0)
+    // No filter rules: all visible
+    const allMsgs = rebuildMessages(entries, noFilterOpts)
+    const allTg = allMsgs[0]
+    if (allTg.type !== 'tool-group') throw new Error('expected tool-group')
+    expect(allTg.items).toHaveLength(3)
+    expect(allTg.hiddenCount).toBe(0)
   })
 
   test('extracts TodoWrite as task-plan message', () => {
@@ -187,7 +187,7 @@ describe('rebuildMessages', () => {
       // No result for tc-1
       entry({ entryType: 'assistant-message', content: 'done' }),
     ]
-    const msgs = rebuildMessages(entries, devOpts) // devMode to see Read
+    const msgs = rebuildMessages(entries, noFilterOpts) // no filter to see Read
     expect(msgs).toHaveLength(2)
     const tg = msgs[0]
     if (tg.type !== 'tool-group') throw new Error('expected tool-group')

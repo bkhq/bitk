@@ -2,7 +2,7 @@ import { and, asc, desc, eq, gt, inArray, lt, max, sql } from 'drizzle-orm'
 import { db } from '@/db'
 import { issueLogs as logsTable, issuesLogsToolsCall as toolsTable } from '@/db/schema'
 import { MAX_LOG_ENTRIES } from '@/engines/issue/constants'
-import { isVisibleForMode } from '@/engines/issue/utils/visibility'
+import { isVisible } from '@/engines/issue/utils/visibility'
 import type { NormalizedLogEntry } from '@/engines/types'
 import { rawToToolAction } from './tool-detail'
 
@@ -27,12 +27,6 @@ const CONVERSATION_MSG_CONDITION = sql`(
 )`
 
 /**
- * SQL condition for all visible entry types in non-devMode.
- * Matches isVisibleForMode() rules: only user and assistant messages.
- */
-const VISIBLE_ENTRIES_CONDITION = CONVERSATION_MSG_CONDITION
-
-/**
  * Fetch logs from DB with conversation-message-based pagination.
  *
  * Pagination counts only user-message and assistant-message entries
@@ -45,7 +39,6 @@ const VISIBLE_ENTRIES_CONDITION = CONVERSATION_MSG_CONDITION
  */
 export function getLogsFromDb(
   issueId: string,
-  devMode = false,
   opts?: {
     cursor?: string // ULID id — fetch entries strictly after this
     before?: string // ULID id — fetch entries strictly before this
@@ -82,9 +75,9 @@ export function getLogsFromDb(
     boundaryId = convMessages[effectiveLimit - 1].id
   }
 
-  // --- Step 2: Fetch all visible entries within the boundary range ---
+  // --- Step 2: Fetch all entries within the boundary range ---
+  // DB filters by visible=1 only; isVisible() post-filters by entry type.
   const allConditions = [eq(logsTable.issueId, issueId), eq(logsTable.visible, 1)]
-  if (!devMode) allConditions.push(VISIBLE_ENTRIES_CONDITION)
 
   if (opts?.cursor) allConditions.push(gt(logsTable.id, opts.cursor))
   else if (opts?.before) allConditions.push(lt(logsTable.id, opts.before))
@@ -143,7 +136,8 @@ export function getLogsFromDb(
           raw: rawData,
         }
         base.toolAction = rawToToolAction(tool.kind, rawData)
-        // Restore content & metadata from raw (not stored in issues_logs for tool-use)
+        // Restore content & metadata from raw for legacy rows where
+        // tool-use content was not stored in issues_logs (pre-fix).
         if (!base.content && rawData.content) {
           base.content = rawData.content as string
         }
@@ -154,7 +148,7 @@ export function getLogsFromDb(
 
       return base
     })
-    .filter(entry => isVisibleForMode(entry, devMode))
+    .filter(isVisible)
 
   return { entries, hasMore }
 }

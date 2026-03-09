@@ -2,5 +2,5 @@ export { getPermissionOptions, isMissingExternalSessionError, resolveWorkingDir 
 export type { LogNormalizer } from './normalizer'
 export { createLogNormalizer } from './normalizer'
 export { getPidFromManaged, getPidFromSubprocess } from './pid'
-export { getIssueDevMode, isVisibleForMode, setIssueDevMode } from './visibility'
+export { isVisible } from './visibility'
 export { createWorktree, removeWorktree, resolveWorktreePath } from './worktree'

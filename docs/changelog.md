@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026-03-09 04:00 [progress]
+
+UI-003: Remove devMode feature entirely
+
+- Removed `devMode` column from DB schema + migration `0009_remove_dev_mode.sql`
+- Removed `devMode` from `Issue` shared type
+- Renamed `isVisibleForMode(entry, devMode)` → `isVisible(entry)` — no more per-issue bypass
+- Removed `devModeCache` (Map), `getIssueDevMode`, `setIssueDevMode`
+- Cleaned up `getLogsFromDb`, `getLogs`, `IssueEngine.getLogs` — removed dead `devMode` parameter
+- Removed devMode from: route schemas, serializer, update handler, orchestration, lifecycle, SSE events
+- Removed devMode toggle button from `IssueDetail.tsx` + i18n keys
+- Updated `message-rebuilder.ts` — removed devMode from `RebuildOptions`, always applies filter rules
+
+## 2026-03-09 03:30 [progress]
+
+UI-002: Suppress queue-operation/progress/last-prompt raw text in chat
+
+- `normalizer.ts` — add `queue-operation`, `progress`, `last-prompt` to switch to return null (suppresses raw XML like `<task-notification>` from appearing as plain text)
+
 ## 2026-03-09 03:00 [BUG-P1]
 
 BUG-005: File browser rejects valid worktree root paths
@@ -8,6 +27,16 @@ BUG-005: File browser rejects valid worktree root paths
 - Removed project/worktree validation, only path traversal prevention remains
 - Frontend resolves root from `rootPath ?? project.directory`
 - Fixed `toggle()` leaking stale `rootPath` across projects
+
+## 2026-03-09 03:00 [progress]
+
+UI-001: Fix chat UI visibility, grouping, collapsible tool groups
+
+- `visibility.ts` — allow all entry types in non-dev mode (BUG-004 regression fix); frontend `rebuildMessages` handles display filtering
+- `queries.ts` — removed redundant `VISIBLE_ENTRIES_CONDITION` SQL filter
+- `normalizer.ts` — suppress `task_progress` and `stop_hook_summary` subtypes (no user-facing content)
+- `use-chat-messages.ts` — skip `task_progress`/`stop_hook_summary` instead of flushing tool buffer (fixes broken grouping)
+- `ToolItems.tsx` — wrap `ToolGroupMessage` in `<details open>` with chevron for collapsible UI
 
 ## 2026-03-09 00:05 [progress]
 

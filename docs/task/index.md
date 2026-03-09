@@ -75,6 +75,12 @@
 
 - [x] **STALL-001 stdout 断裂后 fallback 到 transcript JSONL** `P1` - owner: claude - plan: `PLAN-006` - file: `docs/task/STALL-001.md`
 
+## UI Fix
+
+- [x] **UI-001 Fix chat UI: visibility, grouping, collapsible tool groups** `P1` - owner: claude - plan: `PLAN-007` - file: `docs/task/UI-001.md`
+- [x] **UI-002 Suppress queue-operation/progress raw text in chat** `P2` - owner: claude - file: `docs/task/UI-002.md`
+- [x] **UI-003 Remove devMode feature entirely** `P2` - owner: claude - file: `docs/task/UI-003.md`
+
 ## Bug Fix
 
 - [x] **BUG-001 未指定 root 目录时以自身所在目录为 root** `P1` - file: `docs/task/BUG-001.md`

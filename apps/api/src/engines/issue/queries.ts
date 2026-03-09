@@ -8,7 +8,7 @@ import { getLogsFromDb } from './persistence/queries'
 import { cancel } from './process/cancel'
 import { getActiveProcesses, getActiveProcessForIssue } from './process/state'
 import type { ManagedProcess } from './types'
-import { isVisibleForMode, setIssueDevMode } from './utils/visibility'
+import { isVisible } from './utils/visibility'
 
 const SLASH_COMMANDS_PREFIX = 'engine:slashCommands'
 
@@ -124,16 +124,14 @@ export async function migrateSlashCommandsKey(): Promise<void> {
 export function getLogs(
   ctx: EngineContext,
   issueId: string,
-  devMode = false,
   opts?: {
     cursor?: string // ULID id — fetch entries after this
     before?: string // ULID id — fetch entries before this
     limit?: number
   },
 ): PaginatedLogResult {
-  setIssueDevMode(issueId, devMode)
-  // DB pre-filters by visible + entryType; isVisibleForMode() handles subtype rules.
-  const result = getLogsFromDb(issueId, devMode, opts)
+  // DB filters by visible=1; isVisible() post-filters by entry type.
+  const result = getLogsFromDb(issueId, opts)
 
   // When loading older entries (before cursor), skip in-memory merge —
   // in-memory logs are always the newest and irrelevant for historical pages.
@@ -169,7 +167,7 @@ export function getLogs(
 
   const merged = [...persisted]
   for (const entry of active.logs.toArray()) {
-    if (!isVisibleForMode(entry, devMode)) continue
+    if (!isVisible(entry)) continue
     const key = entry.messageId ?
       `id:${entry.messageId}` :
       `${entry.turnIndex ?? 0}:${entry.timestamp ?? ''}:${entry.entryType}:${entry.content}`

@@ -64,7 +64,6 @@ export const issues = sqliteTable(
     totalInputTokens: integer('total_input_tokens').notNull().default(0),
     totalOutputTokens: integer('total_output_tokens').notNull().default(0),
     totalCostUsd: text('total_cost_usd').notNull().default('0'),
-    devMode: integer('dev_mode', { mode: 'boolean' }).notNull().default(false),
     statusUpdatedAt: integer('status_updated_at', { mode: 'timestamp' })
       .notNull()
       .default(sql`0`)

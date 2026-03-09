@@ -26,8 +26,9 @@ export function registerPersistStage(
       if (data.streaming) return
 
       const isToolUse = data.entry.entryType === 'tool-use'
-      // For tool-use entries, content & metadata go to the tools table only
-      const dbEntry = isToolUse ? { ...data.entry, content: '', metadata: undefined } : data.entry
+      // For tool-use entries, metadata goes to the tools table only;
+      // content is stored in both tables so it survives page reload without truncation.
+      const dbEntry = isToolUse ? { ...data.entry, metadata: undefined } : data.entry
 
       const persisted = persistEntry(ctx, data.issueId, data.executionId, dbEntry)
 

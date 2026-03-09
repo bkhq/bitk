@@ -50,7 +50,6 @@ export const updateIssueSchema = z.object({
   statusId: z.enum(STATUS_IDS).optional(),
   sortOrder: z.number().optional(),
   parentIssueId: z.string().nullable().optional(),
-  devMode: z.boolean().optional(),
 })
 
 export const executeIssueSchema = z.object({
@@ -97,7 +96,6 @@ export function serializeIssue(row: IssueRow, childCount?: number) {
     prompt: row.prompt ?? null,
     externalSessionId: row.externalSessionId ?? null,
     model: row.model ?? null,
-    devMode: row.devMode,
     statusUpdatedAt: toISO(row.statusUpdatedAt),
     createdAt: toISO(row.createdAt),
     updatedAt: toISO(row.updatedAt),

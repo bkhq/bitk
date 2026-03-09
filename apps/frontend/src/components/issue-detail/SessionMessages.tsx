@@ -1,5 +1,5 @@
 import type { ChatMessage, NormalizedLogEntry, TaskPlanChatMessage } from '@bkd/shared'
-import { CheckCircle2, ChevronUp, Circle, ListTodo, Loader2 } from 'lucide-react'
+import { CheckCircle2, ChevronDown, Circle, ListTodo, Loader2 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useChatMessages } from '@/hooks/use-chat-messages'
@@ -67,10 +67,35 @@ function TaskPlanMessage({ message }: { message: TaskPlanChatMessage }) {
   return (
     <div className="animate-message-enter">
       <div className="rounded-lg border border-border/40 bg-background/95 shadow-sm">
-        {/* Expandable detail panel — opens upward */}
+        {/* Compact status bar */}
+        <button
+          type="button"
+          onClick={() => setExpanded(!expanded)}
+          className="flex w-full items-center gap-2 px-3 py-2 text-xs transition-colors hover:bg-muted/20"
+        >
+          <ListTodo className="h-3.5 w-3.5 shrink-0 text-indigo-500" />
+          <span className="font-medium text-muted-foreground">{t('session.tool.taskPlan')}</span>
+          <span className="text-muted-foreground/50">
+            (
+            {completedCount}
+            /
+            {todos.length}
+            )
+          </span>
+          {statusText ?
+              (
+                <span className="truncate text-blue-600 dark:text-blue-400">{statusText}</span>
+              ) :
+            null}
+          <ChevronDown
+            className={`ml-auto h-3 w-3 shrink-0 text-muted-foreground/50 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}
+          />
+        </button>
+
+        {/* Expandable detail panel — opens downward */}
         {expanded ?
             (
-              <div className="px-3 pt-2 pb-1 space-y-0.5 border-b border-border/20">
+              <div className="px-3 pb-2 pt-1 space-y-0.5 border-t border-border/20">
                 {todos.map((item, idx) => (
                   <div key={idx} className="flex items-start gap-1.5 text-xs">
                     {item.status === 'completed' ?
@@ -100,31 +125,6 @@ function TaskPlanMessage({ message }: { message: TaskPlanChatMessage }) {
               </div>
             ) :
           null}
-
-        {/* Compact status bar */}
-        <button
-          type="button"
-          onClick={() => setExpanded(!expanded)}
-          className="flex w-full items-center gap-2 px-3 py-2 text-xs transition-colors hover:bg-muted/20"
-        >
-          <ListTodo className="h-3.5 w-3.5 shrink-0 text-indigo-500" />
-          <span className="font-medium text-muted-foreground">{t('session.tool.taskPlan')}</span>
-          <span className="text-muted-foreground/50">
-            (
-            {completedCount}
-            /
-            {todos.length}
-            )
-          </span>
-          {statusText ?
-              (
-                <span className="truncate text-blue-600 dark:text-blue-400">{statusText}</span>
-              ) :
-            null}
-          <ChevronUp
-            className={`ml-auto h-3 w-3 shrink-0 text-muted-foreground/50 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}
-          />
-        </button>
       </div>
     </div>
   )

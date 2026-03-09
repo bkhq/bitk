@@ -35,7 +35,7 @@ logs.get('/:id/logs', async (c) => {
 
   // Pagination now counts only conversation messages (user + assistant)
   // but returns all visible entries within the range.
-  const result = issueEngine.getLogs(issueId, issue.devMode, {
+  const result = issueEngine.getLogs(issueId, {
     cursor,
     before,
     limit,

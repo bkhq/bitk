@@ -19,7 +19,6 @@ import {
 } from '@/engines/issue/utils/helpers'
 import { createLogNormalizer } from '@/engines/issue/utils/normalizer'
 import { getPidFromSubprocess } from '@/engines/issue/utils/pid'
-import { setIssueDevMode } from '@/engines/issue/utils/visibility'
 import {
   createWorktree,
   isWorktreeRegistered,
@@ -210,7 +209,7 @@ export async function spawnRetry(
   const normalizer = createLogNormalizer(executor)
 
   const turnIndex = getNextTurnIndex(issueId)
-  const retryManaged = register(
+  register(
     ctx,
     executionId,
     issueId,
@@ -222,10 +221,9 @@ export async function spawnRetry(
     false,
     () => handleTurnCompleted(ctx, issueId, executionId),
     worktreePath ? baseDir : undefined,
+    workingDir,
+    spawned.externalSessionId ?? issue.sessionFields.externalSessionId ?? undefined,
   )
-  retryManaged.spawnCwd = workingDir
-  retryManaged.externalSessionId =
-    spawned.externalSessionId ?? issue.sessionFields.externalSessionId ?? undefined
   monitorCompletion(ctx, executionId, issueId, engineType, true)
   logger.debug({ issueId, executionId, engineType, turnIndex }, 'issue_retry_spawned')
 }
@@ -246,7 +244,6 @@ export async function spawnFollowUpProcess(
   )
   const issue = await getIssueWithSession(issueId)
   if (!issue) throw new Error(`Issue not found: ${issueId}`)
-  setIssueDevMode(issueId, issue.devMode)
   if (!issue.sessionFields.externalSessionId)
     throw new Error('No external session ID for follow-up')
   if (!issue.sessionFields.engineType) throw new Error('No engine type set on issue')
@@ -359,7 +356,7 @@ export async function spawnFollowUpProcess(
 
   const normalizer = createLogNormalizer(executor)
 
-  const followUpManaged = register(
+  register(
     ctx,
     executionId,
     issueId,
@@ -371,10 +368,9 @@ export async function spawnFollowUpProcess(
     metadata?.type === 'system',
     () => handleTurnCompleted(ctx, issueId, executionId),
     worktreePath ? baseDir : undefined,
+    workingDir,
+    spawned.externalSessionId ?? issue.sessionFields.externalSessionId ?? undefined,
   )
-  followUpManaged.spawnCwd = workingDir
-  followUpManaged.externalSessionId =
-    spawned.externalSessionId ?? issue.sessionFields.externalSessionId ?? undefined
   // User message already persisted above (before spawn)
   monitorCompletion(ctx, executionId, issueId, engineType, false)
   const followUpPid = getPidFromSubprocess(spawned.subprocess)

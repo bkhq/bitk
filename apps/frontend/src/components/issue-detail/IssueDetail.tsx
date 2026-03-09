@@ -1,4 +1,4 @@
-import { Bug, ChevronDown, GitBranch, Tag, Trash2 } from 'lucide-react'
+import { ChevronDown, GitBranch, Tag, Trash2 } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
@@ -25,7 +25,7 @@ export function IssueDetail({
   issue: Issue
   projectId?: string
   status?: StatusDefinition
-  onUpdate?: (fields: Partial<Pick<Issue, 'statusId' | 'tags' | 'devMode'>>) => void
+  onUpdate?: (fields: Partial<Pick<Issue, 'statusId' | 'tags'>>) => void
   onDelete?: () => void
   isDeleting?: boolean
 }) {
@@ -118,23 +118,8 @@ export function IssueDetail({
           ) :
         null}
 
-      {/* Dev mode toggle + Worktree (right side) */}
+      {/* Worktree (right side) */}
       <div className="ml-auto flex items-center gap-1.5">
-        <Button
-          type="button"
-          onClick={() => onUpdate?.({ devMode: !issue.devMode })}
-          size="sm"
-          variant="outline"
-          className={`${badgeButtonBase} cursor-pointer ${
-            issue.devMode ?
-              'border-amber-400/40 bg-amber-500/10 text-amber-600 dark:text-amber-400' :
-              'border-border/50 bg-muted/20 text-muted-foreground/60 hover:text-muted-foreground'
-          }`}
-          title={t('issue.devMode')}
-        >
-          <Bug className="h-3 w-3" />
-          <span>{t('issue.dev')}</span>
-        </Button>
         {issue.useWorktree ?
             (
               <div ref={worktreeRef} className="relative flex">

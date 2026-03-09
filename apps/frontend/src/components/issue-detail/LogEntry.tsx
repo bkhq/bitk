@@ -188,7 +188,7 @@ export function LogEntry({
           'border-foreground/70'
       return (
         <div className="group py-2 animate-message-enter">
-          <div className={`bg-muted/70 px-3 py-2.5 border-l-[3px] ${barColor}`}>
+          <div className={`bg-muted/70 px-3 py-2.5 border border-l-[3px] ${barColor}`}>
             {entry.content.trim() ?
                 (
                   <div className="text-[15px] whitespace-pre-wrap break-words text-foreground leading-[1.75]">
@@ -322,7 +322,7 @@ export function LogEntry({
         const firstLine = entry.content.split('\n')[0]?.trim() || 'Command output'
         return (
           <div className="my-1.5 animate-message-enter">
-            <details className="rounded-lg bg-muted/40 border border-border/30 transition-all duration-200 open:bg-muted/20">
+            <details className="bg-muted/40 border border-border/30 transition-all duration-200 open:bg-muted/20">
               <summary className="cursor-pointer list-none px-4 py-2 text-xs text-muted-foreground hover:bg-muted/20 transition-colors">
                 <span className="font-mono">{firstLine}</span>
               </summary>
@@ -353,7 +353,7 @@ export function LogEntry({
 
     case 'error-message':
       return (
-        <div className="flex gap-2 my-1.5 rounded-lg bg-destructive/[0.06] border border-destructive/20 px-3 py-2 animate-message-enter">
+        <div className="flex gap-2 my-1.5 bg-destructive/[0.06] border border-destructive/20 px-3 py-2 animate-message-enter">
           <AlertCircle className="h-3.5 w-3.5 shrink-0 text-destructive mt-0.5" />
           <p className="text-xs text-destructive/90 break-words leading-relaxed">{entry.content}</p>
         </div>
@@ -363,7 +363,7 @@ export function LogEntry({
       const preview = entry.content.length > 80 ? `${entry.content.slice(0, 80)}…` : entry.content
       return (
         <div className="my-0.5 animate-message-enter">
-          <details className="rounded-lg bg-violet-500/[0.04] border border-violet-300/20 dark:border-violet-500/15 transition-all duration-200 open:bg-violet-500/[0.06]">
+          <details className="bg-violet-500/[0.04] border border-violet-300/20 dark:border-violet-500/15 transition-all duration-200 open:bg-violet-500/[0.06]">
             <summary className="cursor-pointer list-none px-3 py-1.5 text-xs text-violet-500/70 dark:text-violet-400/70 hover:bg-violet-500/[0.06] transition-colors">
               <span className="italic">
                 Thinking:

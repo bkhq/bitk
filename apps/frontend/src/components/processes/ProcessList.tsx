@@ -7,6 +7,7 @@ import {
   CirclePause,
   CircleX,
   Clock,
+  FileText,
   Loader2,
   RotateCcw,
   Skull,
@@ -164,6 +165,14 @@ function ProcessCard({ proc, projectId }: { proc: ProcessInfo, projectId: string
               {proc.spawnCommand}
             </pre>
           )}
+        </div>
+      )}
+
+      {/* Transcript JSONL path */}
+      {proc.transcriptPath && (
+        <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+          <FileText className="h-3 w-3 shrink-0" />
+          <span className="truncate font-mono" title={proc.transcriptPath}>{proc.transcriptPath}</span>
         </div>
       )}
 
