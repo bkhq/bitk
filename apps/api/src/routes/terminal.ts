@@ -200,12 +200,12 @@ app.get(
         const entry = terminalPM.get(id)
         if (!entry?.subprocess?.terminal) return
 
-        const raw
-          = evt.data instanceof ArrayBuffer
-            ? new Uint8Array(evt.data)
-            : typeof evt.data === 'string'
-              ? new TextEncoder().encode(evt.data)
-              : new Uint8Array(evt.data as ArrayBufferLike)
+        const raw =
+          evt.data instanceof ArrayBuffer ?
+              new Uint8Array(evt.data) :
+            typeof evt.data === 'string' ?
+                new TextEncoder().encode(evt.data) :
+                new Uint8Array(evt.data as ArrayBufferLike)
 
         if (raw.length === 0) return
 

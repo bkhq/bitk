@@ -38,11 +38,11 @@ function ProjectButton({
   return (
     <>
       <div className="relative flex items-center justify-center">
-        {isActive
-          ? (
+        {isActive ?
+            (
               <span className="absolute left-[-9px] h-5 w-[3px] rounded-r-full bg-primary" />
-            )
-          : null}
+            ) :
+          null}
         <button
           ref={btnRef}
           type="button"
@@ -50,17 +50,17 @@ function ProjectButton({
           onMouseEnter={showTooltip}
           onMouseLeave={() => setTooltip(null)}
           className={`flex items-center justify-center w-9 h-9 rounded-lg text-[11px] font-bold transition-all cursor-pointer focus:outline-none ${
-            isActive
-              ? 'bg-primary text-primary-foreground shadow-sm'
-              : 'bg-foreground/[0.07] text-foreground/60 hover:bg-foreground/[0.13] hover:text-foreground/80'
+            isActive ?
+              'bg-primary text-primary-foreground shadow-sm' :
+              'bg-foreground/[0.07] text-foreground/60 hover:bg-foreground/[0.13] hover:text-foreground/80'
           }`}
           aria-label={project.name}
         >
           {getProjectInitials(project.name)}
         </button>
       </div>
-      {tooltip
-        ? (
+      {tooltip ?
+          (
             <div
               className="fixed z-[100] whitespace-nowrap rounded-md bg-popover px-2.5 py-1 text-xs font-medium text-popover-foreground shadow-md border border-border pointer-events-none animate-in fade-in-0 zoom-in-95 duration-100"
               style={{
@@ -71,8 +71,8 @@ function ProjectButton({
             >
               {project.name}
             </div>
-          )
-        : null}
+          ) :
+        null}
     </>
   )
 }

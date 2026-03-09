@@ -19,10 +19,10 @@ function waitForSettlement(managed: ManagedProcess, timeoutMs: number): Promise<
     const start = Date.now()
     const check = setInterval(() => {
       if (
-        managed.turnSettled
-        || managed.state === 'completed'
-        || managed.state === 'failed'
-        || managed.state === 'cancelled'
+        managed.turnSettled ||
+        managed.state === 'completed' ||
+        managed.state === 'failed' ||
+        managed.state === 'cancelled'
       ) {
         clearInterval(check)
         resolve(true)
@@ -52,9 +52,9 @@ function isEscalationStale(
   if (!ctx.pm.get(managed.executionId)) return true
   // Already terminal
   if (
-    managed.state === 'completed'
-    || managed.state === 'failed'
-    || managed.state === 'cancelled'
+    managed.state === 'completed' ||
+    managed.state === 'failed' ||
+    managed.state === 'cancelled'
   ) {
     return true
   }

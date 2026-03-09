@@ -84,9 +84,9 @@ export default function FileBrowserPage() {
   )
 
   const handleFileBack = useCallback(() => {
-    const parentPath = currentPath.includes('/')
-      ? currentPath.slice(0, currentPath.lastIndexOf('/'))
-      : '.'
+    const parentPath = currentPath.includes('/') ?
+        currentPath.slice(0, currentPath.lastIndexOf('/')) :
+      '.'
     navigateToPath(parentPath)
   }, [currentPath, navigateToPath])
 
@@ -153,9 +153,9 @@ export default function FileBrowserPage() {
               type="button"
               onClick={handleToggleIgnored}
               className={`p-1.5 rounded transition-colors ${
-                hideIgnored
-                  ? 'text-foreground bg-accent'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                hideIgnored ?
+                  'text-foreground bg-accent' :
+                  'text-muted-foreground hover:text-foreground hover:bg-accent'
               }`}
               aria-label={t('fileBrowser.hideIgnored')}
               title={hideIgnored ? t('fileBrowser.showIgnored') : t('fileBrowser.hideIgnored')}
@@ -167,27 +167,27 @@ export default function FileBrowserPage() {
 
         {/* Content */}
         <div className="flex-1 overflow-auto p-6">
-          {isListingLoading
-            ? (
+          {isListingLoading ?
+              (
                 <div className="flex items-center justify-center py-16">
                   <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
                 </div>
-              )
-            : isListingError
-              ? (
+              ) :
+            isListingError ?
+                (
                   <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">
                     {(listingError as Error)?.message || t('fileBrowser.loadError')}
                   </div>
-                )
-              : listing?.type === 'file'
-                ? (
+                ) :
+              listing?.type === 'file' ?
+                  (
                     <FileViewer file={listing} onBack={handleFileBack} />
-                  )
-                : listing?.type === 'directory'
-                  ? (
+                  ) :
+                listing?.type === 'directory' ?
+                    (
                       <FileList entries={listing.entries} onNavigate={handleEntryClick} />
-                    )
-                  : null}
+                    ) :
+                  null}
         </div>
       </div>
     </div>

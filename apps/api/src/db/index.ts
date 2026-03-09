@@ -31,9 +31,9 @@ export { dbPath, sqlite }
 
 // In package mode, migrations live inside APP_DIR/migrations/.
 // In dev mode, they live in apps/api/drizzle/.
-const migrationsFolder = APP_DIR
-  ? resolve(APP_DIR, 'migrations')
-  : resolve(ROOT_DIR, 'apps/api/drizzle')
+const migrationsFolder = APP_DIR ?
+    resolve(APP_DIR, 'migrations') :
+    resolve(ROOT_DIR, 'apps/api/drizzle')
 const journalPath = resolve(migrationsFolder, 'meta/_journal.json')
 
 function runMigrations(folder: string) {

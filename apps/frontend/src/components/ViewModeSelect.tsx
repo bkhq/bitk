@@ -57,9 +57,9 @@ export function ViewModeSelect({
             onClick={() => handleSelect(id)}
             className={cn(
               'rounded-sm px-2 py-1 text-xs transition-colors',
-              mode === id
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground',
+              mode === id ?
+                'bg-background text-foreground shadow-sm' :
+                'text-muted-foreground hover:text-foreground',
             )}
             aria-label={labels[id]}
             title={labels[id]}

@@ -347,9 +347,9 @@ describe('Flush pending messages for existing sessions', () => {
     const logs = expectSuccess(logsResult)
     const pending = logs.logs.filter(
       l =>
-        l.entryType === 'user-message'
-        && l.content.includes(pendingPrompt)
-        && l.metadata?.type === 'pending',
+        l.entryType === 'user-message' &&
+        l.content.includes(pendingPrompt) &&
+        l.metadata?.type === 'pending',
     )
     expect(pending.length).toBeGreaterThanOrEqual(1)
   })

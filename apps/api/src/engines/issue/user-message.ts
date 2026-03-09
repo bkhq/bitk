@@ -87,9 +87,9 @@ export function sendInputToRunningProcess(
   emitStateChange(issueId, managed.executionId, 'running')
   // When flushing pending messages, the user message is already persisted in the
   // DB. Skip creating a duplicate entry.
-  const messageId = opts?.skipPersistMessage
-    ? null
-    : persistUserMessage(ctx, issueId, managed.executionId, prompt, displayPrompt, metadata)
+  const messageId = opts?.skipPersistMessage ?
+    null :
+      persistUserMessage(ctx, issueId, managed.executionId, prompt, displayPrompt, metadata)
   logger.debug(
     {
       issueId,

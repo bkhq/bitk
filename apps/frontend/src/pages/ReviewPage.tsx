@@ -95,19 +95,19 @@ export default function ReviewPage() {
     <div className="flex h-full text-foreground overflow-hidden animate-page-enter">
       {!isMobile ? <AppSidebar activeProjectId="" /> : null}
 
-      {!hideListPanel
-        ? (
+      {!hideListPanel ?
+          (
             <ReviewListPanel
               activeIssueId={issueId}
               width={isMobile ? undefined : listWidth}
               onResizeStart={isMobile ? undefined : handleListResizeStart}
               mobileNav={isMobile ? <MobileSidebar activeProjectId="" /> : undefined}
             />
-          )
-        : null}
+          ) :
+        null}
 
-      {issueId && projectId
-        ? (
+      {issueId && projectId ?
+          (
             <ChatArea
               projectId={projectId}
               issueId={issueId}
@@ -119,14 +119,14 @@ export default function ReviewPage() {
               showBackToList
               backPath="/review"
             />
-          )
-        : !hideListPanel
-            ? (
+          ) :
+          !hideListPanel ?
+              (
                 <div className="flex flex-1 items-center justify-center">
                   <p className="text-sm text-muted-foreground">{t('review.selectToStart')}</p>
                 </div>
-              )
-            : null}
+              ) :
+            null}
     </div>
   )
 }

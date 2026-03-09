@@ -141,8 +141,8 @@ export function FileViewer({ file, onBack }: FileViewerProps) {
           <span className="font-medium text-sm">{fileName}</span>
         </div>
         <div className="flex items-center gap-3 text-xs text-muted-foreground">
-          {isMd
-            ? (
+          {isMd ?
+              (
                 <button
                   type="button"
                   onClick={() => setShowRendered(v => !v)}
@@ -154,35 +154,35 @@ export function FileViewer({ file, onBack }: FileViewerProps) {
                     {showRendered ? t('fileBrowser.viewSource') : t('fileBrowser.viewRendered')}
                   </span>
                 </button>
-              )
-            : null}
+              ) :
+            null}
           <span>
             {lineCount}
             {' '}
             {t('fileBrowser.lines')}
           </span>
           <span>{formatSize(file.size)}</span>
-          {file.isTruncated
-            ? (
+          {file.isTruncated ?
+              (
                 <span className="text-yellow-600 dark:text-yellow-400">
                   {t('fileBrowser.truncated')}
                 </span>
-              )
-            : null}
+              ) :
+            null}
         </div>
       </div>
       <div className="flex-1 overflow-auto min-h-0">
-        {loading
-          ? (
+        {loading ?
+            (
               <div className="flex items-center justify-center py-16">
                 <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
               </div>
-            )
-          : isMd && showRendered
-            ? (
+            ) :
+          isMd && showRendered ?
+              (
                 <MarkdownRenderer content={file.content} />
-              )
-            : (
+              ) :
+              (
                 <div
                   className="shiki-line-numbers text-xs [&_pre]:!bg-transparent [&_pre]:px-2 [&_pre]:py-1.5 [&_pre]:overflow-x-auto [&_code]:leading-snug"
                   dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(html) }}

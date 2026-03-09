@@ -183,11 +183,11 @@ export function ChatInput({
   const [busyAction, setBusyAction] = useState<BusyAction>('queue')
   const activeModel = selectedModel || model || ''
   const isSessionActive = sessionStatus === 'running' || sessionStatus === 'pending'
-  const effectiveBusyAction: BusyAction | undefined = isSessionActive
-    ? isThinking
-      ? 'queue'
-      : busyAction
-    : undefined
+  const effectiveBusyAction: BusyAction | undefined = isSessionActive ?
+    isThinking ?
+      'queue' :
+      busyAction :
+    undefined
 
   // Normalized slash commands only (for CommandPicker button + command detection)
   const normalizedSlashCommands = useMemo(
@@ -245,8 +245,8 @@ export function ChatInput({
   }
 
   const normalizedPrompt = normalizePrompt(input)
-  const canSend
-    = (normalizedPrompt.length > 0 || attachedFiles.length > 0) && !!issueId && !!projectId
+  const canSend =
+    (normalizedPrompt.length > 0 || attachedFiles.length > 0) && !!issueId && !!projectId
 
   const addFiles = useCallback(
     (incoming: File[]) => {
@@ -320,36 +320,36 @@ export function ChatInput({
       })
       // Append message with server-assigned messageId
       if (result.messageId) {
-        const filesMeta
-          = filesToSend.length > 0
-            ? filesToSend.map(f => ({
+        const filesMeta =
+          filesToSend.length > 0 ?
+              filesToSend.map(f => ({
                 id: '',
                 name: f.name,
                 mimeType: f.type,
                 size: f.size,
-              }))
-            : undefined
+              })) :
+            undefined
         const firstWord = prompt.split(/\s/)[0] ?? ''
-        const isCommand
-          = firstWord.startsWith('/')
-            && (normalizedCommands.length === 0 || normalizedCommands.includes(firstWord))
-        const metadata: Record<string, unknown> | undefined = isTodo
-          ? {
+        const isCommand =
+          firstWord.startsWith('/') &&
+          (normalizedCommands.length === 0 || normalizedCommands.includes(firstWord))
+        const metadata: Record<string, unknown> | undefined = isTodo ?
+            {
               type: 'pending',
               ...(filesMeta ? { attachments: filesMeta } : {}),
-            }
-          : isDone
-            ? { type: 'done', ...(filesMeta ? { attachments: filesMeta } : {}) }
-            : isWorking && isThinking
-              ? {
+            } :
+          isDone ?
+              { type: 'done', ...(filesMeta ? { attachments: filesMeta } : {}) } :
+            isWorking && isThinking ?
+                {
                   type: 'pending',
                   ...(filesMeta ? { attachments: filesMeta } : {}),
-                }
-              : isCommand
-                ? { type: 'command' }
-                : filesMeta
-                  ? { attachments: filesMeta }
-                  : undefined
+                } :
+              isCommand ?
+                  { type: 'command' } :
+                filesMeta ?
+                    { attachments: filesMeta } :
+                  undefined
         onMessageSent?.(result.messageId, prompt, metadata)
       }
       // Auto-scroll to bottom after sending
@@ -513,9 +513,9 @@ export function ChatInput({
     <div className="shrink-0 w-full min-w-0 px-2 pb-2 relative z-30">
       <div
         className={`rounded-xl border bg-card/80 backdrop-blur-sm shadow-sm transition-all duration-200 focus-within:border-border focus-within:shadow-md ${
-          isDragOver
-            ? 'border-primary/50 bg-primary/[0.03] ring-2 ring-primary/20'
-            : 'border-border/60'
+          isDragOver ?
+            'border-primary/50 bg-primary/[0.03] ring-2 ring-primary/20' :
+            'border-border/60'
         }`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
@@ -530,13 +530,13 @@ export function ChatInput({
         </div>
 
         {/* Drag overlay hint */}
-        {isDragOver
-          ? (
+        {isDragOver ?
+            (
               <div className="flex items-center justify-center py-4 text-xs text-primary font-medium">
                 {t('chat.attachDragHint')}
               </div>
-            )
-          : null}
+            ) :
+          null}
 
         {/* Status bar */}
         <div className="flex items-center gap-1.5 px-2 py-1.5 border-b border-border/30">
@@ -544,9 +544,9 @@ export function ChatInput({
             type="button"
             onClick={onToggleDiff}
             className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs transition-all duration-200 ${
-              diffOpen
-                ? 'bg-primary/[0.08] ring-1 ring-primary/20 text-foreground'
-                : 'bg-muted/40 hover:bg-muted/60 text-muted-foreground'
+              diffOpen ?
+                'bg-primary/[0.08] ring-1 ring-primary/20 text-foreground' :
+                'bg-muted/40 hover:bg-muted/60 text-muted-foreground'
             }`}
           >
             <span className="inline-flex items-center gap-1.5">
@@ -571,32 +571,32 @@ export function ChatInput({
           </button>
 
           <div className="ml-auto flex items-center gap-1">
-            {isSessionActive && !isThinking
-              ? (
+            {isSessionActive && !isThinking ?
+                (
                   <BusyActionSelect value={busyAction} onChange={setBusyAction} />
-                )
-              : null}
+                ) :
+              null}
             <ModeSelect value={mode} onChange={setMode} />
-            {models.length > 0
-              ? (
+            {models.length > 0 ?
+                (
                   <ModelSelect models={models} value={activeModel} onChange={setSelectedModel} />
-                )
-              : null}
+                ) :
+              null}
           </div>
         </div>
 
         {/* Error banner */}
-        {sendError
-          ? (
+        {sendError ?
+            (
               <div className="mx-2 mt-2 rounded-lg bg-destructive/10 border border-destructive/20 px-2 py-2 text-xs text-destructive">
                 {sendError}
               </div>
-            )
-          : null}
+            ) :
+          null}
 
         {/* Inline command menu */}
-        {showCommandMenu
-          ? (
+        {showCommandMenu ?
+            (
               <div className="mx-2 mt-1 rounded-lg border border-border/40 bg-popover shadow-md overflow-hidden">
                 <div className="max-h-[200px] overflow-y-auto py-1">
                   {filteredCommands.map((item, i) => (
@@ -609,25 +609,25 @@ export function ChatInput({
                         textareaRef.current?.focus()
                       }}
                       className={`w-full flex items-center gap-2 text-left px-3 py-1.5 text-xs transition-colors ${
-                        i === commandIndex
-                          ? 'bg-primary/10 text-primary'
-                          : 'text-foreground/80 hover:bg-muted/50'
+                        i === commandIndex ?
+                          'bg-primary/10 text-primary' :
+                          'text-foreground/80 hover:bg-muted/50'
                       }`}
                     >
                       <code className="font-mono">{item.value}</code>
-                      {item.category !== 'command'
-                        ? (
+                      {item.category !== 'command' ?
+                          (
                             <span className="ml-auto text-[10px] text-muted-foreground/60 uppercase tracking-wider">
                               {t(`chat.${item.category === 'agent' ? 'agents' : 'plugins'}`)}
                             </span>
-                          )
-                        : null}
+                          ) :
+                        null}
                     </button>
                   ))}
                 </div>
               </div>
-            )
-          : null}
+            ) :
+          null}
 
         {/* Textarea — shadcn Textarea, style overrides to match original */}
         <div className="px-2 py-2">
@@ -644,8 +644,8 @@ export function ChatInput({
         </div>
 
         {/* File preview bar — below textarea */}
-        {attachedFiles.length > 0
-          ? (
+        {attachedFiles.length > 0 ?
+            (
               <div className="flex flex-wrap gap-1.5 px-2 pb-1.5">
                 {attachedFiles.map((file, idx) => (
                   <div
@@ -653,11 +653,11 @@ export function ChatInput({
                     className="group/file flex items-center gap-1.5 rounded-lg bg-muted/50 border border-border/40 px-2 py-1 text-xs cursor-pointer hover:bg-muted/70 transition-colors"
                     onClick={() => setPreviewFile(file)}
                   >
-                    {file.type.startsWith('image/')
-                      ? (
+                    {file.type.startsWith('image/') ?
+                        (
                           <ImageIcon className="h-3 w-3 shrink-0 text-blue-500" />
-                        )
-                      : (
+                        ) :
+                        (
                           <FileText className="h-3 w-3 shrink-0 text-muted-foreground" />
                         )}
                     <span className="truncate max-w-[120px]">{file.name}</span>
@@ -676,8 +676,8 @@ export function ChatInput({
                   </div>
                 ))}
               </div>
-            )
-          : null}
+            ) :
+          null}
 
         {/* Hidden file input */}
         <input
@@ -700,16 +700,16 @@ export function ChatInput({
             >
               <Paperclip className="size-4" />
             </Button>
-            {normalizedSlashCommands.length > 0
-              ? (
+            {normalizedSlashCommands.length > 0 ?
+                (
                   <CommandPicker
                     commands={normalizedSlashCommands}
                     onSelect={cmd => selectSlashCommand(cmd)}
                   />
-                )
-              : null}
-            {agentCommands.length > 0
-              ? (
+                ) :
+              null}
+            {agentCommands.length > 0 ?
+                (
                   <AgentPicker
                     agents={agentCommands}
                     onSelect={(a) => {
@@ -718,8 +718,8 @@ export function ChatInput({
                       textareaRef.current?.focus()
                     }}
                   />
-                )
-              : null}
+                ) :
+              null}
             <Button
               variant="ghost"
               size="icon"
@@ -731,14 +731,14 @@ export function ChatInput({
           </div>
 
           <Button type="button" disabled={!canSend || followUp.isPending} onClick={handleSend}>
-            {followUp.isPending
-              ? (
+            {followUp.isPending ?
+                (
                   <span className="flex items-center gap-1.5">
                     <Loader2 className="size-3.5 animate-spin" />
                     {t('session.sending')}
                   </span>
-                )
-              : (
+                ) :
+                (
                   t('chat.send')
                 )}
           </Button>
@@ -746,11 +746,11 @@ export function ChatInput({
       </div>
 
       {/* File preview modal — shadcn Dialog */}
-      {previewFile
-        ? (
+      {previewFile ?
+          (
             <FilePreviewModal file={previewFile} onClose={() => setPreviewFile(null)} />
-          )
-        : null}
+          ) :
+        null}
     </div>
   )
 }
@@ -775,26 +775,26 @@ function FilePreviewModal({ file, onClose }: { file: File, onClose: () => void }
     <Dialog open onOpenChange={open => !open && onClose()}>
       <DialogContent className="max-w-[600px] max-h-[80vh] overflow-hidden p-0">
         <DialogHeader className="flex flex-row items-center gap-2 px-4 py-3 border-b border-border/30 space-y-0">
-          {file.type.startsWith('image/')
-            ? (
+          {file.type.startsWith('image/') ?
+              (
                 <ImageIcon className="h-4 w-4 shrink-0 text-blue-500" />
-              )
-            : (
+              ) :
+              (
                 <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
               )}
           <DialogTitle className="text-sm font-medium truncate">{file.name}</DialogTitle>
         </DialogHeader>
 
         <div className="p-4 overflow-auto max-h-[calc(80vh-56px)]">
-          {imageUrl
-            ? (
+          {imageUrl ?
+              (
                 <img
                   src={imageUrl}
                   alt={file.name}
                   className="max-w-full max-h-[60vh] rounded-lg object-contain mx-auto"
                 />
-              )
-            : (
+              ) :
+              (
                 <div className="space-y-3">
                   <div className="flex items-center justify-center w-16 h-16 rounded-xl bg-muted/60 mx-auto">
                     <FileText className="h-8 w-8 text-muted-foreground/60" />

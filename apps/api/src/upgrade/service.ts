@@ -63,9 +63,9 @@ export function startPeriodicCheck(): void {
 
   // Allow the process to exit without waiting for this timer
   if (
-    periodicCheckTimer
-    && typeof periodicCheckTimer === 'object'
-    && 'unref' in periodicCheckTimer
+    periodicCheckTimer &&
+    typeof periodicCheckTimer === 'object' &&
+    'unref' in periodicCheckTimer
   ) {
     periodicCheckTimer.unref()
   }

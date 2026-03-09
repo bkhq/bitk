@@ -28,9 +28,9 @@ export function generateToolContent(toolName: string, input: Record<string, unkn
     case 'Grep':
       return input.path ? `${input.pattern} in ${input.path}` : String(input.pattern ?? toolName)
     case 'Glob':
-      return input.path
-        ? `${input.pattern ?? input.filePattern} in ${input.path}`
-        : String(input.pattern ?? input.filePattern ?? toolName)
+      return input.path ?
+        `${input.pattern ?? input.filePattern} in ${input.path}` :
+          String(input.pattern ?? input.filePattern ?? toolName)
     case 'LS':
       return String(input.path ?? toolName)
     case 'WebFetch':
@@ -125,10 +125,10 @@ export function normalizeToolResultContent(content: string | unknown[] | undefin
       .map((part: unknown) => {
         if (typeof part === 'string') return part
         if (
-          typeof part === 'object'
-          && part !== null
-          && 'text' in part
-          && typeof (part as { text: unknown }).text === 'string'
+          typeof part === 'object' &&
+          part !== null &&
+          'text' in part &&
+          typeof (part as { text: unknown }).text === 'string'
         ) {
           return (part as { text: string }).text
         }

@@ -92,18 +92,18 @@ export default function KanbanPage() {
       </div>
 
       {/* Overlay — covers entire page, click to close panel (desktop only) */}
-      {!isMobile && isPanelOpen
-        ? (
+      {!isMobile && isPanelOpen ?
+          (
             <div className="fixed inset-0 z-20 bg-black/50" onClick={close} />
-          )
-        : null}
+          ) :
+        null}
 
       {/* Create Issue Dialog */}
       <CreateIssueDialog />
 
       {/* Issue Side Panel — desktop only; mobile navigates to detail page */}
-      {!isMobile && isPanelOpen && panel.kind === 'view'
-        ? (
+      {!isMobile && isPanelOpen && panel.kind === 'view' ?
+          (
             <div
               role="dialog"
               aria-modal="true"
@@ -114,8 +114,8 @@ export default function KanbanPage() {
               <ResizeHandle />
               <IssuePanel projectId={projectId} issueId={panel.issueId} onClose={close} />
             </div>
-          )
-        : null}
+          ) :
+        null}
     </div>
   )
 }

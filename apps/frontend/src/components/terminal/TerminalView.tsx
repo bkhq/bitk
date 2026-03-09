@@ -103,9 +103,9 @@ function wsUrl(sessionId: string): string {
   const proto = location.protocol === 'https:' ? 'wss:' : 'ws:'
   // Bun runtime lacks socket.destroySoon() — Vite WS proxy crashes.
   // In dev mode, connect directly to API server to bypass Vite proxy.
-  const host = import.meta.env.DEV
-    ? `${location.hostname}:${import.meta.env.VITE_API_PORT || 3010}`
-    : location.host
+  const host = import.meta.env.DEV ?
+    `${location.hostname}:${import.meta.env.VITE_API_PORT || 3010}` :
+    location.host
   return `${proto}//${host}/api/terminal/ws/${sessionId}`
 }
 
@@ -157,8 +157,8 @@ function connectWs(sessionId: string, terminal: Terminal, fitAddon: FitAddon): v
   const state = store.getState()
   if (state.disposed) return
   if (
-    state.ws
-    && (state.ws.readyState === WebSocket.OPEN || state.ws.readyState === WebSocket.CONNECTING)
+    state.ws &&
+    (state.ws.readyState === WebSocket.OPEN || state.ws.readyState === WebSocket.CONNECTING)
   ) {
     return
   }
@@ -221,9 +221,9 @@ async function initConnection(terminal: Terminal, fitAddon: FitAddon): Promise<v
 
   // Already have a live session + WS — skip
   if (
-    state.sessionId
-    && state.ws
-    && (state.ws.readyState === WebSocket.OPEN || state.ws.readyState === WebSocket.CONNECTING)
+    state.sessionId &&
+    state.ws &&
+    (state.ws.readyState === WebSocket.OPEN || state.ws.readyState === WebSocket.CONNECTING)
   ) {
     return
   }

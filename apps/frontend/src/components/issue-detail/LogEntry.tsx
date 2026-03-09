@@ -110,8 +110,8 @@ function TaskPlanEntry({ entry }: { entry: NormalizedLogEntry }) {
         status: string
         activeForm?: string
       }>
-    }
-    | undefined
+    } |
+    undefined
   )?.todos
   if (!items || items.length === 0) return null
 
@@ -133,24 +133,24 @@ function TaskPlanEntry({ entry }: { entry: NormalizedLogEntry }) {
       <div className="ml-4 space-y-0.5">
         {items.map(item => (
           <div key={item.content} className="flex items-start gap-1.5 text-xs">
-            {item.status === 'completed'
-              ? (
+            {item.status === 'completed' ?
+                (
                   <CheckCircle2 className="h-3 w-3 shrink-0 text-emerald-500 mt-0.5" />
-                )
-              : item.status === 'in_progress'
-                ? (
+                ) :
+              item.status === 'in_progress' ?
+                  (
                     <Loader2 className="h-3 w-3 shrink-0 text-blue-500 animate-spin mt-0.5" />
-                  )
-                : (
+                  ) :
+                  (
                     <Circle className="h-3 w-3 shrink-0 text-muted-foreground/40 mt-0.5" />
                   )}
             <span
               className={
-                item.status === 'completed'
-                  ? 'text-muted-foreground/60 line-through'
-                  : item.status === 'in_progress'
-                    ? 'text-blue-600 dark:text-blue-400'
-                    : ''
+                item.status === 'completed' ?
+                  'text-muted-foreground/60 line-through' :
+                  item.status === 'in_progress' ?
+                    'text-blue-600 dark:text-blue-400' :
+                    ''
               }
             >
               {item.status === 'in_progress' ? item.activeForm || item.content : item.content}
@@ -181,34 +181,34 @@ export function LogEntry({
       // Skip empty user messages (no text, no attachments, not pending/done)
       if (!entry.content.trim() && messageAttachments.length === 0 && !isPending && !isDone)
         return null
-      const barColor = isPending
-        ? 'border-amber-400 bg-amber-500/[0.06]'
-        : isDone
-          ? 'border-emerald-400 bg-emerald-500/[0.06]'
-          : 'border-foreground/70'
+      const barColor = isPending ?
+        'border-amber-400 bg-amber-500/[0.06]' :
+        isDone ?
+          'border-emerald-400 bg-emerald-500/[0.06]' :
+          'border-foreground/70'
       return (
         <div className="group py-2 animate-message-enter">
           <div className={`bg-muted/70 px-3 py-2.5 border-l-[3px] ${barColor}`}>
-            {entry.content.trim()
-              ? (
+            {entry.content.trim() ?
+                (
                   <div className="text-[15px] whitespace-pre-wrap break-words text-foreground leading-[1.75]">
                     {entry.content}
                   </div>
-                )
-              : null}
-            {messageAttachments.length > 0
-              ? (
+                ) :
+              null}
+            {messageAttachments.length > 0 ?
+                (
                   <div className={`flex flex-wrap gap-1.5${entry.content.trim() ? ' mt-2' : ''}`}>
                     {messageAttachments.map(att => (
                       <span
                         key={att.id}
                         className="inline-flex items-center gap-1 rounded bg-muted/60 border border-border/40 px-1.5 py-0.5 text-[11px] text-muted-foreground"
                       >
-                        {att.mimeType.startsWith('image/')
-                          ? (
+                        {att.mimeType.startsWith('image/') ?
+                            (
                               <Image className="h-3 w-3 shrink-0 text-blue-500" />
-                            )
-                          : (
+                            ) :
+                            (
                               <FileText className="h-3 w-3 shrink-0" />
                             )}
                         <span className="truncate max-w-[120px]">{att.name}</span>
@@ -216,29 +216,29 @@ export function LogEntry({
                       </span>
                     ))}
                   </div>
-                )
-              : null}
-            {isPending || isDone
-              ? (
+                ) :
+              null}
+            {isPending || isDone ?
+                (
                   <div className="flex items-center gap-2 mt-1">
-                    {isPending
-                      ? (
+                    {isPending ?
+                        (
                           <span className="inline-flex items-center gap-1 text-[10px] text-amber-500/70">
                             <Clock className="h-2.5 w-2.5" />
                             {t('chat.pendingMessage')}
                           </span>
-                        )
-                      : null}
-                    {isDone
-                      ? (
+                        ) :
+                      null}
+                    {isDone ?
+                        (
                           <span className="inline-flex items-center gap-1 text-[10px] text-emerald-500/70">
                             {t('chat.doneMessage')}
                           </span>
-                        )
-                      : null}
+                        ) :
+                      null}
                   </div>
-                )
-              : null}
+                ) :
+              null}
           </div>
         </div>
       )
@@ -256,31 +256,31 @@ export function LogEntry({
 
     case 'tool-use': {
       // Render structured task plan for TodoWrite
-      const isTodoWrite
-        = (entry.toolDetail?.toolName === 'TodoWrite' || entry.metadata?.toolName === 'TodoWrite')
-          && !entry.toolDetail?.isResult
-          && !entry.metadata?.isResult
+      const isTodoWrite =
+        (entry.toolDetail?.toolName === 'TodoWrite' || entry.metadata?.toolName === 'TodoWrite') &&
+        !entry.toolDetail?.isResult &&
+        !entry.metadata?.isResult
       if (isTodoWrite) {
         return <TaskPlanEntry entry={entry} />
       }
 
       const { Icon, color } = getToolIcon(entry.toolAction)
-      const toolName
-        = typeof entry.metadata?.toolName === 'string' ? entry.metadata.toolName : undefined
+      const toolName =
+        typeof entry.metadata?.toolName === 'string' ? entry.metadata.toolName : undefined
       const label = getToolLabel(entry.toolAction, toolName, t)
       const isResult = entry.metadata?.isResult === true
       if (inToolGroup) {
         if (isResult) return null
         const isCommandTitle = entry.toolAction?.kind === 'command-run'
-        const commandSummary
-          = entry.toolAction?.kind === 'command-run'
-            ? getCommandPreview(entry.toolAction.command, 90).summary
-            : ''
+        const commandSummary =
+          entry.toolAction?.kind === 'command-run' ?
+            getCommandPreview(entry.toolAction.command, 90).summary :
+            ''
         return (
           <div className="flex items-center gap-2 text-xs text-muted-foreground min-w-0">
             <Icon className={`h-3 w-3 shrink-0 ${color}`} />
-            {isCommandTitle
-              ? (
+            {isCommandTitle ?
+                (
                   <div className="min-w-0 flex-1 truncate">
                     <span>
                       {t('session.tool.commandRun')}
@@ -291,8 +291,8 @@ export function LogEntry({
                       {commandSummary}
                     </code>
                   </div>
-                )
-              : (
+                ) :
+                (
                   <span className="truncate font-mono">{label || entry.content}</span>
                 )}
           </div>
@@ -427,32 +427,32 @@ function AssistantMessage({
           className="absolute right-0 top-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150 rounded-md p-1 text-muted-foreground/50 hover:text-muted-foreground hover:bg-muted/50 z-10"
           title={t('session.copyMessage')}
         >
-          {copied
-            ? (
+          {copied ?
+              (
                 <Check className="h-3.5 w-3.5 text-emerald-500" />
-              )
-            : (
+              ) :
+              (
                 <Copy className="h-3.5 w-3.5" />
               )}
         </button>
         <MarkdownContent content={content} className="text-[14px] leading-[1.75]" />
       </div>
       <div className="flex items-center gap-2 mt-1">
-        {timestamp
-          ? (
+        {timestamp ?
+            (
               <span className="text-[10px] text-muted-foreground/30 group-hover:text-muted-foreground/60 transition-colors duration-200">
                 {formatTime(timestamp)}
               </span>
-            )
-          : null}
-        {durationMs != null
-          ? (
+            ) :
+          null}
+        {durationMs != null ?
+            (
               <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground/40">
                 <Clock className="h-2.5 w-2.5" />
                 {t('session.duration', { time: formatDuration(durationMs) })}
               </span>
-            )
-          : null}
+            ) :
+          null}
       </div>
     </div>
   )

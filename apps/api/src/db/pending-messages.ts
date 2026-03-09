@@ -85,10 +85,10 @@ export async function upsertPendingMessage(
     // Merge displayPrompt: append if both have it
     const existingDisplay = existingMeta.displayPrompt as string | undefined
     const newDisplay = metadata.displayPrompt as string | undefined
-    const mergedDisplay
-      = existingDisplay && newDisplay
-        ? `${existingDisplay}\n\n${newDisplay}`
-        : newDisplay || existingDisplay
+    const mergedDisplay =
+      existingDisplay && newDisplay ?
+        `${existingDisplay}\n\n${newDisplay}` :
+        newDisplay || existingDisplay
 
     // Merge attachments arrays
     const existingAttachments = (existingMeta.attachments ?? []) as unknown[]

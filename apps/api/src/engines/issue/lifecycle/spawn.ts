@@ -200,12 +200,12 @@ export async function spawnRetry(
     envVars: projCtx.envVars,
     systemPrompt: projCtx.systemPrompt,
   }
-  const spawned = issue.sessionFields.externalSessionId
-    ? await spawnWithSessionFallback(executor, issueId, {
+  const spawned = issue.sessionFields.externalSessionId ?
+      await spawnWithSessionFallback(executor, issueId, {
         ...spawnOpts,
         sessionId: issue.sessionFields.externalSessionId,
-      })
-    : await spawnFresh(executor, issueId, spawnOpts)
+      }) :
+      await spawnFresh(executor, issueId, spawnOpts)
 
   const normalizer = createLogNormalizer(executor)
 
@@ -224,8 +224,8 @@ export async function spawnRetry(
     worktreePath ? baseDir : undefined,
   )
   retryManaged.spawnCwd = workingDir
-  retryManaged.externalSessionId
-    = spawned.externalSessionId ?? issue.sessionFields.externalSessionId ?? undefined
+  retryManaged.externalSessionId =
+    spawned.externalSessionId ?? issue.sessionFields.externalSessionId ?? undefined
   monitorCompletion(ctx, executionId, issueId, engineType, true)
   logger.debug({ issueId, executionId, engineType, turnIndex }, 'issue_retry_spawned')
 }
@@ -277,9 +277,9 @@ export async function spawnFollowUpProcess(
   emitStateChange(issueId, executionId, 'running')
   // When flushing pending messages, the user message is already persisted in the
   // DB. Skip creating a duplicate entry.
-  const messageId = opts?.skipPersistMessage
-    ? null
-    : persistUserMessage(ctx, issueId, executionId, prompt, displayPrompt, metadata)
+  const messageId = opts?.skipPersistMessage ?
+    null :
+      persistUserMessage(ctx, issueId, executionId, prompt, displayPrompt, metadata)
 
   const baseDir = await resolveWorkingDir(issue.projectId)
 
@@ -373,8 +373,8 @@ export async function spawnFollowUpProcess(
     worktreePath ? baseDir : undefined,
   )
   followUpManaged.spawnCwd = workingDir
-  followUpManaged.externalSessionId
-    = spawned.externalSessionId ?? issue.sessionFields.externalSessionId ?? undefined
+  followUpManaged.externalSessionId =
+    spawned.externalSessionId ?? issue.sessionFields.externalSessionId ?? undefined
   // User message already persisted above (before spawn)
   monitorCompletion(ctx, executionId, issueId, engineType, false)
   const followUpPid = getPidFromSubprocess(spawned.subprocess)

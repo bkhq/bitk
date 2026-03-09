@@ -148,11 +148,11 @@ export function ChatArea({
             className="h-7 w-7 text-muted-foreground hover:text-foreground shrink-0 transition-colors"
             onClick={() => navigate(resolvedBackPath)}
             title={
-              backPath
-                ? t('issue.backToList')
-                : showBackToList
-                  ? t('issue.backToList')
-                  : t('issue.backToBoard')
+              backPath ?
+                  t('issue.backToList') :
+                showBackToList ?
+                    t('issue.backToList') :
+                    t('issue.backToBoard')
             }
           >
             <ArrowLeft className="h-4 w-4" />
@@ -163,8 +163,8 @@ export function ChatArea({
                 #
                 {issue.issueNumber}
               </span>
-              {editingTitle
-                ? (
+              {editingTitle ?
+                  (
                     <input
                       className="text-sm font-semibold bg-transparent border-b-2 border-primary outline-none min-w-0 flex-1 tracking-tight"
                       value={titleDraft}
@@ -180,8 +180,8 @@ export function ChatArea({
                       }}
                       autoFocus
                     />
-                  )
-                : (
+                  ) :
+                  (
                     <span
                       className="text-sm font-semibold truncate cursor-pointer hover:text-primary transition-colors duration-200 tracking-tight decoration-primary/30 hover:underline underline-offset-2"
                       onClick={startEditingTitle}
@@ -196,11 +196,11 @@ export function ChatArea({
             variant="ghost"
             size="icon"
             className={`h-7 w-7 shrink-0 transition-colors ${
-              isAutoTitling
-                ? 'text-violet-600 dark:text-violet-400 animate-pulse'
-                : issue.sessionStatus
-                  ? 'text-muted-foreground hover:text-violet-600 dark:hover:text-violet-400'
-                  : 'text-muted-foreground/30 cursor-not-allowed'
+              isAutoTitling ?
+                'text-violet-600 dark:text-violet-400 animate-pulse' :
+                issue.sessionStatus ?
+                  'text-muted-foreground hover:text-violet-600 dark:hover:text-violet-400' :
+                  'text-muted-foreground/30 cursor-not-allowed'
             }`}
             title={t('issue.autoTitle')}
             disabled={!issue.sessionStatus || isAutoTitling}
@@ -208,8 +208,8 @@ export function ChatArea({
           >
             <Sparkles className="h-3.5 w-3.5" />
           </Button>
-          {!issue.parentIssueId
-            ? (
+          {!issue.parentIssueId ?
+              (
                 <Button
                   variant="ghost"
                   size="icon"
@@ -219,8 +219,8 @@ export function ChatArea({
                 >
                   <Plus className="h-3.5 w-3.5" />
                 </Button>
-              )
-            : null}
+              ) :
+            null}
           <Button
             variant="ghost"
             size="icon"
@@ -253,10 +253,10 @@ export function ChatArea({
       </div>
 
       {/* Diff panel — full-screen overlay on mobile, inline on desktop */}
-      {showDiff
-        ? (
-            isMobile
-              ? (
+      {showDiff ?
+          (
+            isMobile ?
+                (
                   <div className="fixed inset-0 z-40 bg-background flex flex-col">
                     <Suspense
                       fallback={(
@@ -275,8 +275,8 @@ export function ChatArea({
                       />
                     </Suspense>
                   </div>
-                )
-              : (
+                ) :
+                (
                   <Suspense
                     fallback={(
                       <div className="flex w-[360px] shrink-0 items-center justify-center border-l border-border bg-background text-sm text-muted-foreground">
@@ -293,8 +293,8 @@ export function ChatArea({
                     />
                   </Suspense>
                 )
-          )
-        : null}
+          ) :
+        null}
 
       {/* Sub-issue dialog */}
       <SubIssueDialog

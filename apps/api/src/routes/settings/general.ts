@@ -284,9 +284,9 @@ general.get('/slash-commands', async (c) => {
   let categorized = getCachedCategorizedCommands(engine)
   // If cache is cold (empty result), try refreshing from DB before responding
   if (
-    categorized.commands.length === 0
-    && categorized.agents.length === 0
-    && categorized.plugins.length === 0
+    categorized.commands.length === 0 &&
+    categorized.agents.length === 0 &&
+    categorized.plugins.length === 0
   ) {
     const { refreshSlashCommandsCache } = await import('@/engines/issue/queries')
     await refreshSlashCommandsCache()

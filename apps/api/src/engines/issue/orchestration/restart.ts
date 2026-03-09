@@ -66,12 +66,12 @@ export async function restartIssue(
     const projCtx = await getProjectExecContext(issue.projectId)
 
     // Prepend project system prompt + merge pending messages
-    const basePrompt = projCtx.systemPrompt
-      ? `${projCtx.systemPrompt}\n\n${issue.sessionFields.prompt ?? ''}`
-      : (issue.sessionFields.prompt ?? '')
-    const effectivePrompt = pendingPrompt
-      ? [basePrompt, pendingPrompt].filter(Boolean).join('\n\n')
-      : basePrompt
+    const basePrompt = projCtx.systemPrompt ?
+      `${projCtx.systemPrompt}\n\n${issue.sessionFields.prompt ?? ''}` :
+        (issue.sessionFields.prompt ?? '')
+    const effectivePrompt = pendingPrompt ?
+        [basePrompt, pendingPrompt].filter(Boolean).join('\n\n') :
+      basePrompt
 
     const spawnOpts = {
       workingDir,
@@ -83,8 +83,8 @@ export async function restartIssue(
     }
     let spawned: SpawnedProcess
     try {
-      spawned = issue.sessionFields.externalSessionId
-        ? await executor.spawnFollowUp(
+      spawned = issue.sessionFields.externalSessionId ?
+          await executor.spawnFollowUp(
             {
               workingDir,
               prompt: spawnOpts.prompt,
@@ -98,8 +98,8 @@ export async function restartIssue(
               projectId: issue.projectId,
               issueId,
             },
-          )
-        : await spawnFresh(executor, issueId, spawnOpts)
+          ) :
+          await spawnFresh(executor, issueId, spawnOpts)
     } catch (spawnError) {
       logger.error(
         { issueId, executionId, error: spawnError },
@@ -129,8 +129,8 @@ export async function restartIssue(
       worktreePath ? baseDir : undefined,
     )
     restartManaged.spawnCwd = workingDir
-    restartManaged.externalSessionId
-      = spawned.externalSessionId ?? issue.sessionFields.externalSessionId ?? undefined
+    restartManaged.externalSessionId =
+      spawned.externalSessionId ?? issue.sessionFields.externalSessionId ?? undefined
     monitorCompletion(ctx, executionId, issueId, engineType, false)
 
     // Mark pending messages as dispatched after successful spawn

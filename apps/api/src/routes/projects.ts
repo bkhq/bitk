@@ -228,9 +228,9 @@ projects.delete('/:projectId', async (c) => {
   const toTerminate = activeIssues
     .filter(
       issue =>
-        issue.sessionStatus === 'running'
-        || issue.sessionStatus === 'pending'
-        || issueEngine.hasActiveProcessForIssue(issue.id),
+        issue.sessionStatus === 'running' ||
+        issue.sessionStatus === 'pending' ||
+        issueEngine.hasActiveProcessForIssue(issue.id),
     )
     .map(issue => issue.id)
 

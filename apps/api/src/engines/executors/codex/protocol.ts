@@ -477,8 +477,8 @@ export class CodexProtocolHandler {
 
     if (method === 'thread/started' && params) {
       const thread = (params as Record<string, unknown>).thread as
-        | Record<string, unknown>
-        | undefined
+        | Record<string, unknown> |
+        undefined
       const threadId = thread?.id as string | undefined
       if (threadId && !this._threadId) {
         this._threadId = threadId

@@ -9,12 +9,12 @@ function displayWidth(str: string): number {
     const code = ch.codePointAt(0) ?? 0
     // CJK Unified Ideographs, CJK Compatibility, Fullwidth forms, etc.
     if (
-      (code >= 0x2E80 && code <= 0x9FFF)
-      || (code >= 0xF900 && code <= 0xFAFF)
-      || (code >= 0xFE30 && code <= 0xFE4F)
-      || (code >= 0xFF00 && code <= 0xFF60)
-      || (code >= 0xFFE0 && code <= 0xFFE6)
-      || (code >= 0x20000 && code <= 0x2FA1F)
+      (code >= 0x2E80 && code <= 0x9FFF) ||
+      (code >= 0xF900 && code <= 0xFAFF) ||
+      (code >= 0xFE30 && code <= 0xFE4F) ||
+      (code >= 0xFF00 && code <= 0xFF60) ||
+      (code >= 0xFFE0 && code <= 0xFFE6) ||
+      (code >= 0x20000 && code <= 0x2FA1F)
     ) {
       w += 2
     } else {

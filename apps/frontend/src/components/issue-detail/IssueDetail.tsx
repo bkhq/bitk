@@ -9,8 +9,8 @@ import type { StatusDefinition, StatusId } from '@/lib/statuses'
 import { STATUSES } from '@/lib/statuses'
 import type { Issue } from '@/types/kanban'
 
-export const badgeBase
-  = 'inline-flex items-center gap-1 rounded-full border px-2 h-[22px] text-[11px] leading-none font-medium whitespace-nowrap'
+export const badgeBase =
+  'inline-flex items-center gap-1 rounded-full border px-2 h-[22px] text-[11px] leading-none font-medium whitespace-nowrap'
 
 const badgeButtonBase = 'h-[22px] rounded-full px-2 text-[11px] leading-none font-medium gap-1'
 
@@ -51,8 +51,8 @@ export function IssueDetail({
       <StatusSelect status={status} onChange={id => onUpdate?.({ statusId: id })} />
 
       {/* Tags — editable (comma-separated) */}
-      {editingTag
-        ? (
+      {editingTag ?
+          (
             <input
               ref={tagInputRef}
               type="text"
@@ -79,8 +79,8 @@ export function IssueDetail({
               placeholder={t('issue.tagPlaceholder')}
               className={`${badgeBase} border-primary/40 bg-background outline-none w-40`}
             />
-          )
-        : (
+          ) :
+          (
             <button
               type="button"
               onClick={() => {
@@ -89,9 +89,9 @@ export function IssueDetail({
                 requestAnimationFrame(() => tagInputRef.current?.focus())
               }}
               className={`${badgeBase} cursor-pointer transition-colors ${
-                issue.tags && issue.tags.length > 0
-                  ? 'border-border/50 bg-muted/30 text-muted-foreground hover:border-border'
-                  : 'border-dashed border-border/40 text-muted-foreground/40 hover:text-muted-foreground/60 hover:border-border/60'
+                issue.tags && issue.tags.length > 0 ?
+                  'border-border/50 bg-muted/30 text-muted-foreground hover:border-border' :
+                  'border-dashed border-border/40 text-muted-foreground/40 hover:text-muted-foreground/60 hover:border-border/60'
               }`}
               title={t('issue.tag')}
             >
@@ -101,8 +101,8 @@ export function IssueDetail({
           )}
 
       {/* Delete */}
-      {onDelete
-        ? (
+      {onDelete ?
+          (
             <Button
               type="button"
               onClick={onDelete}
@@ -115,8 +115,8 @@ export function IssueDetail({
               <Trash2 className="h-3 w-3" />
               <span>{isDeleting ? t('issue.deleting') : t('issue.delete')}</span>
             </Button>
-          )
-        : null}
+          ) :
+        null}
 
       {/* Dev mode toggle + Worktree (right side) */}
       <div className="ml-auto flex items-center gap-1.5">
@@ -126,17 +126,17 @@ export function IssueDetail({
           size="sm"
           variant="outline"
           className={`${badgeButtonBase} cursor-pointer ${
-            issue.devMode
-              ? 'border-amber-400/40 bg-amber-500/10 text-amber-600 dark:text-amber-400'
-              : 'border-border/50 bg-muted/20 text-muted-foreground/60 hover:text-muted-foreground'
+            issue.devMode ?
+              'border-amber-400/40 bg-amber-500/10 text-amber-600 dark:text-amber-400' :
+              'border-border/50 bg-muted/20 text-muted-foreground/60 hover:text-muted-foreground'
           }`}
           title={t('issue.devMode')}
         >
           <Bug className="h-3 w-3" />
           <span>{t('issue.dev')}</span>
         </Button>
-        {issue.useWorktree
-          ? (
+        {issue.useWorktree ?
+            (
               <div ref={worktreeRef} className="relative flex">
                 <button
                   type="button"
@@ -146,8 +146,8 @@ export function IssueDetail({
                   <GitBranch className="h-3 w-3" />
                   {t('chat.worktree')}
                 </button>
-                {showWorktree
-                  ? (
+                {showWorktree ?
+                    (
                       <div className="absolute right-0 bottom-full mb-1.5 z-50 min-w-[240px] rounded-xl border border-border/60 bg-popover/95 backdrop-blur-sm py-2 px-3 shadow-xl text-xs text-popover-foreground space-y-1.5">
                         <div className="flex items-center gap-1.5 text-muted-foreground">
                           <GitBranch className="h-3 w-3 shrink-0" />
@@ -170,11 +170,11 @@ export function IssueDetail({
                           </div>
                         </div>
                       </div>
-                    )
-                  : null}
+                    ) :
+                  null}
               </div>
-            )
-          : null}
+            ) :
+          null}
       </div>
     </div>
   )
@@ -214,8 +214,8 @@ export function StatusSelect({
         {tStatus(t, status.name)}
         <ChevronDown className="h-3 w-3 opacity-50" />
       </Button>
-      {open
-        ? (
+      {open ?
+          (
             <div className="absolute left-0 bottom-full mb-1.5 z-50 min-w-[120px] rounded-xl border border-border/60 bg-popover/95 backdrop-blur-sm py-1 shadow-xl text-xs text-popover-foreground">
               {STATUSES.map((s) => {
                 const isActive = s.id === status.id
@@ -240,8 +240,8 @@ export function StatusSelect({
                 )
               })}
             </div>
-          )
-        : null}
+          ) :
+        null}
     </div>
   )
 }

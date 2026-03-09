@@ -295,12 +295,12 @@ export function triggerIssueExecution(
 
       // Relocate any pending messages: hide old pending row, include content in prompt
       const relocated = await relocatePendingForProcessing(issueId)
-      const basePrompt = systemPrompt
-        ? `${systemPrompt}\n\n${issue.prompt ?? ''}`
-        : (issue.prompt ?? '')
-      const effectivePrompt = relocated
-        ? [basePrompt, relocated.prompt].filter(Boolean).join('\n\n')
-        : basePrompt
+      const basePrompt = systemPrompt ?
+        `${systemPrompt}\n\n${issue.prompt ?? ''}` :
+          (issue.prompt ?? '')
+      const effectivePrompt = relocated ?
+          [basePrompt, relocated.prompt].filter(Boolean).join('\n\n') :
+        basePrompt
 
       await issueEngine.executeIssue(issueId, {
         engineType: (issue.engineType ?? 'echo') as EngineType,

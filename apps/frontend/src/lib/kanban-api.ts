@@ -396,8 +396,8 @@ export const kanbanApi = {
 
   // File Browser
   listFiles: (projectId: string, path?: string, hideIgnored?: boolean, root?: string | null) => {
-    const encodedPath
-      = path && path !== '.' ? `/${path.split('/').map(encodeURIComponent).join('/')}` : ''
+    const encodedPath =
+      path && path !== '.' ? `/${path.split('/').map(encodeURIComponent).join('/')}` : ''
     const params = new URLSearchParams()
     if (hideIgnored) params.set('hideIgnored', 'true')
     if (root) params.set('root', root)

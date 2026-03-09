@@ -30,8 +30,8 @@ export function ReviewListPanel({
     if (!searchTerm) return issues
     return issues.filter(
       issue =>
-        issue.title.toLowerCase().includes(searchTerm)
-        || issue.projectName.toLowerCase().includes(searchTerm),
+        issue.title.toLowerCase().includes(searchTerm) ||
+        issue.projectName.toLowerCase().includes(searchTerm),
     )
   }, [issues, searchTerm])
 
@@ -77,13 +77,13 @@ export function ReviewListPanel({
           {mobileNav}
           <span className="text-sm font-semibold truncate tracking-tight">{t('review.title')}</span>
         </div>
-        {issues
-          ? (
+        {issues ?
+            (
               <span className="text-[10px] font-medium text-muted-foreground/50 shrink-0 tabular-nums">
                 {issues.length}
               </span>
-            )
-          : null}
+            ) :
+          null}
       </div>
 
       {/* Search */}
@@ -102,19 +102,19 @@ export function ReviewListPanel({
 
       {/* Grouped issue list by project */}
       <div className="flex-1 overflow-y-auto">
-        {isLoading
-          ? (
+        {isLoading ?
+            (
               <div className="flex items-center justify-center py-8">
                 <p className="text-xs text-muted-foreground">{t('common.loading')}</p>
               </div>
-            )
-          : grouped.length === 0
-            ? (
+            ) :
+          grouped.length === 0 ?
+              (
                 <div className="flex items-center justify-center py-8">
                   <p className="text-xs text-muted-foreground/55">{t('review.empty')}</p>
                 </div>
-              )
-            : (
+              ) :
+              (
                 grouped.map(group => (
                   <ProjectGroup
                     key={group.projectId}
@@ -131,15 +131,15 @@ export function ReviewListPanel({
       </div>
 
       {/* Resize handle */}
-      {onResizeStart
-        ? (
+      {onResizeStart ?
+          (
             <div
               role="separator"
               onMouseDown={onResizeStart}
               className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-primary/20 active:bg-primary/30 transition-colors z-20"
             />
-          )
-        : null}
+          ) :
+        null}
     </div>
   )
 }
@@ -186,8 +186,8 @@ function ProjectGroup({
         </span>
       </button>
 
-      {!isCollapsed
-        ? (
+      {!isCollapsed ?
+          (
             <div>
               {issues.map(issue => (
                 <ReviewIssueRow
@@ -198,8 +198,8 @@ function ProjectGroup({
                 />
               ))}
             </div>
-          )
-        : null}
+          ) :
+        null}
     </div>
   )
 }

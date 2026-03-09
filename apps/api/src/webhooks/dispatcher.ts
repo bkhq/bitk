@@ -263,10 +263,10 @@ export async function deliver(
   }
 
   try {
-    result
-      = webhook.channel === 'telegram'
-        ? await deliverTelegram(webhook, event, payload)
-        : await deliverWebhook(webhook, event, payload)
+    result =
+      webhook.channel === 'telegram' ?
+          await deliverTelegram(webhook, event, payload) :
+          await deliverWebhook(webhook, event, payload)
   } catch (err) {
     result = {
       statusCode: null,
@@ -380,8 +380,8 @@ export function initWebhookDispatcher() {
     (data) => {
       void (async () => {
         try {
-          const eventType: WebhookEventType
-            = data.finalStatus === 'completed' ? 'session.completed' : 'session.failed'
+          const eventType: WebhookEventType =
+            data.finalStatus === 'completed' ? 'session.completed' : 'session.failed'
 
           const meta = await getIssueMetadata(data.issueId)
           const payload: Record<string, unknown> = {

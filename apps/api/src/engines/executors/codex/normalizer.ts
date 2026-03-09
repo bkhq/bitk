@@ -355,8 +355,8 @@ export class CodexLogNormalizer {
             server?: string
             tool?: string
             arguments?: unknown
-          }
-          | undefined
+          } |
+          undefined
         if (!invocation) return null
         const toolName = `mcp:${invocation.server ?? 'unknown'}:${invocation.tool ?? 'unknown'}`
         return {
@@ -382,8 +382,8 @@ export class CodexLogNormalizer {
           | {
             server?: string
             tool?: string
-          }
-          | undefined
+          } |
+          undefined
         const result = msg.result as { content?: unknown[], is_error?: boolean } | undefined
         const toolName = `mcp:${invocation?.server ?? 'unknown'}:${invocation?.tool ?? 'unknown'}`
         const isError = result?.is_error ?? false
@@ -537,8 +537,8 @@ export class CodexLogNormalizer {
           | {
             last_token_usage?: { total_tokens?: number }
             model_context_window?: number
-          }
-          | undefined
+          } |
+          undefined
         if (!info?.last_token_usage) return null
         const totalTokens = info.last_token_usage.total_tokens ?? 0
         const contextWindow = info.model_context_window ?? 0
@@ -804,9 +804,9 @@ export class CodexLogNormalizer {
       const patches = item.patches as unknown[] | undefined
       const path = item.path as string | undefined
       const patchCount = patches?.length ?? 0
-      const summary = path
-        ? `File changed: ${path} (${patchCount} patch${patchCount !== 1 ? 'es' : ''})`
-        : `File changed (${patchCount} patch${patchCount !== 1 ? 'es' : ''})`
+      const summary = path ?
+        `File changed: ${path} (${patchCount} patch${patchCount !== 1 ? 'es' : ''})` :
+        `File changed (${patchCount} patch${patchCount !== 1 ? 'es' : ''})`
       return {
         entryType: 'tool-use',
         content: summary,
@@ -889,9 +889,9 @@ export class CodexLogNormalizer {
     }
     if (outputTokens != null) {
       parts.push(
-        outputTokens >= 1000
-          ? `${(outputTokens / 1000).toFixed(1)}k output`
-          : `${outputTokens} output`,
+        outputTokens >= 1000 ?
+          `${(outputTokens / 1000).toFixed(1)}k output` :
+          `${outputTokens} output`,
       )
     }
 

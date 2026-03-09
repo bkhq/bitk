@@ -83,8 +83,8 @@ async function resolveProjectPath(c: Context, relativePath: string) {
   if (rootOverride) {
     const resolvedOverride = resolve(rootOverride)
     if (
-      resolvedOverride === resolve(project.directory)
-      || isValidWorktreeRoot(resolvedOverride, projectId)
+      resolvedOverride === resolve(project.directory) ||
+      isValidWorktreeRoot(resolvedOverride, projectId)
     ) {
       root = resolvedOverride
     } else {
@@ -190,9 +190,9 @@ async function handleShow(c: Context, relativePath: string) {
     const dirents = await readdir(target, { withFileTypes: true })
     const validNames = dirents.filter(d => d.isFile() || d.isDirectory()).map(d => d.name)
 
-    const ignoredNames = hideIgnored
-      ? await getGitIgnoredNames(target, validNames)
-      : new Set<string>()
+    const ignoredNames = hideIgnored ?
+        await getGitIgnoredNames(target, validNames) :
+        new Set<string>()
 
     const entries: FileEntry[] = []
 

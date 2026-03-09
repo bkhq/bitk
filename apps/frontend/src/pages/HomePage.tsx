@@ -86,8 +86,8 @@ function ProjectCard({ project, onClick }: { project: Project, onClick: () => vo
         </CardHeader>
         <CardContent className="mt-auto">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            {project.directory
-              ? (
+            {project.directory ?
+                (
                   <button
                     type="button"
                     onClick={handleCopyPath}
@@ -96,16 +96,16 @@ function ProjectCard({ project, onClick }: { project: Project, onClick: () => vo
                   >
                     <FolderOpen className="h-3 w-3 shrink-0" />
                     <span className="truncate font-mono">{project.directory}</span>
-                    {copied
-                      ? (
+                    {copied ?
+                        (
                           <Check className="h-3 w-3 shrink-0 text-green-500" />
-                        )
-                      : (
+                        ) :
+                        (
                           <Copy className="h-3 w-3 shrink-0 opacity-0 group-hover/path:opacity-100 transition-opacity" />
                         )}
                   </button>
-                )
-              : null}
+                ) :
+              null}
             <span className="ml-auto flex shrink-0 items-center gap-1">
               <Hash className="h-3 w-3" />
               {stats.issueCount}
@@ -307,25 +307,25 @@ export default function HomePage() {
           <h1 className="text-xl font-semibold tracking-tight md:text-2xl">
             {t('project.projects')}
           </h1>
-          {projects
-            ? (
+          {projects ?
+              (
                 <Badge variant="secondary" className="ml-1">
                   {projects.length}
                 </Badge>
-              )
-            : null}
+              ) :
+            null}
 
           {/* Mobile: right-side menu sheet */}
-          {isMobile
-            ? (
+          {isMobile ?
+              (
                 <div className="ml-auto">
                   <MobileHomeMenu
                     onCreateProject={() => setShowCreate(true)}
                     onOpenSettings={() => setShowSettings(true)}
                   />
                 </div>
-              )
-            : (
+              ) :
+              (
                 <DesktopHeaderControls
                   onCreateProject={() => setShowCreate(true)}
                   onOpenSettings={() => setShowSettings(true)}
@@ -333,8 +333,8 @@ export default function HomePage() {
               )}
         </div>
 
-        {isLoading
-          ? (
+        {isLoading ?
+            (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {Array.from({ length: 6 }).map((_, i) => (
                   <Card key={i} className="bg-card/30 animate-pulse min-h-[140px]">
@@ -353,8 +353,8 @@ export default function HomePage() {
                   </Card>
                 ))}
               </div>
-            )
-          : (
+            ) :
+            (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {projects?.map((project, index) => (
                   <div

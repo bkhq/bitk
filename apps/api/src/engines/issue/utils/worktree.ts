@@ -5,9 +5,9 @@ import { logger } from '@/logger'
 import { ROOT_DIR } from '@/root'
 
 /** Resolve WORKTREE_DIR — absolute paths used as-is, relative resolved from ROOT_DIR */
-export const WORKTREE_BASE = WORKTREE_DIR.startsWith('/')
-  ? WORKTREE_DIR
-  : join(ROOT_DIR, WORKTREE_DIR)
+export const WORKTREE_BASE = WORKTREE_DIR.startsWith('/') ?
+  WORKTREE_DIR :
+    join(ROOT_DIR, WORKTREE_DIR)
 
 /** Safe root for rm fallback — never delete outside this directory */
 const WORKTREE_SAFE_ROOT = WORKTREE_BASE

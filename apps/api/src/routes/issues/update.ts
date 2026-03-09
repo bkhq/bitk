@@ -272,12 +272,12 @@ update.patch(
 
     // Check if transitioning to working → trigger execution or flush
     const transitioningToWorking = body.statusId === 'working' && existing.statusId !== 'working'
-    const shouldExecute
-      = transitioningToWorking && (!existing.sessionStatus || existing.sessionStatus === 'pending')
-    const shouldFlush
-      = transitioningToWorking
-        && !shouldExecute
-        && ['completed', 'failed', 'cancelled'].includes(existing.sessionStatus ?? '')
+    const shouldExecute =
+      transitioningToWorking && (!existing.sessionStatus || existing.sessionStatus === 'pending')
+    const shouldFlush =
+      transitioningToWorking &&
+      !shouldExecute &&
+      ['completed', 'failed', 'cancelled'].includes(existing.sessionStatus ?? '')
 
     // Check if transitioning to done → cancel active processes
     const transitioningToDone = body.statusId === 'done' && existing.statusId !== 'done'

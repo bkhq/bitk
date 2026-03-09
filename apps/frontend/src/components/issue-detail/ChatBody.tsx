@@ -164,10 +164,10 @@ export function ChatBody({
   const hasSession = !!issue.sessionStatus
   const { data: globalCmds } = useGlobalSlashCommands(issue.engineType)
   const { data: liveCmds } = useSlashCommands(projectId, issueId, hasSession)
-  const hasLive
-    = (liveCmds?.commands?.length ?? 0) > 0
-      || (liveCmds?.agents?.length ?? 0) > 0
-      || (liveCmds?.plugins?.length ?? 0) > 0
+  const hasLive =
+    (liveCmds?.commands?.length ?? 0) > 0 ||
+    (liveCmds?.agents?.length ?? 0) > 0 ||
+    (liveCmds?.plugins?.length ?? 0) > 0
   const activeCmds = hasLive ? liveCmds : globalCmds
   const slashCommands = activeCmds?.commands ?? []
   const agentCommands = activeCmds?.agents ?? []
@@ -286,8 +286,8 @@ export function ChatBody({
 
         {/* Scroll-to-top / scroll-to-bottom floating buttons */}
         <div className="absolute right-3 bottom-3 flex flex-col gap-1.5">
-          {showScrollTop
-            ? (
+          {showScrollTop ?
+              (
                 <button
                   type="button"
                   onClick={scrollToTop}
@@ -296,10 +296,10 @@ export function ChatBody({
                 >
                   <ArrowUpToLine className="h-3.5 w-3.5" />
                 </button>
-              )
-            : null}
-          {showScrollBottom
-            ? (
+              ) :
+            null}
+          {showScrollBottom ?
+              (
                 <button
                   type="button"
                   onClick={scrollToBottom}
@@ -308,8 +308,8 @@ export function ChatBody({
                 >
                   <ArrowDownToLine className="h-3.5 w-3.5" />
                 </button>
-              )
-            : null}
+              ) :
+            null}
         </div>
       </div>
 
@@ -351,13 +351,13 @@ export function ChatBody({
           <AlertDialogHeader>
             <AlertDialogTitle>{t('issue.delete')}</AlertDialogTitle>
             <AlertDialogDescription>{t('issue.deleteConfirm')}</AlertDialogDescription>
-            {issue.childCount && issue.childCount > 0
-              ? (
+            {issue.childCount && issue.childCount > 0 ?
+                (
                   <AlertDialogDescription className="text-destructive">
                     {t('issue.deleteWithChildren')}
                   </AlertDialogDescription>
-                )
-              : null}
+                ) :
+              null}
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleteIssueMutation.isPending}>

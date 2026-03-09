@@ -65,9 +65,9 @@ function shouldSkipStdoutIoLog(line: string): boolean {
     return true
   }
   return (
-    line.includes('"type":"assistant"')
-    && line.includes('"role":"assistant"')
-    && line.includes('"type":"thinking"')
+    line.includes('"type":"assistant"') &&
+    line.includes('"role":"assistant"') &&
+    line.includes('"type":"thinking"')
   )
 }
 

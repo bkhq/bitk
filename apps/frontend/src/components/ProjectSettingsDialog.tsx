@@ -148,14 +148,14 @@ function WorktreeSection({ project }: { project: Project }) {
           >
             <div className="min-w-0 flex-1 space-y-0.5">
               <p className="truncate text-sm font-medium font-mono">{wt.issueId}</p>
-              {wt.branch
-                ? (
+              {wt.branch ?
+                  (
                     <p className="flex items-center gap-1 text-xs text-muted-foreground">
                       <GitBranch className="size-3" />
                       <span className="truncate">{wt.branch}</span>
                     </p>
-                  )
-                : null}
+                  ) :
+                null}
             </div>
             <Button
               variant="ghost"
@@ -164,11 +164,11 @@ function WorktreeSection({ project }: { project: Project }) {
               disabled={deleteWorktree.isPending && deletingId === wt.issueId}
               onClick={() => setConfirmId(wt.issueId)}
             >
-              {deleteWorktree.isPending && deletingId === wt.issueId
-                ? (
+              {deleteWorktree.isPending && deletingId === wt.issueId ?
+                  (
                     <Loader2 className="size-4 animate-spin" />
-                  )
-                : (
+                  ) :
+                  (
                     <Trash2 className="size-4" />
                   )}
             </Button>
@@ -269,13 +269,13 @@ export function ProjectSettingsDialog({
     }
   }, [open, project])
 
-  const hasChanges
-    = name.trim() !== project.name
-      || description.trim() !== (project.description ?? '')
-      || directory.trim() !== (project.directory ?? '')
-      || repositoryUrl.trim() !== (project.repositoryUrl ?? '')
-      || systemPrompt !== (project.systemPrompt ?? '')
-      || envVarsText !== envVarsToText(project.envVars ?? {})
+  const hasChanges =
+    name.trim() !== project.name ||
+    description.trim() !== (project.description ?? '') ||
+    directory.trim() !== (project.directory ?? '') ||
+    repositoryUrl.trim() !== (project.repositoryUrl ?? '') ||
+    systemPrompt !== (project.systemPrompt ?? '') ||
+    envVarsText !== envVarsToText(project.envVars ?? {})
 
   const handleSave = () => {
     const trimmedName = name.trim()
@@ -332,8 +332,8 @@ export function ProjectSettingsDialog({
           </div>
         )}
         footer={active =>
-          active !== 'worktrees'
-            ? (
+          active !== 'worktrees' ?
+              (
                 <div className="flex items-center justify-between border-t px-5 py-3">
                   <Button variant="destructive" size="sm" onClick={() => setDeleteDialogOpen(true)}>
                     {t('project.delete')}
@@ -351,8 +351,8 @@ export function ProjectSettingsDialog({
                     </Button>
                   </div>
                 </div>
-              )
-            : null}
+              ) :
+            null}
       >
         {active => (
           <>
@@ -415,11 +415,11 @@ function CopyableId({ value }: { value: string }) {
       title={t('project.copyId')}
     >
       {value}
-      {copied
-        ? (
+      {copied ?
+          (
             <Check className="size-3 text-green-500" />
-          )
-        : (
+          ) :
+          (
             <Copy className="size-3 opacity-0 group-hover/id:opacity-100 transition-opacity" />
           )}
     </button>

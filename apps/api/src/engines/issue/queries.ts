@@ -148,9 +148,9 @@ export function getLogs(
   const persisted = result.entries
   const seen = new Set(
     persisted.map(entry =>
-      entry.messageId
-        ? `id:${entry.messageId}`
-        : `${entry.turnIndex ?? 0}:${entry.timestamp ?? ''}:${entry.entryType}:${entry.content}`,
+      entry.messageId ?
+        `id:${entry.messageId}` :
+        `${entry.turnIndex ?? 0}:${entry.timestamp ?? ''}:${entry.entryType}:${entry.content}`,
     ),
   )
 
@@ -170,9 +170,9 @@ export function getLogs(
   const merged = [...persisted]
   for (const entry of active.logs.toArray()) {
     if (!isVisibleForMode(entry, devMode)) continue
-    const key = entry.messageId
-      ? `id:${entry.messageId}`
-      : `${entry.turnIndex ?? 0}:${entry.timestamp ?? ''}:${entry.entryType}:${entry.content}`
+    const key = entry.messageId ?
+      `id:${entry.messageId}` :
+      `${entry.turnIndex ?? 0}:${entry.timestamp ?? ''}:${entry.entryType}:${entry.content}`
     if (seen.has(key)) continue
     // Skip entries at or below the lower bound — they are persisted but
     // outside the page window. Including them would break chronological order.
@@ -218,8 +218,8 @@ export function getCategorizedCommands(
 ): CategorizedCommands {
   const active = getActiveProcessForIssue(ctx, issueId)
   if (
-    active
-    && (active.slashCommands.length > 0 || active.agents.length > 0 || active.plugins.length > 0)
+    active &&
+    (active.slashCommands.length > 0 || active.agents.length > 0 || active.plugins.length > 0)
   ) {
     return {
       commands: active.slashCommands,

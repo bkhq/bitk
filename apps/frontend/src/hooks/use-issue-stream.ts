@@ -222,8 +222,8 @@ export function useIssueStream({
   const appendServerMessage = useCallback(
     (messageId: string, content: string, metadata?: Record<string, unknown>) => {
       const trimmed = content.trim()
-      const hasAttachments
-        = Array.isArray(metadata?.attachments) && (metadata.attachments as unknown[]).length > 0
+      const hasAttachments =
+        Array.isArray(metadata?.attachments) && (metadata.attachments as unknown[]).length > 0
       // Allow messages with attachments even if text content is empty
       if (!trimmed && !hasAttachments) return
       if (metadata?.type !== 'pending') {

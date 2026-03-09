@@ -162,9 +162,9 @@ function GeneralSection({ open }: { open: boolean }) {
     if (!open) setServerInfoLoaded(false)
   }, [open])
 
-  const serverInfoDirty
-    = serverInfoLoaded
-      && (serverName !== (serverData?.name ?? '') || serverUrl !== (serverData?.url ?? ''))
+  const serverInfoDirty =
+    serverInfoLoaded &&
+    (serverName !== (serverData?.name ?? '') || serverUrl !== (serverData?.url ?? ''))
 
   const handleSaveServerInfo = () => {
     updateServerInfo.mutate(
@@ -222,11 +222,11 @@ function GeneralSection({ open }: { open: boolean }) {
       {serverInfoDirty && (
         <div className="flex justify-end">
           <Button size="sm" onClick={handleSaveServerInfo} disabled={updateServerInfo.isPending}>
-            {updateServerInfo.isPending
-              ? (
+            {updateServerInfo.isPending ?
+                (
                   <Loader2 className="size-3 animate-spin mr-1" />
-                )
-              : (
+                ) :
+                (
                   <Check className="size-3 mr-1" />
                 )}
             {t('settings.saveServerInfo')}
@@ -334,16 +334,16 @@ function CleanupItem({
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
           <span className="text-xs font-medium">{label}</span>
-          {count != null
-            ? (
+          {count != null ?
+              (
                 <Badge
                   variant={count > 0 ? 'secondary' : 'outline'}
                   className="text-[10px] px-1.5 py-0"
                 >
                   {count}
                 </Badge>
-              )
-            : null}
+              ) :
+            null}
         </div>
         {hint ? <p className="text-[10px] text-muted-foreground">{hint}</p> : null}
       </div>
@@ -433,8 +433,8 @@ function LogsSection({ open }: { open: boolean }) {
       {/* Top bar: stats + actions */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          {logsData
-            ? (
+          {logsData ?
+              (
                 <span className="text-[10px] text-muted-foreground">
                   {t('settings.logsFileSize', {
                     size: formatSize(logsData.fileSize),
@@ -444,8 +444,8 @@ function LogsSection({ open }: { open: boolean }) {
                     count: logsData.totalLines,
                   })}
                 </span>
-              )
-            : null}
+              ) :
+            null}
         </div>
         <div className="flex items-center gap-1">
           <Button variant="ghost" size="sm" onClick={() => refetch()}>
@@ -463,11 +463,11 @@ function LogsSection({ open }: { open: boolean }) {
             disabled={clearLogs.isPending || !logsData?.fileSize}
             className="text-destructive hover:text-destructive hover:bg-destructive/10"
           >
-            {clearLogs.isPending
-              ? (
+            {clearLogs.isPending ?
+                (
                   <Loader2 className="size-3 animate-spin" />
-                )
-              : (
+                ) :
+                (
                   <Trash2 className="size-3" />
                 )}
             {t('settings.logsClear')}
@@ -486,9 +486,9 @@ function LogsSection({ open }: { open: boolean }) {
               onClick={() => setLevelFilter(l.level)}
               className={cn(
                 'rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors',
-                levelFilter === l.level
-                  ? 'bg-primary/10 text-primary'
-                  : 'text-muted-foreground hover:bg-accent/50',
+                levelFilter === l.level ?
+                  'bg-primary/10 text-primary' :
+                  'text-muted-foreground hover:bg-accent/50',
               )}
             >
               {l.label}
@@ -505,33 +505,33 @@ function LogsSection({ open }: { open: boolean }) {
             className="w-full rounded-md border bg-transparent py-1 pl-7 pr-2 text-[11px] outline-none focus:ring-1 focus:ring-ring"
           />
         </div>
-        {(levelFilter > 0 || keyword) && filteredLines.length !== logsData?.lines.length
-          ? (
+        {(levelFilter > 0 || keyword) && filteredLines.length !== logsData?.lines.length ?
+            (
               <span className="text-[10px] text-muted-foreground shrink-0">
                 {t('settings.logsFiltered', {
                   shown: filteredLines.length,
                   total: logsData?.lines.length ?? 0,
                 })}
               </span>
-            )
-          : null}
+            ) :
+          null}
       </div>
 
       {/* Log content */}
-      {isLoading
-        ? (
+      {isLoading ?
+          (
             <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
               <Loader2 className="size-3.5 animate-spin" />
               {t('settings.logsLoading')}
             </div>
-          )
-        : !filteredLines.length
-            ? (
+          ) :
+          !filteredLines.length ?
+              (
                 <div className="py-4 text-center text-sm text-muted-foreground">
                   {t('settings.logsEmpty')}
                 </div>
-              )
-            : (
+              ) :
+              (
                 <div
                   ref={logContainerRef}
                   onScroll={handleScroll}
@@ -583,41 +583,41 @@ function LogLine({ line, highlight = '' }: { line: string, highlight?: string })
     )
   }
 
-  const levelName
-    = parsed.level === 60
-      ? 'FATAL'
-      : parsed.level === 50
-        ? 'ERROR'
-        : parsed.level === 40
-          ? 'WARN'
-          : parsed.level === 30
-            ? 'INFO'
-            : parsed.level === 20
-              ? 'DEBUG'
-              : 'TRACE'
+  const levelName =
+    parsed.level === 60 ?
+      'FATAL' :
+      parsed.level === 50 ?
+        'ERROR' :
+        parsed.level === 40 ?
+          'WARN' :
+          parsed.level === 30 ?
+            'INFO' :
+            parsed.level === 20 ?
+              'DEBUG' :
+              'TRACE'
 
-  const levelColor
-    = parsed.level === 60 || parsed.level === 50
-      ? 'text-red-500'
-      : parsed.level === 40
-        ? 'text-amber-500'
-        : parsed.level === 30
-          ? 'text-blue-500'
-          : 'text-muted-foreground'
+  const levelColor =
+    parsed.level === 60 || parsed.level === 50 ?
+      'text-red-500' :
+      parsed.level === 40 ?
+        'text-amber-500' :
+        parsed.level === 30 ?
+          'text-blue-500' :
+          'text-muted-foreground'
 
   const time = parsed.time ? new Date(parsed.time).toLocaleTimeString() : ''
   const msg = parsed.msg ?? line
 
   return (
     <div className="whitespace-pre-wrap break-all py-px">
-      {time
-        ? (
+      {time ?
+          (
             <span className="text-muted-foreground/60">
               {time}
               {' '}
             </span>
-          )
-        : null}
+          ) :
+        null}
       <span className={levelColor}>{levelName}</span>
       {' '}
       <span>
@@ -662,11 +662,11 @@ function CleanupSection({ open }: { open: boolean }) {
           label={t('settings.cleanupLogs')}
           count={cleanupStats?.logs.logCount}
           hint={
-            cleanupStats
-              ? t('settings.cleanupLogsHint', {
+            cleanupStats ?
+                t('settings.cleanupLogsHint', {
                   tools: cleanupStats.logs.toolCallCount,
-                })
-              : undefined
+                }) :
+              undefined
           }
           loading={runCleanup.isPending}
           onClean={() => runCleanup.mutate(['logs'])}
@@ -675,9 +675,9 @@ function CleanupSection({ open }: { open: boolean }) {
           label={t('settings.cleanupOldVersions')}
           count={cleanupStats?.oldVersions.items.length}
           hint={
-            cleanupStats?.oldVersions.totalSize
-              ? formatSize(cleanupStats.oldVersions.totalSize)
-              : undefined
+            cleanupStats?.oldVersions.totalSize ?
+                formatSize(cleanupStats.oldVersions.totalSize) :
+              undefined
           }
           disabled={!cleanupStats?.oldVersions.items.length}
           loading={runCleanup.isPending}
@@ -687,9 +687,9 @@ function CleanupSection({ open }: { open: boolean }) {
           label={t('settings.cleanupWorktrees')}
           count={cleanupStats?.worktrees.count}
           hint={
-            cleanupStats?.worktrees.totalSize
-              ? formatSize(cleanupStats.worktrees.totalSize)
-              : undefined
+            cleanupStats?.worktrees.totalSize ?
+                formatSize(cleanupStats.worktrees.totalSize) :
+              undefined
           }
           disabled={!cleanupStats?.worktrees.count}
           loading={runCleanup.isPending}
@@ -699,11 +699,11 @@ function CleanupSection({ open }: { open: boolean }) {
           label={t('settings.cleanupDeletedIssues')}
           count={cleanupStats?.deletedIssues.issueCount}
           hint={
-            cleanupStats?.deletedIssues.projectCount
-              ? t('settings.cleanupDeletedIssuesHint', {
+            cleanupStats?.deletedIssues.projectCount ?
+                t('settings.cleanupDeletedIssuesHint', {
                   projects: cleanupStats.deletedIssues.projectCount,
-                })
-              : undefined
+                }) :
+              undefined
           }
           disabled={
             !cleanupStats?.deletedIssues.issueCount && !cleanupStats?.deletedIssues.projectCount
@@ -734,20 +734,20 @@ function RecycleBinSection({ open }: { open: boolean }) {
     <div className="space-y-3">
       <p className="text-xs text-muted-foreground">{t('settings.recycleBinHint')}</p>
 
-      {isLoading
-        ? (
+      {isLoading ?
+          (
             <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
               <Loader2 className="size-3.5 animate-spin" />
               {t('settings.recycleBinLoading')}
             </div>
-          )
-        : !deletedIssues?.length
-            ? (
+          ) :
+          !deletedIssues?.length ?
+              (
                 <div className="py-4 text-center text-sm text-muted-foreground">
                   {t('settings.recycleBinEmpty')}
                 </div>
-              )
-            : (
+              ) :
+              (
                 <div className="flex flex-col gap-1">
                   {deletedIssues.map(issue => (
                     <div key={issue.id} className="flex items-center gap-3 rounded-md border px-3 py-2">
@@ -765,11 +765,11 @@ function RecycleBinSection({ open }: { open: boolean }) {
                         onClick={() => restoreIssue.mutate(issue.id)}
                         disabled={restoreIssue.isPending}
                       >
-                        {restoreIssue.isPending
-                          ? (
+                        {restoreIssue.isPending ?
+                            (
                               <Loader2 className="size-3 animate-spin" />
-                            )
-                          : (
+                            ) :
+                            (
                               <RotateCcw className="size-3" />
                             )}
                         {t('settings.recycleBinRestore')}
@@ -800,17 +800,17 @@ function ModelsSection({ open }: { open: boolean }) {
 
   return (
     <div className="space-y-4">
-      {!enginesLoading && availableEngines.length > 0
-        ? (
+      {!enginesLoading && availableEngines.length > 0 ?
+          (
             <Field>
               <Label>{t('settings.defaultEngine')}</Label>
               <div className="mt-1.5 flex flex-wrap gap-1.5">
                 {availableEngines.map((eng) => {
                   const profile = profiles?.find(p => p.engineType === eng.engineType)
-                  const isSelected
-                    = eng.engineType === engineSettings?.defaultEngine
-                      || (!engineSettings?.defaultEngine
-                        && eng.engineType === availableEngines[0]?.engineType)
+                  const isSelected =
+                    eng.engineType === engineSettings?.defaultEngine ||
+                    (!engineSettings?.defaultEngine &&
+                      eng.engineType === availableEngines[0]?.engineType)
                   return (
                     <button
                       key={eng.engineType}
@@ -818,9 +818,9 @@ function ModelsSection({ open }: { open: boolean }) {
                       onClick={() => updateDefaultEngine.mutate(eng.engineType)}
                       className={cn(
                         'inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors',
-                        isSelected
-                          ? 'border-primary bg-primary/10 text-primary'
-                          : 'text-muted-foreground hover:bg-accent/50',
+                        isSelected ?
+                          'border-primary bg-primary/10 text-primary' :
+                          'text-muted-foreground hover:bg-accent/50',
                       )}
                     >
                       <EngineIcon engineType={eng.engineType} className="h-3.5 w-3.5 shrink-0" />
@@ -831,8 +831,8 @@ function ModelsSection({ open }: { open: boolean }) {
               </div>
               <p className="text-[11px] text-muted-foreground">{t('settings.defaultEngineHint')}</p>
             </Field>
-          )
-        : null}
+          ) :
+        null}
 
       <div className="flex items-center justify-between">
         <Label>{t('settings.engines')}</Label>
@@ -843,20 +843,20 @@ function ModelsSection({ open }: { open: boolean }) {
       </div>
 
       <div className="flex flex-col gap-2">
-        {enginesLoading
-          ? (
+        {enginesLoading ?
+            (
               <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 {t('settings.detecting')}
               </div>
-            )
-          : showNoAvailableEngines
-            ? (
+            ) :
+          showNoAvailableEngines ?
+              (
                 <div className="text-sm text-muted-foreground py-2">
                   {t('settings.noAvailableEngines')}
                 </div>
-              )
-            : (
+              ) :
+              (
                 availableEngines.map((engine) => {
                   const profile = profiles?.find(p => p.engineType === engine.engineType)
                   const engineModels = models?.[engine.engineType] ?? []
@@ -947,13 +947,13 @@ function AboutSection({ open }: { open: boolean }) {
                 <Badge variant="outline" className="font-mono text-[10px] py-0">
                   {data.app.version === 'dev' ? 'dev' : `v${data.app.version}`}
                 </Badge>
-                {data.app.isPackageMode
-                  ? (
+                {data.app.isPackageMode ?
+                    (
                       <Badge variant="secondary" className="text-[10px] py-0">
                         pkg
                       </Badge>
-                    )
-                  : null}
+                    ) :
+                  null}
               </span>
             )}
           />
@@ -1033,17 +1033,17 @@ function UpgradeSection({ open }: { open: boolean }) {
         <div className="flex min-w-0 flex-wrap items-center gap-1.5">
           <span className="shrink-0 text-muted-foreground">{t('settings.currentVersion')}</span>
           <Badge variant="outline" className="shrink-0 font-mono">
-            {versionInfo?.version === 'dev'
-              ? t('settings.devBuild')
-              : `v${versionInfo?.version ?? '...'}`}
+            {versionInfo?.version === 'dev' ?
+                t('settings.devBuild') :
+              `v${versionInfo?.version ?? '...'}`}
           </Badge>
-          {versionInfo?.isPackageMode
-            ? (
+          {versionInfo?.isPackageMode ?
+              (
                 <Badge variant="secondary" className="shrink-0 text-[10px] py-0">
                   {t('settings.packageMode')}
                 </Badge>
-              )
-            : null}
+              ) :
+            null}
         </div>
         <div className="flex min-w-0 items-center gap-1.5">
           <span className="shrink-0 text-muted-foreground">{t('settings.buildId')}</span>
@@ -1066,18 +1066,18 @@ function UpgradeSection({ open }: { open: boolean }) {
       </div>
 
       {/* Upgrade status */}
-      {isEnabled
-        ? (
+      {isEnabled ?
+          (
             <div className="mt-3 rounded-lg border p-3">
-              {checkForUpdates.isPending
-                ? (
+              {checkForUpdates.isPending ?
+                  (
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <Loader2 className="h-3 w-3 animate-spin" />
                       {t('settings.upgradeChecking')}
                     </div>
-                  )
-                : checkResult?.hasUpdate
-                  ? (
+                  ) :
+                checkResult?.hasUpdate ?
+                    (
                       <div className="flex flex-col gap-2">
                         <div className="flex items-center gap-2 text-xs">
                           <ArrowDownToLine className="h-3.5 w-3.5 text-blue-500" />
@@ -1087,8 +1087,8 @@ function UpgradeSection({ open }: { open: boolean }) {
                             })}
                           </span>
                         </div>
-                        {dlStatus?.status === 'downloading'
-                          ? (
+                        {dlStatus?.status === 'downloading' ?
+                            (
                               <div className="flex flex-col gap-1.5">
                                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                   <Loader2 className="h-3 w-3 animate-spin" />
@@ -1103,16 +1103,16 @@ function UpgradeSection({ open }: { open: boolean }) {
                                   />
                                 </div>
                               </div>
-                            )
-                          : dlStatus?.status === 'verifying'
-                            ? (
+                            ) :
+                          dlStatus?.status === 'verifying' ?
+                              (
                                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                   <Loader2 className="h-3 w-3 animate-spin" />
                                   {t('settings.upgradeVerifying')}
                                 </div>
-                              )
-                            : dlStatus?.status === 'verified'
-                              ? (
+                              ) :
+                            dlStatus?.status === 'verified' ?
+                                (
                                   <div className="flex flex-col gap-2">
                                     <div className="flex items-center gap-2 text-xs text-emerald-600 dark:text-emerald-400">
                                       <CircleCheck className="h-3 w-3" />
@@ -1127,35 +1127,35 @@ function UpgradeSection({ open }: { open: boolean }) {
                                       onClick={handleRestart}
                                       disabled={restartWithUpgrade.isPending}
                                     >
-                                      {restartWithUpgrade.isPending
-                                        ? (
+                                      {restartWithUpgrade.isPending ?
+                                          (
                                             <Loader2 className="h-3 w-3 animate-spin" />
-                                          )
-                                        : (
+                                          ) :
+                                          (
                                             <RefreshCw className="h-3 w-3" />
                                           )}
-                                      {restartWithUpgrade.isPending
-                                        ? t('settings.upgradeRestarting')
-                                        : t('settings.upgradeRestart')}
+                                      {restartWithUpgrade.isPending ?
+                                          t('settings.upgradeRestarting') :
+                                          t('settings.upgradeRestart')}
                                     </Button>
                                   </div>
-                                )
-                              : dlStatus?.status === 'completed'
-                                ? (
+                                ) :
+                              dlStatus?.status === 'completed' ?
+                                  (
                                     <div className="flex flex-col gap-2">
                                       <div className="flex items-center gap-2 text-xs text-emerald-600 dark:text-emerald-400">
                                         <CircleCheck className="h-3 w-3" />
                                         {t('settings.upgradeDownloaded')}
-                                        {dlStatus.fileName
-                                          ? (
+                                        {dlStatus.fileName ?
+                                            (
                                               <span
                                                 className="min-w-0 truncate font-mono text-[10px] text-muted-foreground"
                                                 title={dlStatus.fileName}
                                               >
                                                 {dlStatus.fileName}
                                               </span>
-                                            )
-                                          : null}
+                                            ) :
+                                          null}
                                       </div>
                                       <Button
                                         variant="default"
@@ -1163,35 +1163,35 @@ function UpgradeSection({ open }: { open: boolean }) {
                                         onClick={handleRestart}
                                         disabled={restartWithUpgrade.isPending}
                                       >
-                                        {restartWithUpgrade.isPending
-                                          ? (
+                                        {restartWithUpgrade.isPending ?
+                                            (
                                               <Loader2 className="h-3 w-3 animate-spin" />
-                                            )
-                                          : (
+                                            ) :
+                                            (
                                               <RefreshCw className="h-3 w-3" />
                                             )}
-                                        {restartWithUpgrade.isPending
-                                          ? t('settings.upgradeRestarting')
-                                          : t('settings.upgradeRestart')}
+                                        {restartWithUpgrade.isPending ?
+                                            t('settings.upgradeRestarting') :
+                                            t('settings.upgradeRestart')}
                                       </Button>
                                     </div>
-                                  )
-                                : dlStatus?.status === 'failed'
-                                  ? (
+                                  ) :
+                                dlStatus?.status === 'failed' ?
+                                    (
                                       <div className="flex items-center gap-2 text-xs text-red-600 dark:text-red-400">
                                         <CircleAlert className="h-3 w-3" />
                                         {t('settings.upgradeDownloadFailed')}
-                                        {dlStatus.checksumMatch === false
-                                          ? (
+                                        {dlStatus.checksumMatch === false ?
+                                            (
                                               <Badge variant="destructive" className="text-[10px] py-0">
                                                 {t('settings.upgradeChecksumFailed')}
                                               </Badge>
-                                            )
-                                          : null}
+                                            ) :
+                                          null}
                                       </div>
-                                    )
-                                  : checkResult.downloadUrl
-                                    ? (
+                                    ) :
+                                  checkResult.downloadUrl ?
+                                      (
                                         <Button
                                           variant="outline"
                                           size="sm"
@@ -1200,42 +1200,42 @@ function UpgradeSection({ open }: { open: boolean }) {
                                         >
                                           <ArrowDownToLine className="h-3 w-3" />
                                           {t('settings.upgradeDownload')}
-                                          {checkResult.assetSize
-                                            ? (
+                                          {checkResult.assetSize ?
+                                              (
                                                 <span className="text-muted-foreground ml-1">
                                                   (
                                                   {(checkResult.assetSize / 1024 / 1024).toFixed(1)}
                                                   {' '}
                                                   MB)
                                                 </span>
-                                              )
-                                            : null}
+                                              ) :
+                                            null}
                                         </Button>
-                                      )
-                                    : null}
+                                      ) :
+                                    null}
                       </div>
-                    )
-                  : checkResult
-                    ? (
+                    ) :
+                  checkResult ?
+                      (
                         <div className="flex items-center gap-2 text-xs text-emerald-600 dark:text-emerald-400">
                           <CircleCheck className="h-3 w-3" />
                           {t('settings.upgradeUpToDate')}
                         </div>
-                      )
-                    : (
+                      ) :
+                      (
                         <div className="text-xs text-muted-foreground">{t('settings.upgradeNoRelease')}</div>
                       )}
 
               <div className="mt-2 flex items-center justify-between">
-                {checkResult?.checkedAt
-                  ? (
+                {checkResult?.checkedAt ?
+                    (
                       <span className="text-[10px] text-muted-foreground">
                         {t('settings.upgradeLastChecked', {
                           time: formatTime(checkResult.checkedAt),
                         })}
                       </span>
-                    )
-                  : (
+                    ) :
+                    (
                       <span />
                     )}
                 <Button
@@ -1249,8 +1249,8 @@ function UpgradeSection({ open }: { open: boolean }) {
                 </Button>
               </div>
             </div>
-          )
-        : null}
+          ) :
+        null}
     </div>
   )
 }
@@ -1304,52 +1304,52 @@ function EngineCard({
           </div>
           <div className="flex items-center gap-1.5 mt-0.5 text-xs text-muted-foreground">
             {selectedModelName ? <span className="truncate">{selectedModelName}</span> : null}
-            {selectedModelName && hasModels
-              ? (
+            {selectedModelName && hasModels ?
+                (
                   <span className="text-muted-foreground/50">·</span>
-                )
-              : null}
-            {hasModels
-              ? (
+                ) :
+              null}
+            {hasModels ?
+                (
                   <span className="shrink-0">{t('settings.models', { count: models.length })}</span>
-                )
-              : null}
+                ) :
+              null}
           </div>
         </div>
         <div className="flex min-w-0 flex-wrap items-center justify-end gap-1.5">
-          {engine.installed
-            ? (
+          {engine.installed ?
+              (
                 <>
                   <StatusBadge ok label={t('settings.engineInstalled')} />
-                  {engine.authStatus === 'authenticated'
-                    ? (
+                  {engine.authStatus === 'authenticated' ?
+                      (
                         <StatusBadge ok label={t('settings.engineAuthenticated')} />
-                      )
-                    : engine.authStatus === 'unauthenticated'
-                      ? (
+                      ) :
+                    engine.authStatus === 'unauthenticated' ?
+                        (
                           <StatusBadge ok={false} label={t('settings.engineUnauthenticated')} />
-                        )
-                      : null}
+                        ) :
+                      null}
                 </>
-              )
-            : (
+              ) :
+              (
                 <StatusBadge ok={false} label={t('settings.engineNotInstalled')} />
               )}
-          {hasModels
-            ? (
+          {hasModels ?
+              (
                 <ChevronDown
                   className={cn(
                     'h-3.5 w-3.5 text-muted-foreground transition-transform',
                     expanded && 'rotate-180',
                   )}
                 />
-              )
-            : null}
+              ) :
+            null}
         </div>
       </button>
 
-      {expanded && hasModels
-        ? (
+      {expanded && hasModels ?
+          (
             <div className="border-t px-3 py-2 flex flex-col gap-1">
               <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-0.5">
                 {t('settings.defaultModel')}
@@ -1363,9 +1363,9 @@ function EngineCard({
                     onClick={() => onChangeDefault(m.id)}
                     className={cn(
                       'flex items-center gap-2 rounded-md px-2.5 py-1.5 text-xs transition-colors text-left',
-                      isSelected
-                        ? 'bg-primary/10 text-primary font-medium'
-                        : 'text-foreground/80 hover:bg-accent/50',
+                      isSelected ?
+                        'bg-primary/10 text-primary font-medium' :
+                        'text-foreground/80 hover:bg-accent/50',
                     )}
                   >
                     <span className="flex-1 truncate">
@@ -1377,8 +1377,8 @@ function EngineCard({
                 )
               })}
             </div>
-          )
-        : null}
+          ) :
+        null}
     </div>
   )
 }
@@ -1388,9 +1388,9 @@ function StatusBadge({ ok, label }: { ok: boolean, label: string }) {
     <span
       className={cn(
         'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium',
-        ok
-          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-          : 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+        ok ?
+          'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' :
+          'bg-amber-500/10 text-amber-600 dark:text-amber-400',
       )}
     >
       {ok ? <Check className="h-2.5 w-2.5" /> : <CircleAlert className="h-2.5 w-2.5" />}

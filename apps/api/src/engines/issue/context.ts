@@ -24,6 +24,6 @@ export interface EngineContext {
       displayPrompt?: string,
       metadata?: Record<string, unknown>,
       opts?: { skipPersistMessage?: boolean },
-    ) => Promise<{ executionId: string, messageId?: string | null }>)
-    | null
+    ) => Promise<{ executionId: string, messageId?: string | null }>) |
+    null
 }

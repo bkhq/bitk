@@ -277,15 +277,15 @@ export class ClaudeLogNormalizer {
             toolName: info?.toolName,
             isResult: true,
           },
-          toolDetail: info
-            ? {
+          toolDetail: info ?
+              {
                 kind: classifyToolKind(info.toolName),
                 toolName: info.toolName,
                 toolCallId: toolUseId,
                 isResult: true,
                 raw: buildToolResultRaw(info, resultContent, tr.is_error),
-              }
-            : undefined,
+              } :
+            undefined,
         })
       }
 
@@ -361,15 +361,15 @@ export class ClaudeLogNormalizer {
         toolName: info?.toolName,
         isResult: true,
       },
-      toolDetail: info
-        ? {
+      toolDetail: info ?
+          {
             kind: classifyToolKind(info.toolName),
             toolName: info.toolName,
             toolCallId: toolUseId,
             isResult: true,
             raw: buildToolResultRaw(info, resultContent, data.is_error),
-          }
-        : undefined,
+          } :
+        undefined,
     }
   }
 
@@ -424,10 +424,10 @@ export class ClaudeLogNormalizer {
   private parseMessageDelta(data: ClaudeStreamEvent): NormalizedLogEntry | null {
     // Emit token usage from message_delta if not from subagent
     if (!data.parent_tool_use_id && data.usage) {
-      const input
-        = (data.usage.input_tokens ?? 0)
-          + (data.usage.cache_creation_input_tokens ?? 0)
-          + (data.usage.cache_read_input_tokens ?? 0)
+      const input =
+        (data.usage.input_tokens ?? 0) +
+        (data.usage.cache_creation_input_tokens ?? 0) +
+        (data.usage.cache_read_input_tokens ?? 0)
       const output = data.usage.output_tokens ?? 0
       if (input > 0 || output > 0) {
         return {
@@ -492,10 +492,10 @@ export class ClaudeLogNormalizer {
     // If result contains text that wasn't already emitted as assistant message,
     // emit it (same logic as vibe-kanban reference)
     if (
-      data.subtype === 'success'
-      && typeof data.result === 'string'
-      && data.result.trim()
-      && (!this.lastAssistantMessage || !this.lastAssistantMessage.includes(data.result))
+      data.subtype === 'success' &&
+      typeof data.result === 'string' &&
+      data.result.trim() &&
+      (!this.lastAssistantMessage || !this.lastAssistantMessage.includes(data.result))
     ) {
       entries.push({
         entryType: 'assistant-message',
@@ -537,8 +537,8 @@ export class ClaudeLogNormalizer {
 
   private parseUnknown(data: Record<string, unknown>): NormalizedLogEntry | null {
     const fallbackContent = (data.message ?? data.content ?? '') as string
-    const fallbackStr
-      = typeof fallbackContent === 'string' ? fallbackContent : JSON.stringify(fallbackContent)
+    const fallbackStr =
+      typeof fallbackContent === 'string' ? fallbackContent : JSON.stringify(fallbackContent)
     if (!fallbackStr.trim()) return null
     return {
       entryType: 'system-message',

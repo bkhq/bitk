@@ -71,11 +71,11 @@ export function FileList({ entries, onNavigate }: FileListProps) {
             >
               <td className="px-4 py-2">
                 <div className="flex items-center gap-2">
-                  {entry.type === 'directory'
-                    ? (
+                  {entry.type === 'directory' ?
+                      (
                         <Folder className="h-4 w-4 text-blue-500 shrink-0" />
-                      )
-                    : (
+                      ) :
+                      (
                         <File className="h-4 w-4 text-muted-foreground shrink-0" />
                       )}
                   <span

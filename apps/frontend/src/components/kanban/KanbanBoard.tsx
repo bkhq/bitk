@@ -37,8 +37,8 @@ export function KanbanBoard({
       if (query) {
         items = items.filter(
           issue =>
-            issue.title.toLowerCase().includes(query)
-            || issue.issueNumber.toString().includes(query),
+            issue.title.toLowerCase().includes(query) ||
+            issue.issueNumber.toString().includes(query),
         )
       }
       map.set(status.id, items)

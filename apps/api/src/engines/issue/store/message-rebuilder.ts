@@ -30,8 +30,8 @@ function entryId(entry: NormalizedLogEntry, fallback: string): string {
 
 function hasResultFlag(entry: NormalizedLogEntry): boolean {
   return (
-    entry.toolDetail?.isResult === true
-    || (entry.metadata?.isResult as boolean | undefined) === true
+    entry.toolDetail?.isResult === true ||
+    (entry.metadata?.isResult as boolean | undefined) === true
   )
 }
 
@@ -105,8 +105,8 @@ function extractTodos(entry: NormalizedLogEntry): TaskPlanChatMessage['todos'] |
   const args = (meta.arguments ?? meta.input) as
     | {
       todos?: Array<{ content: string, status: string, activeForm?: string }>
-    }
-    | undefined
+    } |
+    undefined
   if (!args?.todos || !Array.isArray(args.todos)) return null
 
   return args.todos.map(t => ({
@@ -155,8 +155,8 @@ export function rebuildMessages(
   const resultMap = new Map<string, NormalizedLogEntry>()
   for (const entry of entries) {
     if (isToolUseResult(entry)) {
-      const callId
-        = entry.toolDetail?.toolCallId ?? (entry.metadata?.toolCallId as string | undefined)
+      const callId =
+        entry.toolDetail?.toolCallId ?? (entry.metadata?.toolCallId as string | undefined)
       if (callId) resultMap.set(callId, entry)
     }
   }
@@ -197,8 +197,8 @@ export function rebuildMessages(
 
     // Tool action: buffer it with its paired result
     if (isToolUseAction(entry)) {
-      const callId
-        = entry.toolDetail?.toolCallId ?? (entry.metadata?.toolCallId as string | undefined)
+      const callId =
+        entry.toolDetail?.toolCallId ?? (entry.metadata?.toolCallId as string | undefined)
       let result: NormalizedLogEntry | null = null
       if (callId) {
         result = resultMap.get(callId) ?? null

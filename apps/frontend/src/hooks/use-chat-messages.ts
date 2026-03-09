@@ -16,8 +16,8 @@ import { useMemo } from 'react'
 
 function hasResultFlag(entry: NormalizedLogEntry): boolean {
   return (
-    entry.toolDetail?.isResult === true
-    || (entry.metadata?.isResult as boolean | undefined) === true
+    entry.toolDetail?.isResult === true ||
+    (entry.metadata?.isResult as boolean | undefined) === true
   )
 }
 
@@ -49,8 +49,8 @@ function extractTodos(entry: NormalizedLogEntry): TaskPlanChatMessage['todos'] |
   const args = (meta.arguments ?? meta.input) as
     | {
       todos?: Array<{ content: string, status: string, activeForm?: string }>
-    }
-    | undefined
+    } |
+    undefined
   if (!args?.todos || !Array.isArray(args.todos)) return null
   return args.todos.map(t => ({
     content: t.content ?? '',
@@ -87,8 +87,8 @@ function rebuildMessages(entries: NormalizedLogEntry[]): ChatMessage[] {
   const pairedResultCallIds = new Set<string>()
   for (const entry of entries) {
     if (isToolUseResult(entry)) {
-      const callId
-        = entry.toolDetail?.toolCallId ?? (entry.metadata?.toolCallId as string | undefined)
+      const callId =
+        entry.toolDetail?.toolCallId ?? (entry.metadata?.toolCallId as string | undefined)
       if (callId) resultMap.set(callId, entry)
     }
   }
@@ -104,9 +104,9 @@ function rebuildMessages(entries: NormalizedLogEntry[]): ChatMessage[] {
       for (let j = i + 1; j < entries.length; j++) {
         const c = entries[j]
         if (
-          c.entryType === 'system-message'
-          && c.metadata?.subtype === 'command_output'
-          && !consumedOutputIdx.has(j)
+          c.entryType === 'system-message' &&
+          c.metadata?.subtype === 'command_output' &&
+          !consumedOutputIdx.has(j)
         ) {
           commandOutputByIdx.set(i, j)
           consumedOutputIdx.add(j)
@@ -191,8 +191,8 @@ function rebuildMessages(entries: NormalizedLogEntry[]): ChatMessage[] {
 
     // Skip result entries that were paired with their action
     if (isToolUseResult(entry)) {
-      const callId
-        = entry.toolDetail?.toolCallId ?? (entry.metadata?.toolCallId as string | undefined)
+      const callId =
+        entry.toolDetail?.toolCallId ?? (entry.metadata?.toolCallId as string | undefined)
       if (callId && pairedResultCallIds.has(callId)) continue
       // Unpaired result (action not in this slice) — render as standalone
       flushToolBuffer()
@@ -202,8 +202,8 @@ function rebuildMessages(entries: NormalizedLogEntry[]): ChatMessage[] {
     }
 
     if (isToolUseAction(entry)) {
-      const callId
-        = entry.toolDetail?.toolCallId ?? (entry.metadata?.toolCallId as string | undefined)
+      const callId =
+        entry.toolDetail?.toolCallId ?? (entry.metadata?.toolCallId as string | undefined)
       let result: NormalizedLogEntry | null = null
       if (callId) {
         result = resultMap.get(callId) ?? null
@@ -283,14 +283,14 @@ function rebuildMessages(entries: NormalizedLogEntry[]): ChatMessage[] {
           mimeType: string
           size: number
         }>
-        const status
-          = metaType === 'pending'
-            ? 'pending'
-            : metaType === 'done'
-              ? 'done'
-              : metaType === 'command'
-                ? 'command'
-                : 'normal'
+        const status =
+          metaType === 'pending' ?
+            'pending' :
+            metaType === 'done' ?
+              'done' :
+              metaType === 'command' ?
+                'command' :
+                'normal'
         const msg: UserChatMessage = {
           type: 'user',
           id: entryId(entry, nextId('um')),

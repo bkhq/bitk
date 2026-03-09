@@ -11,12 +11,12 @@ export function persistToolDetail(
   entry: NormalizedLogEntry,
 ): string | null {
   try {
-    const toolName
-      = typeof entry.metadata?.toolName === 'string'
-        ? entry.metadata.toolName
-        : (entry.toolAction?.kind ?? 'unknown')
-    const toolCallId
-      = typeof entry.metadata?.toolCallId === 'string' ? entry.metadata.toolCallId : null
+    const toolName =
+      typeof entry.metadata?.toolName === 'string' ?
+        entry.metadata.toolName :
+          (entry.toolAction?.kind ?? 'unknown')
+    const toolCallId =
+      typeof entry.metadata?.toolCallId === 'string' ? entry.metadata.toolCallId : null
     const isResult = entry.metadata?.isResult === true
     const action = entry.toolAction
     const kind = action?.kind ?? 'other'
@@ -60,10 +60,10 @@ export function persistToolDetail(
 /** Build a ToolDetail from an entry (pure function, no DB). */
 export function buildToolDetail(entry: NormalizedLogEntry): ToolDetail | null {
   if (entry.entryType !== 'tool-use') return null
-  const toolName
-    = typeof entry.metadata?.toolName === 'string'
-      ? entry.metadata.toolName
-      : (entry.toolAction?.kind ?? 'unknown')
+  const toolName =
+    typeof entry.metadata?.toolName === 'string' ?
+      entry.metadata.toolName :
+        (entry.toolAction?.kind ?? 'unknown')
   const action = entry.toolAction
   const kind = action?.kind ?? 'other'
   const isResult = entry.metadata?.isResult === true

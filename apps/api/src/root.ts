@@ -7,8 +7,8 @@ import { resolve } from 'node:path'
  * to false.
  */
 declare const __BITK_PACKAGE_MODE__: boolean | undefined
-const IS_PACKAGE_MODE: boolean
-  = typeof __BITK_PACKAGE_MODE__ !== 'undefined' ? __BITK_PACKAGE_MODE__ : false
+const IS_PACKAGE_MODE: boolean =
+  typeof __BITK_PACKAGE_MODE__ !== 'undefined' ? __BITK_PACKAGE_MODE__ : false
 
 /**
  * Monorepo / installation root directory.
@@ -18,11 +18,11 @@ const IS_PACKAGE_MODE: boolean
  * - Compiled binary: `import.meta.dir` starts with `/$bunfs` (Bun virtual FS),
  *   fall back to `process.cwd()`.
  */
-export const ROOT_DIR = process.env.ROOT_DIR
-  ? resolve(process.env.ROOT_DIR)
-  : import.meta.dir.startsWith('/$bunfs')
-    ? process.cwd()
-    : resolve(import.meta.dir, '../../..')
+export const ROOT_DIR = process.env.ROOT_DIR ?
+    resolve(process.env.ROOT_DIR) :
+  import.meta.dir.startsWith('/$bunfs') ?
+      process.cwd() :
+      resolve(import.meta.dir, '../../..')
 
 /**
  * App package directory (package mode only).

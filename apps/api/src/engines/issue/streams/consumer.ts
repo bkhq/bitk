@@ -20,9 +20,9 @@ async function saveCategorizedCommandsToSettings(
   categorized: CategorizedCommands,
 ): Promise<void> {
   if (
-    categorized.commands.length === 0
-    && categorized.agents.length === 0
-    && categorized.plugins.length === 0
+    categorized.commands.length === 0 &&
+    categorized.agents.length === 0 &&
+    categorized.plugins.length === 0
   ) {
     return
   }
@@ -83,13 +83,13 @@ export async function consumeStream(
         // Extract categorized commands from SDK init message
         if (entry.entryType === 'system-message' && entry.metadata?.subtype === 'init') {
           const meta = entry.metadata
-          managed.slashCommands = Array.isArray(meta.slashCommands)
-            ? (meta.slashCommands as string[])
-            : []
+          managed.slashCommands = Array.isArray(meta.slashCommands) ?
+              (meta.slashCommands as string[]) :
+              []
           managed.agents = Array.isArray(meta.agents) ? (meta.agents as string[]) : []
-          managed.plugins = Array.isArray(meta.plugins)
-            ? (meta.plugins as Array<{ name: string, path: string }>)
-            : []
+          managed.plugins = Array.isArray(meta.plugins) ?
+              (meta.plugins as Array<{ name: string, path: string }>) :
+              []
           void saveCategorizedCommandsToSettings(managed.engineType, {
             commands: managed.slashCommands,
             agents: managed.agents,
@@ -104,8 +104,8 @@ export async function consumeStream(
 
         // Claude may emit execution noise after interrupt (e.g. request aborted /
         // rust-analyzer crash). Suppress noise entries within 5s of the last interrupt.
-        const recentInterrupt
-          = managed.lastInterruptAt && Date.now() - managed.lastInterruptAt.getTime() < 5000
+        const recentInterrupt =
+          managed.lastInterruptAt && Date.now() - managed.lastInterruptAt.getTime() < 5000
         if (recentInterrupt && isCancelledNoiseEntry(entry)) {
           if (isTurnCompletionEntry(entry)) {
             callbacks.onTurnCompleted()

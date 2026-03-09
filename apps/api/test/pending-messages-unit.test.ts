@@ -288,10 +288,10 @@ describe('Pending message lifecycle', () => {
     expect(pending.length).toBe(0)
 
     const basePrompt = 'just the base'
-    const merged
-      = pending.length === 0
-        ? basePrompt
-        : [basePrompt, ...pending.map(m => m.content)].filter(Boolean).join('\n\n')
+    const merged =
+      pending.length === 0 ?
+        basePrompt :
+          [basePrompt, ...pending.map(m => m.content)].filter(Boolean).join('\n\n')
     expect(merged).toBe('just the base')
   })
 })

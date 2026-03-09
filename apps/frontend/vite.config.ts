@@ -24,9 +24,9 @@ function shikiSlim(): Plugin {
       // Redirect full language/theme bundles → slim subsets
       if (fromShiki) {
         if (
-          source === './langs.mjs'
-          || source.includes('langs-bundle-full')
-          || source.endsWith('/shiki/dist/langs.mjs')
+          source === './langs.mjs' ||
+          source.includes('langs-bundle-full') ||
+          source.endsWith('/shiki/dist/langs.mjs')
         ) {
           return slim.langs
         }
@@ -35,9 +35,9 @@ function shikiSlim(): Plugin {
       }
       // Stub out the Oniguruma WASM engine (unused — JS engine is used)
       if (
-        source === '@shikijs/engine-oniguruma'
-        || source === '@shikijs/engine-oniguruma/wasm-inlined'
-        || source === 'shiki/wasm'
+        source === '@shikijs/engine-oniguruma' ||
+        source === '@shikijs/engine-oniguruma/wasm-inlined' ||
+        source === 'shiki/wasm'
       ) {
         return slim.stub
       }

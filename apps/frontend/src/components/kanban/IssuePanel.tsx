@@ -66,8 +66,8 @@ export function IssuePanel({ projectId, issueId, onClose, hideHeaderActions }: I
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
       const target = e.target as HTMLElement
-      const isEditable
-        = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable
+      const isEditable =
+        target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable
       if (isEditable) {
         target.blur()
         e.stopPropagation()
@@ -102,8 +102,8 @@ export function IssuePanel({ projectId, issueId, onClose, hideHeaderActions }: I
             <span className="text-[11px] font-mono text-muted-foreground/70 bg-muted/50 rounded px-1.5 py-0.5 shrink-0 tabular-nums">
               {displayId}
             </span>
-            {editingTitle
-              ? (
+            {editingTitle ?
+                (
                   <input
                     className="text-sm font-semibold bg-transparent border-b-2 border-primary outline-none min-w-0 flex-1 tracking-tight"
                     value={titleDraft}
@@ -119,8 +119,8 @@ export function IssuePanel({ projectId, issueId, onClose, hideHeaderActions }: I
                     }}
                     autoFocus
                   />
-                )
-              : (
+                ) :
+                (
                   <span
                     className="text-sm font-semibold truncate cursor-pointer hover:text-primary transition-colors duration-200 tracking-tight decoration-primary/30 hover:underline underline-offset-2"
                     onClick={startEditingTitle}
@@ -132,8 +132,8 @@ export function IssuePanel({ projectId, issueId, onClose, hideHeaderActions }: I
           </div>
         </div>
         <div className="flex items-center gap-0.5 shrink-0">
-          {!effectiveIssue?.parentIssueId && issueId
-            ? (
+          {!effectiveIssue?.parentIssueId && issueId ?
+              (
                 <Button
                   variant="ghost"
                   size="icon"
@@ -143,10 +143,10 @@ export function IssuePanel({ projectId, issueId, onClose, hideHeaderActions }: I
                 >
                   <Plus className="h-3.5 w-3.5" />
                 </Button>
-              )
-            : null}
-          {!hideHeaderActions
-            ? (
+              ) :
+            null}
+          {!hideHeaderActions ?
+              (
                 <>
                   <Button
                     variant="ghost"
@@ -170,8 +170,8 @@ export function IssuePanel({ projectId, issueId, onClose, hideHeaderActions }: I
                     <Maximize2 className="h-3.5 w-3.5" />
                   </Button>
                 </>
-              )
-            : null}
+              ) :
+            null}
           <Button
             variant="ghost"
             size="icon"
@@ -185,8 +185,8 @@ export function IssuePanel({ projectId, issueId, onClose, hideHeaderActions }: I
       </div>
 
       {/* Shared chat body: messages + metadata bar + input */}
-      {effectiveIssue && issueId
-        ? (
+      {effectiveIssue && issueId ?
+          (
             <ChatBody
               projectId={projectId}
               issueId={issueId}
@@ -196,12 +196,12 @@ export function IssuePanel({ projectId, issueId, onClose, hideHeaderActions }: I
               scrollRef={scrollRef}
               onAfterDelete={onClose}
             />
-          )
-        : null}
+          ) :
+        null}
 
       {/* Diff panel — full-screen overlay within the panel */}
-      {showDiff && issueId
-        ? (
+      {showDiff && issueId ?
+          (
             <div className="absolute inset-0 z-40 bg-background flex flex-col">
               <Suspense
                 fallback={(
@@ -220,20 +220,20 @@ export function IssuePanel({ projectId, issueId, onClose, hideHeaderActions }: I
                 />
               </Suspense>
             </div>
-          )
-        : null}
+          ) :
+        null}
 
       {/* Sub-issue dialog */}
-      {issueId
-        ? (
+      {issueId ?
+          (
             <SubIssueDialog
               projectId={projectId}
               parentIssueId={issueId}
               open={showSubIssue}
               onOpenChange={setShowSubIssue}
             />
-          )
-        : null}
+          ) :
+        null}
     </div>
   )
 }

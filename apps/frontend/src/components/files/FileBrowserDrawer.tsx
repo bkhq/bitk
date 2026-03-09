@@ -84,9 +84,9 @@ export function FileBrowserDrawer() {
   )
 
   const handleFileBack = useCallback(() => {
-    const parentPath = currentPath.includes('/')
-      ? currentPath.slice(0, currentPath.lastIndexOf('/'))
-      : '.'
+    const parentPath = currentPath.includes('/') ?
+        currentPath.slice(0, currentPath.lastIndexOf('/')) :
+      '.'
     navigateTo(parentPath)
   }, [currentPath, navigateTo])
 
@@ -100,9 +100,9 @@ export function FileBrowserDrawer() {
   return (
     <>
       {/* Backdrop overlay */}
-      {fullscreen
-        ? null
-        : (
+      {fullscreen ?
+        null :
+          (
             <div className="fixed inset-0 z-[39] bg-black/20" onClick={close} onKeyDown={undefined} />
           )}
       <div
@@ -169,11 +169,11 @@ export function FileBrowserDrawer() {
               aria-label={t('fileBrowser.copyPath')}
               title={t('fileBrowser.copyPath')}
             >
-              {copied
-                ? (
+              {copied ?
+                  (
                     <Check className="h-3.5 w-3.5 text-green-500" />
-                  )
-                : (
+                  ) :
+                  (
                     <Copy className="h-3.5 w-3.5" />
                   )}
             </button>
@@ -192,9 +192,9 @@ export function FileBrowserDrawer() {
               type="button"
               onClick={handleToggleIgnored}
               className={`p-1 rounded transition-colors ${
-                hideIgnored
-                  ? 'text-foreground bg-accent'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                hideIgnored ?
+                  'text-foreground bg-accent' :
+                  'text-muted-foreground hover:text-foreground hover:bg-accent'
               }`}
               aria-label={t('fileBrowser.hideIgnored')}
               title={hideIgnored ? t('fileBrowser.showIgnored') : t('fileBrowser.hideIgnored')}
@@ -218,11 +218,11 @@ export function FileBrowserDrawer() {
                 aria-label={t('terminal.maximize')}
                 title={isFullscreen ? t('terminal.back') : t('terminal.maximize')}
               >
-                {isFullscreen
-                  ? (
+                {isFullscreen ?
+                    (
                       <Minimize2 className="h-3.5 w-3.5" />
-                    )
-                  : (
+                    ) :
+                    (
                       <Maximize2 className="h-3.5 w-3.5" />
                     )}
               </button>
@@ -250,34 +250,34 @@ export function FileBrowserDrawer() {
 
         {/* Content */}
         <div className="flex-1 overflow-auto min-h-0 p-4 flex flex-col">
-          {!project?.directory
-            ? (
+          {!project?.directory ?
+              (
                 <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
                   <FolderOpen className="h-12 w-12" />
                   <p className="text-sm">{t('fileBrowser.noDirectory')}</p>
                 </div>
-              )
-            : isLoading
-              ? (
+              ) :
+            isLoading ?
+                (
                   <div className="flex items-center justify-center py-16">
                     <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
                   </div>
-                )
-              : isError
-                ? (
+                ) :
+              isError ?
+                  (
                     <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">
                       {(error as Error)?.message || t('fileBrowser.loadError')}
                     </div>
-                  )
-                : listing?.type === 'file'
-                  ? (
+                  ) :
+                listing?.type === 'file' ?
+                    (
                       <FileViewer file={listing} onBack={handleFileBack} />
-                    )
-                  : listing?.type === 'directory'
-                    ? (
+                    ) :
+                  listing?.type === 'directory' ?
+                      (
                         <FileList entries={listing.entries} onNavigate={handleEntryClick} />
-                      )
-                    : null}
+                      ) :
+                    null}
         </div>
       </div>
     </>

@@ -232,13 +232,13 @@ export function CreateIssueForm({
       {/* ─── Footer ─────────────────────────────── */}
       <div className="flex items-center justify-end pt-4">
         <div className="flex items-center gap-2">
-          {onCancel
-            ? (
+          {onCancel ?
+              (
                 <Button variant="secondary" onClick={onCancel}>
                   {t('common.cancel')}
                 </Button>
-              )
-            : null}
+              ) :
+            null}
           <Button onClick={handleSubmit} disabled={createIssue.isPending || !input.trim()}>
             {createIssue.isPending ? t('createIssue.creating') : t('createIssue.create')}
           </Button>
@@ -368,11 +368,11 @@ function EngineSelect({
           />
         )}
       >
-        {value
-          ? (
+        {value ?
+            (
               <EngineIcon engineType={value} className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-            )
-          : null}
+            ) :
+          null}
         <span className="truncate">{currentName}</span>
         <ChevronDown className="h-3 w-3 text-muted-foreground ml-auto shrink-0" />
       </DropdownMenuTrigger>
@@ -461,15 +461,15 @@ function ModelSelect({
             className={m.id === value ? 'bg-accent/50' : ''}
           >
             <span className="font-medium">{m.name}</span>
-            {m.isDefault
-              ? (
+            {m.isDefault ?
+                (
                   <span className="text-[10px] text-muted-foreground ml-1">
                     (
                     {t('createIssue.engineLabel.default')}
                     )
                   </span>
-                )
-              : null}
+                ) :
+              null}
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>

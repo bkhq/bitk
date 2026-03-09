@@ -40,10 +40,10 @@ systemLogs.get('/system-logs', async (c) => {
   const tailLines = allLines.slice(-clampedLines)
 
   // For totalLines, estimate from file size if we only read a chunk
-  const totalLines
-    = fileSize > MAX_TAIL_BYTES
-      ? Math.round((fileSize / MAX_TAIL_BYTES) * allLines.length)
-      : allLines.length
+  const totalLines =
+    fileSize > MAX_TAIL_BYTES ?
+        Math.round((fileSize / MAX_TAIL_BYTES) * allLines.length) :
+      allLines.length
 
   return c.json({
     success: true,

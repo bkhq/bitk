@@ -31,8 +31,8 @@ export const useBoardStore = create<BoardState>((set, get) => ({
         .filter(i => i.statusId === status.id)
         .sort((a, b) => {
           // Primary: statusUpdatedAt DESC (most recently changed first)
-          const timeDiff
-            = new Date(b.statusUpdatedAt).getTime() - new Date(a.statusUpdatedAt).getTime()
+          const timeDiff =
+            new Date(b.statusUpdatedAt).getTime() - new Date(a.statusUpdatedAt).getTime()
           if (timeDiff !== 0) return timeDiff
           // Tiebreaker: sortOrder ASC (preserves drag reorder)
           return a.sortOrder - b.sortOrder

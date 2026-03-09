@@ -12,8 +12,8 @@ import {
 
 function getItemToolName(item: ToolGroupItem): string | undefined {
   return (
-    item.action.toolDetail?.toolName
-    ?? (typeof item.action.metadata?.toolName === 'string' ? item.action.metadata.toolName : undefined)
+    item.action.toolDetail?.toolName ??
+    (typeof item.action.metadata?.toolName === 'string' ? item.action.metadata.toolName : undefined)
   )
 }
 
@@ -50,22 +50,22 @@ function PathBadge({ path }: { path: string }) {
 function DiffStatsLabel({ added, removed }: { added: number, removed: number }) {
   return (
     <span className="flex items-center gap-1 text-[11px] shrink-0">
-      {added > 0
-        ? (
+      {added > 0 ?
+          (
             <span className="text-emerald-600 dark:text-emerald-400">
               +
               {added}
             </span>
-          )
-        : null}
-      {removed > 0
-        ? (
+          ) :
+        null}
+      {removed > 0 ?
+          (
             <span className="text-red-600 dark:text-red-400">
               -
               {removed}
             </span>
-          )
-        : null}
+          ) :
+        null}
     </span>
   )
 }
@@ -76,8 +76,8 @@ export function FileToolItem({ item }: { item: ToolGroupItem }) {
   const actionEntry = item.action
   const tool = actionEntry.toolAction
   const isEdit = tool?.kind === 'file-edit'
-  const toolName
-    = typeof actionEntry.metadata?.toolName === 'string' ? actionEntry.metadata.toolName : undefined
+  const toolName =
+    typeof actionEntry.metadata?.toolName === 'string' ? actionEntry.metadata.toolName : undefined
   const isWrite = toolName === 'Write'
   const filePath = tool && 'path' in tool ? tool.path : 'unknown'
   const codeLanguage = detectCodeLanguage(filePath)
@@ -88,8 +88,8 @@ export function FileToolItem({ item }: { item: ToolGroupItem }) {
 
   if (!isEdit) {
     const resultContent = item.result?.content
-    const isResultError
-      = item.result?.toolDetail?.raw?.isError === true || item.result?.entryType === 'error-message'
+    const isResultError =
+      item.result?.toolDetail?.raw?.isError === true || item.result?.entryType === 'error-message'
     const lineCount = countLines(resultContent)
     const showResultText = resultContent && isResultError
 
@@ -112,20 +112,20 @@ export function FileToolItem({ item }: { item: ToolGroupItem }) {
       )
     }
 
-    const sizeInfo = lineCount
-      ? `Read ${lineCount} lines`
-      : resultContent
-        ? `${formatFileSize(resultContent.length)}`
-        : null
+    const sizeInfo = lineCount ?
+      `Read ${lineCount} lines` :
+      resultContent ?
+        `${formatFileSize(resultContent.length)}` :
+        null
 
     return (
       <div className="py-0.5">
         {summary}
-        {sizeInfo
-          ? (
+        {sizeInfo ?
+            (
               <div className="ml-0.5 mt-0.5 text-[11px] text-muted-foreground/60">{sizeInfo}</div>
-            )
-          : null}
+            ) :
+          null}
       </div>
     )
   }
@@ -145,43 +145,43 @@ export function FileToolItem({ item }: { item: ToolGroupItem }) {
       )}
     >
       <div className="space-y-2">
-        {hasContent
-          ? (
+        {hasContent ?
+            (
               <CodeBlock content={parsed.content!} language={codeLanguage} collapsible={false} />
-            )
-          : null}
+            ) :
+          null}
 
-        {hasOldString
-          ? (
-              hasNewString
-                ? (
+        {hasOldString ?
+            (
+              hasNewString ?
+                  (
                     <ShikiUnifiedDiff
                       original={parsed.oldString || ''}
                       modified={parsed.newString || ''}
                       filePath={filePath}
                     />
-                  )
-                : (
+                  ) :
+                  (
                     <CodeBlock
                       content={parsed.oldString || ''}
                       language={codeLanguage}
                       collapsible={false}
                     />
                   )
-            )
-          : null}
+            ) :
+          null}
 
-        {!hasOldString && hasNewString
-          ? (
+        {!hasOldString && hasNewString ?
+            (
               <CodeBlock content={parsed.newString || ''} language={codeLanguage} collapsible={false} />
-            )
-          : null}
+            ) :
+          null}
 
-        {!hasContent && !hasOldString && !hasNewString && !parsed.hasOnlyFilePath
-          ? (
+        {!hasContent && !hasOldString && !hasNewString && !parsed.hasOnlyFilePath ?
+            (
               <CodeBlock content={parsed.raw || '(empty)'} language="json" collapsible={false} />
-            )
-          : null}
+            ) :
+          null}
       </div>
     </ToolPanel>
   )
@@ -189,8 +189,8 @@ export function FileToolItem({ item }: { item: ToolGroupItem }) {
 
 export function CommandToolItem({ item }: { item: ToolGroupItem }) {
   const { t } = useTranslation()
-  const fullCommand
-    = item.action.toolAction?.kind === 'command-run' ? item.action.toolAction.command : ''
+  const fullCommand =
+    item.action.toolAction?.kind === 'command-run' ? item.action.toolAction.command : ''
   const preview = getCommandPreview(fullCommand, 80)
 
   return (
@@ -206,16 +206,16 @@ export function CommandToolItem({ item }: { item: ToolGroupItem }) {
       )}
     >
       <div className="space-y-2">
-        {preview.isTruncated || fullCommand.includes('\n')
-          ? (
+        {preview.isTruncated || fullCommand.includes('\n') ?
+            (
               <div className="rounded-md border border-border/30 bg-muted/10 p-2 space-y-1">
                 <div className="px-0.5 text-[11px] text-muted-foreground">
                   {t('session.tool.fullCommand')}
                 </div>
                 <CodeBlock content={fullCommand} language="shell" collapsible={false} />
               </div>
-            )
-          : null}
+            ) :
+          null}
         <CodeBlock
           content={item.result?.content || item.action.content || '(empty)'}
           collapsible={false}
@@ -246,8 +246,8 @@ export function AgentToolItem({ item }: { item: ToolGroupItem }) {
   const description = input?.description || input?.prompt || 'Agent'
   const rawContent = item.result?.content || item.action.content || ''
   const resultContent = cleanAgentResult(rawContent)
-  const isResultError
-    = item.result?.toolDetail?.raw?.isError === true || item.result?.entryType === 'error-message'
+  const isResultError =
+    item.result?.toolDetail?.raw?.isError === true || item.result?.entryType === 'error-message'
 
   return (
     <ToolPanel
@@ -261,15 +261,15 @@ export function AgentToolItem({ item }: { item: ToolGroupItem }) {
         </div>
       )}
     >
-      {resultContent
-        ? (
+      {resultContent ?
+          (
             <pre
               className={`text-[11px] whitespace-pre-wrap font-mono leading-relaxed overflow-x-auto max-h-48 overflow-y-auto ${isResultError ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground/70'}`}
             >
               {resultContent}
             </pre>
-          )
-        : null}
+          ) :
+        null}
     </ToolPanel>
   )
 }
@@ -368,13 +368,13 @@ export function ToolGroupMessage({ message }: { message: ToolGroupChatMessage })
         {/* Header */}
         <div className="flex w-full items-center gap-2 px-3 py-2 text-xs text-muted-foreground">
           <span className="truncate">{description || statsLabel}</span>
-          {description
-            ? (
+          {description ?
+              (
                 <span className="ml-auto shrink-0 text-[10px] text-muted-foreground/50">
                   {statsLabel}
                 </span>
-              )
-            : null}
+              ) :
+            null}
         </div>
 
         {/* Tree items */}

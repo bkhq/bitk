@@ -50,8 +50,8 @@ async function parseFollowUpBody(c: {
     meta?: boolean
     displayPrompt?: string
     files: File[]
-  }
-  | { ok: false, error: string }
+  } |
+  { ok: false, error: string }
 > {
   const contentType = c.req.header('content-type') ?? ''
   if (contentType.includes('multipart/form-data')) {
@@ -229,8 +229,8 @@ message.post('/:id/follow-up', async (c) => {
   // Build file context for AI engine only
   const fileContext = buildFileContext(savedFiles)
   const fullPrompt = prompt + fileContext
-  const attachmentsMeta
-    = savedFiles.length > 0 ? { attachments: savedFiles.map(savedFileToMeta) } : {}
+  const attachmentsMeta =
+    savedFiles.length > 0 ? { attachments: savedFiles.map(savedFileToMeta) } : {}
 
   // Queue message for todo/done issues instead of rejecting
   // Always store original prompt for engine use; displayPrompt goes in metadata for UI display

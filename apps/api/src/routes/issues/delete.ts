@@ -37,10 +37,10 @@ del.delete('/:id', async (c) => {
   // Use a short timeout (5s) so the DELETE request doesn't block on lock
   // contention. If termination fails or times out, proceed with deletion
   // anyway — the reconciler will clean up orphaned processes on its next run.
-  const shouldTerminate
-    = existing.sessionStatus === 'running'
-      || existing.sessionStatus === 'pending'
-      || issueEngine.hasActiveProcessForIssue(issueId)
+  const shouldTerminate =
+    existing.sessionStatus === 'running' ||
+    existing.sessionStatus === 'pending' ||
+    issueEngine.hasActiveProcessForIssue(issueId)
   if (shouldTerminate) {
     try {
       await Promise.race([

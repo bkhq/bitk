@@ -56,10 +56,10 @@ export function handleTurnCompleted(
         .toArray()
         .some(l => l.entryType === 'assistant-message')
       const reason = (managed.logicalFailureReason ?? '').toLowerCase()
-      const isSessionError
-        = finalStatus === 'failed'
-          && !hasAssistantOutput
-          && (reason.includes('no conversation found') || reason.includes('session'))
+      const isSessionError =
+        finalStatus === 'failed' &&
+        !hasAssistantOutput &&
+        (reason.includes('no conversation found') || reason.includes('session'))
       if (isSessionError) {
         logger.warn(
           { issueId, executionId, reason: managed.logicalFailureReason },
@@ -144,10 +144,10 @@ export function handleTurnCompleted(
           .getActive()
           .some(e => e.meta.issueId === issueId && e.id !== executionId)
         if (
-          hasOtherActive
-          || (currentStatus !== finalStatus
-            && currentStatus !== 'running'
-            && currentStatus !== 'pending')
+          hasOtherActive ||
+          (currentStatus !== finalStatus &&
+            currentStatus !== 'running' &&
+            currentStatus !== 'pending')
         ) {
           logger.debug(
             {
@@ -190,8 +190,8 @@ export async function flushQueuedInputs(
   // Use the latest model override (last wins)
   const lastModel = all.reduce<string | undefined>((acc, i) => i.model ?? acc, undefined)
   // Merge display prompts for the UI message bubble
-  const mergedDisplay
-    = all
+  const mergedDisplay =
+    all
       .map(i => i.displayPrompt)
       .filter(Boolean)
       .join('\n\n') || undefined

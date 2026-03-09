@@ -116,8 +116,8 @@ export default function IssueDetailPage() {
       {!isMobile ? <AppSidebar activeProjectId={projectId} /> : null}
 
       {/* Issue list panel — hidden on mobile (replaced by full-page views) */}
-      {!hideListPanel
-        ? (
+      {!hideListPanel ?
+          (
             <IssueListPanel
               projectId={projectId}
               activeIssueId={issueId}
@@ -126,12 +126,12 @@ export default function IssueDetailPage() {
               onResizeStart={isMobile ? undefined : handleListResizeStart}
               mobileNav={isMobile ? <MobileSidebar activeProjectId={projectId} /> : undefined}
             />
-          )
-        : null}
+          ) :
+        null}
 
       {/* Chat area when issue is selected */}
-      {issueId
-        ? (
+      {issueId ?
+          (
             <ChatArea
               projectId={projectId}
               issueId={issueId}
@@ -142,14 +142,14 @@ export default function IssueDetailPage() {
               onCloseDiff={() => setShowDiff(false)}
               showBackToList
             />
-          )
-        : !hideListPanel
-            ? (
+          ) :
+          !hideListPanel ?
+              (
                 <div className="flex flex-1 items-center justify-center">
                   <p className="text-sm text-muted-foreground">{t('issue.selectToStart')}</p>
                 </div>
-              )
-            : null}
+              ) :
+            null}
       <CreateIssueDialog />
     </div>
   )

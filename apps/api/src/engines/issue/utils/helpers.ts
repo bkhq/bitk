@@ -13,8 +13,8 @@ export function isMissingExternalSessionError(error: unknown): boolean {
   if (!(error instanceof Error)) return false
   const msg = error.message.toLowerCase()
   return (
-    msg.includes('no conversation found with session id')
-    || (msg.includes('no conversation found') && msg.includes('session id'))
+    msg.includes('no conversation found with session id') ||
+    (msg.includes('no conversation found') && msg.includes('session id'))
   )
 }
 

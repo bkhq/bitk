@@ -114,9 +114,9 @@ export function gcSweep(ctx: EngineContext): void {
 
       // --- Check 1: Idle timeout (turn completed, process still alive) ---
       if (
-        managed.lastIdleAt
-        && !managed.turnInFlight
-        && now - managed.lastIdleAt.getTime() > IDLE_TIMEOUT_MS
+        managed.lastIdleAt &&
+        !managed.turnInFlight &&
+        now - managed.lastIdleAt.getTime() > IDLE_TIMEOUT_MS
       ) {
         logger.info(
           {
@@ -146,8 +146,8 @@ export function gcSweep(ctx: EngineContext): void {
 
         // Tier 3: interrupt was sent but process still hasn't responded
         if (
-          managed.stallProbeAt
-          && now - managed.stallProbeAt.getTime() > STALL_INTERRUPT_GRACE_MS
+          managed.stallProbeAt &&
+          now - managed.stallProbeAt.getTime() > STALL_INTERRUPT_GRACE_MS
         ) {
           const stallMinutes = Math.round(silenceMs / 60000)
           logger.warn(
@@ -178,9 +178,9 @@ export function gcSweep(ctx: EngineContext): void {
 
         // Tier 2: stall detected for STALL_LIVENESS_GRACE_MS, process still alive → send interrupt
         if (
-          managed.stallDetectedAt
-          && !managed.stallProbeAt
-          && now - managed.stallDetectedAt.getTime() > STALL_LIVENESS_GRACE_MS
+          managed.stallDetectedAt &&
+          !managed.stallProbeAt &&
+          now - managed.stallDetectedAt.getTime() > STALL_LIVENESS_GRACE_MS
         ) {
           const stallMinutes = Math.round(silenceMs / 60000)
           const alive = isProcessAlive(pid)
@@ -238,9 +238,9 @@ export function gcSweep(ctx: EngineContext): void {
 
         // Tier 1: no output for STREAM_STALL_TIMEOUT_MS — non-destructive liveness check
         if (
-          !managed.stallDetectedAt
-          && !managed.stallProbeAt
-          && silenceMs > STREAM_STALL_TIMEOUT_MS
+          !managed.stallDetectedAt &&
+          !managed.stallProbeAt &&
+          silenceMs > STREAM_STALL_TIMEOUT_MS
         ) {
           const alive = isProcessAlive(pid)
           const stallMinutes = Math.round(silenceMs / 60000)

@@ -46,10 +46,10 @@ export async function reconcileStaleWorkingIssues(): Promise<number> {
   for (const issue of staleIssues) {
     if (hasActiveProcess(issue.id)) continue
 
-    const isTerminal
-      = issue.sessionStatus === 'completed'
-        || issue.sessionStatus === 'failed'
-        || issue.sessionStatus === 'cancelled'
+    const isTerminal =
+      issue.sessionStatus === 'completed' ||
+      issue.sessionStatus === 'failed' ||
+      issue.sessionStatus === 'cancelled'
 
     if (!isTerminal) {
       needsSessionFix.push(issue.id)

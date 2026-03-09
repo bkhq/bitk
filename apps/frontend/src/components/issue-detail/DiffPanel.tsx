@@ -81,9 +81,9 @@ export function DiffPanel({
   return (
     <div
       className={
-        fullScreen
-          ? 'flex flex-col flex-1 min-h-0 bg-background'
-          : 'relative h-full shrink-0 border-l border-border bg-background'
+        fullScreen ?
+          'flex flex-col flex-1 min-h-0 bg-background' :
+          'relative h-full shrink-0 border-l border-border bg-background'
       }
       style={fullScreen ? undefined : { width }}
     >
@@ -115,35 +115,35 @@ export function DiffPanel({
           </button>
         </div>
 
-        {changesQuery.isLoading
-          ? (
+        {changesQuery.isLoading ?
+            (
               <div className="flex-1 flex items-center justify-center px-4">
                 <span className="text-sm text-muted-foreground text-center">{t('common.loading')}</span>
               </div>
-            )
-          : changesQuery.isError
-            ? (
+            ) :
+          changesQuery.isError ?
+              (
                 <div className="flex-1 flex items-center justify-center px-4">
                   <span className="text-sm text-muted-foreground text-center">
                     {String(changesQuery.error.message || t('diff.loadFailed'))}
                   </span>
                 </div>
-              )
-            : !changesQuery.data?.gitRepo
-                ? (
+              ) :
+              !changesQuery.data?.gitRepo ?
+                  (
                     <div className="flex-1 flex items-center justify-center px-4">
                       <span className="text-sm text-muted-foreground text-center">
                         {t('diff.notGitRepo')}
                       </span>
                     </div>
-                  )
-                : files.length === 0
-                  ? (
+                  ) :
+                files.length === 0 ?
+                    (
                       <div className="flex-1 flex items-center justify-center px-4">
                         <span className="text-sm text-muted-foreground text-center">{t('diff.noChanges')}</span>
                       </div>
-                    )
-                  : (
+                    ) :
+                    (
                       <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-y-contain touch-pan-y p-2 space-y-2">
                         {files.map(file => (
                           <DiffFileCard
@@ -191,10 +191,10 @@ function DiffFileCard({
   const displayAdditions = additions ?? stats.additions
   const displayDeletions = deletions ?? stats.deletions
   const themeType = resolved === 'dark' ? 'dark' : 'light'
-  const fullFilePair
-    = patch && patch.oldText !== undefined && patch.newText !== undefined
-      ? { oldText: patch.oldText, newText: patch.newText }
-      : null
+  const fullFilePair =
+    patch && patch.oldText !== undefined && patch.newText !== undefined ?
+        { oldText: patch.oldText, newText: patch.newText } :
+      null
 
   const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const handleCopyPath = useCallback(
@@ -235,43 +235,43 @@ function DiffFileCard({
               <Copy className={`h-3 w-3 ${copied ? 'text-emerald-500' : ''}`} />
             </button>
             <span className="flex items-center gap-0.5 text-[11px] font-medium tabular-nums">
-              {displayAdditions > 0
-                ? (
+              {displayAdditions > 0 ?
+                  (
                     <span className="text-emerald-600 dark:text-emerald-400">
                       +
                       {displayAdditions}
                     </span>
-                  )
-                : null}
-              {displayDeletions > 0
-                ? (
+                  ) :
+                null}
+              {displayDeletions > 0 ?
+                  (
                     <span className="text-red-600 dark:text-red-400">
                       -
                       {displayDeletions}
                     </span>
-                  )
-                : null}
+                  ) :
+                null}
             </span>
           </div>
         </div>
       </summary>
-      {isOpen
-        ? (
+      {isOpen ?
+          (
             <div className="min-w-0 border-t border-border/30">
-              {patchQuery.isLoading
-                ? (
+              {patchQuery.isLoading ?
+                  (
                     <div className="px-3 py-2.5 text-[11px] text-muted-foreground">
                       {t('common.loading')}
                     </div>
-                  )
-                : patchQuery.isError
-                  ? (
+                  ) :
+                patchQuery.isError ?
+                    (
                       <div className="px-3 py-2.5 text-[11px] text-destructive">
                         {String(patchQuery.error.message || t('diff.loadFailed'))}
                       </div>
-                    )
-                  : fullFilePair
-                    ? (
+                    ) :
+                  fullFilePair ?
+                      (
                         <div className="overflow-x-auto">
                           <Suspense
                             fallback={(
@@ -300,24 +300,24 @@ function DiffFileCard({
                             />
                           </Suspense>
                         </div>
-                      )
-                    : patchText.trim()
-                      ? (
+                      ) :
+                    patchText.trim() ?
+                        (
                           <PatchDiffView patch={patchText} />
-                        )
-                      : (
+                        ) :
+                        (
                           <div className="px-3 py-2.5 text-[11px] text-muted-foreground">
                             {t('diff.emptyPatch')}
                           </div>
                         )}
-              {patch?.truncated
-                ? (
+              {patch?.truncated ?
+                  (
                     <div className="px-3 pb-2 text-[11px] text-muted-foreground">{t('diff.truncated')}</div>
-                  )
-                : null}
+                  ) :
+                null}
             </div>
-          )
-        : null}
+          ) :
+        null}
     </details>
   )
 }

@@ -189,8 +189,8 @@ webhooksRoute.patch(
     // Channel is immutable after creation — always use existing value
     const effectiveChannel = existing.channel
     const effectiveUrl = body.url ?? existing.url
-    const effectiveSecret
-      = body.secret !== undefined && body.secret !== SECRET_MASK ? body.secret : existing.secret
+    const effectiveSecret =
+      body.secret !== undefined && body.secret !== SECRET_MASK ? body.secret : existing.secret
 
     if (effectiveChannel === 'webhook' && body.url !== undefined) {
       try {

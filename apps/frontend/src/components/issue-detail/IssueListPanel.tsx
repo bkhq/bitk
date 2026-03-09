@@ -163,15 +163,15 @@ export function IssueListPanel({
         </div>
       </div>
 
-      {project
-        ? (
+      {project ?
+          (
             <ProjectSettingsDialog
               open={showSettings}
               onOpenChange={setShowSettings}
               project={project}
             />
-          )
-        : null}
+          ) :
+        null}
 
       {/* Grouped issue list */}
       <div className="flex-1 overflow-y-auto">
@@ -190,15 +190,15 @@ export function IssueListPanel({
       </div>
 
       {/* Resize handle */}
-      {onResizeStart
-        ? (
+      {onResizeStart ?
+          (
             <div
               role="separator"
               onMouseDown={onResizeStart}
               className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-primary/20 active:bg-primary/30 transition-colors z-20"
             />
-          )
-        : null}
+          ) :
+        null}
     </div>
   )
 }
@@ -271,8 +271,8 @@ function StatusGroup({
                 />
 
                 {/* Indented children */}
-                {isExpanded && children
-                  ? children.map((child) => {
+                {isExpanded && children ?
+                    children.map((child) => {
                       const isChildActive = child.id === activeIssueId
                       return (
                         <button
@@ -285,9 +285,9 @@ function StatusGroup({
                         >
                           <span
                             className={`text-[10px] font-mono shrink-0 tabular-nums ${
-                              isChildActive
-                                ? 'text-primary font-medium'
-                                : 'text-muted-foreground/60'
+                              isChildActive ?
+                                'text-primary font-medium' :
+                                'text-muted-foreground/60'
                             }`}
                           >
                             #
@@ -303,20 +303,20 @@ function StatusGroup({
                           </span>
                         </button>
                       )
-                    })
-                  : null}
+                    }) :
+                  null}
               </div>
             )
           })}
-          {issues.length === 0
-            ? (
+          {issues.length === 0 ?
+              (
                 <div className="border-b border-border/20 px-2 py-3 min-h-[44px] flex items-center justify-center">
                   <span className="text-[11px] text-muted-foreground/55 text-center pointer-events-none">
                     {t('issue.emptyStatusHint')}
                   </span>
                 </div>
-              )
-            : null}
+              ) :
+            null}
         </div>
       ) : null}
     </div>
@@ -353,8 +353,8 @@ const IssueRow = memo(({
         isActive ? 'bg-primary/[0.06]' : 'hover:bg-accent/50'
       }`}
     >
-      {hasChildren
-        ? (
+      {hasChildren ?
+          (
             <button
               type="button"
               onClick={(e) => {
@@ -363,16 +363,16 @@ const IssueRow = memo(({
               }}
               className="h-3.5 w-3.5 p-0 shrink-0 rounded hover:bg-accent transition-colors"
             >
-              {isExpanded
-                ? (
+              {isExpanded ?
+                  (
                     <ChevronDown className="h-3 w-3 text-muted-foreground" />
-                  )
-                : (
+                  ) :
+                  (
                     <ChevronRight className="h-3 w-3 text-muted-foreground" />
                   )}
             </button>
-          )
-        : (
+          ) :
+          (
             <span className="w-3.5 shrink-0" />
           )}
       <span

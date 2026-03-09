@@ -157,17 +157,17 @@ export function DirectoryPicker({
 
           {/* Directory listing */}
           <div className="mb-4 max-h-64 overflow-y-auto rounded-md border">
-            {loading
-              ? (
+            {loading ?
+                (
                   <div className="flex items-center justify-center py-8">
                     <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                   </div>
-                )
-              : error
-                ? (
+                ) :
+              error ?
+                  (
                     <div className="px-3 py-4 text-center text-sm text-destructive">{error}</div>
-                  )
-                : (
+                  ) :
+                  (
                     <div className="divide-y">
                       {dirData?.parent && (
                         <button

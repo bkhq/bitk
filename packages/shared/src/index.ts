@@ -55,15 +55,15 @@ export interface Issue {
 
 export type ApiResponse<T> = { success: true, data: T } | { success: false, error: string }
 
-export type LogEntryType
-  = | 'user-message'
-    | 'assistant-message'
-    | 'tool-use'
-    | 'system-message'
-    | 'error-message'
-    | 'thinking'
-    | 'loading'
-    | 'token-usage'
+export type LogEntryType =
+  | 'user-message' |
+  'assistant-message' |
+  'tool-use' |
+  'system-message' |
+  'error-message' |
+  'thinking' |
+  'loading' |
+  'token-usage'
 export type CommandCategory = 'read' | 'search' | 'edit' | 'fetch' | 'other'
 
 export interface FileChange {
@@ -71,19 +71,19 @@ export interface FileChange {
   newText: string
 }
 
-export type ToolAction
-  = | { kind: 'file-read', path: string }
-    | { kind: 'file-edit', path: string, changes?: FileChange[] }
-    | {
-      kind: 'command-run'
-      command: string
-      result?: string
-      category?: CommandCategory
-    }
-    | { kind: 'search', query: string }
-    | { kind: 'web-fetch', url: string }
-    | { kind: 'tool', toolName: string, arguments?: unknown, result?: unknown }
-    | { kind: 'other', description: string }
+export type ToolAction =
+  | { kind: 'file-read', path: string } |
+  { kind: 'file-edit', path: string, changes?: FileChange[] } |
+  {
+    kind: 'command-run'
+    command: string
+    result?: string
+    category?: CommandCategory
+  } |
+  { kind: 'search', query: string } |
+  { kind: 'web-fetch', url: string } |
+  { kind: 'tool', toolName: string, arguments?: unknown, result?: unknown } |
+  { kind: 'other', description: string }
 
 export interface ToolDetail {
   kind: string
@@ -179,14 +179,14 @@ export interface ErrorChatMessage {
   entry: NormalizedLogEntry
 }
 
-export type ChatMessage
-  = | UserChatMessage
-    | AssistantChatMessage
-    | ToolGroupChatMessage
-    | TaskPlanChatMessage
-    | ThinkingChatMessage
-    | SystemChatMessage
-    | ErrorChatMessage
+export type ChatMessage =
+  | UserChatMessage |
+  AssistantChatMessage |
+  ToolGroupChatMessage |
+  TaskPlanChatMessage |
+  ThinkingChatMessage |
+  SystemChatMessage |
+  ErrorChatMessage
 
 // ── Tool Progress (lightweight real-time SSE event) ──────
 
@@ -393,14 +393,14 @@ export interface ProjectProcessesResponse {
 
 // ── Webhooks ─────────────────────────────────────────────
 
-export type WebhookEventType
-  = | 'issue.created'
-    | 'issue.updated'
-    | 'issue.deleted'
-    | 'issue.status_changed'
-    | 'session.started'
-    | 'session.completed'
-    | 'session.failed'
+export type WebhookEventType =
+  | 'issue.created' |
+  'issue.updated' |
+  'issue.deleted' |
+  'issue.status_changed' |
+  'session.started' |
+  'session.completed' |
+  'session.failed'
 
 export const WEBHOOK_EVENT_TYPES: WebhookEventType[] = [
   'issue.created',

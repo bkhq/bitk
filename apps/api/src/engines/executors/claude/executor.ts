@@ -398,9 +398,9 @@ export class ClaudeCodeExecutor implements EngineExecutor {
         cwd: resolved.cwd ?? options.workingDir,
         program: resolved.resolvedPath,
         args: resolved.args,
-        ...(mode === 'followup' && 'sessionId' in options
-          ? { resumeSessionId: (options as FollowUpOptions).sessionId }
-          : {}),
+        ...(mode === 'followup' && 'sessionId' in options ?
+            { resumeSessionId: (options as FollowUpOptions).sessionId } :
+            {}),
       },
       `claude_${mode}_command`,
     )

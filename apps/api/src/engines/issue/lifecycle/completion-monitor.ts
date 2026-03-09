@@ -65,10 +65,10 @@ export function monitorCompletion(
         },
         'issue_process_exited',
       )
-      const signal
-        = exitCode !== null && exitCode > 128
-          ? `SIG${exitCode === 137 ? 'KILL' : exitCode === 143 ? 'TERM' : exitCode - 128}`
-          : undefined
+      const signal =
+        exitCode !== null && exitCode > 128 ?
+          `SIG${exitCode === 137 ? 'KILL' : exitCode === 143 ? 'TERM' : exitCode - 128}` :
+          undefined
       managed.debugLog?.event(
         `process_exited pid=${pid} code=${exitCode} signal=${signal ?? 'none'} state=${managed.state}`,
       )

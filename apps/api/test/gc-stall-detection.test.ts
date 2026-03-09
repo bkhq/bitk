@@ -133,11 +133,11 @@ describe('gcSweep — stream stall detection', () => {
 
   test('Tier 3: kills process if no response after interrupt grace period', () => {
     const stalledAt = new Date(
-      Date.now()
-      - STREAM_STALL_TIMEOUT_MS
-      - STALL_LIVENESS_GRACE_MS
-      - STALL_INTERRUPT_GRACE_MS
-      - 60_000,
+      Date.now() -
+      STREAM_STALL_TIMEOUT_MS -
+      STALL_LIVENESS_GRACE_MS -
+      STALL_INTERRUPT_GRACE_MS -
+      60_000,
     )
     const detectedAt = new Date(
       Date.now() - STALL_LIVENESS_GRACE_MS - STALL_INTERRUPT_GRACE_MS - 60_000,
@@ -285,11 +285,11 @@ describe('gcSweep — stream stall detection', () => {
       executionId: 'exec-stalled',
       turnInFlight: true,
       lastActivityAt: new Date(
-        Date.now()
-        - STREAM_STALL_TIMEOUT_MS
-        - STALL_LIVENESS_GRACE_MS
-        - STALL_INTERRUPT_GRACE_MS
-        - 120_000,
+        Date.now() -
+        STREAM_STALL_TIMEOUT_MS -
+        STALL_LIVENESS_GRACE_MS -
+        STALL_INTERRUPT_GRACE_MS -
+        120_000,
       ),
       stallDetectedAt: new Date(
         Date.now() - STALL_LIVENESS_GRACE_MS - STALL_INTERRUPT_GRACE_MS - 120_000,

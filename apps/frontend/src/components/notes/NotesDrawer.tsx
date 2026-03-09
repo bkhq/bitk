@@ -114,9 +114,9 @@ export function NotesDrawer() {
   return (
     <>
       {/* Backdrop overlay — hidden in fullscreen */}
-      {fullscreen
-        ? null
-        : (
+      {fullscreen ?
+        null :
+          (
             <div aria-hidden="true" className="fixed inset-0 z-[39] bg-black/20" onClick={close} />
           )}
       <div
@@ -209,11 +209,11 @@ export function NotesDrawer() {
                 aria-label={t('notes.maximize')}
                 title={isFullscreen ? t('notes.restore') : t('notes.maximize')}
               >
-                {isFullscreen
-                  ? (
+                {isFullscreen ?
+                    (
                       <Minimize2 className="h-3.5 w-3.5" />
-                    )
-                  : (
+                    ) :
+                    (
                       <Maximize2 className="h-3.5 w-3.5" />
                     )}
               </button>
@@ -255,21 +255,21 @@ export function NotesDrawer() {
 
             {/* List */}
             <div className="flex-1 overflow-y-auto">
-              {isLoading
-                ? (
+              {isLoading ?
+                  (
                     <div className="flex items-center justify-center p-6">
                       <Loader2 className="h-5 w-5 animate-spin text-muted-foreground/40" />
                     </div>
-                  )
-                : isError
-                  ? (
+                  ) :
+                isError ?
+                    (
                       <div className="flex flex-col items-center p-6 text-muted-foreground">
                         <TriangleAlert className="h-5 w-5 mb-1 opacity-40" />
                         <p className="text-xs">{t('notes.loadError')}</p>
                       </div>
-                    )
-                  : filteredNotes.length > 0
-                    ? (
+                    ) :
+                  filteredNotes.length > 0 ?
+                      (
                         <>
                           {pinnedNotes.length > 0 && (
                             <>
@@ -308,8 +308,8 @@ export function NotesDrawer() {
                             </>
                           )}
                         </>
-                      )
-                    : (
+                      ) :
+                      (
                         <div className="flex flex-col items-center justify-center p-6 text-muted-foreground">
                           <StickyNote className="h-8 w-8 mb-2 opacity-20" />
                           <p className="text-xs">{t('notes.empty')}</p>
@@ -321,8 +321,8 @@ export function NotesDrawer() {
           {/* Editor — hidden on mobile (mobile uses fullscreen editor above) */}
           {!isMobile && (
             <div className="flex-1 min-w-0 flex flex-col">
-              {selectedNote
-                ? (
+              {selectedNote ?
+                  (
                     <NoteEditor
                       key={selectedNote.id}
                       note={selectedNote}
@@ -330,8 +330,8 @@ export function NotesDrawer() {
                       onPin={() => handlePin(selectedNote.id, !selectedNote.isPinned)}
                       onDelete={() => handleDelete(selectedNote.id)}
                     />
-                  )
-                : (
+                  ) :
+                  (
                     <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground gap-2">
                       <StickyNote className="h-8 w-8 opacity-20" />
                       <p className="text-sm">{t('notes.selectOrCreate')}</p>
@@ -411,9 +411,9 @@ function NoteListItem({
             }}
             className={cn(
               'p-0.5 rounded opacity-0 group-hover:opacity-100 transition-all',
-              note.isPinned
-                ? 'text-primary opacity-100'
-                : 'text-muted-foreground hover:text-primary',
+              note.isPinned ?
+                'text-primary opacity-100' :
+                'text-muted-foreground hover:text-primary',
             )}
             aria-label={note.isPinned ? t('notes.unpin') : t('notes.pin')}
             title={note.isPinned ? t('notes.unpin') : t('notes.pin')}

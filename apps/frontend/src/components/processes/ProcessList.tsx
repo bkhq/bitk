@@ -149,11 +149,11 @@ function ProcessCard({ proc, projectId }: { proc: ProcessInfo, projectId: string
             className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground cursor-pointer"
             onClick={() => setShowCommand(v => !v)}
           >
-            {showCommand
-              ? (
+            {showCommand ?
+                (
                   <ChevronDown className="h-3 w-3" />
-                )
-              : (
+                ) :
+                (
                   <ChevronRight className="h-3 w-3" />
                 )}
             <Terminal className="h-3 w-3" />
@@ -190,9 +190,9 @@ function ProcessCard({ proc, projectId }: { proc: ProcessInfo, projectId: string
             onClick={() => restartMutation.mutate(proc.issueId)}
           >
             <RotateCcw className="h-3 w-3" />
-            {restartMutation.isPending
-              ? t('processManager.restarting')
-              : t('processManager.restart')}
+            {restartMutation.isPending ?
+                t('processManager.restarting') :
+                t('processManager.restart')}
           </Button>
         )}
         {/* Terminate — always available, force-kills process regardless of state */}
@@ -204,9 +204,9 @@ function ProcessCard({ proc, projectId }: { proc: ProcessInfo, projectId: string
           onClick={() => terminateMutation.mutate(proc.issueId)}
         >
           <Skull className="h-3 w-3" />
-          {terminateMutation.isPending
-            ? t('processManager.terminating')
-            : t('processManager.terminate')}
+          {terminateMutation.isPending ?
+              t('processManager.terminating') :
+              t('processManager.terminate')}
         </Button>
       </div>
     </div>
