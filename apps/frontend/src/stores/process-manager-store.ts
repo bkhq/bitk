@@ -47,8 +47,7 @@ export const useProcessManagerStore = create<ProcessManagerStore>((set) => ({
       if (s.isOpen && s.projectId === projectId) return { isOpen: false }
       return { isOpen: true, projectId }
     }),
-  minimize: () =>
-    set({ isOpen: false, isMinimized: true, isFullscreen: false }),
+  minimize: () => set({ isOpen: false, isMinimized: true, isFullscreen: false }),
   restore: () => set({ isOpen: true, isMinimized: false }),
   toggleFullscreen: () => set((s) => ({ isFullscreen: !s.isFullscreen })),
   setWidth: (w) => set({ width: clampWidth(w) }),

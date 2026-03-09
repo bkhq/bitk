@@ -14,9 +14,7 @@ interface WorktreeEntry {
   branch: string | null
 }
 
-async function listProjectWorktrees(
-  projectId: string,
-): Promise<WorktreeEntry[]> {
+async function listProjectWorktrees(projectId: string): Promise<WorktreeEntry[]> {
   const projectDir = join(WORKTREE_BASE, projectId)
   let entries: string[]
   try {
@@ -96,10 +94,7 @@ worktrees.delete('/:issueId', async (c) => {
   const worktreePath = resolve(join(baseWorktreeDir, issueId))
 
   // Ensure resolved path stays within the project worktree directory
-  if (
-    !worktreePath.startsWith(baseWorktreeDir + sep) &&
-    worktreePath !== baseWorktreeDir
-  ) {
+  if (!worktreePath.startsWith(baseWorktreeDir + sep) && worktreePath !== baseWorktreeDir) {
     return c.json({ success: false, error: 'Invalid issueId' }, 400)
   }
 
@@ -117,10 +112,7 @@ worktrees.delete('/:issueId', async (c) => {
 
   try {
     await removeWorktree(baseDir, worktreePath)
-    logger.info(
-      { projectId: project.id, issueId, worktreePath },
-      'worktree_force_deleted',
-    )
+    logger.info({ projectId: project.id, issueId, worktreePath }, 'worktree_force_deleted')
   } catch (err) {
     logger.error(
       { projectId: project.id, issueId, worktreePath, err },

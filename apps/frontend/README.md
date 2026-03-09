@@ -40,7 +40,7 @@ If you prefer not to use Tailwind CSS:
 
 ## Linting & Formatting
 
-This project uses [Biome](https://biomejs.dev/) for linting and formatting. Configuration is in `biome.json` at the monorepo root. Run from the root:
+This project uses [ESLint](https://eslint.org/) for linting and [Prettier](https://prettier.io/) for formatting. Configuration files are `eslint.config.js` and `.prettierrc` at the monorepo root. Run from the root:
 
 ```bash
 bun run lint

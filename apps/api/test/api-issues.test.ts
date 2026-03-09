@@ -1,12 +1,5 @@
 import { beforeAll, describe, expect, test } from 'bun:test'
-import {
-  createTestProject,
-  del,
-  expectSuccess,
-  get,
-  patch,
-  post,
-} from './helpers'
+import { createTestProject, del, expectSuccess, get, patch, post } from './helpers'
 /**
  * Issues CRUD API tests.
  */
@@ -161,9 +154,7 @@ describe('GET /api/projects/:projectId/issues/:id', () => {
         statusId: 'todo',
       }),
     )
-    const result = await get<Issue>(
-      `/api/projects/${projectId}/issues/${created.id}`,
-    )
+    const result = await get<Issue>(`/api/projects/${projectId}/issues/${created.id}`)
     expect(result.status).toBe(200)
     const data = expectSuccess(result)
     expect(data.id).toBe(created.id)
@@ -171,9 +162,7 @@ describe('GET /api/projects/:projectId/issues/:id', () => {
   })
 
   test('returns 404 for nonexistent issue', async () => {
-    const result = await get<Issue>(
-      `/api/projects/${projectId}/issues/nonexistent`,
-    )
+    const result = await get<Issue>(`/api/projects/${projectId}/issues/nonexistent`)
     expect(result.status).toBe(404)
   })
 })
@@ -186,12 +175,9 @@ describe('PATCH /api/projects/:projectId/issues/:id', () => {
         statusId: 'todo',
       }),
     )
-    const result = await patch<Issue>(
-      `/api/projects/${projectId}/issues/${created.id}`,
-      {
-        title: 'After',
-      },
-    )
+    const result = await patch<Issue>(`/api/projects/${projectId}/issues/${created.id}`, {
+      title: 'After',
+    })
     expect(result.status).toBe(200)
     const data = expectSuccess(result)
     expect(data.title).toBe('After')
@@ -204,23 +190,17 @@ describe('PATCH /api/projects/:projectId/issues/:id', () => {
         statusId: 'todo',
       }),
     )
-    const result = await patch<Issue>(
-      `/api/projects/${projectId}/issues/${created.id}`,
-      {
-        statusId: 'working',
-      },
-    )
+    const result = await patch<Issue>(`/api/projects/${projectId}/issues/${created.id}`, {
+      statusId: 'working',
+    })
     const data = expectSuccess(result)
     expect(data.statusId).toBe('working')
   })
 
   test('returns 404 for nonexistent issue', async () => {
-    const result = await patch<Issue>(
-      `/api/projects/${projectId}/issues/nonexistent`,
-      {
-        title: 'Update',
-      },
-    )
+    const result = await patch<Issue>(`/api/projects/${projectId}/issues/nonexistent`, {
+      title: 'Update',
+    })
     expect(result.status).toBe(404)
   })
 })
@@ -309,15 +289,12 @@ describe('PATCH /api/projects/:projectId/issues/bulk', () => {
         statusId: 'todo',
       }),
     )
-    const result = await patch<Issue[]>(
-      `/api/projects/${projectId}/issues/bulk`,
-      {
-        updates: [
-          { id: i1.id, statusId: 'working', sortOrder: 0 },
-          { id: i2.id, statusId: 'done', sortOrder: 1 },
-        ],
-      },
-    )
+    const result = await patch<Issue[]>(`/api/projects/${projectId}/issues/bulk`, {
+      updates: [
+        { id: i1.id, statusId: 'working', sortOrder: 0 },
+        { id: i2.id, statusId: 'done', sortOrder: 1 },
+      ],
+    })
     expect(result.status).toBe(200)
     const data = expectSuccess(result)
     expect(Array.isArray(data)).toBe(true)
@@ -344,9 +321,7 @@ describe('Parent/Child issues', () => {
 
     // Get parent — should include child count
     const parentDetail = expectSuccess(
-      await get<Issue & { children: Issue[] }>(
-        `/api/projects/${projectId}/issues/${parent.id}`,
-      ),
+      await get<Issue & { children: Issue[] }>(`/api/projects/${projectId}/issues/${parent.id}`),
     )
     expect(parentDetail.childCount).toBe(1)
   })
@@ -368,26 +343,18 @@ describe('DELETE /api/projects/:projectId/issues/:id', () => {
       }),
     )
 
-    const result = await del<{ id: string }>(
-      `/api/projects/${projectId}/issues/${parent.id}`,
-    )
+    const result = await del<{ id: string }>(`/api/projects/${projectId}/issues/${parent.id}`)
     expect(result.status).toBe(200)
     expect(expectSuccess(result).id).toBe(parent.id)
 
-    const parentAfter = await get<Issue>(
-      `/api/projects/${projectId}/issues/${parent.id}`,
-    )
-    const childAfter = await get<Issue>(
-      `/api/projects/${projectId}/issues/${child.id}`,
-    )
+    const parentAfter = await get<Issue>(`/api/projects/${projectId}/issues/${parent.id}`)
+    const childAfter = await get<Issue>(`/api/projects/${projectId}/issues/${child.id}`)
     expect(parentAfter.status).toBe(404)
     expect(childAfter.status).toBe(404)
   })
 
   test('returns 404 for nonexistent issue', async () => {
-    const result = await del<{ id: string }>(
-      `/api/projects/${projectId}/issues/nonexistent`,
-    )
+    const result = await del<{ id: string }>(`/api/projects/${projectId}/issues/nonexistent`)
     expect(result.status).toBe(404)
   })
 })

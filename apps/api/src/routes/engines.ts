@@ -8,11 +8,7 @@ import {
   setEngineDefaultModel,
 } from '@/db/helpers'
 import { engineRegistry } from '@/engines/executors'
-import {
-  forceProbeEngines,
-  getEngineDiscovery,
-  getEngineModels,
-} from '@/engines/startup-probe'
+import { forceProbeEngines, getEngineDiscovery, getEngineModels } from '@/engines/startup-probe'
 import { BUILT_IN_PROFILES } from '@/engines/types'
 
 const ENGINE_TYPES = ['claude-code', 'codex', 'gemini', 'echo'] as const
@@ -48,21 +44,17 @@ engines.get('/settings', async (c) => {
 // PATCH /api/engines/default-engine — Update global default engine
 engines.patch(
   '/default-engine',
-  zValidator(
-    'json',
-    z.object({ defaultEngine: engineTypeEnum }),
-    (result, c) => {
-      if (!result.success) {
-        return c.json(
-          {
-            success: false,
-            error: result.error.issues.map((i) => i.message).join(', '),
-          },
-          400,
-        )
-      }
-    },
-  ),
+  zValidator('json', z.object({ defaultEngine: engineTypeEnum }), (result, c) => {
+    if (!result.success) {
+      return c.json(
+        {
+          success: false,
+          error: result.error.issues.map((i) => i.message).join(', '),
+        },
+        400,
+      )
+    }
+  }),
   async (c) => {
     const { defaultEngine } = c.req.valid('json')
     await setDefaultEngine(defaultEngine)
@@ -73,29 +65,22 @@ engines.patch(
 // PATCH /api/engines/:engineType/settings — Upsert default model for an engine type
 engines.patch(
   '/:engineType/settings',
-  zValidator(
-    'json',
-    z.object({ defaultModel: z.string().min(1) }),
-    (result, c) => {
-      if (!result.success) {
-        return c.json(
-          {
-            success: false,
-            error: result.error.issues.map((i) => i.message).join(', '),
-          },
-          400,
-        )
-      }
-    },
-  ),
+  zValidator('json', z.object({ defaultModel: z.string().min(1) }), (result, c) => {
+    if (!result.success) {
+      return c.json(
+        {
+          success: false,
+          error: result.error.issues.map((i) => i.message).join(', '),
+        },
+        400,
+      )
+    }
+  }),
   async (c) => {
     const rawType = c.req.param('engineType')
     const parsed = engineTypeEnum.safeParse(rawType)
     if (!parsed.success) {
-      return c.json(
-        { success: false, error: `Unknown engine type: ${rawType}` },
-        400,
-      )
+      return c.json({ success: false, error: `Unknown engine type: ${rawType}` }, 400)
     }
     const engineType = parsed.data
     const { defaultModel } = c.req.valid('json')
@@ -109,18 +94,12 @@ engines.get('/:engineType/models', async (c) => {
   const rawType = c.req.param('engineType')
   const parsed = engineTypeEnum.safeParse(rawType)
   if (!parsed.success) {
-    return c.json(
-      { success: false, error: `Unknown engine type: ${rawType}` },
-      400,
-    )
+    return c.json({ success: false, error: `Unknown engine type: ${rawType}` }, 400)
   }
   const engineType = parsed.data
   const executor = engineRegistry.get(engineType)
   if (!executor) {
-    return c.json(
-      { success: false, error: `Unknown engine type: ${engineType}` },
-      404,
-    )
+    return c.json({ success: false, error: `Unknown engine type: ${engineType}` }, 404)
   }
 
   const models = await getEngineModels(engineType)

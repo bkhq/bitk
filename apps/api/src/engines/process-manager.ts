@@ -2,18 +2,9 @@ import type { Subprocess } from 'bun'
 
 // ---------- Types ----------
 
-export type ProcessState =
-  | 'spawning'
-  | 'running'
-  | 'completed'
-  | 'failed'
-  | 'cancelled'
+export type ProcessState = 'spawning' | 'running' | 'completed' | 'failed' | 'cancelled'
 
-const TERMINAL_STATES: ReadonlySet<ProcessState> = new Set([
-  'completed',
-  'failed',
-  'cancelled',
-])
+const TERMINAL_STATES: ReadonlySet<ProcessState> = new Set(['completed', 'failed', 'cancelled'])
 
 export interface ManagedEntry<TMeta> {
   readonly id: string
@@ -54,10 +45,7 @@ export type StateChangeHandler<T> = (
   prev: ProcessState,
   next: ProcessState,
 ) => void
-export type ProcessExitHandler<T> = (
-  entry: ManagedEntry<T>,
-  exitCode: number,
-) => void
+export type ProcessExitHandler<T> = (entry: ManagedEntry<T>, exitCode: number) => void
 export type UnsubscribeFn = () => void
 
 // ---------- ProcessManager ----------
@@ -96,11 +84,7 @@ export class ProcessManager<TMeta> {
     const gcIntervalMs = options?.gcIntervalMs ?? 600_000
     if (gcIntervalMs > 0) {
       this.gcTimer = setInterval(() => this.gc(), gcIntervalMs)
-      if (
-        this.gcTimer &&
-        typeof this.gcTimer === 'object' &&
-        'unref' in this.gcTimer
-      ) {
+      if (this.gcTimer && typeof this.gcTimer === 'object' && 'unref' in this.gcTimer) {
         ;(this.gcTimer as NodeJS.Timeout).unref()
       }
     }
@@ -145,10 +129,7 @@ export class ProcessManager<TMeta> {
     }
 
     this.monitorExit(entry)
-    this.log.debug?.(
-      { pm: this.name, id, group: opts?.group, state: entry.state },
-      'pm_registered',
-    )
+    this.log.debug?.({ pm: this.name, id, group: opts?.group, state: entry.state }, 'pm_registered')
     return entry
   }
 
@@ -213,18 +194,13 @@ export class ProcessManager<TMeta> {
     await Promise.all(
       Array.from(ids).map((id) => {
         const entry = this.entries.get(id)
-        return this.terminate(
-          id,
-          entry && interruptFn ? () => interruptFn(entry) : undefined,
-        )
+        return this.terminate(id, entry && interruptFn ? () => interruptFn(entry) : undefined)
       }),
     )
   }
 
   async terminateAll(): Promise<void> {
-    await Promise.all(
-      Array.from(this.entries.keys()).map((id) => this.terminate(id)),
-    )
+    await Promise.all(Array.from(this.entries.keys()).map((id) => this.terminate(id)))
   }
 
   forceKill(id: string): void {
@@ -233,10 +209,7 @@ export class ProcessManager<TMeta> {
     const pid = (entry.subprocess as { pid?: number }).pid
     try {
       entry.subprocess.kill(9)
-      this.log.info?.(
-        { pm: this.name, id, group: entry.group, pid },
-        'pm_force_kill',
-      )
+      this.log.info?.({ pm: this.name, id, group: entry.group, pid }, 'pm_force_kill')
     } catch {
       this.log.debug?.({ pm: this.name, id, pid }, 'pm_force_kill_already_dead')
     }
@@ -483,10 +456,7 @@ export class ProcessManager<TMeta> {
     }
 
     if (cleaned > 0) {
-      this.log.debug?.(
-        { pm: this.name, cleaned, remaining: this.entries.size },
-        'pm_gc_sweep',
-      )
+      this.log.debug?.({ pm: this.name, cleaned, remaining: this.entries.size }, 'pm_gc_sweep')
     }
   }
 
@@ -512,10 +482,7 @@ export class ProcessManager<TMeta> {
       try {
         handler(entry, exitCode)
       } catch (err) {
-        this.log.error?.(
-          { pm: this.name, id: entry.id, exitCode, err },
-          'pm_exit_handler_error',
-        )
+        this.log.error?.({ pm: this.name, id: entry.id, exitCode, err }, 'pm_exit_handler_error')
       }
     }
   }

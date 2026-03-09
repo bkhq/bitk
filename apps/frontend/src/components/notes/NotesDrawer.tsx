@@ -16,18 +16,9 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useIsMobile } from '@/hooks/use-mobile'
-import {
-  useCreateNote,
-  useDeleteNote,
-  useNotes,
-  useUpdateNote,
-} from '@/hooks/use-notes'
+import { useCreateNote, useDeleteNote, useNotes, useUpdateNote } from '@/hooks/use-notes'
 import { cn } from '@/lib/utils'
-import {
-  NOTES_MAX_WIDTH_RATIO,
-  NOTES_MIN_WIDTH,
-  useNotesStore,
-} from '@/stores/notes-store'
+import { NOTES_MAX_WIDTH_RATIO, NOTES_MIN_WIDTH, useNotesStore } from '@/stores/notes-store'
 import type { Note } from '@/types/kanban'
 
 export function NotesDrawer() {
@@ -59,20 +50,12 @@ export function NotesDrawer() {
     if (!searchQuery.trim()) return notes
     const q = searchQuery.toLowerCase()
     return notes.filter(
-      (n) =>
-        n.title.toLowerCase().includes(q) ||
-        n.content.toLowerCase().includes(q),
+      (n) => n.title.toLowerCase().includes(q) || n.content.toLowerCase().includes(q),
     )
   }, [notes, searchQuery])
 
-  const pinnedNotes = useMemo(
-    () => filteredNotes.filter((n) => n.isPinned),
-    [filteredNotes],
-  )
-  const unpinnedNotes = useMemo(
-    () => filteredNotes.filter((n) => !n.isPinned),
-    [filteredNotes],
-  )
+  const pinnedNotes = useMemo(() => filteredNotes.filter((n) => n.isPinned), [filteredNotes])
+  const unpinnedNotes = useMemo(() => filteredNotes.filter((n) => !n.isPinned), [filteredNotes])
 
   // Auto-select first note if none selected (desktop only)
   useEffect(() => {
@@ -83,20 +66,13 @@ export function NotesDrawer() {
 
   // Clear selection if selected note was deleted
   useEffect(() => {
-    if (
-      selectedNoteId &&
-      notes &&
-      !notes.find((n) => n.id === selectedNoteId)
-    ) {
+    if (selectedNoteId && notes && !notes.find((n) => n.id === selectedNoteId)) {
       selectNote(isMobile ? null : notes.length > 0 ? notes[0].id : null)
     }
   }, [isMobile, notes, selectedNoteId, selectNote])
 
   const handleCreate = useCallback(() => {
-    createNote.mutate(
-      { title: '', content: '' },
-      { onSuccess: (note) => selectNote(note.id) },
-    )
+    createNote.mutate({ title: '', content: '' }, { onSuccess: (note) => selectNote(note.id) })
   }, [createNote, selectNote])
 
   const handleDelete = useCallback(
@@ -139,11 +115,7 @@ export function NotesDrawer() {
     <>
       {/* Backdrop overlay — hidden in fullscreen */}
       {fullscreen ? null : (
-        <div
-          aria-hidden="true"
-          className="fixed inset-0 z-[39] bg-black/20"
-          onClick={close}
-        />
+        <div aria-hidden="true" className="fixed inset-0 z-[39] bg-black/20" onClick={close} />
       )}
       <div
         className={`fixed top-0 bottom-0 right-0 z-40 flex flex-col border-l border-border bg-background shadow-2xl ${
@@ -344,9 +316,7 @@ export function NotesDrawer() {
                   key={selectedNote.id}
                   note={selectedNote}
                   onUpdate={updateNote.mutate}
-                  onPin={() =>
-                    handlePin(selectedNote.id, !selectedNote.isPinned)
-                  }
+                  onPin={() => handlePin(selectedNote.id, !selectedNote.isPinned)}
                   onDelete={() => handleDelete(selectedNote.id)}
                 />
               ) : (
@@ -412,19 +382,13 @@ function NoteListItem({
       <div className="flex items-start justify-between gap-1.5">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
-            {note.isPinned && (
-              <Pin className="h-2.5 w-2.5 text-primary shrink-0 -rotate-45" />
-            )}
+            {note.isPinned && <Pin className="h-2.5 w-2.5 text-primary shrink-0 -rotate-45" />}
             <p className="text-xs font-medium truncate">{title}</p>
           </div>
           {preview && (
-            <p className="text-[11px] text-muted-foreground/70 truncate mt-0.5">
-              {preview}
-            </p>
+            <p className="text-[11px] text-muted-foreground/70 truncate mt-0.5">{preview}</p>
           )}
-          <p className="text-[10px] text-muted-foreground/50 mt-1 tabular-nums">
-            {lastEdited}
-          </p>
+          <p className="text-[10px] text-muted-foreground/50 mt-1 tabular-nums">{lastEdited}</p>
         </div>
         <div className="flex items-center gap-0.5 shrink-0 mt-0.5">
           <button
@@ -442,11 +406,7 @@ function NoteListItem({
             aria-label={note.isPinned ? t('notes.unpin') : t('notes.pin')}
             title={note.isPinned ? t('notes.unpin') : t('notes.pin')}
           >
-            {note.isPinned ? (
-              <PinOff className="h-3 w-3" />
-            ) : (
-              <Pin className="h-3 w-3" />
-            )}
+            {note.isPinned ? <PinOff className="h-3 w-3" /> : <Pin className="h-3 w-3" />}
           </button>
           <button
             type="button"
@@ -558,18 +518,12 @@ function NoteEditor({
             onClick={onPin}
             className={cn(
               'p-1.5 rounded hover:bg-accent transition-colors',
-              note.isPinned
-                ? 'text-primary'
-                : 'text-muted-foreground hover:text-primary',
+              note.isPinned ? 'text-primary' : 'text-muted-foreground hover:text-primary',
             )}
             aria-label={note.isPinned ? t('notes.unpin') : t('notes.pin')}
             title={note.isPinned ? t('notes.unpin') : t('notes.pin')}
           >
-            {note.isPinned ? (
-              <PinOff className="h-3.5 w-3.5" />
-            ) : (
-              <Pin className="h-3.5 w-3.5" />
-            )}
+            {note.isPinned ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
           </button>
           <button
             type="button"
@@ -699,11 +653,7 @@ function MobileNoteEditor({
             )}
             aria-label={note.isPinned ? t('notes.unpin') : t('notes.pin')}
           >
-            {note.isPinned ? (
-              <PinOff className="h-4.5 w-4.5" />
-            ) : (
-              <Pin className="h-4.5 w-4.5" />
-            )}
+            {note.isPinned ? <PinOff className="h-4.5 w-4.5" /> : <Pin className="h-4.5 w-4.5" />}
           </button>
           <button
             type="button"

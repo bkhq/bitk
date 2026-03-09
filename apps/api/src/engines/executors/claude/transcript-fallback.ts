@@ -38,13 +38,7 @@ interface TranscriptEntry {
  */
 export function getTranscriptPath(cwd: string, sessionId: string): string {
   const projectHash = cwd.replaceAll('/', '-')
-  return join(
-    homedir(),
-    '.claude',
-    'projects',
-    projectHash,
-    `${sessionId}.jsonl`,
-  )
+  return join(homedir(), '.claude', 'projects', projectHash, `${sessionId}.jsonl`)
 }
 
 /**
@@ -52,10 +46,7 @@ export function getTranscriptPath(cwd: string, sessionId: string): string {
  * Returns entries converted to stream-json format lines that can be
  * fed through the existing ClaudeLogNormalizer.
  */
-function readTranscriptAfter(
-  transcriptPath: string,
-  afterTimestamp: string,
-): string[] {
+function readTranscriptAfter(transcriptPath: string, afterTimestamp: string): string[] {
   let raw: string
   try {
     raw = readFileSync(transcriptPath, 'utf-8')
@@ -164,10 +155,7 @@ export function runTranscriptFallback(
         }
       }
     } catch (err) {
-      logger.warn(
-        { err, line: line.slice(0, 200) },
-        'transcript_fallback_parse_error',
-      )
+      logger.warn({ err, line: line.slice(0, 200) }, 'transcript_fallback_parse_error')
     }
   }
 

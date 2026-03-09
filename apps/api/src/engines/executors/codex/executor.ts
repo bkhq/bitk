@@ -36,11 +36,7 @@ class JsonRpcSession {
     ).getReader() as ReadableStreamDefaultReader<Uint8Array>
   }
 
-  async call(
-    method: string,
-    params: Record<string, unknown>,
-    id: number,
-  ): Promise<unknown> {
+  async call(method: string, params: Record<string, unknown>, id: number): Promise<unknown> {
     const request = JSON.stringify({ method, id, params })
     logger.debug({ method, id, request }, 'codex_rpc_send')
     ;(this.proc.stdin as import('bun').FileSink).write(`${request}\n`)
@@ -50,10 +46,7 @@ class JsonRpcSession {
     while (!this.done && Date.now() < deadline) {
       const parsed = this.parseLine(id)
       if (parsed !== undefined) {
-        logger.debug(
-          { method, id, result: JSON.stringify(parsed).slice(0, 500) },
-          'codex_rpc_recv',
-        )
+        logger.debug({ method, id, result: JSON.stringify(parsed).slice(0, 500) }, 'codex_rpc_recv')
         return parsed
       }
 
@@ -145,10 +138,7 @@ class JsonRpcSession {
       if (msg.id === id) {
         if (msg.error) {
           const err = msg.error as { message?: string }
-          logger.error(
-            { method: `id=${id}`, error: err.message },
-            'codex_rpc_error',
-          )
+          logger.error({ method: `id=${id}`, error: err.message }, 'codex_rpc_error')
           throw new Error(err.message ?? 'JSON-RPC error')
         }
         return msg.result
@@ -181,10 +171,7 @@ interface CodexModelListResponse {
  * then paginate through model/list. Returns flattened EngineModel[].
  */
 async function queryCodexModels(): Promise<EngineModel[]> {
-  logger.debug(
-    { cmd: [...CODEX_CMD, 'app-server'].join(' ') },
-    'codex_models_start',
-  )
+  logger.debug({ cmd: [...CODEX_CMD, 'app-server'].join(' ') }, 'codex_models_start')
 
   const proc = Bun.spawn([...CODEX_CMD, 'app-server'], {
     stdin: 'pipe',
@@ -196,10 +183,7 @@ async function queryCodexModels(): Promise<EngineModel[]> {
   const stderrReader = new Response(proc.stderr).text()
 
   const killTimer = setTimeout(() => {
-    logger.warn(
-      { message: 'Killing codex app-server after timeout' },
-      'codex_models_kill_timeout',
-    )
+    logger.warn({ message: 'Killing codex app-server after timeout' }, 'codex_models_kill_timeout')
     proc.kill()
   }, JSONRPC_TIMEOUT + 5000)
   const session = new JsonRpcSession(proc)
@@ -214,10 +198,7 @@ async function queryCodexModels(): Promise<EngineModel[]> {
       },
       0,
     )
-    logger.debug(
-      { result: JSON.stringify(initResult).slice(0, 500) },
-      'codex_models_init_done',
-    )
+    logger.debug({ result: JSON.stringify(initResult).slice(0, 500) }, 'codex_models_init_done')
 
     session.notify('initialized', {})
 
@@ -230,15 +211,8 @@ async function queryCodexModels(): Promise<EngineModel[]> {
       if (cursor) params.cursor = cursor
 
       logger.debug({ cursor, reqId }, 'codex_models_list')
-      const result = (await session.call(
-        'model/list',
-        params,
-        reqId++,
-      )) as CodexModelListResponse
-      logger.debug(
-        { rawResult: JSON.stringify(result).slice(0, 1000) },
-        'codex_models_list_done',
-      )
+      const result = (await session.call('model/list', params, reqId++)) as CodexModelListResponse
+      logger.debug({ rawResult: JSON.stringify(result).slice(0, 1000) }, 'codex_models_list_done')
 
       if (result?.data) {
         for (const m of result.data) {
@@ -253,10 +227,7 @@ async function queryCodexModels(): Promise<EngineModel[]> {
       cursor = result?.nextCursor
     } while (cursor)
 
-    logger.debug(
-      { count: models.length, models: models.map((m) => m.id) },
-      'codex_models_done',
-    )
+    logger.debug({ count: models.length, models: models.map((m) => m.id) }, 'codex_models_done')
     return models
   } catch (error) {
     const stderr = await stderrReader.catch(() => '')
@@ -305,10 +276,7 @@ export class CodexExecutor implements EngineExecutor {
     'reasoning',
   ]
 
-  async spawn(
-    options: SpawnOptions,
-    env: ExecutionEnv,
-  ): Promise<SpawnedProcess> {
+  async spawn(options: SpawnOptions, env: ExecutionEnv): Promise<SpawnedProcess> {
     const cmd = [...CODEX_CMD, 'app-server']
 
     const proc = Bun.spawn(cmd, {
@@ -320,10 +288,7 @@ export class CodexExecutor implements EngineExecutor {
     })
 
     // Create protocol handler — starts reading stdout immediately
-    const handler = new CodexProtocolHandler(
-      proc.stdin,
-      proc.stdout as ReadableStream<Uint8Array>,
-    )
+    const handler = new CodexProtocolHandler(proc.stdin, proc.stdout as ReadableStream<Uint8Array>)
 
     // Perform initialize handshake
     await handler.initialize()
@@ -366,9 +331,7 @@ export class CodexExecutor implements EngineExecutor {
       stderr: proc.stderr as ReadableStream<Uint8Array>,
       cancel: () => {
         if (handler.threadId && handler.turnId) {
-          void handler
-            .interrupt(handler.threadId, handler.turnId)
-            .catch(() => {})
+          void handler.interrupt(handler.threadId, handler.turnId).catch(() => {})
         }
       },
       protocolHandler: {
@@ -387,10 +350,7 @@ export class CodexExecutor implements EngineExecutor {
     }
   }
 
-  async spawnFollowUp(
-    options: FollowUpOptions,
-    env: ExecutionEnv,
-  ): Promise<SpawnedProcess> {
+  async spawnFollowUp(options: FollowUpOptions, env: ExecutionEnv): Promise<SpawnedProcess> {
     const cmd = [...CODEX_CMD, 'app-server']
 
     const proc = Bun.spawn(cmd, {
@@ -401,10 +361,7 @@ export class CodexExecutor implements EngineExecutor {
       env: safeEnv({ NPM_CONFIG_LOGLEVEL: 'error', ...env.vars }),
     })
 
-    const handler = new CodexProtocolHandler(
-      proc.stdin,
-      proc.stdout as ReadableStream<Uint8Array>,
-    )
+    const handler = new CodexProtocolHandler(proc.stdin, proc.stdout as ReadableStream<Uint8Array>)
 
     await handler.initialize()
 
@@ -433,9 +390,7 @@ export class CodexExecutor implements EngineExecutor {
       stderr: proc.stderr as ReadableStream<Uint8Array>,
       cancel: () => {
         if (handler.threadId && handler.turnId) {
-          void handler
-            .interrupt(handler.threadId, handler.turnId)
-            .catch(() => {})
+          void handler.interrupt(handler.threadId, handler.turnId).catch(() => {})
         }
       },
       protocolHandler: {

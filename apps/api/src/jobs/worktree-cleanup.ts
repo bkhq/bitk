@@ -120,9 +120,7 @@ async function runWorktreeCleanup(): Promise<void> {
   }
 }
 
-export function startWorktreeCleanup(
-  intervalMs = DEFAULT_INTERVAL_MS,
-): () => void {
+export function startWorktreeCleanup(intervalMs = DEFAULT_INTERVAL_MS): () => void {
   // Run once immediately on startup to clean stale worktrees from before restart
   void runWorktreeCleanup().catch((err) => {
     logger.error({ err }, 'worktree_cleanup_job_error')

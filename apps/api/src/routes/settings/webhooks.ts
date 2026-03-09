@@ -12,12 +12,7 @@ const webhooksRoute = new Hono()
 
 function isPrivateHost(hostname: string): boolean {
   // Loopback
-  if (
-    hostname === 'localhost' ||
-    hostname === '127.0.0.1' ||
-    hostname === '::1'
-  )
-    return true
+  if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1') return true
   // IPv4 private ranges
   if (/^10\./.test(hostname)) return true
   if (/^172\.(1[6-9]|2\d|3[01])\./.test(hostname)) return true
@@ -27,12 +22,7 @@ function isPrivateHost(hostname: string): boolean {
   // Cloud metadata
   if (hostname === '169.254.169.254') return true
   // IPv6 private/link-local
-  if (
-    /^fe80:/i.test(hostname) ||
-    /^fc00:/i.test(hostname) ||
-    /^fd/i.test(hostname)
-  )
-    return true
+  if (/^fe80:/i.test(hostname) || /^fc00:/i.test(hostname) || /^fd/i.test(hostname)) return true
   // Catch-all for 0.0.0.0
   if (hostname === '0.0.0.0') return true
   return false
@@ -60,9 +50,7 @@ function serializeWebhook(row: typeof webhooks.$inferSelect) {
   }
 }
 
-const eventsArray = z
-  .array(z.enum(WEBHOOK_EVENT_TYPES as [string, ...string[]]))
-  .min(1)
+const eventsArray = z.array(z.enum(WEBHOOK_EVENT_TYPES as [string, ...string[]])).min(1)
 
 const createSchema = z
   .object({
@@ -92,8 +80,7 @@ const createSchema = z
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
             path: ['url'],
-            message:
-              'URLs pointing to private/internal networks are not allowed',
+            message: 'URLs pointing to private/internal networks are not allowed',
           })
         }
       } catch {
@@ -203,25 +190,19 @@ webhooksRoute.patch(
     const effectiveChannel = existing.channel
     const effectiveUrl = body.url ?? existing.url
     const effectiveSecret =
-      body.secret !== undefined && body.secret !== SECRET_MASK
-        ? body.secret
-        : existing.secret
+      body.secret !== undefined && body.secret !== SECRET_MASK ? body.secret : existing.secret
 
     if (effectiveChannel === 'webhook' && body.url !== undefined) {
       try {
         const parsed = new URL(effectiveUrl)
         if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-          return c.json(
-            { success: false, error: 'URL must use http or https protocol' },
-            400,
-          )
+          return c.json({ success: false, error: 'URL must use http or https protocol' }, 400)
         }
         if (isPrivateHost(parsed.hostname.toLowerCase())) {
           return c.json(
             {
               success: false,
-              error:
-                'URLs pointing to private/internal networks are not allowed',
+              error: 'URLs pointing to private/internal networks are not allowed',
             },
             400,
           )
@@ -232,16 +213,10 @@ webhooksRoute.patch(
     }
     if (effectiveChannel === 'telegram') {
       if (!effectiveSecret) {
-        return c.json(
-          { success: false, error: 'Bot token is required for Telegram' },
-          400,
-        )
+        return c.json({ success: false, error: 'Bot token is required for Telegram' }, 400)
       }
       if (body.url !== undefined && !/^-?\d+$/.test(effectiveUrl.trim())) {
-        return c.json(
-          { success: false, error: 'Chat ID must be a numeric value' },
-          400,
-        )
+        return c.json({ success: false, error: 'Chat ID must be a numeric value' }, 400)
       }
     }
 
@@ -259,11 +234,7 @@ webhooksRoute.patch(
       return c.json({ success: true, data: serializeWebhook(existing) })
     }
 
-    const [updated] = await db
-      .update(webhooks)
-      .set(updates)
-      .where(eq(webhooks.id, id))
-      .returning()
+    const [updated] = await db.update(webhooks).set(updates).where(eq(webhooks.id, id)).returning()
 
     return c.json({ success: true, data: serializeWebhook(updated!) })
   },

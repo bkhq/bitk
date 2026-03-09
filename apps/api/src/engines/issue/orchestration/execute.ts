@@ -15,11 +15,7 @@ import { createLogNormalizer } from '@/engines/issue/utils/normalizer'
 import { getPidFromSubprocess } from '@/engines/issue/utils/pid'
 import { setIssueDevMode } from '@/engines/issue/utils/visibility'
 import { createWorktree } from '@/engines/issue/utils/worktree'
-import type {
-  EngineType,
-  PermissionPolicy,
-  SpawnedProcess,
-} from '@/engines/types'
+import type { EngineType, PermissionPolicy, SpawnedProcess } from '@/engines/types'
 import { logger } from '@/logger'
 import { ROOT_DIR } from '@/root'
 
@@ -52,15 +48,12 @@ export async function executeIssue(
     ensureNoActiveProcess(ctx, issueId)
 
     const executor = engineRegistry.get(opts.engineType)
-    if (!executor)
-      throw new Error(`No executor for engine type: ${opts.engineType}`)
+    if (!executor) throw new Error(`No executor for engine type: ${opts.engineType}`)
 
     // Guard: reject engines that are registered but not yet executable (e.g. Gemini stub)
     const avail = await executor.getAvailability()
     if (avail.executable === false) {
-      throw new Error(
-        `Engine '${opts.engineType}' is not yet executable (spawn not implemented)`,
-      )
+      throw new Error(`Engine '${opts.engineType}' is not yet executable (spawn not implemented)`)
     }
 
     let model = opts.model
@@ -85,17 +78,11 @@ export async function executeIssue(
         worktreePath = await createWorktree(baseDir, issue.projectId, issueId)
         workingDir = worktreePath
       } catch (error) {
-        logger.warn(
-          { issueId, error },
-          'worktree_creation_failed_fallback_to_base',
-        )
+        logger.warn({ issueId, error }, 'worktree_creation_failed_fallback_to_base')
       }
     }
 
-    const permOptions = getPermissionOptions(
-      opts.engineType,
-      opts.permissionMode,
-    )
+    const permOptions = getPermissionOptions(opts.engineType, opts.permissionMode)
     const externalSessionId = crypto.randomUUID()
     const executionId = crypto.randomUUID()
 
@@ -127,20 +114,15 @@ export async function executeIssue(
         `[BKD] Process spawn failed: ${spawnError instanceof Error ? spawnError.message : String(spawnError)}`,
         { event: 'spawn_failed' },
       )
-      await updateIssueSession(issueId, { sessionStatus: 'failed' }).catch(
-        (e) =>
-          logger.error(
-            { issueId, error: e },
-            'execute_spawn_failed_revert_session_error',
-          ),
+      await updateIssueSession(issueId, { sessionStatus: 'failed' }).catch((e) =>
+        logger.error({ issueId, error: e }, 'execute_spawn_failed_revert_session_error'),
       )
       emitStateChange(issueId, executionId, 'failed')
       throw spawnError
     }
 
     // Allow executor to override the external session ID (e.g. Codex uses server-generated thread IDs)
-    const finalExternalSessionId =
-      spawned.externalSessionId ?? externalSessionId
+    const finalExternalSessionId = spawned.externalSessionId ?? externalSessionId
     await updateIssueSession(issueId, {
       externalSessionId: finalExternalSessionId,
     })

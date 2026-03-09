@@ -1,9 +1,6 @@
 import type { CategorizedCommands } from '@bkd/shared'
 import { setAppSetting } from '@/db/helpers'
-import {
-  refreshSlashCommandsCacheForEngine,
-  slashCommandsKey,
-} from '@/engines/issue/queries'
+import { refreshSlashCommandsCacheForEngine, slashCommandsKey } from '@/engines/issue/queries'
 import type { ManagedProcess } from '@/engines/issue/types'
 import { normalizeStream } from '@/engines/logs'
 import type { EngineType, NormalizedLogEntry } from '@/engines/types'
@@ -83,17 +80,12 @@ export async function consumeStream(
         }
 
         // Extract categorized commands from SDK init message
-        if (
-          entry.entryType === 'system-message' &&
-          entry.metadata?.subtype === 'init'
-        ) {
+        if (entry.entryType === 'system-message' && entry.metadata?.subtype === 'init') {
           const meta = entry.metadata
           managed.slashCommands = Array.isArray(meta.slashCommands)
             ? (meta.slashCommands as string[])
             : []
-          managed.agents = Array.isArray(meta.agents)
-            ? (meta.agents as string[])
-            : []
+          managed.agents = Array.isArray(meta.agents) ? (meta.agents as string[]) : []
           managed.plugins = Array.isArray(meta.plugins)
             ? (meta.plugins as Array<{ name: string; path: string }>)
             : []
@@ -112,8 +104,7 @@ export async function consumeStream(
         // Claude may emit execution noise after interrupt (e.g. request aborted /
         // rust-analyzer crash). Suppress noise entries within 5s of the last interrupt.
         const recentInterrupt =
-          managed.lastInterruptAt &&
-          Date.now() - managed.lastInterruptAt.getTime() < 5000
+          managed.lastInterruptAt && Date.now() - managed.lastInterruptAt.getTime() < 5000
         if (recentInterrupt && isCancelledNoiseEntry(entry)) {
           if (isTurnCompletionEntry(entry)) {
             callbacks.onTurnCompleted()
@@ -129,10 +120,7 @@ export async function consumeStream(
       } catch (entryError) {
         // Log and skip this entry — do not kill the stream consumer.
         // The stream is still readable; only the callback processing failed.
-        logger.error(
-          { issueId, executionId, entryError },
-          'consume_stream_entry_processing_error',
-        )
+        logger.error({ issueId, executionId, entryError }, 'consume_stream_entry_processing_error')
       }
     }
     // Stream ended normally (process closed stdout)
@@ -166,10 +154,7 @@ export async function consumeStderr(
       for (const line of lines) {
         if (!line.trim()) continue
         if (IO_LOG_ENABLED) {
-          logger.debug(
-            { stream: 'stderr', line: clipForLog(line) },
-            'claude_protocol_io',
-          )
+          logger.debug({ stream: 'stderr', line: clipForLog(line) }, 'claude_protocol_io')
         }
         try {
           const managed = callbacks.getManaged()
@@ -189,10 +174,7 @@ export async function consumeStderr(
 
     if (buffer.trim()) {
       if (IO_LOG_ENABLED) {
-        logger.debug(
-          { stream: 'stderr', line: clipForLog(buffer) },
-          'claude_protocol_io',
-        )
+        logger.debug({ stream: 'stderr', line: clipForLog(buffer) }, 'claude_protocol_io')
       }
       const managed = callbacks.getManaged()
       if (managed) {

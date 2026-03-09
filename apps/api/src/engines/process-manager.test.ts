@@ -18,9 +18,7 @@ interface TestMeta {
   label: string
 }
 
-function createPM(
-  opts?: ConstructorParameters<typeof ProcessManager<TestMeta>>[1],
-) {
+function createPM(opts?: ConstructorParameters<typeof ProcessManager<TestMeta>>[1]) {
   return new ProcessManager<TestMeta>('test', {
     autoCleanupDelayMs: 0,
     gcIntervalMs: 0,
@@ -57,12 +55,7 @@ describe('ProcessManager', () => {
 
     test('registers with startAsRunning', () => {
       const proc = spawnSleep()
-      const entry = pm.register(
-        'a',
-        proc,
-        { label: 'test' },
-        { startAsRunning: true },
-      )
+      const entry = pm.register('a', proc, { label: 'test' }, { startAsRunning: true })
       expect(entry.state).toBe('running')
     })
 
@@ -75,46 +68,24 @@ describe('ProcessManager', () => {
     test('rejects duplicate ID', () => {
       const proc = spawnSleep()
       pm.register('a', proc, { label: 'test' })
-      expect(() => pm.register('a', spawnSleep(), { label: 'dup' })).toThrow(
-        'already registered',
-      )
+      expect(() => pm.register('a', spawnSleep(), { label: 'dup' })).toThrow('already registered')
     })
 
     test('rejects when concurrency limit reached', () => {
       const pm2 = createPM({ maxConcurrent: 1 })
-      pm2.register(
-        'a',
-        spawnSleep(),
-        { label: 'first' },
-        { startAsRunning: true },
-      )
+      pm2.register('a', spawnSleep(), { label: 'first' }, { startAsRunning: true })
       expect(() =>
-        pm2.register(
-          'b',
-          spawnSleep(),
-          { label: 'second' },
-          { startAsRunning: true },
-        ),
+        pm2.register('b', spawnSleep(), { label: 'second' }, { startAsRunning: true }),
       ).toThrow('Concurrency limit')
       void pm2.dispose()
     })
 
     test('allows registration after terminal process frees slot', async () => {
       const pm2 = createPM({ maxConcurrent: 1 })
-      pm2.register(
-        'a',
-        spawnSleep(),
-        { label: 'first' },
-        { startAsRunning: true },
-      )
+      pm2.register('a', spawnSleep(), { label: 'first' }, { startAsRunning: true })
       pm2.markCompleted('a')
       // Now slot is free
-      const entry = pm2.register(
-        'b',
-        spawnSleep(),
-        { label: 'second' },
-        { startAsRunning: true },
-      )
+      const entry = pm2.register('b', spawnSleep(), { label: 'second' }, { startAsRunning: true })
       expect(entry.id).toBe('b')
       await pm2.dispose()
     })
@@ -130,35 +101,20 @@ describe('ProcessManager', () => {
     })
 
     test('running → completed', () => {
-      pm.register(
-        'a',
-        spawnSleep(),
-        { label: 'test' },
-        { startAsRunning: true },
-      )
+      pm.register('a', spawnSleep(), { label: 'test' }, { startAsRunning: true })
       pm.markCompleted('a')
       expect(pm.get('a')?.state).toBe('completed')
       expect(pm.get('a')?.finishedAt).toBeInstanceOf(Date)
     })
 
     test('running → failed', () => {
-      pm.register(
-        'a',
-        spawnSleep(),
-        { label: 'test' },
-        { startAsRunning: true },
-      )
+      pm.register('a', spawnSleep(), { label: 'test' }, { startAsRunning: true })
       pm.markFailed('a')
       expect(pm.get('a')?.state).toBe('failed')
     })
 
     test('terminal state is idempotent (no-op)', () => {
-      pm.register(
-        'a',
-        spawnSleep(),
-        { label: 'test' },
-        { startAsRunning: true },
-      )
+      pm.register('a', spawnSleep(), { label: 'test' }, { startAsRunning: true })
       pm.markCompleted('a')
       const finishedAt = pm.get('a')?.finishedAt
       pm.markFailed('a') // should be no-op
@@ -176,12 +132,7 @@ describe('ProcessManager', () => {
 
   describe('terminate', () => {
     test('terminates a running process', async () => {
-      pm.register(
-        'a',
-        spawnSleep(),
-        { label: 'test' },
-        { startAsRunning: true },
-      )
+      pm.register('a', spawnSleep(), { label: 'test' }, { startAsRunning: true })
       await pm.terminate('a')
       expect(pm.get('a')?.state).toBe('cancelled')
       expect(pm.get('a')?.finishedAt).toBeInstanceOf(Date)
@@ -189,12 +140,7 @@ describe('ProcessManager', () => {
 
     test('calls interruptFn before killing', async () => {
       let interrupted = false
-      pm.register(
-        'a',
-        spawnSleep(),
-        { label: 'test' },
-        { startAsRunning: true },
-      )
+      pm.register('a', spawnSleep(), { label: 'test' }, { startAsRunning: true })
       await pm.terminate('a', () => {
         interrupted = true
       })
@@ -202,12 +148,7 @@ describe('ProcessManager', () => {
     })
 
     test('is no-op on already terminal process', async () => {
-      pm.register(
-        'a',
-        spawnSleep(),
-        { label: 'test' },
-        { startAsRunning: true },
-      )
+      pm.register('a', spawnSleep(), { label: 'test' }, { startAsRunning: true })
       pm.markCompleted('a')
       await pm.terminate('a') // no throw, no-op
       expect(pm.get('a')?.state).toBe('completed')
@@ -218,24 +159,9 @@ describe('ProcessManager', () => {
     })
 
     test('terminateGroup terminates all in group', async () => {
-      pm.register(
-        'a',
-        spawnSleep(),
-        { label: '1' },
-        { group: 'g', startAsRunning: true },
-      )
-      pm.register(
-        'b',
-        spawnSleep(),
-        { label: '2' },
-        { group: 'g', startAsRunning: true },
-      )
-      pm.register(
-        'c',
-        spawnSleep(),
-        { label: '3' },
-        { group: 'other', startAsRunning: true },
-      )
+      pm.register('a', spawnSleep(), { label: '1' }, { group: 'g', startAsRunning: true })
+      pm.register('b', spawnSleep(), { label: '2' }, { group: 'g', startAsRunning: true })
+      pm.register('c', spawnSleep(), { label: '3' }, { group: 'other', startAsRunning: true })
       await pm.terminateGroup('g')
       expect(pm.get('a')?.state).toBe('cancelled')
       expect(pm.get('b')?.state).toBe('cancelled')
@@ -284,24 +210,9 @@ describe('ProcessManager', () => {
     })
 
     test('getActiveInGroup filters by group', () => {
-      pm.register(
-        'a',
-        spawnSleep(),
-        { label: '1' },
-        { group: 'g1', startAsRunning: true },
-      )
-      pm.register(
-        'b',
-        spawnSleep(),
-        { label: '2' },
-        { group: 'g2', startAsRunning: true },
-      )
-      pm.register(
-        'c',
-        spawnSleep(),
-        { label: '3' },
-        { group: 'g1', startAsRunning: true },
-      )
+      pm.register('a', spawnSleep(), { label: '1' }, { group: 'g1', startAsRunning: true })
+      pm.register('b', spawnSleep(), { label: '2' }, { group: 'g2', startAsRunning: true })
+      pm.register('c', spawnSleep(), { label: '3' }, { group: 'g1', startAsRunning: true })
       const g1Active = pm.getActiveInGroup('g1')
       expect(g1Active.length).toBe(2)
       expect(pm.getActiveInGroup('g2').length).toBe(1)
@@ -309,30 +220,15 @@ describe('ProcessManager', () => {
     })
 
     test('getFirstActiveInGroup returns first active', () => {
-      pm.register(
-        'a',
-        spawnSleep(),
-        { label: '1' },
-        { group: 'g1', startAsRunning: true },
-      )
-      pm.register(
-        'b',
-        spawnSleep(),
-        { label: '2' },
-        { group: 'g1', startAsRunning: true },
-      )
+      pm.register('a', spawnSleep(), { label: '1' }, { group: 'g1', startAsRunning: true })
+      pm.register('b', spawnSleep(), { label: '2' }, { group: 'g1', startAsRunning: true })
       const first = pm.getFirstActiveInGroup('g1')
       expect(first).toBeDefined()
       expect(pm.getFirstActiveInGroup('none')).toBeUndefined()
     })
 
     test('hasActiveInGroup returns boolean', () => {
-      pm.register(
-        'a',
-        spawnSleep(),
-        { label: 'test' },
-        { group: 'g1', startAsRunning: true },
-      )
+      pm.register('a', spawnSleep(), { label: 'test' }, { group: 'g1', startAsRunning: true })
       expect(pm.hasActiveInGroup('g1')).toBe(true)
       expect(pm.hasActiveInGroup('none')).toBe(false)
     })
@@ -497,12 +393,7 @@ describe('ProcessManager', () => {
   describe('auto cleanup', () => {
     test('auto-removes after delay', async () => {
       const pm2 = createPM({ autoCleanupDelayMs: 100 })
-      pm2.register(
-        'a',
-        spawnSleep(),
-        { label: 'test' },
-        { startAsRunning: true },
-      )
+      pm2.register('a', spawnSleep(), { label: 'test' }, { startAsRunning: true })
       pm2.markCompleted('a')
       expect(pm2.has('a')).toBe(true)
 

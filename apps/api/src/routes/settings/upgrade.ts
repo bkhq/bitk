@@ -16,10 +16,7 @@ import {
 } from '@/upgrade/service'
 import { VALID_FILE_NAME_RE } from '@/upgrade/utils'
 
-const ALLOWED_DOWNLOAD_HOSTS = new Set([
-  'github.com',
-  'objects.githubusercontent.com',
-])
+const ALLOWED_DOWNLOAD_HOSTS = new Set(['github.com', 'objects.githubusercontent.com'])
 
 function isAllowedDownloadHost(url: string): boolean {
   try {
@@ -30,19 +27,13 @@ function isAllowedDownloadHost(url: string): boolean {
   }
 }
 
-const githubUrlSchema = z
-  .string()
-  .url()
-  .refine(isAllowedDownloadHost, 'URL must be from GitHub')
+const githubUrlSchema = z.string().url().refine(isAllowedDownloadHost, 'URL must be from GitHub')
 
 const upgradeFileNameSchema = z
   .string()
   .min(1)
   .max(255)
-  .regex(
-    VALID_FILE_NAME_RE,
-    'File name must match bkd-<type>-v<version> format',
-  )
+  .regex(VALID_FILE_NAME_RE, 'File name must match bkd-<type>-v<version> format')
 
 const upgrade = new Hono()
 
@@ -117,14 +108,8 @@ upgrade.post(
     const { url, fileName, checksumUrl } = c.req.valid('json')
     // Check status synchronously before starting background download
     const currentStatus = getDownloadStatus()
-    if (
-      currentStatus.status === 'downloading' ||
-      currentStatus.status === 'verifying'
-    ) {
-      return c.json(
-        { success: false, error: 'A download is already in progress' },
-        409,
-      )
+    if (currentStatus.status === 'downloading' || currentStatus.status === 'verifying') {
+      return c.json({ success: false, error: 'A download is already in progress' }, 409)
     }
     // Start download in background; errors are tracked in downloadStatus
     downloadUpdate(url, fileName, checksumUrl).catch((err) => {

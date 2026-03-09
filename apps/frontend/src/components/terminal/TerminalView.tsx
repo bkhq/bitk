@@ -153,17 +153,12 @@ function tryLoadWebgl(terminal: Terminal): void {
   }
 }
 
-function connectWs(
-  sessionId: string,
-  terminal: Terminal,
-  fitAddon: FitAddon,
-): void {
+function connectWs(sessionId: string, terminal: Terminal, fitAddon: FitAddon): void {
   const state = store.getState()
   if (state.disposed) return
   if (
     state.ws &&
-    (state.ws.readyState === WebSocket.OPEN ||
-      state.ws.readyState === WebSocket.CONNECTING)
+    (state.ws.readyState === WebSocket.OPEN || state.ws.readyState === WebSocket.CONNECTING)
   ) {
     return
   }
@@ -220,10 +215,7 @@ function connectWs(
   })
 }
 
-async function initConnection(
-  terminal: Terminal,
-  fitAddon: FitAddon,
-): Promise<void> {
+async function initConnection(terminal: Terminal, fitAddon: FitAddon): Promise<void> {
   const state = store.getState()
   if (state.disposed) return
 
@@ -231,8 +223,7 @@ async function initConnection(
   if (
     state.sessionId &&
     state.ws &&
-    (state.ws.readyState === WebSocket.OPEN ||
-      state.ws.readyState === WebSocket.CONNECTING)
+    (state.ws.readyState === WebSocket.OPEN || state.ws.readyState === WebSocket.CONNECTING)
   ) {
     return
   }
@@ -349,13 +340,7 @@ export function TerminalView({ className }: { className?: string }) {
     }
   }, [handleResize])
 
-  return (
-    <div
-      ref={containerRef}
-      className={className}
-      style={{ width: '100%', height: '100%' }}
-    />
-  )
+  return <div ref={containerRef} className={className} style={{ width: '100%', height: '100%' }} />
 }
 
 /** Explicitly kill the terminal session and clean up all resources */

@@ -93,9 +93,7 @@ export default function FileBrowserPage() {
   if (isLoading) {
     return (
       <div className="flex h-full items-center justify-center bg-background text-foreground">
-        <p className="text-sm text-muted-foreground">
-          {t('kanban.loadingProject')}
-        </p>
+        <p className="text-sm text-muted-foreground">{t('kanban.loadingProject')}</p>
       </div>
     )
   }
@@ -138,11 +136,7 @@ export default function FileBrowserPage() {
               aria-label={t('fileBrowser.copyPath')}
               title={t('fileBrowser.copyPath')}
             >
-              {copied ? (
-                <Check className="h-4 w-4 text-green-500" />
-              ) : (
-                <Copy className="h-4 w-4" />
-              )}
+              {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
             </button>
             {listing?.type === 'file' && (
               <button
@@ -164,17 +158,9 @@ export default function FileBrowserPage() {
                   : 'text-muted-foreground hover:text-foreground hover:bg-accent'
               }`}
               aria-label={t('fileBrowser.hideIgnored')}
-              title={
-                hideIgnored
-                  ? t('fileBrowser.showIgnored')
-                  : t('fileBrowser.hideIgnored')
-              }
+              title={hideIgnored ? t('fileBrowser.showIgnored') : t('fileBrowser.hideIgnored')}
             >
-              {hideIgnored ? (
-                <EyeOff className="h-4 w-4" />
-              ) : (
-                <Eye className="h-4 w-4" />
-              )}
+              {hideIgnored ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
           </div>
         </div>

@@ -39,16 +39,14 @@ export const useTerminalStore = create<TerminalStore>((set) => ({
   width: Math.round(getViewportWidth() * DEFAULT_WIDTH_RATIO),
 
   open: () => set({ isOpen: true, isMinimized: false }),
-  openFullscreen: () =>
-    set({ isOpen: true, isMinimized: false, isFullscreen: true }),
+  openFullscreen: () => set({ isOpen: true, isMinimized: false, isFullscreen: true }),
   close: () => set({ isOpen: false }),
   toggle: () =>
     set((s) => {
       if (s.isMinimized) return { isOpen: true, isMinimized: false }
       return { isOpen: !s.isOpen }
     }),
-  minimize: () =>
-    set({ isOpen: false, isMinimized: true, isFullscreen: false }),
+  minimize: () => set({ isOpen: false, isMinimized: true, isFullscreen: false }),
   restore: () => set({ isOpen: true, isMinimized: false }),
   toggleFullscreen: () => set((s) => ({ isFullscreen: !s.isFullscreen })),
   setWidth: (w) => set({ width: clampWidth(w) }),

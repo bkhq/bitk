@@ -91,9 +91,7 @@ describe('CodexProtocolHandler', () => {
     expect(req.params.cwd).toBe('/tmp')
 
     // Simulate response
-    stdout.push(
-      JSON.stringify({ id: req.id, result: { thread: { id: 'thread-abc' } } }),
-    )
+    stdout.push(JSON.stringify({ id: req.id, result: { thread: { id: 'thread-abc' } } }))
 
     const result = await threadPromise
     expect(result.threadId).toBe('thread-abc')
@@ -115,9 +113,7 @@ describe('CodexProtocolHandler', () => {
     // Response without thread.id
     stdout.push(JSON.stringify({ id: 1, result: {} }))
 
-    await expect(threadPromise).rejects.toThrow(
-      'thread/start response missing thread.id',
-    )
+    await expect(threadPromise).rejects.toThrow('thread/start response missing thread.id')
 
     handler.close()
     stdout.close()
@@ -138,9 +134,7 @@ describe('CodexProtocolHandler', () => {
     expect(req.params.input).toEqual([{ type: 'text', text: 'Hello world' }])
 
     // Simulate response
-    stdout.push(
-      JSON.stringify({ id: req.id, result: { turn: { id: 'turn-001' } } }),
-    )
+    stdout.push(JSON.stringify({ id: req.id, result: { turn: { id: 'turn-001' } } }))
 
     const turnId = await turnPromise
     expect(turnId).toBe('turn-001')
@@ -286,9 +280,7 @@ describe('CodexProtocolHandler', () => {
     const turnPromise = handler.startTurn('t1', 'test')
     await tick()
     const req = JSON.parse(written[0]!)
-    stdout.push(
-      JSON.stringify({ id: req.id, result: { turn: { id: 'turn-x' } } }),
-    )
+    stdout.push(JSON.stringify({ id: req.id, result: { turn: { id: 'turn-x' } } }))
     await turnPromise
 
     expect(handler.turnId).toBe('turn-x')
@@ -404,9 +396,7 @@ describe('CodexProtocolHandler', () => {
     const threadPromise = handler.startThread({})
     await tick()
     const req = JSON.parse(written[0]!)
-    stdout.push(
-      JSON.stringify({ id: req.id, result: { thread: { id: 'thread-msg' } } }),
-    )
+    stdout.push(JSON.stringify({ id: req.id, result: { thread: { id: 'thread-msg' } } }))
     await threadPromise
 
     // Now send a user message
@@ -417,10 +407,7 @@ describe('CodexProtocolHandler', () => {
     const turnReq = written.find((w) => {
       try {
         const p = JSON.parse(w)
-        return (
-          p.method === 'turn/start' &&
-          p.params.input?.[0]?.text === 'follow up question'
-        )
+        return p.method === 'turn/start' && p.params.input?.[0]?.text === 'follow up question'
       } catch {
         return false
       }
@@ -491,9 +478,7 @@ describe('CodexProtocolHandler', () => {
 
     stdout.push(JSON.stringify({ id: 1, result: {} }))
 
-    await expect(forkPromise).rejects.toThrow(
-      'thread/fork response missing thread.id',
-    )
+    await expect(forkPromise).rejects.toThrow('thread/fork response missing thread.id')
 
     handler.close()
     stdout.close()

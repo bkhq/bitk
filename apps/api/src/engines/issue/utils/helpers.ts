@@ -55,9 +55,7 @@ export interface ProjectExecContext {
   envVars?: Record<string, string>
 }
 
-export async function getProjectExecContext(
-  projectId: string,
-): Promise<ProjectExecContext> {
+export async function getProjectExecContext(projectId: string): Promise<ProjectExecContext> {
   const [project] = await db
     .select({
       systemPrompt: projectsTable.systemPrompt,

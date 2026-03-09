@@ -20,26 +20,13 @@ filesystem.get('/dirs', async (c) => {
   const current = resolve(raw)
 
   // SEC-022: Restrict to workspace root (unless root is '/')
-  if (
-    resolvedRoot &&
-    resolvedRoot !== '/' &&
-    !isInsideRoot(current, resolvedRoot)
-  ) {
-    return c.json(
-      { success: false, error: 'Path is outside the configured workspace' },
-      403,
-    )
+  if (resolvedRoot && resolvedRoot !== '/' && !isInsideRoot(current, resolvedRoot)) {
+    return c.json({ success: false, error: 'Path is outside the configured workspace' }, 403)
   }
 
   // Compute parent — clamp to workspace root
-  let parent: string | null =
-    dirname(current) !== current ? dirname(current) : null
-  if (
-    parent &&
-    resolvedRoot &&
-    resolvedRoot !== '/' &&
-    !isInsideRoot(parent, resolvedRoot)
-  ) {
+  let parent: string | null = dirname(current) !== current ? dirname(current) : null
+  if (parent && resolvedRoot && resolvedRoot !== '/' && !isInsideRoot(parent, resolvedRoot)) {
     parent = null
   }
 
@@ -95,10 +82,7 @@ filesystem.post(
     if (workspaceRoot && workspaceRoot !== '/') {
       const resolvedRoot = resolve(workspaceRoot)
       if (!isInsideRoot(target, resolvedRoot)) {
-        return c.json(
-          { success: false, error: 'Path is outside the configured workspace' },
-          403,
-        )
+        return c.json({ success: false, error: 'Path is outside the configured workspace' }, 403)
       }
     }
 
@@ -106,10 +90,7 @@ filesystem.post(
       await mkdir(target, { recursive: true })
       return c.json({ success: true, data: { path: target } }, 201)
     } catch {
-      return c.json(
-        { success: false, error: 'Failed to create directory' },
-        500,
-      )
+      return c.json({ success: false, error: 'Failed to create directory' }, 500)
     }
   },
 )

@@ -4,10 +4,7 @@ import { engineRegistry } from '@/engines/executors'
 import type { EngineContext } from '@/engines/issue/context'
 import { emitDiagnosticLog } from '@/engines/issue/diagnostic'
 import { emitStateChange } from '@/engines/issue/events'
-import {
-  getNextTurnIndex,
-  removeLogEntry,
-} from '@/engines/issue/persistence/queries'
+import { getNextTurnIndex, removeLogEntry } from '@/engines/issue/persistence/queries'
 import {
   ensureNoActiveProcess,
   killExistingSubprocessForIssue,
@@ -28,11 +25,7 @@ import {
   isWorktreeRegistered,
   resolveWorktreePath,
 } from '@/engines/issue/utils/worktree'
-import type {
-  EngineType,
-  PermissionPolicy,
-  SpawnedProcess,
-} from '@/engines/types'
+import type { EngineType, PermissionPolicy, SpawnedProcess } from '@/engines/types'
 import { logger } from '@/logger'
 import { monitorCompletion } from './completion-monitor'
 import { handleTurnCompleted } from './turn-completion'
@@ -91,9 +84,7 @@ export async function spawnWithSessionFallback(
       { event: 'session_recreate' },
     )
     // When recreating a session, prepend the project system prompt
-    const freshPrompt = opts.systemPrompt
-      ? `${opts.systemPrompt}\n\n${opts.prompt}`
-      : opts.prompt
+    const freshPrompt = opts.systemPrompt ? `${opts.systemPrompt}\n\n${opts.prompt}` : opts.prompt
     const spawned = await executor.spawn(
       {
         workingDir: opts.workingDir,
@@ -234,14 +225,9 @@ export async function spawnRetry(
   )
   retryManaged.spawnCwd = workingDir
   retryManaged.externalSessionId =
-    spawned.externalSessionId ??
-    issue.sessionFields.externalSessionId ??
-    undefined
+    spawned.externalSessionId ?? issue.sessionFields.externalSessionId ?? undefined
   monitorCompletion(ctx, executionId, issueId, engineType, true)
-  logger.debug(
-    { issueId, executionId, engineType, turnIndex },
-    'issue_retry_spawned',
-  )
+  logger.debug({ issueId, executionId, engineType, turnIndex }, 'issue_retry_spawned')
 }
 
 export async function spawnFollowUpProcess(
@@ -263,8 +249,7 @@ export async function spawnFollowUpProcess(
   setIssueDevMode(issueId, issue.devMode)
   if (!issue.sessionFields.externalSessionId)
     throw new Error('No external session ID for follow-up')
-  if (!issue.sessionFields.engineType)
-    throw new Error('No engine type set on issue')
+  if (!issue.sessionFields.engineType) throw new Error('No engine type set on issue')
 
   // Safety guard: kill any existing subprocess for this issue to prevent
   // duplicate CLI processes talking to the same Claude session.
@@ -294,14 +279,7 @@ export async function spawnFollowUpProcess(
   // DB. Skip creating a duplicate entry.
   const messageId = opts?.skipPersistMessage
     ? null
-    : persistUserMessage(
-        ctx,
-        issueId,
-        executionId,
-        prompt,
-        displayPrompt,
-        metadata,
-      )
+    : persistUserMessage(ctx, issueId, executionId, prompt, displayPrompt, metadata)
 
   const baseDir = await resolveWorkingDir(issue.projectId)
 
@@ -319,10 +297,7 @@ export async function spawnFollowUpProcess(
           worktreePath = candidatePath
           workingDir = candidatePath
         } else {
-          logger.warn(
-            { issueId, candidatePath, baseDir },
-            'worktree_not_registered_recreating',
-          )
+          logger.warn({ issueId, candidatePath, baseDir }, 'worktree_not_registered_recreating')
           worktreePath = await createWorktree(baseDir, issue.projectId, issueId)
           workingDir = worktreePath
         }
@@ -333,10 +308,7 @@ export async function spawnFollowUpProcess(
         worktreePath = await createWorktree(baseDir, issue.projectId, issueId)
         workingDir = worktreePath
       } catch (wtErr) {
-        logger.warn(
-          { issueId, error: wtErr },
-          'worktree_creation_failed_fallback_to_base',
-        )
+        logger.warn({ issueId, error: wtErr }, 'worktree_creation_failed_fallback_to_base')
       }
     }
   }
@@ -360,10 +332,7 @@ export async function spawnFollowUpProcess(
     // Spawn failed after we already emitted 'running' and persisted the user
     // message.  Revert the session status so the issue doesn't get stuck in
     // 'running' forever with no process to settle it.
-    logger.error(
-      { issueId, executionId, error: spawnError },
-      'spawn_failed_reverting_session',
-    )
+    logger.error({ issueId, executionId, error: spawnError }, 'spawn_failed_reverting_session')
     emitDiagnosticLog(
       issueId,
       executionId,
@@ -376,10 +345,7 @@ export async function spawnFollowUpProcess(
       try {
         removeLogEntry(messageId)
       } catch (e) {
-        logger.error(
-          { issueId, messageId, error: e },
-          'spawn_failed_remove_user_message_error',
-        )
+        logger.error({ issueId, messageId, error: e }, 'spawn_failed_remove_user_message_error')
       }
     }
     await updateIssueSession(issueId, { sessionStatus: 'failed' }).catch((e) =>
@@ -408,9 +374,7 @@ export async function spawnFollowUpProcess(
   )
   followUpManaged.spawnCwd = workingDir
   followUpManaged.externalSessionId =
-    spawned.externalSessionId ??
-    issue.sessionFields.externalSessionId ??
-    undefined
+    spawned.externalSessionId ?? issue.sessionFields.externalSessionId ?? undefined
   // User message already persisted above (before spawn)
   monitorCompletion(ctx, executionId, issueId, engineType, false)
   const followUpPid = getPidFromSubprocess(spawned.subprocess)

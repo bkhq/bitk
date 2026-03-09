@@ -83,22 +83,22 @@ npm install -g @google/gemini-cli
 
 所有配置通过环境变量完成。在 `apps/api/` 目录创建 `.env` 文件（Bun 自动加载）或设置环境变量。完整模板见 `apps/api/.env.example`。
 
-| 变量 | 说明 | 默认值 |
-|------|------|--------|
-| `PORT` | 服务端口 | `3000` |
-| `HOST` | 监听地址 | `0.0.0.0` |
-| `ROOT_DIR` | 工作区根目录 | 自动检测 |
-| `DB_PATH` | SQLite 数据库路径 | `data/db/bkd.db` |
-| `LOG_LEVEL` | 日志级别（`trace` / `debug` / `info` / `warn` / `error`） | `info` |
-| `SERVICE_NAME` | 日志名称前缀 | `bkd` |
-| `LOG_EXECUTOR_IO` | 记录执行器 stdin/stdout（`1` = 开启，`0` = 关闭） | `1` |
-| `MAX_CONCURRENT_EXECUTIONS` | 最大并行代理会话数 | `5` |
-| `ANTHROPIC_API_KEY` | Claude API 密钥 | — |
-| `OPENAI_API_KEY` | OpenAI / Codex API 密钥 | — |
-| `CODEX_API_KEY` | Codex 专用 API 密钥（备选） | — |
-| `GOOGLE_API_KEY` | Google Gemini API 密钥 | — |
-| `GEMINI_API_KEY` | Gemini 专用 API 密钥（备选） | — |
-| `ENABLE_RUNTIME_ENDPOINT` | 启用 `/api/runtime` 调试端点 | 禁用 |
+| 变量                        | 说明                                                      | 默认值           |
+| --------------------------- | --------------------------------------------------------- | ---------------- |
+| `PORT`                      | 服务端口                                                  | `3000`           |
+| `HOST`                      | 监听地址                                                  | `0.0.0.0`        |
+| `ROOT_DIR`                  | 工作区根目录                                              | 自动检测         |
+| `DB_PATH`                   | SQLite 数据库路径                                         | `data/db/bkd.db` |
+| `LOG_LEVEL`                 | 日志级别（`trace` / `debug` / `info` / `warn` / `error`） | `info`           |
+| `SERVICE_NAME`              | 日志名称前缀                                              | `bkd`            |
+| `LOG_EXECUTOR_IO`           | 记录执行器 stdin/stdout（`1` = 开启，`0` = 关闭）         | `1`              |
+| `MAX_CONCURRENT_EXECUTIONS` | 最大并行代理会话数                                        | `5`              |
+| `ANTHROPIC_API_KEY`         | Claude API 密钥                                           | —                |
+| `OPENAI_API_KEY`            | OpenAI / Codex API 密钥                                   | —                |
+| `CODEX_API_KEY`             | Codex 专用 API 密钥（备选）                               | —                |
+| `GOOGLE_API_KEY`            | Google Gemini API 密钥                                    | —                |
+| `GEMINI_API_KEY`            | Gemini 专用 API 密钥（备选）                              | —                |
+| `ENABLE_RUNTIME_ENDPOINT`   | 启用 `/api/runtime` 调试端点                              | 禁用             |
 
 ## 开发
 

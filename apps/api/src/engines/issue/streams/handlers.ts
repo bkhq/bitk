@@ -18,8 +18,7 @@ export function handleStreamEntry(
   // Normalize content before it enters the pipeline so every subscriber
   // (DB persistence, SSE broadcast, ring buffer, etc.) sees the same value.
   const trimmed = entry.content.trim()
-  const effectiveEntry =
-    trimmed === entry.content ? entry : { ...entry, content: trimmed }
+  const effectiveEntry = trimmed === entry.content ? entry : { ...entry, content: trimmed }
   appEvents.emit('log', {
     issueId,
     executionId,
@@ -36,8 +35,7 @@ export function handleStderrEntry(
   entry: NormalizedLogEntry,
 ): void {
   const trimmed = entry.content.trim()
-  const effectiveEntry =
-    trimmed === entry.content ? entry : { ...entry, content: trimmed }
+  const effectiveEntry = trimmed === entry.content ? entry : { ...entry, content: trimmed }
   appEvents.emit('log', {
     issueId,
     executionId,

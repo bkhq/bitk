@@ -93,9 +93,7 @@ describe('gcSweep — stream stall detection', () => {
       turnInFlight: true,
       lastActivityAt: stalledAt,
     })
-    const { ctx, forceKillCalls } = makeContext([
-      { id: 'exec-1', meta: managed },
-    ])
+    const { ctx, forceKillCalls } = makeContext([{ id: 'exec-1', meta: managed }])
 
     gcSweep(ctx)
 
@@ -123,9 +121,7 @@ describe('gcSweep — stream stall detection', () => {
         protocolHandler: { interrupt: interruptMock },
       } as unknown as ManagedProcess['process'],
     })
-    const { ctx, forceKillCalls } = makeContext([
-      { id: 'exec-1', meta: managed },
-    ])
+    const { ctx, forceKillCalls } = makeContext([{ id: 'exec-1', meta: managed }])
 
     gcSweep(ctx)
 
@@ -155,9 +151,7 @@ describe('gcSweep — stream stall detection', () => {
       stallDetectedAt: detectedAt,
       stallProbeAt: probeAt,
     })
-    const { ctx, forceKillCalls } = makeContext([
-      { id: 'exec-1', meta: managed },
-    ])
+    const { ctx, forceKillCalls } = makeContext([{ id: 'exec-1', meta: managed }])
 
     gcSweep(ctx)
 
@@ -176,9 +170,7 @@ describe('gcSweep — stream stall detection', () => {
         subprocess: { pid: 999999999 },
       } as unknown as ManagedProcess['process'],
     })
-    const { ctx, forceKillCalls } = makeContext([
-      { id: 'exec-dead', meta: managed },
-    ])
+    const { ctx, forceKillCalls } = makeContext([{ id: 'exec-dead', meta: managed }])
 
     gcSweep(ctx)
 
@@ -194,9 +186,7 @@ describe('gcSweep — stream stall detection', () => {
       turnInFlight: true,
       lastActivityAt: recentActivity,
     })
-    const { ctx, forceKillCalls } = makeContext([
-      { id: 'exec-2', meta: managed },
-    ])
+    const { ctx, forceKillCalls } = makeContext([{ id: 'exec-2', meta: managed }])
 
     gcSweep(ctx)
 
@@ -212,9 +202,7 @@ describe('gcSweep — stream stall detection', () => {
       turnInFlight: true,
       lastActivityAt: atBoundary,
     })
-    const { ctx, forceKillCalls } = makeContext([
-      { id: 'exec-3', meta: managed },
-    ])
+    const { ctx, forceKillCalls } = makeContext([{ id: 'exec-3', meta: managed }])
 
     gcSweep(ctx)
 
@@ -231,9 +219,7 @@ describe('gcSweep — stream stall detection', () => {
       lastIdleAt: idleAt,
       lastActivityAt: idleAt,
     })
-    const { ctx, forceKillCalls } = makeContext([
-      { id: 'exec-4', meta: managed },
-    ])
+    const { ctx, forceKillCalls } = makeContext([{ id: 'exec-4', meta: managed }])
 
     gcSweep(ctx)
 
@@ -249,9 +235,7 @@ describe('gcSweep — stream stall detection', () => {
       lastIdleAt: recentIdle,
       lastActivityAt: recentIdle,
     })
-    const { ctx, forceKillCalls } = makeContext([
-      { id: 'exec-5', meta: managed },
-    ])
+    const { ctx, forceKillCalls } = makeContext([{ id: 'exec-5', meta: managed }])
 
     gcSweep(ctx)
 
@@ -308,10 +292,7 @@ describe('gcSweep — stream stall detection', () => {
           120_000,
       ),
       stallDetectedAt: new Date(
-        Date.now() -
-          STALL_LIVENESS_GRACE_MS -
-          STALL_INTERRUPT_GRACE_MS -
-          120_000,
+        Date.now() - STALL_LIVENESS_GRACE_MS - STALL_INTERRUPT_GRACE_MS - 120_000,
       ),
       stallProbeAt: new Date(Date.now() - STALL_INTERRUPT_GRACE_MS - 120_000),
     })
@@ -349,9 +330,7 @@ describe('gcSweep — stream stall detection', () => {
       turnInFlight: true,
       lastActivityAt: new Date(Date.now() - 60_000), // 1 min ago — within threshold
     })
-    const { ctx, forceKillCalls } = makeContext([
-      { id: 'exec-recovered', meta: managed },
-    ])
+    const { ctx, forceKillCalls } = makeContext([{ id: 'exec-recovered', meta: managed }])
 
     gcSweep(ctx)
 

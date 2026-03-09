@@ -116,9 +116,7 @@ export function FileViewer({ file, onBack }: FileViewerProps) {
             </button>
             <span className="font-medium text-sm">{fileName}</span>
           </div>
-          <span className="text-xs text-muted-foreground">
-            {formatSize(file.size)}
-          </span>
+          <span className="text-xs text-muted-foreground">{formatSize(file.size)}</span>
         </div>
         <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
           <FileWarning className="h-10 w-10" />
@@ -148,21 +146,11 @@ export function FileViewer({ file, onBack }: FileViewerProps) {
               type="button"
               onClick={() => setShowRendered((v) => !v)}
               className="flex items-center gap-1 rounded px-1.5 py-0.5 hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
-              title={
-                showRendered
-                  ? t('fileBrowser.viewSource')
-                  : t('fileBrowser.viewRendered')
-              }
+              title={showRendered ? t('fileBrowser.viewSource') : t('fileBrowser.viewRendered')}
             >
-              {showRendered ? (
-                <Code className="h-3.5 w-3.5" />
-              ) : (
-                <Eye className="h-3.5 w-3.5" />
-              )}
+              {showRendered ? <Code className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
               <span>
-                {showRendered
-                  ? t('fileBrowser.viewSource')
-                  : t('fileBrowser.viewRendered')}
+                {showRendered ? t('fileBrowser.viewSource') : t('fileBrowser.viewRendered')}
               </span>
             </button>
           ) : null}
@@ -187,7 +175,6 @@ export function FileViewer({ file, onBack }: FileViewerProps) {
         ) : (
           <div
             className="shiki-line-numbers text-xs [&_pre]:!bg-transparent [&_pre]:px-2 [&_pre]:py-1.5 [&_pre]:overflow-x-auto [&_code]:leading-snug"
-            // biome-ignore lint/security/noDangerouslySetInnerHtml: sanitized by DOMPurify
             dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(html) }}
           />
         )}

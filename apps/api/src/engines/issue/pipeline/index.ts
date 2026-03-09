@@ -25,10 +25,8 @@ import { registerTokenUsageStage } from './token-usage'
  * In particular, DB persistence failure no longer prevents SSE delivery.
  */
 export function registerLogPipeline(ctx: EngineContext): void {
-  const on = (
-    cb: Parameters<typeof appEvents.on<'log'>>[1],
-    opts: { order: number },
-  ) => appEvents.on('log', cb, opts)
+  const on = (cb: Parameters<typeof appEvents.on<'log'>>[1], opts: { order: number }) =>
+    appEvents.on('log', cb, opts)
 
   registerPersistStage(ctx, on)
   registerTokenUsageStage(ctx, on)

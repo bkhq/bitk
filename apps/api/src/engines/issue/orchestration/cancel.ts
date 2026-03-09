@@ -1,8 +1,5 @@
 import { updateIssueSession } from '@/engines/engine-store'
-import {
-  CANCEL_MAX_RETRIES,
-  CANCEL_RESPONSE_TIMEOUT_MS,
-} from '@/engines/issue/constants'
+import { CANCEL_MAX_RETRIES, CANCEL_RESPONSE_TIMEOUT_MS } from '@/engines/issue/constants'
 import type { EngineContext } from '@/engines/issue/context'
 import { emitIssueSettled } from '@/engines/issue/events'
 import { cancel } from '@/engines/issue/process/cancel'
@@ -17,10 +14,7 @@ import { logger } from '@/logger'
  * Wait for the process to settle (turnSettled or terminal state).
  * Returns true if settled, false if timed out.
  */
-function waitForSettlement(
-  managed: ManagedProcess,
-  timeoutMs: number,
-): Promise<boolean> {
+function waitForSettlement(managed: ManagedProcess, timeoutMs: number): Promise<boolean> {
   return new Promise((resolve) => {
     const start = Date.now()
     const check = setInterval(() => {
@@ -115,20 +109,14 @@ async function escalateCancel(
         try {
           managed.process.cancel()
         } catch (err) {
-          logger.warn(
-            { issueId, executionId, err },
-            'cancel_escalation_interrupt_failed',
-          )
+          logger.warn({ issueId, executionId, err }, 'cancel_escalation_interrupt_failed')
         }
       }
 
       // Wait for response
       settled = await waitForSettlement(managed, CANCEL_RESPONSE_TIMEOUT_MS)
       if (settled) {
-        logger.info(
-          { issueId, executionId, pid, attempt },
-          'cancel_escalation_settled_after_retry',
-        )
+        logger.info({ issueId, executionId, pid, attempt }, 'cancel_escalation_settled_after_retry')
         break
       }
     }
@@ -163,10 +151,7 @@ async function escalateCancel(
           emitCancelledState: true,
           hard: true,
         })
-        logger.info(
-          { issueId, executionId, pid },
-          'cancel_escalation_hard_kill_sent',
-        )
+        logger.info({ issueId, executionId, pid }, 'cancel_escalation_hard_kill_sent')
       })
     }
   }
@@ -205,10 +190,7 @@ export async function cancelIssue(
       processesToEscalate.push({ managed: p, escalationId })
     }
     if (active.length > 0) {
-      logger.info(
-        { issueId, interruptedCount: active.length },
-        'issue_cancel_soft_interrupted',
-      )
+      logger.info({ issueId, interruptedCount: active.length }, 'issue_cancel_soft_interrupted')
       return 'interrupted' as const
     }
     // No active processes — mark as cancelled in DB and notify frontend

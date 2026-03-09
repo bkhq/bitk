@@ -27,9 +27,7 @@ attachmentsRouter.get('/:id/attachments/:attachmentId', async (c) => {
   const [attachment] = await db
     .select()
     .from(attachments)
-    .where(
-      and(eq(attachments.id, attachmentId), eq(attachments.issueId, issueId)),
-    )
+    .where(and(eq(attachments.id, attachmentId), eq(attachments.issueId, issueId)))
   if (!attachment) {
     return c.json({ success: false, error: 'Attachment not found' }, 404)
   }
@@ -37,9 +35,7 @@ attachmentsRouter.get('/:id/attachments/:attachmentId', async (c) => {
   const filePath = resolve(process.cwd(), attachment.storagePath)
 
   // SEC-025: Prevent path traversal — resolved path must be inside the uploads directory
-  const normalizedUploadDir = UPLOAD_DIR.endsWith('/')
-    ? UPLOAD_DIR.slice(0, -1)
-    : UPLOAD_DIR
+  const normalizedUploadDir = UPLOAD_DIR.endsWith('/') ? UPLOAD_DIR.slice(0, -1) : UPLOAD_DIR
   if (!filePath.startsWith(normalizedUploadDir + '/')) {
     return c.json({ success: false, error: 'Invalid attachment path' }, 400)
   }

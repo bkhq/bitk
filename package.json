@@ -21,10 +21,10 @@
     "test": "bun --parallel --filter '*' test",
     "test:api": "bun --filter @bkd/api test",
     "test:frontend": "bun --filter @bkd/frontend test",
-    "lint": "ulimit -c 0 && biome check .",
-    "lint:fix": "biome check . --fix",
-    "format": "biome format . --write",
-    "format:check": "biome check . --formatter-enabled=true --linter-enabled=false",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "db:generate": "bun --filter @bkd/api db:generate",
     "db:migrate": "bun --filter @bkd/api db:migrate",
     "db:reset": "bun apps/api/src/db/reset.ts",
@@ -33,8 +33,14 @@
     "package": "bun scripts/package.ts"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.6",
     "@bkd/tsconfig": "workspace:*",
-    "typescript": "catalog:"
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.0.3",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-refresh": "^0.5.2",
+    "prettier": "^3.8.1",
+    "typescript": "catalog:",
+    "typescript-eslint": "^8.56.1"
   }
 }

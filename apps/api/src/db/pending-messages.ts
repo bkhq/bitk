@@ -72,9 +72,7 @@ export async function upsertPendingMessage(
 
   if (existing) {
     // Merge content
-    const mergedContent = [existing.content, content.trim()]
-      .filter(Boolean)
-      .join('\n\n')
+    const mergedContent = [existing.content, content.trim()].filter(Boolean).join('\n\n')
 
     // Merge metadata
     let existingMeta: Record<string, unknown> = {}
@@ -102,9 +100,7 @@ export async function upsertPendingMessage(
       ...metadata,
       type: 'pending',
       ...(mergedDisplay ? { displayPrompt: mergedDisplay } : {}),
-      ...(mergedAttachments.length > 0
-        ? { attachments: mergedAttachments }
-        : {}),
+      ...(mergedAttachments.length > 0 ? { attachments: mergedAttachments } : {}),
     }
 
     await db
@@ -183,9 +179,7 @@ export async function deletePendingMessage(issueId: string): Promise<{
   await db.delete(issueLogs).where(eq(issueLogs.id, pending.id))
   // Also delete associated attachments records
   if (attachmentRows.length > 0) {
-    await db
-      .delete(attachmentsTable)
-      .where(eq(attachmentsTable.logId, pending.id))
+    await db.delete(attachmentsTable).where(eq(attachmentsTable.logId, pending.id))
   }
 
   return {
@@ -246,8 +240,7 @@ export async function relocatePendingForProcessing(issueId: string): Promise<{
   return {
     oldId: pending.id,
     prompt,
-    displayPrompt:
-      (meta.displayPrompt as string | undefined) ?? pending.content,
+    displayPrompt: (meta.displayPrompt as string | undefined) ?? pending.content,
     metadata: restMeta,
   }
 }
@@ -270,10 +263,7 @@ export function restorePendingVisibility(pendingId: string): void {
  */
 export async function markPendingMessagesDispatched(ids: string[]) {
   if (ids.length === 0) return
-  await db
-    .update(issueLogs)
-    .set({ visible: 0 })
-    .where(inArray(issueLogs.id, ids))
+  await db.update(issueLogs).set({ visible: 0 }).where(inArray(issueLogs.id, ids))
 }
 
 // ---------- Attachment context ----------
@@ -291,8 +281,7 @@ export function buildFileContextFromRows(
 ): string {
   if (rows.length === 0) return ''
   const parts = rows.map(
-    (f) =>
-      `[Attached file: ${f.originalName} at ${resolve(UPLOAD_DIR, f.storedName)}]`,
+    (f) => `[Attached file: ${f.originalName} at ${resolve(UPLOAD_DIR, f.storedName)}]`,
   )
   return `\n\n--- Attached files ---\n${parts.join('\n')}`
 }
@@ -333,9 +322,7 @@ export async function collectPendingWithAttachments(
 ): Promise<{ prompt: string; pendingIds: string[] }> {
   const pending = await getPendingMessages(issueId)
   if (pending.length === 0) return { prompt: '', pendingIds: [] }
-  const attachmentCtx = await getAttachmentContextForLogIds(
-    pending.map((m) => m.id),
-  )
+  const attachmentCtx = await getAttachmentContextForLogIds(pending.map((m) => m.id))
   const parts = pending.map((m) => {
     const fileCtx = attachmentCtx.get(m.id) ?? ''
     return (m.content + fileCtx).trim()

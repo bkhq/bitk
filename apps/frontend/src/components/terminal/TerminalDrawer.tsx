@@ -1,10 +1,4 @@
-import {
-  Maximize2,
-  Minimize2,
-  Minus,
-  TerminalSquare,
-  Trash2,
-} from 'lucide-react'
+import { Maximize2, Minimize2, Minus, TerminalSquare, Trash2 } from 'lucide-react'
 import { useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useIsMobile } from '@/hooks/use-mobile'
@@ -17,15 +11,8 @@ import { disposeTerminal, TerminalView } from './TerminalView'
 
 export function TerminalDrawer() {
   const { t } = useTranslation()
-  const {
-    isOpen,
-    isFullscreen,
-    width,
-    close,
-    minimize,
-    toggleFullscreen,
-    setWidth,
-  } = useTerminalStore()
+  const { isOpen, isFullscreen, width, close, minimize, toggleFullscreen, setWidth } =
+    useTerminalStore()
   const isMobile = useIsMobile()
   const dragRef = useRef<{ startX: number; startWidth: number } | null>(null)
 
@@ -39,11 +26,7 @@ export function TerminalDrawer() {
     <>
       {/* Backdrop overlay */}
       {fullscreen ? null : (
-        <div
-          aria-hidden="true"
-          className="fixed inset-0 z-[39] bg-black/20"
-          onClick={close}
-        />
+        <div aria-hidden="true" className="fixed inset-0 z-[39] bg-black/20" onClick={close} />
       )}
       <div
         className={`fixed top-0 bottom-0 right-0 z-40 flex flex-col border-l border-border bg-background shadow-2xl ${
@@ -119,9 +102,7 @@ export function TerminalDrawer() {
                 onClick={toggleFullscreen}
                 className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
                 aria-label={t('terminal.maximize')}
-                title={
-                  isFullscreen ? t('terminal.back') : t('terminal.maximize')
-                }
+                title={isFullscreen ? t('terminal.back') : t('terminal.maximize')}
               >
                 {isFullscreen ? (
                   <Minimize2 className="h-3.5 w-3.5" />

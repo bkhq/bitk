@@ -31,13 +31,7 @@ import { useTerminalStore } from '@/stores/terminal-store'
 import { useViewModeStore } from '@/stores/view-mode-store'
 import type { Project } from '@/types/kanban'
 
-function ProjectCard({
-  project,
-  onClick,
-}: {
-  project: Project
-  onClick: () => void
-}) {
+function ProjectCard({ project, onClick }: { project: Project; onClick: () => void }) {
   const { t } = useTranslation()
   const stats = useProjectStats(project.id)
   const [showSettings, setShowSettings] = useState(false)
@@ -115,11 +109,7 @@ function ProjectCard({
           </div>
         </CardContent>
       </Card>
-      <ProjectSettingsDialog
-        open={showSettings}
-        onOpenChange={setShowSettings}
-        project={project}
-      />
+      <ProjectSettingsDialog open={showSettings} onOpenChange={setShowSettings} project={project} />
     </>
   )
 }
@@ -149,11 +139,7 @@ function MobileHomeMenu({
         <Menu className="h-5 w-5" />
       </Button>
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent
-          side="right"
-          className="w-72 p-0"
-          aria-describedby={undefined}
-        >
+        <SheetContent side="right" className="w-72 p-0" aria-describedby={undefined}>
           <SheetTitle className="sr-only">{t('sidebar.menu')}</SheetTitle>
           <div className="flex flex-col h-full">
             {/* Actions -- no header */}
@@ -304,8 +290,7 @@ export default function HomePage() {
 
   // Mobile always uses list mode
   const projectPath = useCallback(
-    (alias: string) =>
-      isMobile ? `/projects/${alias}/issues` : globalProjectPath(alias),
+    (alias: string) => (isMobile ? `/projects/${alias}/issues` : globalProjectPath(alias)),
     [isMobile, globalProjectPath],
   )
 
@@ -343,7 +328,6 @@ export default function HomePage() {
         {isLoading ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: no unique identifier available
               <Card key={i} className="bg-card/30 animate-pulse min-h-[140px]">
                 <CardHeader>
                   <div className="flex items-start gap-3">

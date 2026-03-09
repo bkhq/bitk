@@ -1,12 +1,5 @@
-import {
-  relocatePendingForProcessing,
-  restorePendingVisibility,
-} from '@/db/pending-messages'
-import {
-  autoMoveToReview,
-  getIssueWithSession,
-  updateIssueSession,
-} from '@/engines/engine-store'
+import { relocatePendingForProcessing, restorePendingVisibility } from '@/db/pending-messages'
+import { autoMoveToReview, getIssueWithSession, updateIssueSession } from '@/engines/engine-store'
 import type { EngineContext } from '@/engines/issue/context'
 import { emitIssueSettled, emitStateChange } from '@/engines/issue/events'
 import { dispatch } from '@/engines/issue/state'
@@ -117,10 +110,7 @@ export function handleTurnCompleted(
       // Emitting a stale settled event would cause the frontend to block
       // live log events for the new active execution.
       const freshIssue = await getIssueWithSession(issueId)
-      if (
-        freshIssue &&
-        freshIssue.sessionFields.sessionStatus !== finalStatus
-      ) {
+      if (freshIssue && freshIssue.sessionFields.sessionStatus !== finalStatus) {
         logger.debug(
           {
             issueId,
@@ -173,10 +163,7 @@ export function handleTurnCompleted(
         }
         await updateIssueSession(issueId, { sessionStatus: finalStatus })
       } catch (innerErr) {
-        logger.error(
-          { issueId, executionId, err: innerErr },
-          'issue_turn_settle_catch_db_failed',
-        )
+        logger.error({ issueId, executionId, err: innerErr }, 'issue_turn_settle_catch_db_failed')
       }
       emitIssueSettled(issueId, executionId, finalStatus)
     }
@@ -201,10 +188,7 @@ export async function flushQueuedInputs(
     .filter(Boolean)
     .join('\n\n')
   // Use the latest model override (last wins)
-  const lastModel = all.reduce<string | undefined>(
-    (acc, i) => i.model ?? acc,
-    undefined,
-  )
+  const lastModel = all.reduce<string | undefined>((acc, i) => i.model ?? acc, undefined)
   // Merge display prompts for the UI message bubble
   const mergedDisplay =
     all

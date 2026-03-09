@@ -1,11 +1,5 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
-import {
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  rmSync,
-  writeFileSync,
-} from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
@@ -131,12 +125,7 @@ describe('removeWorktree', () => {
   })
 
   test('falls back to directory deletion for non-git worktree dirs', async () => {
-    const fakeDir = join(
-      ROOT_DIR,
-      'worktrees',
-      TEST_PROJECT_ID,
-      'fake-worktree',
-    )
+    const fakeDir = join(ROOT_DIR, 'worktrees', TEST_PROJECT_ID, 'fake-worktree')
     mkdirSync(fakeDir, { recursive: true })
     writeFileSync(join(fakeDir, 'test.txt'), 'test')
     expect(existsSync(fakeDir)).toBe(true)

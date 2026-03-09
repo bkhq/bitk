@@ -77,10 +77,7 @@ export const followUpSchema = z.object({
 
 export type IssueRow = typeof issuesTable.$inferSelect
 
-export {
-  getPendingMessages,
-  markPendingMessagesDispatched,
-} from '@/db/pending-messages'
+export { getPendingMessages, markPendingMessagesDispatched } from '@/db/pending-messages'
 
 export function serializeIssue(row: IssueRow, childCount?: number) {
   return {
@@ -124,9 +121,7 @@ function parseTags(raw: string | null | undefined): string[] | null {
 }
 
 /** Serialize tags array to JSON string for DB storage, or null if empty. */
-export function serializeTags(
-  tags: string[] | null | undefined,
-): string | null {
+export function serializeTags(tags: string[] | null | undefined): string | null {
   if (!tags || tags.length === 0) return null
   return JSON.stringify(tags)
 }
@@ -147,10 +142,7 @@ export async function getProjectOwnedIssue(projectId: string, issueId: string) {
   })
 }
 
-export async function invalidateIssueCache(
-  projectId: string,
-  issueId: string,
-): Promise<void> {
+export async function invalidateIssueCache(projectId: string, issueId: string): Promise<void> {
   await cacheDel(`issue:${projectId}:${issueId}`)
 }
 
@@ -174,10 +166,7 @@ export function parseProjectEnvVars(
  * existing session.  Called when an issue transitions to working but
  * already has a completed/failed session.
  */
-export function flushPendingAsFollowUp(
-  issueId: string,
-  issue: { model: string | null },
-): void {
+export function flushPendingAsFollowUp(issueId: string, issue: { model: string | null }): void {
   void (async () => {
     try {
       const relocated = await relocatePendingForProcessing(issueId)
@@ -195,10 +184,7 @@ export function flushPendingAsFollowUp(
       )
       // Notify frontend to remove old pending entry
       emitIssueLogRemoved(issueId, [relocated.oldId])
-      logger.debug(
-        { issueId, oldPendingId: relocated.oldId },
-        'pending_flushed_as_followup',
-      )
+      logger.debug({ issueId, oldPendingId: relocated.oldId }, 'pending_flushed_as_followup')
     } catch (err) {
       logger.error({ issueId, err }, 'pending_flush_followup_failed')
       if (relocated) restorePendingVisibility(relocated.oldId)
@@ -228,8 +214,7 @@ export async function collectPendingMessages(
   issueId: string,
   basePrompt: string,
 ): Promise<{ prompt: string; pendingIds: string[] }> {
-  const { prompt: pendingPrompt, pendingIds } =
-    await collectPendingWithAttachments(issueId)
+  const { prompt: pendingPrompt, pendingIds } = await collectPendingWithAttachments(issueId)
   if (pendingIds.length === 0) return { prompt: basePrompt, pendingIds: [] }
   const prompt = [basePrompt, pendingPrompt].filter(Boolean).join('\n\n')
   return { prompt, pendingIds }
@@ -241,9 +226,7 @@ export async function collectPendingMessages(
  * - review → move to working, then execute
  * - working → proceed as-is
  */
-export async function ensureWorking(
-  issue: IssueRow,
-): Promise<{ ok: boolean; reason?: string }> {
+export async function ensureWorking(issue: IssueRow): Promise<{ ok: boolean; reason?: string }> {
   if (issue.statusId === 'todo') {
     return {
       ok: false,
@@ -288,17 +271,12 @@ export function triggerIssueExecution(
         const workspaceRoot = await getAppSetting('workspace:defaultPath')
         if (workspaceRoot && workspaceRoot !== '/') {
           const resolvedRoot = resolve(workspaceRoot)
-          if (
-            !resolvedDir.startsWith(`${resolvedRoot}/`) &&
-            resolvedDir !== resolvedRoot
-          ) {
+          if (!resolvedDir.startsWith(`${resolvedRoot}/`) && resolvedDir !== resolvedRoot) {
             logger.warn(
               { issueId, resolvedDir, workspaceRoot: resolvedRoot },
               'auto_execute_workdir_outside_workspace',
             )
-            throw new Error(
-              'Project directory is outside the configured workspace',
-            )
+            throw new Error('Project directory is outside the configured workspace')
           }
         }
 
@@ -308,16 +286,10 @@ export function triggerIssueExecution(
           if (s.isDirectory()) {
             effectiveWorkingDir = resolvedDir
           } else {
-            logger.warn(
-              { issueId, resolvedDir },
-              'auto_execute_workdir_not_directory',
-            )
+            logger.warn({ issueId, resolvedDir }, 'auto_execute_workdir_not_directory')
           }
         } catch (error) {
-          logger.warn(
-            { issueId, resolvedDir, error },
-            'auto_execute_workdir_prepare_failed',
-          )
+          logger.warn({ issueId, resolvedDir, error }, 'auto_execute_workdir_prepare_failed')
         }
       }
 
@@ -346,10 +318,7 @@ export function triggerIssueExecution(
     } catch (err) {
       logger.error({ issueId, err }, 'auto_execute_failed')
       if (relocated) restorePendingVisibility(relocated.oldId)
-      issueEngine.setLastError(
-        issueId,
-        err instanceof Error ? err.message : 'auto_execute_failed',
-      )
+      issueEngine.setLastError(issueId, err instanceof Error ? err.message : 'auto_execute_failed')
       try {
         await db
           .update(issuesTable)
@@ -358,10 +327,7 @@ export function triggerIssueExecution(
         // Notify frontend so it doesn't stay stuck in "working" state
         emitIssueUpdated(issueId, { sessionStatus: 'failed' })
       } catch (dbErr) {
-        logger.error(
-          { issueId, err: dbErr },
-          'auto_execute_status_update_failed',
-        )
+        logger.error({ issueId, err: dbErr }, 'auto_execute_status_update_failed')
       }
     }
   })()

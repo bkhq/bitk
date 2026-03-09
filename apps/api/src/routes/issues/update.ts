@@ -88,10 +88,7 @@ update.patch(
         // Fetch existing issue once when statusId changes to check transitions
         let existing: typeof issuesTable.$inferSelect | undefined
         if (u.statusId !== undefined) {
-          const [row] = await tx
-            .select()
-            .from(issuesTable)
-            .where(eq(issuesTable.id, u.id))
+          const [row] = await tx.select().from(issuesTable).where(eq(issuesTable.id, u.id))
           existing = row
 
           // Only update statusUpdatedAt on actual status change
@@ -102,11 +99,7 @@ update.patch(
         }
 
         // Check if this is a transition to working that should trigger execution
-        if (
-          u.statusId === 'working' &&
-          existing &&
-          existing.statusId !== 'working'
-        ) {
+        if (u.statusId === 'working' && existing && existing.statusId !== 'working') {
           if (!existing.sessionStatus || existing.sessionStatus === 'pending') {
             changes.sessionStatus = 'pending'
             toExecute.push({
@@ -115,11 +108,7 @@ update.patch(
               prompt: existing.prompt,
               model: existing.model,
             })
-          } else if (
-            ['completed', 'failed', 'cancelled'].includes(
-              existing.sessionStatus,
-            )
-          ) {
+          } else if (['completed', 'failed', 'cancelled'].includes(existing.sessionStatus)) {
             // Session already finished — flush pending messages as follow-up
             toFlush.push({ id: u.id, model: existing.model })
           }
@@ -246,10 +235,7 @@ update.patch(
         updates.parentIssueId = null
       } else {
         if (body.parentIssueId === issueId) {
-          return c.json(
-            { success: false, error: 'Issue cannot be its own parent' },
-            400,
-          )
+          return c.json({ success: false, error: 'Issue cannot be its own parent' }, 400)
         }
         const [parent] = await db
           .select({
@@ -265,10 +251,7 @@ update.patch(
             ),
           )
         if (!parent) {
-          return c.json(
-            { success: false, error: 'Parent issue not found in this project' },
-            400,
-          )
+          return c.json({ success: false, error: 'Parent issue not found in this project' }, 400)
         }
         if (parent.parentIssueId) {
           return c.json(
@@ -288,21 +271,16 @@ update.patch(
     }
 
     // Check if transitioning to working → trigger execution or flush
-    const transitioningToWorking =
-      body.statusId === 'working' && existing.statusId !== 'working'
+    const transitioningToWorking = body.statusId === 'working' && existing.statusId !== 'working'
     const shouldExecute =
-      transitioningToWorking &&
-      (!existing.sessionStatus || existing.sessionStatus === 'pending')
+      transitioningToWorking && (!existing.sessionStatus || existing.sessionStatus === 'pending')
     const shouldFlush =
       transitioningToWorking &&
       !shouldExecute &&
-      ['completed', 'failed', 'cancelled'].includes(
-        existing.sessionStatus ?? '',
-      )
+      ['completed', 'failed', 'cancelled'].includes(existing.sessionStatus ?? '')
 
     // Check if transitioning to done → cancel active processes
-    const transitioningToDone =
-      body.statusId === 'done' && existing.statusId !== 'done'
+    const transitioningToDone = body.statusId === 'done' && existing.statusId !== 'done'
 
     if (shouldExecute) {
       updates.sessionStatus = 'pending'

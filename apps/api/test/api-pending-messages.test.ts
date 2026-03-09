@@ -2,14 +2,7 @@ import { beforeAll, describe, expect, test } from 'bun:test'
 import { eq } from 'drizzle-orm'
 import { db } from '../src/db'
 import { issues as issuesTable } from '../src/db/schema'
-import {
-  createTestProject,
-  expectSuccess,
-  get,
-  patch,
-  post,
-  waitFor,
-} from './helpers'
+import { createTestProject, expectSuccess, get, patch, post, waitFor } from './helpers'
 /**
  * Pending message queue tests — verifies the full lifecycle:
  * - Messages sent to todo issues are stored as pending
@@ -91,9 +84,7 @@ describe('Follow-up queuing on todo issues', () => {
       prompt: 'pending log check',
     })
 
-    const logsResult = await get<LogsResponse>(
-      `/api/projects/${projectId}/issues/${issue.id}/logs`,
-    )
+    const logsResult = await get<LogsResponse>(`/api/projects/${projectId}/issues/${issue.id}/logs`)
     expect(logsResult.status).toBe(200)
     const logs = expectSuccess(logsResult)
     const pendingMsgs = logs.logs.filter(
@@ -123,9 +114,7 @@ describe('Follow-up queuing on todo issues', () => {
       prompt: 'message three',
     })
 
-    const logsResult = await get<LogsResponse>(
-      `/api/projects/${projectId}/issues/${issue.id}/logs`,
-    )
+    const logsResult = await get<LogsResponse>(`/api/projects/${projectId}/issues/${issue.id}/logs`)
     const logs = expectSuccess(logsResult)
     const pendingMsgs = logs.logs.filter(
       (l) => l.entryType === 'user-message' && l.metadata?.type === 'pending',
@@ -166,17 +155,13 @@ describe('Pending messages consumed on transition to working', () => {
 
     // Wait for echo engine to complete
     await waitFor(async () => {
-      const r = await get<Issue>(
-        `/api/projects/${projectId}/issues/${issue.id}`,
-      )
+      const r = await get<Issue>(`/api/projects/${projectId}/issues/${issue.id}`)
       const s = expectSuccess(r).sessionStatus
       return s === 'completed' || s === 'failed'
     }, 5000)
 
     // Verify pending messages are DELETED (not just metadata cleared)
-    const logsResult = await get<LogsResponse>(
-      `/api/projects/${projectId}/issues/${issue.id}/logs`,
-    )
+    const logsResult = await get<LogsResponse>(`/api/projects/${projectId}/issues/${issue.id}/logs`)
     const logs = expectSuccess(logsResult)
     const pendingMsgs = logs.logs.filter(
       (l) => l.entryType === 'user-message' && l.metadata?.type === 'pending',
@@ -205,17 +190,13 @@ describe('Pending messages consumed on transition to working', () => {
 
     // Wait for echo to complete
     await waitFor(async () => {
-      const r = await get<Issue>(
-        `/api/projects/${projectId}/issues/${issue.id}`,
-      )
+      const r = await get<Issue>(`/api/projects/${projectId}/issues/${issue.id}`)
       const s = expectSuccess(r).sessionStatus
       return s === 'completed' || s === 'failed'
     }, 5000)
 
     // Verify no pending messages remain
-    const logsResult = await get<LogsResponse>(
-      `/api/projects/${projectId}/issues/${issue.id}/logs`,
-    )
+    const logsResult = await get<LogsResponse>(`/api/projects/${projectId}/issues/${issue.id}/logs`)
     const logs = expectSuccess(logsResult)
     const pendingMsgs = logs.logs.filter(
       (l) => l.entryType === 'user-message' && l.metadata?.type === 'pending',
@@ -251,17 +232,13 @@ describe('No message duplication after pending consumption', () => {
 
     // Wait for completion
     await waitFor(async () => {
-      const r = await get<Issue>(
-        `/api/projects/${projectId}/issues/${issue.id}`,
-      )
+      const r = await get<Issue>(`/api/projects/${projectId}/issues/${issue.id}`)
       const s = expectSuccess(r).sessionStatus
       return s === 'completed' || s === 'failed'
     }, 5000)
 
     // Check logs: the queued message should still exist but with pending=false
-    const logsResult = await get<LogsResponse>(
-      `/api/projects/${projectId}/issues/${issue.id}/logs`,
-    )
+    const logsResult = await get<LogsResponse>(`/api/projects/${projectId}/issues/${issue.id}/logs`)
     const logs = expectSuccess(logsResult)
     const matchingMsgs = logs.logs.filter(
       (l) => l.entryType === 'user-message' && l.content.includes(queuedPrompt),
@@ -293,9 +270,7 @@ describe('Flush pending messages for existing sessions', () => {
 
     // Wait for echo to complete (auto-moves to review)
     await waitFor(async () => {
-      const r = await get<Issue>(
-        `/api/projects/${projectId}/issues/${issue.id}`,
-      )
+      const r = await get<Issue>(`/api/projects/${projectId}/issues/${issue.id}`)
       return expectSuccess(r).statusId === 'review'
     }, 5000)
 
@@ -342,9 +317,7 @@ describe('Flush pending messages for existing sessions', () => {
     )
 
     await waitFor(async () => {
-      const r = await get<Issue>(
-        `/api/projects/${projectId}/issues/${issue.id}`,
-      )
+      const r = await get<Issue>(`/api/projects/${projectId}/issues/${issue.id}`)
       return expectSuccess(r).statusId === 'review'
     }, 5000)
 
@@ -370,9 +343,7 @@ describe('Flush pending messages for existing sessions', () => {
     })
     await Bun.sleep(200)
 
-    const logsResult = await get<LogsResponse>(
-      `/api/projects/${projectId}/issues/${issue.id}/logs`,
-    )
+    const logsResult = await get<LogsResponse>(`/api/projects/${projectId}/issues/${issue.id}/logs`)
     const logs = expectSuccess(logsResult)
     const pending = logs.logs.filter(
       (l) =>
@@ -405,9 +376,7 @@ describe('Flush pending messages for existing sessions', () => {
 
     // Wait for completion
     await waitFor(async () => {
-      const r = await get<Issue>(
-        `/api/projects/${projectId}/issues/${issue.id}`,
-      )
+      const r = await get<Issue>(`/api/projects/${projectId}/issues/${issue.id}`)
       const s = expectSuccess(r).sessionStatus
       return s === 'completed' || s === 'failed'
     }, 5000)
@@ -441,17 +410,13 @@ describe('Execute endpoint consumes pending messages', () => {
 
     // Wait for auto-execution to complete
     await waitFor(async () => {
-      const r = await get<Issue>(
-        `/api/projects/${projectId}/issues/${issue.id}`,
-      )
+      const r = await get<Issue>(`/api/projects/${projectId}/issues/${issue.id}`)
       const s = expectSuccess(r).sessionStatus
       return s === 'completed' || s === 'failed'
     }, 5000)
 
     // Verify pending messages are gone
-    const logsResult = await get<LogsResponse>(
-      `/api/projects/${projectId}/issues/${issue.id}/logs`,
-    )
+    const logsResult = await get<LogsResponse>(`/api/projects/${projectId}/issues/${issue.id}/logs`)
     const logs = expectSuccess(logsResult)
     const pendingMsgs = logs.logs.filter(
       (l) => l.entryType === 'user-message' && l.metadata?.type === 'pending',
@@ -477,17 +442,12 @@ describe('Restart guards', () => {
     )
 
     await waitFor(async () => {
-      const r = await get<Issue>(
-        `/api/projects/${projectId}/issues/${issue.id}`,
-      )
+      const r = await get<Issue>(`/api/projects/${projectId}/issues/${issue.id}`)
       return expectSuccess(r).statusId === 'review'
     }, 5000)
 
     // Restart on completed session should fail (engine only allows failed/cancelled)
-    const restartResult = await post(
-      `/api/projects/${projectId}/issues/${issue.id}/restart`,
-      {},
-    )
+    const restartResult = await post(`/api/projects/${projectId}/issues/${issue.id}/restart`, {})
     expect(restartResult.status).toBe(400)
   })
 })

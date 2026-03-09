@@ -25,12 +25,7 @@ export type CategorizedCommands = {
 }
 export type PermissionMode = 'auto' | 'supervised' | 'plan'
 export type BusyAction = 'queue' | 'cancel'
-export type SessionStatus =
-  | 'pending'
-  | 'running'
-  | 'completed'
-  | 'failed'
-  | 'cancelled'
+export type SessionStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled'
 
 export type Issue = {
   id: string
@@ -58,9 +53,7 @@ export type Issue = {
   updatedAt: string
 }
 
-export type ApiResponse<T> =
-  | { success: true; data: T }
-  | { success: false; error: string }
+export type ApiResponse<T> = { success: true; data: T } | { success: false; error: string }
 
 export type LogEntryType =
   | 'user-message'
@@ -421,10 +414,7 @@ export const WEBHOOK_EVENT_TYPES: WebhookEventType[] = [
 
 export type NotificationChannel = 'webhook' | 'telegram'
 
-export const NOTIFICATION_CHANNELS: NotificationChannel[] = [
-  'webhook',
-  'telegram',
-]
+export const NOTIFICATION_CHANNELS: NotificationChannel[] = ['webhook', 'telegram']
 
 export interface Webhook {
   id: string

@@ -16,8 +16,7 @@ export function useNotes() {
 export function useCreateNote() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (data: { title?: string; content?: string }) =>
-      kanbanApi.createNote(data),
+    mutationFn: (data: { title?: string; content?: string }) => kanbanApi.createNote(data),
     onSuccess: () => qc.invalidateQueries({ queryKey: notesKeys.all }),
   })
 }

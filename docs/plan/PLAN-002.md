@@ -13,15 +13,15 @@
 
 ### 当前 payload 问题
 
-| 事件 | 当前字段 | 缺失 |
-|---|---|---|
-| issue.created | issueId, projectId, title, statusId | issueNumber, projectName, issueUrl, engineType, model |
-| issue.deleted | issueId, projectId, title | issueNumber, projectName, issueUrl |
-| issue.updated | issueId, changes | projectId, projectName, title, issueNumber, issueUrl |
-| issue.status_changed | issueId, changes | projectId, projectName, title, issueNumber, issueUrl, oldStatus, newStatus |
-| session.started | issueId, executionId | projectId, projectName, title, issueNumber, issueUrl, engineType, model |
-| session.completed | issueId, executionId, finalStatus | projectId, projectName, title, issueNumber, issueUrl |
-| session.failed | issueId, executionId, finalStatus | projectId, projectName, title, issueNumber, issueUrl, lastLog |
+| 事件                 | 当前字段                            | 缺失                                                                       |
+| -------------------- | ----------------------------------- | -------------------------------------------------------------------------- |
+| issue.created        | issueId, projectId, title, statusId | issueNumber, projectName, issueUrl, engineType, model                      |
+| issue.deleted        | issueId, projectId, title           | issueNumber, projectName, issueUrl                                         |
+| issue.updated        | issueId, changes                    | projectId, projectName, title, issueNumber, issueUrl                       |
+| issue.status_changed | issueId, changes                    | projectId, projectName, title, issueNumber, issueUrl, oldStatus, newStatus |
+| session.started      | issueId, executionId                | projectId, projectName, title, issueNumber, issueUrl, engineType, model    |
+| session.completed    | issueId, executionId, finalStatus   | projectId, projectName, title, issueNumber, issueUrl                       |
+| session.failed       | issueId, executionId, finalStatus   | projectId, projectName, title, issueNumber, issueUrl, lastLog              |
 
 ### 关键文件
 

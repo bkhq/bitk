@@ -1,11 +1,4 @@
-import {
-  ChevronRight,
-  Menu,
-  Plus,
-  Settings,
-  StickyNote,
-  TerminalSquare,
-} from 'lucide-react'
+import { ChevronRight, Menu, Plus, Settings, StickyNote, TerminalSquare } from 'lucide-react'
 import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
@@ -36,11 +29,7 @@ export function MobileSidebarTrigger({ onOpen }: { onOpen: () => void }) {
   )
 }
 
-export function MobileSidebar({
-  activeProjectId,
-}: {
-  activeProjectId: string
-}) {
+export function MobileSidebar({ activeProjectId }: { activeProjectId: string }) {
   const [open, setOpen] = useState(false)
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -49,10 +38,7 @@ export function MobileSidebar({
   const [showSettings, setShowSettings] = useState(false)
 
   // Mobile always uses list mode
-  const mobileProjectPath = useCallback(
-    (projectId: string) => `/projects/${projectId}/issues`,
-    [],
-  )
+  const mobileProjectPath = useCallback((projectId: string) => `/projects/${projectId}/issues`, [])
 
   const handleProjectCreated = useCallback(
     (project: Project) => {
@@ -67,11 +53,7 @@ export function MobileSidebar({
     <>
       <MobileSidebarTrigger onOpen={() => setOpen(true)} />
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent
-          side="left"
-          className="w-72 p-0"
-          aria-describedby={undefined}
-        >
+        <SheetContent side="left" className="w-72 p-0" aria-describedby={undefined}>
           <SheetTitle className="sr-only">{t('sidebar.menu')}</SheetTitle>
 
           <div className="flex flex-col h-full">
@@ -94,10 +76,7 @@ export function MobileSidebar({
                 {t('project.projects')}
               </span>
             </div>
-            <div
-              className="flex-1 overflow-y-auto px-2"
-              style={{ scrollbarWidth: 'none' }}
-            >
+            <div className="flex-1 overflow-y-auto px-2" style={{ scrollbarWidth: 'none' }}>
               {projects?.map((project) => {
                 const isActive = activeProjectId === project.alias
                 return (

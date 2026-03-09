@@ -1,9 +1,6 @@
 import { cacheGet, cacheSet } from '@/cache'
 import { getProbeResults, saveProbeResults, setAppSetting } from '@/db/helpers'
-import {
-  refreshSlashCommandsCacheForEngine,
-  slashCommandsKey,
-} from '@/engines/issue/queries'
+import { refreshSlashCommandsCacheForEngine, slashCommandsKey } from '@/engines/issue/queries'
 import { logger } from '@/logger'
 import { ClaudeCodeExecutor, engineRegistry } from './executors'
 import type { EngineAvailability, EngineModel, EngineType } from './types'
@@ -33,11 +30,7 @@ async function writeToCache(
 ): Promise<void> {
   await cacheSet(CACHE_KEY_ENGINES, engines, PROBE_TTL)
   for (const [engineType, engineModels] of Object.entries(models)) {
-    await cacheSet(
-      `${CACHE_KEY_MODELS_PREFIX}${engineType}`,
-      engineModels,
-      PROBE_TTL,
-    )
+    await cacheSet(`${CACHE_KEY_MODELS_PREFIX}${engineType}`, engineModels, PROBE_TTL)
   }
 }
 
@@ -51,9 +44,7 @@ async function readFromCache(): Promise<EngineDiscovery | null> {
   const models: Record<string, EngineModel[]> = {}
   for (const engine of engines) {
     if (!engine.installed) continue
-    const cached = await cacheGet<EngineModel[]>(
-      `${CACHE_KEY_MODELS_PREFIX}${engine.engineType}`,
-    )
+    const cached = await cacheGet<EngineModel[]>(`${CACHE_KEY_MODELS_PREFIX}${engine.engineType}`)
     if (cached && cached.length > 0) {
       models[engine.engineType] = cached
     }
@@ -65,18 +56,11 @@ async function readFromCache(): Promise<EngineDiscovery | null> {
 // Per-engine probe timeout (prevents a single engine from blocking the entire probe)
 const PER_ENGINE_TIMEOUT_MS = 15_000
 
-function withTimeout<T>(
-  promise: Promise<T>,
-  ms: number,
-  label: string,
-): Promise<T> {
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
   return Promise.race([
     promise,
     new Promise<T>((_, reject) =>
-      setTimeout(
-        () => reject(new Error(`${label} timed out after ${ms}ms`)),
-        ms,
-      ),
+      setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms),
     ),
   ])
 }
@@ -93,16 +77,8 @@ async function runLiveProbe(): Promise<EngineDiscovery> {
   const results = await Promise.allSettled(
     executors.map(async (executor) => {
       const [availability, engineModels] = await Promise.all([
-        withTimeout(
-          executor.getAvailability(),
-          PER_ENGINE_TIMEOUT_MS,
-          executor.engineType,
-        ),
-        withTimeout(
-          executor.getModels(),
-          PER_ENGINE_TIMEOUT_MS,
-          `${executor.engineType}:models`,
-        ),
+        withTimeout(executor.getAvailability(), PER_ENGINE_TIMEOUT_MS, executor.engineType),
+        withTimeout(executor.getModels(), PER_ENGINE_TIMEOUT_MS, `${executor.engineType}:models`),
       ])
       return { availability, models: engineModels }
     }),
@@ -175,15 +151,10 @@ const CODEX_SLASH_COMMANDS = ['/compact', '/status', '/mcp']
  * Discover slash commands and agents for installed engines.
  * Claude Code: discovered dynamically. Codex: registered statically.
  */
-async function discoverSlashCommands(
-  installed: EngineAvailability[],
-): Promise<void> {
+async function discoverSlashCommands(installed: EngineAvailability[]): Promise<void> {
   // Register static Codex slash commands if installed
   if (installed.some((e) => e.engineType === 'codex')) {
-    await setAppSetting(
-      slashCommandsKey('codex'),
-      JSON.stringify(CODEX_SLASH_COMMANDS),
-    )
+    await setAppSetting(slashCommandsKey('codex'), JSON.stringify(CODEX_SLASH_COMMANDS))
     await refreshSlashCommandsCacheForEngine('codex')
   }
 
@@ -204,10 +175,7 @@ async function discoverSlashCommands(
       // out or exited before sending the init message, the empty arrays are
       // not authoritative and should not overwrite previously valid data.
       if (!result.initReceived) {
-        logger.warn(
-          { engineType: engine.engineType },
-          'probe_discovery_no_init_received',
-        )
+        logger.warn({ engineType: engine.engineType }, 'probe_discovery_no_init_received')
         continue
       }
 
@@ -230,10 +198,7 @@ async function discoverSlashCommands(
         'probe_discovery_completed',
       )
     } catch (err) {
-      logger.warn(
-        { engineType: engine.engineType, error: err },
-        'probe_discovery_engine_failed',
-      )
+      logger.warn({ engineType: engine.engineType, error: err }, 'probe_discovery_engine_failed')
     }
   }
 }
@@ -306,10 +271,7 @@ export async function forceProbeEngines(): Promise<ProbeResult> {
 
   const { engines, models } = await runLiveProbe()
 
-  await Promise.all([
-    writeToCache(engines, models),
-    saveProbeResults(engines, models),
-  ])
+  await Promise.all([writeToCache(engines, models), saveProbeResults(engines, models)])
 
   const duration = Date.now() - start
   logger.info(
@@ -327,12 +289,8 @@ export async function forceProbeEngines(): Promise<ProbeResult> {
 /**
  * Get cached models for a specific engine type. Falls back to live query.
  */
-export async function getEngineModels(
-  engineType: EngineType,
-): Promise<EngineModel[]> {
-  const cached = await cacheGet<EngineModel[]>(
-    `${CACHE_KEY_MODELS_PREFIX}${engineType}`,
-  )
+export async function getEngineModels(engineType: EngineType): Promise<EngineModel[]> {
+  const cached = await cacheGet<EngineModel[]>(`${CACHE_KEY_MODELS_PREFIX}${engineType}`)
   if (cached) return cached
 
   return engineRegistry.getModels(engineType)

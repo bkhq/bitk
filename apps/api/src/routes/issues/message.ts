@@ -72,17 +72,11 @@ async function parseFollowUpBody(c: {
 
     // Validate fields to match followUpSchema constraints
     const validBusyActions = ['queue', 'cancel']
-    if (
-      typeof busyAction === 'string' &&
-      !validBusyActions.includes(busyAction)
-    ) {
+    if (typeof busyAction === 'string' && !validBusyActions.includes(busyAction)) {
       return { ok: false, error: 'busyAction must be "queue" or "cancel"' }
     }
     const validPermissionModes = ['auto', 'supervised', 'plan']
-    if (
-      typeof permissionMode === 'string' &&
-      !validPermissionModes.includes(permissionMode)
-    ) {
+    if (typeof permissionMode === 'string' && !validPermissionModes.includes(permissionMode)) {
       return {
         ok: false,
         error: 'permissionMode must be "auto", "supervised", or "plan"',
@@ -100,12 +94,10 @@ async function parseFollowUpBody(c: {
       ok: true,
       prompt,
       model: typeof model === 'string' ? model : undefined,
-      permissionMode:
-        typeof permissionMode === 'string' ? permissionMode : undefined,
+      permissionMode: typeof permissionMode === 'string' ? permissionMode : undefined,
       busyAction: typeof busyAction === 'string' ? busyAction : undefined,
       meta: meta === 'true' || meta === '1' ? true : undefined,
-      displayPrompt:
-        typeof displayPrompt === 'string' ? displayPrompt : undefined,
+      displayPrompt: typeof displayPrompt === 'string' ? displayPrompt : undefined,
       files,
     }
   }
@@ -238,9 +230,7 @@ message.post('/:id/follow-up', async (c) => {
   const fileContext = buildFileContext(savedFiles)
   const fullPrompt = prompt + fileContext
   const attachmentsMeta =
-    savedFiles.length > 0
-      ? { attachments: savedFiles.map(savedFileToMeta) }
-      : {}
+    savedFiles.length > 0 ? { attachments: savedFiles.map(savedFileToMeta) } : {}
 
   // Queue message for todo/done issues instead of rejecting
   // Always store original prompt for engine use; displayPrompt goes in metadata for UI display
@@ -250,33 +240,18 @@ message.post('/:id/follow-up', async (c) => {
     ...(parsed.displayPrompt ? { displayPrompt: parsed.displayPrompt } : {}),
   })
   if (issue.statusId === 'todo') {
-    const messageId = await upsertAndNotify(
-      issueId,
-      prompt,
-      pendingMeta('pending'),
-      savedFiles,
-    )
+    const messageId = await upsertAndNotify(issueId, prompt, pendingMeta('pending'), savedFiles)
     return c.json({ success: true, data: { issueId, messageId, queued: true } })
   }
   if (issue.statusId === 'done') {
-    const messageId = await upsertAndNotify(
-      issueId,
-      prompt,
-      pendingMeta('done'),
-      savedFiles,
-    )
+    const messageId = await upsertAndNotify(issueId, prompt, pendingMeta('done'), savedFiles)
     return c.json({ success: true, data: { issueId, messageId, queued: true } })
   }
 
   // When the engine is actively processing a turn, queue message as pending
   // so it won't be ignored mid-turn. It will be auto-flushed after the turn settles.
   if (issue.statusId === 'working' && issueEngine.isTurnInFlight(issueId)) {
-    const messageId = await upsertAndNotify(
-      issueId,
-      prompt,
-      pendingMeta('pending'),
-      savedFiles,
-    )
+    const messageId = await upsertAndNotify(issueId, prompt, pendingMeta('pending'), savedFiles)
     logger.debug(
       { issueId, promptChars: prompt.length, fileCount: files.length },
       'followup_queued_during_active_turn',
@@ -289,8 +264,10 @@ message.post('/:id/follow-up', async (c) => {
     if (!guard.ok) {
       return c.json({ success: false, error: guard.reason! }, 400)
     }
-    const { prompt: effectivePrompt, pendingIds } =
-      await collectPendingMessages(issueId, fullPrompt)
+    const { prompt: effectivePrompt, pendingIds } = await collectPendingMessages(
+      issueId,
+      fullPrompt,
+    )
     const firstWord = prompt.split(/\s/)[0] ?? ''
     const categorized = issueEngine.getCategorizedCommands(
       issueId,
@@ -301,16 +278,10 @@ message.post('/:id/follow-up', async (c) => {
       ...categorized.agents,
       ...categorized.plugins.map((p) => p.name),
     ].map((cmd) => (cmd.startsWith('/') ? cmd : `/${cmd}`))
-    const isCommand =
-      firstWord.startsWith('/') &&
-      knownCommands.some((cmd) => cmd === firstWord)
+    const isCommand = firstWord.startsWith('/') && knownCommands.some((cmd) => cmd === firstWord)
     const followUpMeta: Record<string, unknown> = {
       ...attachmentsMeta,
-      ...(parsed.meta
-        ? { type: 'system' }
-        : isCommand
-          ? { type: 'command' }
-          : {}),
+      ...(parsed.meta ? { type: 'system' } : isCommand ? { type: 'command' } : {}),
     }
     const hasFollowUpMeta = Object.keys(followUpMeta).length > 0
     const result = await issueEngine.followUpIssue(
@@ -319,8 +290,7 @@ message.post('/:id/follow-up', async (c) => {
       parsed.model,
       parsed.permissionMode as 'auto' | 'supervised' | 'plan' | undefined,
       parsed.busyAction as 'queue' | 'cancel' | undefined,
-      parsed.displayPrompt ??
-        (savedFiles.length > 0 ? prompt || undefined : undefined),
+      parsed.displayPrompt ?? (savedFiles.length > 0 ? prompt || undefined : undefined),
       hasFollowUpMeta ? followUpMeta : undefined,
     )
     // Hide old pending messages and notify frontend
@@ -354,21 +324,13 @@ message.post('/:id/follow-up', async (c) => {
       'followup_failed_saving_as_pending',
     )
     try {
-      const messageId = await upsertAndNotify(
-        issueId,
-        prompt,
-        pendingMeta('pending'),
-        savedFiles,
-      )
+      const messageId = await upsertAndNotify(issueId, prompt, pendingMeta('pending'), savedFiles)
       return c.json({
         success: true,
         data: { issueId, messageId, queued: true },
       })
     } catch (persistError) {
-      logger.error(
-        { issueId, error: persistError },
-        'followup_failed_persist_pending_failed',
-      )
+      logger.error({ issueId, error: persistError }, 'followup_failed_persist_pending_failed')
     }
     return c.json(
       {

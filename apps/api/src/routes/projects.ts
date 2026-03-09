@@ -50,9 +50,7 @@ function serializeProject(row: ProjectRow) {
     directory: row.directory ?? undefined,
     repositoryUrl: row.repositoryUrl ?? undefined,
     systemPrompt: row.systemPrompt ?? undefined,
-    envVars: row.envVars
-      ? (JSON.parse(row.envVars) as Record<string, string>)
-      : undefined,
+    envVars: row.envVars ? (JSON.parse(row.envVars) as Record<string, string>) : undefined,
     createdAt: toISO(row.createdAt),
     updatedAt: toISO(row.updatedAt),
   }
@@ -86,14 +84,8 @@ function normalizeDir(dir: string): string {
   return resolved
 }
 
-async function isDirectoryTaken(
-  directory: string,
-  excludeId?: string,
-): Promise<boolean> {
-  const conditions = [
-    eq(projectsTable.directory, directory),
-    eq(projectsTable.isDeleted, 0),
-  ]
+async function isDirectoryTaken(directory: string, excludeId?: string): Promise<boolean> {
+  const conditions = [eq(projectsTable.directory, directory), eq(projectsTable.isDeleted, 0)]
   if (excludeId) {
     conditions.push(ne(projectsTable.id, excludeId))
   }
@@ -107,10 +99,7 @@ async function isDirectoryTaken(
 const projects = new Hono()
 
 projects.get('/', async (c) => {
-  const rows = await db
-    .select()
-    .from(projectsTable)
-    .where(eq(projectsTable.isDeleted, 0))
+  const rows = await db.select().from(projectsTable).where(eq(projectsTable.isDeleted, 0))
   return c.json({ success: true, data: rows.map(serializeProject) })
 })
 
@@ -196,17 +185,13 @@ projects.patch(
       updates.directory = dir
     }
     if (body.repositoryUrl !== undefined) {
-      updates.repositoryUrl =
-        body.repositoryUrl === '' ? null : body.repositoryUrl
+      updates.repositoryUrl = body.repositoryUrl === '' ? null : body.repositoryUrl
     }
     if (body.systemPrompt !== undefined) {
       updates.systemPrompt = body.systemPrompt || null
     }
     if (body.envVars !== undefined) {
-      updates.envVars =
-        Object.keys(body.envVars).length > 0
-          ? JSON.stringify(body.envVars)
-          : null
+      updates.envVars = Object.keys(body.envVars).length > 0 ? JSON.stringify(body.envVars) : null
     }
 
     if (Object.keys(updates).length === 0) {
@@ -238,9 +223,7 @@ projects.delete('/:projectId', async (c) => {
   const activeIssues = await db
     .select({ id: issuesTable.id, sessionStatus: issuesTable.sessionStatus })
     .from(issuesTable)
-    .where(
-      and(eq(issuesTable.projectId, existing.id), eq(issuesTable.isDeleted, 0)),
-    )
+    .where(and(eq(issuesTable.projectId, existing.id), eq(issuesTable.isDeleted, 0)))
 
   const toTerminate = activeIssues
     .filter(
@@ -282,27 +265,16 @@ projects.delete('/:projectId', async (c) => {
     const projectIssues = await tx
       .select({ id: issuesTable.id })
       .from(issuesTable)
-      .where(
-        and(
-          eq(issuesTable.projectId, existing.id),
-          eq(issuesTable.isDeleted, 0),
-        ),
-      )
+      .where(and(eq(issuesTable.projectId, existing.id), eq(issuesTable.isDeleted, 0)))
     const issueIds = projectIssues.map((i) => i.id)
 
     // Soft-delete all issues in this project — keep logs/tools/attachments intact for restore
     if (issueIds.length > 0) {
-      await tx
-        .update(issuesTable)
-        .set({ isDeleted: 1 })
-        .where(inArray(issuesTable.id, issueIds))
+      await tx.update(issuesTable).set({ isDeleted: 1 }).where(inArray(issuesTable.id, issueIds))
     }
 
     // Soft-delete the project
-    await tx
-      .update(projectsTable)
-      .set({ isDeleted: 1 })
-      .where(eq(projectsTable.id, existing.id))
+    await tx.update(projectsTable).set({ isDeleted: 1 }).where(eq(projectsTable.id, existing.id))
   })
 
   // Invalidate caches

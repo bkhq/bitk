@@ -14,8 +14,6 @@ export const STATUSES: StatusDefinition[] = [
   { id: 'done', name: 'Done', color: '#22c55e', sortOrder: 3 },
 ]
 
-export const STATUS_MAP = new Map<string, StatusDefinition>(
-  STATUSES.map((s) => [s.id, s]),
-)
+export const STATUS_MAP = new Map<string, StatusDefinition>(STATUSES.map((s) => [s.id, s]))
 
 export const DEFAULT_STATUS_ID: StatusId = 'todo'

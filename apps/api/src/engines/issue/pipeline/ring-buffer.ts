@@ -12,10 +12,7 @@ import type { EngineContext } from '../context'
  */
 export function registerRingBufferStage(
   ctx: EngineContext,
-  on: (
-    cb: (data: AppEventMap['log']) => void,
-    opts: { order: number },
-  ) => () => void,
+  on: (cb: (data: AppEventMap['log']) => void, opts: { order: number }) => () => void,
 ): () => void {
   return on(
     (data) => {

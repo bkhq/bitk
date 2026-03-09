@@ -31,9 +31,7 @@ function createWrapper() {
   })
 
   return function Wrapper({ children }: { children: ReactNode }) {
-    return (
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-    )
+    return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   }
 }
 
@@ -55,12 +53,10 @@ describe('useIssueStream', () => {
 
   it('replaces an existing pending message when log-updated arrives', async () => {
     let handler: IssueEventHandler | null = null
-    subscribeMock.mockImplementation(
-      (_issueId: string, nextHandler: IssueEventHandler) => {
-        handler = nextHandler
-        return () => {}
-      },
-    )
+    subscribeMock.mockImplementation((_issueId: string, nextHandler: IssueEventHandler) => {
+      handler = nextHandler
+      return () => {}
+    })
 
     const pendingEntry: NormalizedLogEntry = {
       messageId: '01ARZ3NDEKTSV4RRFFQ69G5FAV',
@@ -108,12 +104,10 @@ describe('useIssueStream', () => {
 
   it('prefers the SSE-updated entry over a stale initial snapshot with the same messageId', async () => {
     let handler: IssueEventHandler | null = null
-    subscribeMock.mockImplementation(
-      (_issueId: string, nextHandler: IssueEventHandler) => {
-        handler = nextHandler
-        return () => {}
-      },
-    )
+    subscribeMock.mockImplementation((_issueId: string, nextHandler: IssueEventHandler) => {
+      handler = nextHandler
+      return () => {}
+    })
 
     const initialFetch = deferred<{
       issue: null

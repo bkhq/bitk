@@ -64,8 +64,7 @@ export function detectCodeLanguage(filePath?: string): string {
   if (p.endsWith('.xml')) return 'xml'
   if (p.endsWith('.go')) return 'go'
   if (p.endsWith('.rs')) return 'rust'
-  if (p.endsWith('.sh') || p.endsWith('.bash') || p.endsWith('.zsh'))
-    return 'shell'
+  if (p.endsWith('.sh') || p.endsWith('.bash') || p.endsWith('.zsh')) return 'shell'
   if (p.endsWith('.toml')) return 'toml'
   if (p.endsWith('.dockerfile') || p.includes('Dockerfile')) return 'dockerfile'
   return 'text'
@@ -107,7 +106,6 @@ export function ShikiCodeBlock({
   return (
     <div
       className={`code-surface shiki-block ${maxHeightClass} overflow-auto rounded-md`}
-      // biome-ignore lint/security/noDangerouslySetInnerHtml: content is sanitized via DOMPurify.sanitize()
       dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(html) }}
     />
   )
@@ -124,13 +122,7 @@ export function CodeBlock({
 }) {
   const value = content || '(empty)'
   const maxHeightClass = collapsible ? 'max-h-64' : 'max-h-80'
-  return (
-    <ShikiCodeBlock
-      content={value}
-      language={language}
-      maxHeightClass={maxHeightClass}
-    />
-  )
+  return <ShikiCodeBlock content={value} language={language} maxHeightClass={maxHeightClass} />
 }
 
 export function ShikiUnifiedDiff({
@@ -151,9 +143,7 @@ export function ShikiUnifiedDiff({
     <div className="overflow-x-auto rounded-md border border-border/40">
       <Suspense
         fallback={
-          <div className="px-2.5 py-2 text-[11px] text-muted-foreground">
-            {t('common.loading')}
-          </div>
+          <div className="px-2.5 py-2 text-[11px] text-muted-foreground">{t('common.loading')}</div>
         }
       >
         <LazyMultiFileDiff

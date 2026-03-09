@@ -1,10 +1,6 @@
 import { getAppSetting, setAppSetting } from '@/db/helpers'
 import { logger } from '@/logger'
-import {
-  detectPlatformAssetSuffix,
-  isNewerVersion,
-  resolveDownloadFileName,
-} from '@/upgrade/utils'
+import { detectPlatformAssetSuffix, isNewerVersion, resolveDownloadFileName } from '@/upgrade/utils'
 import { COMMIT, VERSION } from '@/version'
 import { isPackageMode, UPGRADE_CHECK_RESULT_KEY } from './constants'
 import { fetchLatestRelease } from './github'
@@ -40,17 +36,12 @@ export async function checkForUpdates(): Promise<UpgradeCheckResult> {
   if (isPackageMode) {
     matchingAsset = release.assets.find(
       (a) =>
-        a.name.startsWith('bkd-app') &&
-        a.name.endsWith('.tar.gz') &&
-        !a.name.endsWith('.sha256'),
+        a.name.startsWith('bkd-app') && a.name.endsWith('.tar.gz') && !a.name.endsWith('.sha256'),
     )
   } else {
     const suffix = detectPlatformAssetSuffix()
     matchingAsset = release.assets.find(
-      (a) =>
-        a.name.includes(suffix) &&
-        !a.name.endsWith('.sha256') &&
-        !a.name.endsWith('.tar.gz'),
+      (a) => a.name.includes(suffix) && !a.name.endsWith('.sha256') && !a.name.endsWith('.tar.gz'),
     )
   }
   // Find checksums.txt (preferred), fallback to legacy per-asset .sha256
@@ -61,11 +52,7 @@ export async function checkForUpdates(): Promise<UpgradeCheckResult> {
   const hasUpdate = !!matchingAsset && isNewerVersion(VERSION, release.version)
 
   const downloadFileName = matchingAsset
-    ? resolveDownloadFileName(
-        matchingAsset.name,
-        release.version,
-        isPackageMode,
-      )
+    ? resolveDownloadFileName(matchingAsset.name, release.version, isPackageMode)
     : null
 
   const result: UpgradeCheckResult = {

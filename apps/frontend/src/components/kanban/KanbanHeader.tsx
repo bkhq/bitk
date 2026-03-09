@@ -35,9 +35,7 @@ export function KanbanHeader({
       <div className="flex items-center justify-between px-3 py-3 md:px-5">
         <div className="flex items-center gap-2 md:gap-3 min-w-0">
           {mobileNav}
-          <h1 className="text-base font-semibold text-foreground truncate">
-            {project.name}
-          </h1>
+          <h1 className="text-base font-semibold text-foreground truncate">{project.name}</h1>
           <button
             type="button"
             onClick={() => setShowSettings(true)}
@@ -96,11 +94,7 @@ export function KanbanHeader({
           </Button>
         </div>
       </div>
-      <ProjectSettingsDialog
-        open={showSettings}
-        onOpenChange={setShowSettings}
-        project={project}
-      />
+      <ProjectSettingsDialog open={showSettings} onOpenChange={setShowSettings} project={project} />
     </div>
   )
 }

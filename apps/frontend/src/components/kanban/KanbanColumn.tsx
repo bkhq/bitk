@@ -33,9 +33,7 @@ export function KanbanColumn({
   return (
     <div
       className={`flex h-full min-w-[85vw] md:min-w-[260px] flex-1 flex-col rounded-lg border snap-center md:snap-align-none transition-colors duration-200 ${
-        isDropTarget
-          ? 'ring-2 ring-primary/30 bg-primary/[0.04] border-primary/20'
-          : 'bg-muted/40'
+        isDropTarget ? 'ring-2 ring-primary/30 bg-primary/[0.04] border-primary/20' : 'bg-muted/40'
       }`}
     >
       {/* Column header */}
@@ -44,13 +42,8 @@ export function KanbanColumn({
           className="h-2.5 w-2.5 rounded-full shrink-0"
           style={{ backgroundColor: status.color }}
         />
-        <span className="text-sm font-medium text-foreground">
-          {tStatus(t, status.name)}
-        </span>
-        <Badge
-          variant="secondary"
-          className="h-5 min-w-5 px-1.5 text-[10px] font-medium"
-        >
+        <span className="text-sm font-medium text-foreground">{tStatus(t, status.name)}</span>
+        <Badge variant="secondary" className="h-5 min-w-5 px-1.5 text-[10px] font-medium">
           {issues.length}
         </Badge>
         <Button
@@ -67,10 +60,7 @@ export function KanbanColumn({
       <Separator />
 
       {/* Cards */}
-      <div
-        ref={ref}
-        className="flex flex-1 flex-col gap-1.5 overflow-y-auto p-1.5"
-      >
+      <div ref={ref} className="flex flex-1 flex-col gap-1.5 overflow-y-auto p-1.5">
         {issues.map((issue, index) => (
           <KanbanCard
             key={issue.id}

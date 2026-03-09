@@ -11,10 +11,7 @@ import { dispatch } from '../state'
  */
 export function registerFailureDetectStage(
   ctx: EngineContext,
-  on: (
-    cb: (data: AppEventMap['log']) => void,
-    opts: { order: number },
-  ) => () => void,
+  on: (cb: (data: AppEventMap['log']) => void, opts: { order: number }) => () => void,
 ): () => void {
   return on(
     (data) => {
@@ -23,14 +20,12 @@ export function registerFailureDetectStage(
       if (!managed || managed.lastInterruptAt) return
       const { entry } = data
       const resultSubtype = entry.metadata?.resultSubtype
-      const isResultError =
-        typeof resultSubtype === 'string' && resultSubtype !== 'success'
+      const isResultError = typeof resultSubtype === 'string' && resultSubtype !== 'success'
       if (isResultError || entry.metadata?.isError === true) {
         dispatch(managed, {
           type: 'SET_LOGICAL_FAILURE',
           reason:
-            (entry.metadata?.error as string | undefined) ??
-            String(resultSubtype ?? 'unknown'),
+            (entry.metadata?.error as string | undefined) ?? String(resultSubtype ?? 'unknown'),
         })
       }
     },

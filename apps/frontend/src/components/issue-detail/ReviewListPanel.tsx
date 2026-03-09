@@ -75,9 +75,7 @@ export function ReviewListPanel({
       <div className="flex items-center justify-between px-2.5 py-2 border-b border-border/60 shrink-0 min-h-[42px] bg-secondary/50">
         <div className="flex items-center gap-1.5 min-w-0">
           {mobileNav}
-          <span className="text-sm font-semibold truncate tracking-tight">
-            {t('review.title')}
-          </span>
+          <span className="text-sm font-semibold truncate tracking-tight">{t('review.title')}</span>
         </div>
         {issues ? (
           <span className="text-[10px] font-medium text-muted-foreground/50 shrink-0 tabular-nums">
@@ -104,15 +102,11 @@ export function ReviewListPanel({
       <div className="flex-1 overflow-y-auto">
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
-            <p className="text-xs text-muted-foreground">
-              {t('common.loading')}
-            </p>
+            <p className="text-xs text-muted-foreground">{t('common.loading')}</p>
           </div>
         ) : grouped.length === 0 ? (
           <div className="flex items-center justify-center py-8">
-            <p className="text-xs text-muted-foreground/55">
-              {t('review.empty')}
-            </p>
+            <p className="text-xs text-muted-foreground/55">{t('review.empty')}</p>
           </div>
         ) : (
           grouped.map((group) => (
@@ -124,9 +118,7 @@ export function ReviewListPanel({
               isCollapsed={!!collapsed[group.projectId]}
               onToggle={() => toggleCollapse(group.projectId)}
               activeIssueId={activeIssueId}
-              onNavigate={(projectAlias, issueId) =>
-                navigate(`/review/${projectAlias}/${issueId}`)
-              }
+              onNavigate={(projectAlias, issueId) => navigate(`/review/${projectAlias}/${issueId}`)}
             />
           ))
         )}

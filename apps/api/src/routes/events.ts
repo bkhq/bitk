@@ -1,9 +1,6 @@
 import { Hono } from 'hono'
 import { streamSSE } from 'hono/streaming'
-import {
-  getIssueDevMode,
-  isVisibleForMode,
-} from '@/engines/issue/utils/visibility'
+import { getIssueDevMode, isVisibleForMode } from '@/engines/issue/utils/visibility'
 import { appEvents } from '@/events'
 import { logger } from '@/logger'
 
@@ -46,8 +43,7 @@ events.get('/', async (c) => {
         'log',
         (data) => {
           if (data.streaming) return
-          if (!isVisibleForMode(data.entry, getIssueDevMode(data.issueId)))
-            return
+          if (!isVisibleForMode(data.entry, getIssueDevMode(data.issueId))) return
           writeEvent('log', { issueId: data.issueId, entry: data.entry })
         },
         { order: 100 },
@@ -119,10 +115,7 @@ events.get('/', async (c) => {
   } catch (err) {
     logger.error(
       {
-        err:
-          err instanceof Error
-            ? { message: err.message, stack: err.stack }
-            : err,
+        err: err instanceof Error ? { message: err.message, stack: err.stack } : err,
       },
       'global_sse_error',
     )

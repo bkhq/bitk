@@ -22,12 +22,7 @@ interface IssuePanelProps {
   hideHeaderActions?: boolean
 }
 
-export function IssuePanel({
-  projectId,
-  issueId,
-  onClose,
-  hideHeaderActions,
-}: IssuePanelProps) {
+export function IssuePanel({ projectId, issueId, onClose, hideHeaderActions }: IssuePanelProps) {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const panelRef = useRef<HTMLDivElement>(null)
@@ -72,9 +67,7 @@ export function IssuePanel({
     if (e.key === 'Escape') {
       const target = e.target as HTMLElement
       const isEditable =
-        target.tagName === 'INPUT' ||
-        target.tagName === 'TEXTAREA' ||
-        target.isContentEditable
+        target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable
       if (isEditable) {
         target.blur()
         e.stopPropagation()
@@ -157,11 +150,7 @@ export function IssuePanel({
                 title={t('issue.copyLink')}
                 onClick={handleCopyLink}
               >
-                {copied ? (
-                  <Check className="h-3.5 w-3.5" />
-                ) : (
-                  <Link className="h-3.5 w-3.5" />
-                )}
+                {copied ? <Check className="h-3.5 w-3.5" /> : <Link className="h-3.5 w-3.5" />}
               </Button>
               <Button
                 variant="ghost"

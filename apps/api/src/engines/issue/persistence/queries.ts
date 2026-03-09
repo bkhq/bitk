@@ -1,9 +1,6 @@
 import { and, asc, desc, eq, gt, inArray, lt, max, sql } from 'drizzle-orm'
 import { db } from '@/db'
-import {
-  issueLogs as logsTable,
-  issuesLogsToolsCall as toolsTable,
-} from '@/db/schema'
+import { issueLogs as logsTable, issuesLogsToolsCall as toolsTable } from '@/db/schema'
 import { MAX_LOG_ENTRIES } from '@/engines/issue/constants'
 import { isVisibleForMode } from '@/engines/issue/utils/visibility'
 import type { NormalizedLogEntry } from '@/engines/types'
@@ -86,10 +83,7 @@ export function getLogsFromDb(
   }
 
   // --- Step 2: Fetch all visible entries within the boundary range ---
-  const allConditions = [
-    eq(logsTable.issueId, issueId),
-    eq(logsTable.visible, 1),
-  ]
+  const allConditions = [eq(logsTable.issueId, issueId), eq(logsTable.visible, 1)]
   if (!devMode) allConditions.push(VISIBLE_ENTRIES_CONDITION)
 
   if (opts?.cursor) allConditions.push(gt(logsTable.id, opts.cursor))
@@ -120,11 +114,7 @@ export function getLogsFromDb(
   const toolByLogId = new Map<string, (typeof toolsTable)['$inferSelect']>()
   if (rows.length > 0) {
     const logIds = rows.map((r) => r.id)
-    const toolRows = db
-      .select()
-      .from(toolsTable)
-      .where(inArray(toolsTable.logId, logIds))
-      .all()
+    const toolRows = db.select().from(toolsTable).where(inArray(toolsTable.logId, logIds)).all()
     for (const r of toolRows) toolByLogId.set(r.logId, r)
   }
 
@@ -171,10 +161,7 @@ export function getLogsFromDb(
 
 /** Soft-remove a log entry by marking it invisible (idempotent). */
 export function removeLogEntry(messageId: string): void {
-  db.update(logsTable)
-    .set({ visible: 0, isDeleted: 1 })
-    .where(eq(logsTable.id, messageId))
-    .run()
+  db.update(logsTable).set({ visible: 0, isDeleted: 1 }).where(eq(logsTable.id, messageId)).run()
 }
 
 /** Get next turn index from DB for an issue. */

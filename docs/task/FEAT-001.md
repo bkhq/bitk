@@ -8,6 +8,7 @@
 ## 描述
 
 从环境变量读取 `SERVER_NAME` 和 `SERVER_URL`，通过 API 暴露给前端：
+
 - `SERVER_NAME` 显示在页面标题上
 - `SERVER_URL` 用于拼接外部 URL（复制链接、webhook payload 等场景）
 

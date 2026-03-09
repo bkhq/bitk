@@ -6,8 +6,7 @@ import { logger } from '@/logger'
 
 // ---------- Auto-title prompt ----------
 
-export const AUTO_TITLE_PROMPT =
-  '请总结一下当前会话以<bkd>简短信息</bkd>格式返回，不超过15个字'
+export const AUTO_TITLE_PROMPT = '请总结一下当前会话以<bkd>简短信息</bkd>格式返回，不超过15个字'
 
 // ---------- Title extraction ----------
 

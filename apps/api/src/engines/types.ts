@@ -19,20 +19,10 @@ export type EngineCapability =
 export type PermissionPolicy = 'auto' | 'supervised' | 'plan'
 
 // Session lifecycle status
-export type SessionStatus =
-  | 'pending'
-  | 'running'
-  | 'completed'
-  | 'failed'
-  | 'cancelled'
+export type SessionStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled'
 
 // Process lifecycle status
-export type ProcessStatus =
-  | 'spawning'
-  | 'running'
-  | 'completed'
-  | 'failed'
-  | 'cancelled'
+export type ProcessStatus = 'spawning' | 'running' | 'completed' | 'failed' | 'cancelled'
 
 // Normalized log entry types
 export type LogEntryType =
@@ -203,16 +193,11 @@ export interface EngineExecutor {
   readonly capabilities: EngineCapability[]
 
   spawn: (options: SpawnOptions, env: ExecutionEnv) => Promise<SpawnedProcess>
-  spawnFollowUp: (
-    options: FollowUpOptions,
-    env: ExecutionEnv,
-  ) => Promise<SpawnedProcess>
+  spawnFollowUp: (options: FollowUpOptions, env: ExecutionEnv) => Promise<SpawnedProcess>
   cancel: (process: SpawnedProcess) => Promise<void>
   getAvailability: () => Promise<EngineAvailability>
   getModels: () => Promise<EngineModel[]>
-  normalizeLog: (
-    rawLine: string,
-  ) => NormalizedLogEntry | NormalizedLogEntry[] | null
+  normalizeLog: (rawLine: string) => NormalizedLogEntry | NormalizedLogEntry[] | null
 
   createNormalizer?: () => {
     parse: (rawLine: string) => NormalizedLogEntry | NormalizedLogEntry[] | null
@@ -245,13 +230,7 @@ export const BUILT_IN_PROFILES: Record<EngineType, EngineProfile> = {
     name: 'Codex',
     baseCommand: 'npx -y @openai/codex@latest app-server',
     protocol: 'json-rpc',
-    capabilities: [
-      'session-fork',
-      'setup-helper',
-      'context-usage',
-      'sandbox',
-      'reasoning',
-    ],
+    capabilities: ['session-fork', 'setup-helper', 'context-usage', 'sandbox', 'reasoning'],
     permissionPolicy: 'auto',
   },
   gemini: {

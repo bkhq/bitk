@@ -46,20 +46,14 @@ title.post('/:id/auto-title', async (c) => {
       {
         projectId: project.id,
         issueId,
-        error:
-          error instanceof Error
-            ? { message: error.message, stack: error.stack }
-            : error,
+        error: error instanceof Error ? { message: error.message, stack: error.stack } : error,
       },
       'auto_title_generation_failed',
     )
     return c.json(
       {
         success: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : 'Auto-title generation failed',
+        error: error instanceof Error ? error.message : 'Auto-title generation failed',
       },
       500,
     )

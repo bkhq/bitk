@@ -8,10 +8,7 @@ const detectRemoteSchema = z.object({
   directory: z.string().min(1).max(1000),
 })
 
-async function runGit(
-  args: string[],
-  cwd: string,
-): Promise<{ code: number; stdout: string }> {
+async function runGit(args: string[], cwd: string): Promise<{ code: number; stdout: string }> {
   const proc = Bun.spawn(['git', ...args], {
     cwd,
     stdout: 'pipe',

@@ -7,6 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Kanban app with a Bun/Hono API backend and a React/Vite frontend, structured as a **Bun Workspaces monorepo**.
 
 Workspaces:
+
 - `apps/api` (`@bkd/api`) — Backend API server
 - `apps/frontend` (`@bkd/frontend`) — React frontend
 - `packages/shared` (`@bkd/shared`) — Shared TypeScript types
@@ -206,7 +207,7 @@ Components use the shadcn/ui pattern: `cn()` utility (`apps/frontend/src/lib/uti
 ## Conventions
 
 - Use Bun APIs over Node.js equivalents (`Bun.file()`, `Bun.serve()`, `bun:sqlite`, `bun:test`)
-- Linting & formatting: Biome (`biome.json` at root) — no semicolons, single quotes
+- Linting & formatting: ESLint (`eslint.config.js` at root) + Prettier (`.prettierrc`) — no semicolons, single quotes
 - Frontend tests use vitest + @testing-library/react (`bun run test:frontend`)
 - Backend tests use `bun test` with `bun:test` (`bun run test:api`)
 - Bun auto-loads `.env` — do not use dotenv
@@ -221,11 +222,13 @@ Components use the shadcn/ui pattern: `cn()` utility (`apps/frontend/src/lib/uti
 ## Project Development
 
 Use the /pma skill to manage project development with a strict three-phase workflow:
+
 1. Investigation
 2. Proposal
 3. Implement -> Verify -> Record
 
 Rules:
+
 - Do not implement before explicit confirmation (`proceed` / `开始实现`).
 - Track tasks in `docs/task/index.md` and `docs/task/PREFIX-NNN.md`.
 - Track non-trivial plans in `docs/plan/index.md` and `docs/plan/PLAN-NNN.md`.

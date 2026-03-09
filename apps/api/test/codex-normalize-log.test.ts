@@ -310,15 +310,11 @@ describe('CodexExecutor.normalizeLog', () => {
   // ------------------------------------------------------------------
   describe('reasoning', () => {
     test('item/reasoning/textDelta returns null', () => {
-      expect(
-        normalize('item/reasoning/textDelta', { delta: 'thinking...' }),
-      ).toBeNull()
+      expect(normalize('item/reasoning/textDelta', { delta: 'thinking...' })).toBeNull()
     })
 
     test('item/reasoning/summaryTextDelta returns null', () => {
-      expect(
-        normalize('item/reasoning/summaryTextDelta', { delta: 'summary' }),
-      ).toBeNull()
+      expect(normalize('item/reasoning/summaryTextDelta', { delta: 'summary' })).toBeNull()
     })
   })
 
@@ -384,9 +380,7 @@ describe('CodexLogNormalizer (codex/event/*)', () => {
 
     test('empty delta returns null', () => {
       const n = new CodexLogNormalizer()
-      expect(
-        n.parse(codexEvent('agent_message_delta', { delta: '' })),
-      ).toBeNull()
+      expect(n.parse(codexEvent('agent_message_delta', { delta: '' }))).toBeNull()
     })
 
     test('resets thinking state when assistant delta arrives', () => {
@@ -403,9 +397,7 @@ describe('CodexLogNormalizer (codex/event/*)', () => {
       const n = new CodexLogNormalizer()
       // Accumulate some deltas first
       n.parse(codexEvent('agent_message_delta', { delta: 'partial' }))
-      const r = n.parse(
-        codexEvent('agent_message', { message: 'Full message' }),
-      )
+      const r = n.parse(codexEvent('agent_message', { message: 'Full message' }))
       expect(r!.entryType).toBe('assistant-message')
       expect(r!.content).toBe('Full message')
       expect(r!.metadata?.streaming).toBeUndefined()
@@ -422,16 +414,12 @@ describe('CodexLogNormalizer (codex/event/*)', () => {
   describe('agent_reasoning_delta', () => {
     test('accumulates thinking text', () => {
       const n = new CodexLogNormalizer()
-      const r1 = n.parse(
-        codexEvent('agent_reasoning_delta', { delta: 'Let me ' }),
-      )
+      const r1 = n.parse(codexEvent('agent_reasoning_delta', { delta: 'Let me ' }))
       expect(r1!.entryType).toBe('thinking')
       expect(r1!.content).toBe('Let me ')
       expect(r1!.metadata?.streaming).toBe(true)
 
-      const r2 = n.parse(
-        codexEvent('agent_reasoning_delta', { delta: 'think...' }),
-      )
+      const r2 = n.parse(codexEvent('agent_reasoning_delta', { delta: 'think...' }))
       expect(r2!.content).toBe('Let me think...')
     })
   })
@@ -439,9 +427,7 @@ describe('CodexLogNormalizer (codex/event/*)', () => {
   describe('agent_reasoning (complete)', () => {
     test('returns complete thinking entry', () => {
       const n = new CodexLogNormalizer()
-      const r = n.parse(
-        codexEvent('agent_reasoning', { text: 'Full reasoning' }),
-      )
+      const r = n.parse(codexEvent('agent_reasoning', { text: 'Full reasoning' }))
       expect(r!.entryType).toBe('thinking')
       expect(r!.content).toBe('Full reasoning')
       expect(r!.metadata?.streaming).toBeUndefined()
@@ -470,9 +456,7 @@ describe('CodexLogNormalizer (codex/event/*)', () => {
 
     test('returns null for empty command', () => {
       const n = new CodexLogNormalizer()
-      expect(
-        n.parse(codexEvent('exec_command_begin', { command: [] })),
-      ).toBeNull()
+      expect(n.parse(codexEvent('exec_command_begin', { command: [] }))).toBeNull()
     })
   })
 
@@ -620,9 +604,7 @@ describe('CodexLogNormalizer (codex/event/*)', () => {
 
     test('stream_error returns error-message', () => {
       const n = new CodexLogNormalizer()
-      const r = n.parse(
-        codexEvent('stream_error', { message: 'connection lost' }),
-      )
+      const r = n.parse(codexEvent('stream_error', { message: 'connection lost' }))
       expect(r!.entryType).toBe('error-message')
       expect(r!.content).toBe('Stream error: connection lost')
     })
@@ -746,9 +728,7 @@ describe('CodexLogNormalizer (codex/event/*)', () => {
       n.parse(codexEvent('agent_message_delta', { delta: 'partial' }))
       n.parse(codexEvent('turn_complete'))
       // Next delta should start fresh
-      const r = n.parse(
-        codexEvent('agent_message_delta', { delta: 'New turn' }),
-      )
+      const r = n.parse(codexEvent('agent_message_delta', { delta: 'New turn' }))
       expect(r!.content).toBe('New turn')
     })
   })

@@ -1,11 +1,7 @@
 import { ProcessManager } from '@/engines/process-manager'
 import type { EngineType, PermissionPolicy } from '@/engines/types'
 import { logger } from '@/logger'
-import {
-  AUTO_CLEANUP_DELAY_MS,
-  GC_INTERVAL_MS,
-  MAX_CONCURRENT_EXECUTIONS,
-} from './constants'
+import { AUTO_CLEANUP_DELAY_MS, GC_INTERVAL_MS, MAX_CONCURRENT_EXECUTIONS } from './constants'
 import type { EngineContext } from './context'
 import { gcSweep } from './gc'
 import {
@@ -91,11 +87,7 @@ export class IssueEngine {
         logger.error({ err }, 'gc_sweep_failed')
       }
     }, GC_INTERVAL_MS)
-    if (
-      this.gcTimer &&
-      typeof this.gcTimer === 'object' &&
-      'unref' in this.gcTimer
-    ) {
+    if (this.gcTimer && typeof this.gcTimer === 'object' && 'unref' in this.gcTimer) {
       this.gcTimer.unref()
     }
 

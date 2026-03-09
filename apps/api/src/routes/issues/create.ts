@@ -3,20 +3,12 @@ import { and, eq, max } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { cacheDel, cacheDelByPrefix } from '@/cache'
 import { db } from '@/db'
-import {
-  findProject,
-  getDefaultEngine,
-  getEngineDefaultModel,
-  getServerUrl,
-} from '@/db/helpers'
+import { findProject, getDefaultEngine, getEngineDefaultModel, getServerUrl } from '@/db/helpers'
 import { issues as issuesTable } from '@/db/schema'
 import { engineRegistry } from '@/engines/executors'
 import type { EngineType } from '@/engines/types'
 import { logger } from '@/logger'
-import {
-  buildIssueUrl,
-  dispatch as webhookDispatch,
-} from '@/webhooks/dispatcher'
+import { buildIssueUrl, dispatch as webhookDispatch } from '@/webhooks/dispatcher'
 import {
   createIssueSchema,
   parseProjectEnvVars,
@@ -63,21 +55,16 @@ create.post(
       if (savedModel) {
         resolvedModel = savedModel
       } else {
-        const models = await engineRegistry.getModels(
-          resolvedEngine as EngineType,
-        )
-        resolvedModel =
-          models.find((m) => m.isDefault)?.id ?? models[0]?.id ?? 'auto'
+        const models = await engineRegistry.getModels(resolvedEngine as EngineType)
+        resolvedModel = models.find((m) => m.isDefault)?.id ?? models[0]?.id ?? 'auto'
       }
     }
 
     try {
       const issuePrompt = body.title
-      const shouldExecute =
-        body.statusId === 'working' || body.statusId === 'review'
+      const shouldExecute = body.statusId === 'working' || body.statusId === 'review'
       // review → working: auto-downgrade so the execution engine picks it up
-      const effectiveStatusId =
-        body.statusId === 'review' ? 'working' : body.statusId
+      const effectiveStatusId = body.statusId === 'review' ? 'working' : body.statusId
 
       const [newIssue] = await db.transaction(async (tx) => {
         // Validate parentIssueId if provided
@@ -97,9 +84,7 @@ create.post(
           }
           // Depth=1 only: parent must not itself be a sub-issue
           if (parent.parentIssueId) {
-            throw new Error(
-              'Cannot create sub-issue of a sub-issue (max depth is 1)',
-            )
+            throw new Error('Cannot create sub-issue of a sub-issue (max depth is 1)')
           }
         }
 
@@ -160,11 +145,7 @@ create.post(
       }
       const serverUrl = await getServerUrl()
       if (serverUrl) {
-        webhookPayload.issueUrl = buildIssueUrl(
-          serverUrl,
-          project.id,
-          newIssue!.id,
-        )
+        webhookPayload.issueUrl = buildIssueUrl(serverUrl, project.id, newIssue!.id)
       }
       void webhookDispatch('issue.created', webhookPayload)
 
@@ -184,18 +165,12 @@ create.post(
         )
       }
 
-      return c.json(
-        { success: true, data: serializeIssue(newIssue!) },
-        shouldExecute ? 202 : 201,
-      )
+      return c.json({ success: true, data: serializeIssue(newIssue!) }, shouldExecute ? 202 : 201)
     } catch (error) {
       logger.warn(
         {
           projectId: project.id,
-          error:
-            error instanceof Error
-              ? { message: error.message, stack: error.stack }
-              : error,
+          error: error instanceof Error ? { message: error.message, stack: error.stack } : error,
         },
         'issue_create_failed',
       )

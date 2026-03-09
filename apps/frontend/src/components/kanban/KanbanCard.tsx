@@ -47,9 +47,7 @@ export const KanbanCard = memo(function KanbanCard({
       </div>
 
       {/* Title */}
-      <p className="text-sm font-medium leading-snug text-foreground">
-        {issue.title}
-      </p>
+      <p className="text-sm font-medium leading-snug text-foreground">{issue.title}</p>
 
       {/* Tags */}
       {issue.tags && issue.tags.length > 0 ? (

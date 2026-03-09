@@ -12,9 +12,7 @@ const DEFAULT_RULES: WriteFilterRule[] = [
 const opts = { devMode: false, filterRules: DEFAULT_RULES }
 const devOpts = { devMode: true, filterRules: DEFAULT_RULES }
 
-function entry(
-  overrides: Partial<NormalizedLogEntry> = {},
-): NormalizedLogEntry {
+function entry(overrides: Partial<NormalizedLogEntry> = {}): NormalizedLogEntry {
   return {
     entryType: 'assistant-message',
     content: '',
@@ -23,11 +21,7 @@ function entry(
   }
 }
 
-function toolCall(
-  toolCallId: string,
-  toolName: string,
-  kind: string,
-): NormalizedLogEntry {
+function toolCall(toolCallId: string, toolName: string, kind: string): NormalizedLogEntry {
   return entry({
     entryType: 'tool-use',
     content: `calling ${toolName}`,
@@ -36,11 +30,7 @@ function toolCall(
   })
 }
 
-function toolResult(
-  toolCallId: string,
-  toolName: string,
-  kind: string,
-): NormalizedLogEntry {
+function toolResult(toolCallId: string, toolName: string, kind: string): NormalizedLogEntry {
   return entry({
     entryType: 'tool-use',
     content: `result of ${toolName}`,

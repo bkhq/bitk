@@ -57,8 +57,7 @@ function getToolLabel(
     case 'file-read':
       return `${t('session.tool.fileRead')}: ${action.path}`
     case 'file-edit':
-      if (toolName === 'Write')
-        return `${t('session.tool.fileWrite')}: ${action.path}`
+      if (toolName === 'Write') return `${t('session.tool.fileWrite')}: ${action.path}`
       return `${t('session.tool.fileEdit')}: ${action.path}`
     case 'command-run': {
       const summary = getCommandPreview(action.command, 90).summary
@@ -146,9 +145,7 @@ function TaskPlanEntry({ entry }: { entry: NormalizedLogEntry }) {
                     : ''
               }
             >
-              {item.status === 'in_progress'
-                ? item.activeForm || item.content
-                : item.content}
+              {item.status === 'in_progress' ? item.activeForm || item.content : item.content}
             </span>
           </div>
         ))}
@@ -172,15 +169,9 @@ export function LogEntry({
     case 'user-message': {
       const isPending = entry.metadata?.type === 'pending'
       const isDone = entry.metadata?.type === 'done'
-      const messageAttachments = (entry.metadata?.attachments ??
-        []) as AttachmentMeta[]
+      const messageAttachments = (entry.metadata?.attachments ?? []) as AttachmentMeta[]
       // Skip empty user messages (no text, no attachments, not pending/done)
-      if (
-        !entry.content.trim() &&
-        messageAttachments.length === 0 &&
-        !isPending &&
-        !isDone
-      )
+      if (!entry.content.trim() && messageAttachments.length === 0 && !isPending && !isDone)
         return null
       const barColor = isPending
         ? 'border-amber-400 bg-amber-500/[0.06]'
@@ -196,9 +187,7 @@ export function LogEntry({
               </div>
             ) : null}
             {messageAttachments.length > 0 ? (
-              <div
-                className={`flex flex-wrap gap-1.5${entry.content.trim() ? ' mt-2' : ''}`}
-              >
+              <div className={`flex flex-wrap gap-1.5${entry.content.trim() ? ' mt-2' : ''}`}>
                 {messageAttachments.map((att) => (
                   <span
                     key={att.id}
@@ -210,9 +199,7 @@ export function LogEntry({
                       <FileText className="h-3 w-3 shrink-0" />
                     )}
                     <span className="truncate max-w-[120px]">{att.name}</span>
-                    <span className="text-muted-foreground/50">
-                      {formatFileSize(att.size)}
-                    </span>
+                    <span className="text-muted-foreground/50">{formatFileSize(att.size)}</span>
                   </span>
                 ))}
               </div>
@@ -250,8 +237,7 @@ export function LogEntry({
     case 'tool-use': {
       // Render structured task plan for TodoWrite
       const isTodoWrite =
-        (entry.toolDetail?.toolName === 'TodoWrite' ||
-          entry.metadata?.toolName === 'TodoWrite') &&
+        (entry.toolDetail?.toolName === 'TodoWrite' || entry.metadata?.toolName === 'TodoWrite') &&
         !entry.toolDetail?.isResult &&
         !entry.metadata?.isResult
       if (isTodoWrite) {
@@ -260,9 +246,7 @@ export function LogEntry({
 
       const { Icon, color } = getToolIcon(entry.toolAction)
       const toolName =
-        typeof entry.metadata?.toolName === 'string'
-          ? entry.metadata.toolName
-          : undefined
+        typeof entry.metadata?.toolName === 'string' ? entry.metadata.toolName : undefined
       const label = getToolLabel(entry.toolAction, toolName, t)
       const isResult = entry.metadata?.isResult === true
       if (inToolGroup) {
@@ -283,9 +267,7 @@ export function LogEntry({
                 </code>
               </div>
             ) : (
-              <span className="truncate font-mono">
-                {label || entry.content}
-              </span>
+              <span className="truncate font-mono">{label || entry.content}</span>
             )}
           </div>
         )
@@ -311,8 +293,7 @@ export function LogEntry({
       if (entry.content.startsWith('[Image:')) return null
       // Command output (e.g. /context, /cost): collapsed by default
       if (entry.metadata?.subtype === 'command_output') {
-        const firstLine =
-          entry.content.split('\n')[0]?.trim() || 'Command output'
+        const firstLine = entry.content.split('\n')[0]?.trim() || 'Command output'
         return (
           <div className="my-1.5 animate-message-enter">
             <details className="rounded-lg bg-muted/40 border border-border/30 transition-all duration-200 open:bg-muted/20">
@@ -341,26 +322,19 @@ export function LogEntry({
         )
       }
       return (
-        <div className="py-0.5 text-[11px] text-muted-foreground/60 truncate">
-          {entry.content}
-        </div>
+        <div className="py-0.5 text-[11px] text-muted-foreground/60 truncate">{entry.content}</div>
       )
 
     case 'error-message':
       return (
         <div className="flex gap-2 my-1.5 rounded-lg bg-destructive/[0.06] border border-destructive/20 px-3 py-2 animate-message-enter">
           <AlertCircle className="h-3.5 w-3.5 shrink-0 text-destructive mt-0.5" />
-          <p className="text-xs text-destructive/90 break-words leading-relaxed">
-            {entry.content}
-          </p>
+          <p className="text-xs text-destructive/90 break-words leading-relaxed">{entry.content}</p>
         </div>
       )
 
     case 'thinking': {
-      const preview =
-        entry.content.length > 80
-          ? `${entry.content.slice(0, 80)}…`
-          : entry.content
+      const preview = entry.content.length > 80 ? `${entry.content.slice(0, 80)}…` : entry.content
       return (
         <div className="my-0.5 animate-message-enter">
           <details className="rounded-lg bg-violet-500/[0.04] border border-violet-300/20 dark:border-violet-500/15 transition-all duration-200 open:bg-violet-500/[0.06]">
@@ -430,10 +404,7 @@ function AssistantMessage({
             <Copy className="h-3.5 w-3.5" />
           )}
         </button>
-        <MarkdownContent
-          content={content}
-          className="text-[14px] leading-[1.75]"
-        />
+        <MarkdownContent content={content} className="text-[14px] leading-[1.75]" />
       </div>
       <div className="flex items-center gap-2 mt-1">
         {timestamp ? (

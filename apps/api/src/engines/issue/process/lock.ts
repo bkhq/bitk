@@ -17,9 +17,7 @@ export async function withIssueLock<T>(
   if (currentTail) {
     const depth = ctx.lockDepth.get(issueId) ?? 0
     if (depth >= MAX_QUEUE_DEPTH) {
-      throw new Error(
-        `Lock queue full for issue ${issueId} (max ${MAX_QUEUE_DEPTH})`,
-      )
+      throw new Error(`Lock queue full for issue ${issueId} (max ${MAX_QUEUE_DEPTH})`)
     }
   }
 
@@ -40,10 +38,7 @@ export async function withIssueLock<T>(
   const acquired = await Promise.race([
     tail.then(() => true as const),
     new Promise<'timeout'>((resolve) => {
-      acquireTimer = setTimeout(
-        () => resolve('timeout'),
-        LOCK_ACQUIRE_TIMEOUT_MS,
-      )
+      acquireTimer = setTimeout(() => resolve('timeout'), LOCK_ACQUIRE_TIMEOUT_MS)
     }),
   ])
   if (acquireTimer !== undefined) clearTimeout(acquireTimer)
@@ -62,9 +57,7 @@ export async function withIssueLock<T>(
         ctx.issueOpLocks.delete(issueId)
       }
     }
-    throw new Error(
-      `Lock acquire timeout for issue ${issueId} after ${LOCK_ACQUIRE_TIMEOUT_MS}ms`,
-    )
+    throw new Error(`Lock acquire timeout for issue ${issueId} after ${LOCK_ACQUIRE_TIMEOUT_MS}ms`)
   }
 
   const waitMs = Date.now() - acquireStart
@@ -80,10 +73,7 @@ export async function withIssueLock<T>(
       fn(),
       new Promise<never>((_, reject) => {
         execTimer = setTimeout(() => {
-          logger.error(
-            { issueId, execMs: Date.now() - execStart },
-            'issue_lock_execution_timeout',
-          )
+          logger.error({ issueId, execMs: Date.now() - execStart }, 'issue_lock_execution_timeout')
           reject(
             new Error(
               `Lock execution timeout for issue ${issueId} after ${LOCK_EXECUTION_TIMEOUT_MS}ms`,

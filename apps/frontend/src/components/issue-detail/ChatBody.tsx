@@ -30,11 +30,7 @@ const LazySessionMessages = lazy(() =>
   import('./SessionMessages').then((m) => ({ default: m.SessionMessages })),
 )
 
-const TERMINAL_STATUSES: ReadonlySet<string> = new Set([
-  'completed',
-  'failed',
-  'cancelled',
-])
+const TERMINAL_STATUSES: ReadonlySet<string> = new Set(['completed', 'failed', 'cancelled'])
 
 // ---------- shared session-state helpers ----------
 
@@ -44,19 +40,14 @@ function deriveWorkingStep(logs: NormalizedLogEntry[]): string | null {
     if (entry.entryType !== 'tool-use') continue
     const md = entry.metadata
     if (!md || md.isResult === true || md.toolName !== 'TodoWrite') continue
-    const input = md.input as
-      | { todos?: Array<Record<string, unknown>> }
-      | undefined
+    const input = md.input as { todos?: Array<Record<string, unknown>> } | undefined
     const todos = Array.isArray(input?.todos) ? input.todos : []
     if (todos.length === 0) continue
     const inProgress = todos.find((todo) => todo.status === 'in_progress')
     const pending = todos.find((todo) => todo.status === 'pending')
-    const completed = [...todos]
-      .reverse()
-      .find((todo) => todo.status === 'completed')
+    const completed = [...todos].reverse().find((todo) => todo.status === 'completed')
     const current = inProgress ?? pending ?? completed ?? todos[0]
-    const activeForm =
-      typeof current.activeForm === 'string' ? current.activeForm : null
+    const activeForm = typeof current.activeForm === 'string' ? current.activeForm : null
     const content = typeof current.content === 'string' ? current.content : null
     return activeForm ?? content ?? null
   }
@@ -98,8 +89,7 @@ export function useSessionState(
   const streamIsTerminal = !!streamStatus && TERMINAL_STATUSES.has(streamStatus)
   const queryStatus = issue?.sessionStatus ?? null
   const effectiveStatus = streamIsTerminal ? streamStatus : queryStatus
-  const isSessionActive =
-    effectiveStatus === 'running' || effectiveStatus === 'pending'
+  const isSessionActive = effectiveStatus === 'running' || effectiveStatus === 'pending'
 
   // When the session is active (running/pending), always show thinking.
   // Previously we used hasUnfinishedSegmentIn(logs) to detect mid-turn
@@ -156,9 +146,7 @@ export function ChatBody({
   const deleteIssueMutation = useDeleteIssue(projectId)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [isCancelling, setIsCancelling] = useState(false)
-  const [pendingEditContent, setPendingEditContent] = useState<string | null>(
-    null,
-  )
+  const [pendingEditContent, setPendingEditContent] = useState<string | null>(null)
 
   const handleDelete = useCallback(() => {
     setDeleteDialogOpen(true)
@@ -240,7 +228,6 @@ export function ChatBody({
   const [showScrollTop, setShowScrollTop] = useState(false)
   const [showScrollBottom, setShowScrollBottom] = useState(false)
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: scroll handler intentionally omits callback deps to avoid re-binding listeners
   useEffect(() => {
     const el = scrollRef.current
     if (!el) return
@@ -269,16 +256,11 @@ export function ChatBody({
     <>
       {/* Messages */}
       <div className="relative flex-1 overflow-hidden">
-        <div
-          ref={scrollRef}
-          className="h-full overflow-y-auto overflow-x-hidden"
-        >
+        <div ref={scrollRef} className="h-full overflow-y-auto overflow-x-hidden">
           <div className="flex flex-col min-h-full justify-end py-2">
             <Suspense
               fallback={
-                <div className="px-5 py-2 text-xs text-muted-foreground">
-                  {t('common.loading')}
-                </div>
+                <div className="px-5 py-2 text-xs text-muted-foreground">{t('common.loading')}</div>
               }
             >
               <LazySessionMessages
@@ -364,9 +346,7 @@ export function ChatBody({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{t('issue.delete')}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('issue.deleteConfirm')}
-            </AlertDialogDescription>
+            <AlertDialogDescription>{t('issue.deleteConfirm')}</AlertDialogDescription>
             {issue.childCount && issue.childCount > 0 ? (
               <AlertDialogDescription className="text-destructive">
                 {t('issue.deleteWithChildren')}
@@ -384,9 +364,7 @@ export function ChatBody({
                 handleConfirmDelete()
               }}
             >
-              {deleteIssueMutation.isPending
-                ? t('issue.deleting')
-                : t('issue.delete')}
+              {deleteIssueMutation.isPending ? t('issue.deleting') : t('issue.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

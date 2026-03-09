@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  formatFileSize,
-  formatModelName,
-  getProjectInitials,
-} from '../../lib/format'
+import { formatFileSize, formatModelName, getProjectInitials } from '../../lib/format'
 
 describe('formatFileSize', () => {
   it('formats bytes below 1024', () => {
@@ -49,9 +45,7 @@ describe('formatModelName', () => {
   })
 
   it('handles model with suffix', () => {
-    expect(formatModelName('claude-opus-4-5[thinking]')).toBe(
-      'Claude Opus 4.5[thinking]',
-    )
+    expect(formatModelName('claude-opus-4-5[thinking]')).toBe('Claude Opus 4.5[thinking]')
   })
 })
 

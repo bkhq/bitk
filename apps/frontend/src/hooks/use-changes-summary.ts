@@ -12,10 +12,7 @@ import { queryKeys } from './use-kanban'
  * 1. Initial fetch via REST `/changes` endpoint (React Query, staleTime 30s)
  * 2. SSE `changes-summary` events override the REST data in real-time
  */
-export function useChangesSummary(
-  projectId: string | undefined,
-  issueId: string | undefined,
-) {
+export function useChangesSummary(projectId: string | undefined, issueId: string | undefined) {
   const queryClient = useQueryClient()
 
   // Initial fetch from REST endpoint — derive summary from full response

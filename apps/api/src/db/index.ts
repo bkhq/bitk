@@ -11,9 +11,7 @@ import { embeddedMigrations } from './embedded-migrations'
 import * as schema from './schema'
 
 const rawDbPath = process.env.DB_PATH || 'data/db/bkd.db'
-const dbPath = rawDbPath.startsWith('/')
-  ? rawDbPath
-  : resolve(ROOT_DIR, rawDbPath)
+const dbPath = rawDbPath.startsWith('/') ? rawDbPath : resolve(ROOT_DIR, rawDbPath)
 
 const dir = dirname(dbPath)
 if (!existsSync(dir)) {
@@ -46,8 +44,7 @@ function runMigrations(folder: string) {
   } catch (err: unknown) {
     sqlite.run('PRAGMA foreign_keys = ON')
     const errObj = err as { message?: string; cause?: { message?: string } }
-    const msg =
-      String(errObj?.message ?? '') + String(errObj?.cause?.message ?? '')
+    const msg = String(errObj?.message ?? '') + String(errObj?.cause?.message ?? '')
     const alreadyExists = /^(table|index) "?.+"? already exists$/im.test(msg)
     if (!alreadyExists) {
       throw err
@@ -70,9 +67,7 @@ if (existsSync(journalPath)) {
   runMigrations(tmpMigrations)
   logger.info({ count: embeddedMigrations.size }, 'embedded_migrations_applied')
 } else {
-  throw new Error(
-    'No migrations available (missing drizzle/ folder and no embedded migrations)',
-  )
+  throw new Error('No migrations available (missing drizzle/ folder and no embedded migrations)')
 }
 
 export async function checkDbHealth() {

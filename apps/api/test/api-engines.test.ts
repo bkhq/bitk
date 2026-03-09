@@ -49,12 +49,9 @@ describe('GET /api/engines/settings', () => {
 
 describe('PATCH /api/engines/default-engine', () => {
   test('sets a valid default engine', async () => {
-    const result = await patch<{ defaultEngine: string }>(
-      '/api/engines/default-engine',
-      {
-        defaultEngine: 'echo',
-      },
-    )
+    const result = await patch<{ defaultEngine: string }>('/api/engines/default-engine', {
+      defaultEngine: 'echo',
+    })
     expect(result.status).toBe(200)
     const data = expectSuccess(result)
     expect(data.defaultEngine).toBe('echo')

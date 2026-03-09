@@ -62,10 +62,7 @@ command.post(
       const workspaceRoot = await getAppSetting('workspace:defaultPath')
       if (workspaceRoot && workspaceRoot !== '/') {
         const resolvedRoot = resolve(workspaceRoot)
-        if (
-          !resolvedDir.startsWith(`${resolvedRoot}/`) &&
-          resolvedDir !== resolvedRoot
-        ) {
+        if (!resolvedDir.startsWith(`${resolvedRoot}/`) && resolvedDir !== resolvedRoot) {
           return c.json(
             {
               success: false,
@@ -91,10 +88,7 @@ command.post(
       try {
         const s = await stat(resolvedDir)
         if (!s.isDirectory()) {
-          return c.json(
-            { success: false, error: 'Project directory is not a directory' },
-            400,
-          )
+          return c.json({ success: false, error: 'Project directory is not a directory' }, 400)
         }
       } catch {
         return c.json(
@@ -114,11 +108,11 @@ command.post(
         return c.json({ success: false, error: guard.reason! }, 400)
       }
       // Prepend project-level system prompt if configured
-      const basePrompt = project.systemPrompt
-        ? `${project.systemPrompt}\n\n${prompt}`
-        : prompt
-      const { prompt: effectivePrompt, pendingIds } =
-        await collectPendingMessages(issueId, basePrompt)
+      const basePrompt = project.systemPrompt ? `${project.systemPrompt}\n\n${prompt}` : prompt
+      const { prompt: effectivePrompt, pendingIds } = await collectPendingMessages(
+        issueId,
+        basePrompt,
+      )
       const envVars = parseProjectEnvVars(project.envVars)
       const result = await issueEngine.executeIssue(issueId, {
         engineType: body.engineType,
@@ -144,10 +138,7 @@ command.post(
           issueId,
           model: body.model,
           permissionMode: body.permissionMode,
-          error:
-            error instanceof Error
-              ? { message: error.message, stack: error.stack }
-              : error,
+          error: error instanceof Error ? { message: error.message, stack: error.stack } : error,
         },
         'issue_followup_failed',
       )
@@ -194,10 +185,7 @@ command.post('/:id/restart', async (c) => {
       {
         projectId: project.id,
         issueId,
-        error:
-          error instanceof Error
-            ? { message: error.message, stack: error.stack }
-            : error,
+        error: error instanceof Error ? { message: error.message, stack: error.stack } : error,
       },
       'issue_restart_failed',
     )
@@ -233,10 +221,7 @@ command.post('/:id/cancel', async (c) => {
       {
         projectId: project.id,
         issueId,
-        error:
-          error instanceof Error
-            ? { message: error.message, stack: error.stack }
-            : error,
+        error: error instanceof Error ? { message: error.message, stack: error.stack } : error,
       },
       'issue_cancel_failed',
     )
@@ -264,8 +249,7 @@ command.get('/:id/slash-commands', async (c) => {
     return c.json({ success: false, error: 'Issue not found' }, 404)
   }
 
-  const engineType =
-    (issue.engineType as import('@/engines/types').EngineType) ?? undefined
+  const engineType = (issue.engineType as import('@/engines/types').EngineType) ?? undefined
   const categorized = issueEngine.getCategorizedCommands(issueId, engineType)
   return c.json({ success: true, data: categorized })
 })

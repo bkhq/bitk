@@ -1,8 +1,4 @@
-import {
-  autoMoveToReview,
-  getIssueWithSession,
-  updateIssueSession,
-} from '@/engines/engine-store'
+import { autoMoveToReview, getIssueWithSession, updateIssueSession } from '@/engines/engine-store'
 import type { ProcessStatus } from '@/engines/types'
 import { logger } from '@/logger'
 import {
@@ -45,9 +41,7 @@ function terminateAndSettle(
     // DB still shows running/pending but no other active process exists,
     // the status is stale from the process we killed — settle it.
     if (priorStatus === 'running' || priorStatus === 'pending') {
-      const hasActiveProcess = ctx.pm
-        .getActive()
-        .some((e) => e.meta.issueId === issueId)
+      const hasActiveProcess = ctx.pm.getActive().some((e) => e.meta.issueId === issueId)
       if (hasActiveProcess) {
         logger.debug({ issueId, priorStatus }, 'gc_settle_skipped_reactivated')
         return
@@ -128,9 +122,7 @@ export function gcSweep(ctx: EngineContext): void {
           {
             issueId: managed.issueId,
             executionId: managed.executionId,
-            idleMinutes: Math.round(
-              (now - managed.lastIdleAt.getTime()) / 60000,
-            ),
+            idleMinutes: Math.round((now - managed.lastIdleAt.getTime()) / 60000),
           },
           'idle_timeout_terminate',
         )
@@ -218,9 +210,7 @@ export function gcSweep(ctx: EngineContext): void {
             'stream_stall_probe_sent',
           )
           managed.stallProbeAt = new Date()
-          managed.debugLog?.event(
-            `stall_probe silent=${stallMinutes}min pid=${pid} alive=true`,
-          )
+          managed.debugLog?.event(`stall_probe silent=${stallMinutes}min pid=${pid} alive=true`)
           emitDiagnosticLog(
             managed.issueId,
             managed.executionId,
@@ -231,18 +221,18 @@ export function gcSweep(ctx: EngineContext): void {
           // STALL_LIVENESS_GRACE_MS to recover on its own — now we intervene.
           // Fire-and-forget: use Promise.resolve() to normalize void | Promise<void>
           // since Codex's implementation is genuinely async while Claude's is sync.
-          void Promise.resolve(
-            managed.process.protocolHandler?.interrupt(),
-          ).catch((err: unknown) => {
-            logger.warn(
-              {
-                issueId: managed.issueId,
-                executionId: managed.executionId,
-                err,
-              },
-              'stall_probe_interrupt_failed',
-            )
-          })
+          void Promise.resolve(managed.process.protocolHandler?.interrupt()).catch(
+            (err: unknown) => {
+              logger.warn(
+                {
+                  issueId: managed.issueId,
+                  executionId: managed.executionId,
+                  err,
+                },
+                'stall_probe_interrupt_failed',
+              )
+            },
+          )
           continue
         }
 
@@ -280,9 +270,7 @@ export function gcSweep(ctx: EngineContext): void {
           // Process is alive — likely retrying API connection internally.
           // Mark stall detected and give CLI time to recover on its own.
           managed.stallDetectedAt = new Date()
-          managed.debugLog?.event(
-            `stall_detected silent=${stallMinutes}min pid=${pid} alive=true`,
-          )
+          managed.debugLog?.event(`stall_detected silent=${stallMinutes}min pid=${pid} alive=true`)
           emitDiagnosticLog(
             managed.issueId,
             managed.executionId,
@@ -292,10 +280,7 @@ export function gcSweep(ctx: EngineContext): void {
         }
       }
     } catch (err) {
-      logger.error(
-        { entryId: entry.id, issueId: entry.meta?.issueId, err },
-        'gc_sweep_entry_error',
-      )
+      logger.error({ entryId: entry.id, issueId: entry.meta?.issueId, err }, 'gc_sweep_entry_error')
     }
   }
 

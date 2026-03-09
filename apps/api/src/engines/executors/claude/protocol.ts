@@ -57,17 +57,11 @@ function sanitizeResultLine(line: string): string {
 
 function shouldSkipStdoutIoLog(line: string): boolean {
   // Filter noisy thinking payloads from API logs.
-  if (
-    line.includes('"type":"system"') &&
-    line.includes('"hook_name":"SessionStart:startup"')
-  ) {
+  if (line.includes('"type":"system"') && line.includes('"hook_name":"SessionStart:startup"')) {
     return true
   }
   // Skip input_json_delta — extremely high frequency, no debug value
-  if (
-    line.includes('"type":"stream_event"') &&
-    line.includes('"input_json_delta"')
-  ) {
+  if (line.includes('"type":"stream_event"') && line.includes('"input_json_delta"')) {
     return true
   }
   return (
@@ -113,9 +107,7 @@ export class ClaudeProtocolHandler {
    * Wraps the raw stdout stream, intercepting control_request messages
    * and passing everything else through to the downstream consumer.
    */
-  wrapStdout(
-    rawStdout: ReadableStream<Uint8Array>,
-  ): ReadableStream<Uint8Array> {
+  wrapStdout(rawStdout: ReadableStream<Uint8Array>): ReadableStream<Uint8Array> {
     const reader = rawStdout.getReader()
     const decoder = new TextDecoder()
     const encoder = new TextEncoder()
@@ -248,10 +240,7 @@ export class ClaudeProtocolHandler {
     }
   }
 
-  private handleControlRequest(
-    requestId: string,
-    request: ControlRequest,
-  ): void {
+  private handleControlRequest(requestId: string, request: ControlRequest): void {
     switch (request.subtype) {
       case 'can_use_tool':
         if (request.tool_name === 'ExitPlanMode') {
@@ -285,8 +274,7 @@ export class ClaudeProtocolHandler {
             hookSpecificOutput: {
               hookEventName: 'PreToolUse',
               permissionDecision: 'ask',
-              permissionDecisionReason:
-                'Forwarding to can_use_tool for permission handling',
+              permissionDecisionReason: 'Forwarding to can_use_tool for permission handling',
             },
           })
         } else {
@@ -300,14 +288,8 @@ export class ClaudeProtocolHandler {
         break
 
       default:
-        logger.warn(
-          { subtype: request.subtype, requestId },
-          'Unknown control request subtype',
-        )
-        this.sendError(
-          requestId,
-          `Unknown control request subtype: ${request.subtype}`,
-        )
+        logger.warn({ subtype: request.subtype, requestId }, 'Unknown control request subtype')
+        this.sendError(requestId, `Unknown control request subtype: ${request.subtype}`)
     }
   }
 
@@ -401,10 +383,7 @@ export class ClaudeProtocolHandler {
     try {
       const json = JSON.stringify(data)
       if (IO_LOG_ENABLED) {
-        logger.debug(
-          { stream: 'stdin', line: clipForLog(json) },
-          'claude_protocol_io',
-        )
+        logger.debug({ stream: 'stdin', line: clipForLog(json) }, 'claude_protocol_io')
       }
       this.stdin.write(`${json}\n`)
       this.stdin.flush?.()
@@ -420,9 +399,7 @@ export class ClaudeProtocolHandler {
 // ---------- Helpers ----------
 
 /** Map our PermissionPolicy to Claude SDK permission mode string. */
-function mapPermissionMode(
-  policy: PermissionPolicy,
-): 'bypassPermissions' | 'plan' | 'default' {
+function mapPermissionMode(policy: PermissionPolicy): 'bypassPermissions' | 'plan' | 'default' {
   switch (policy) {
     case 'auto':
       return 'bypassPermissions'

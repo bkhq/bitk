@@ -4,9 +4,7 @@
  */
 import app from '@/app'
 
-type ApiResult<T> =
-  | { success: true; data: T }
-  | { success: false; error: string }
+type ApiResult<T> = { success: true; data: T } | { success: false; error: string }
 
 /** Make a typed request to the Hono app */
 export async function api<T>(
@@ -45,10 +43,7 @@ export function del<T>(path: string) {
 }
 
 /** Expect success response */
-export function expectSuccess<T>(result: {
-  status: number
-  json: ApiResult<T>
-}): T {
+export function expectSuccess<T>(result: { status: number; json: ApiResult<T> }): T {
   if (!result.json.success) {
     throw new Error(
       `Expected success but got error: ${result.json.error} (status ${result.status})`,
@@ -66,17 +61,13 @@ export function expectError(
     throw new Error(`Expected error but got success (status ${result.status})`)
   }
   if (expectedStatus !== undefined && result.status !== expectedStatus) {
-    throw new Error(
-      `Expected status ${expectedStatus} but got ${result.status}`,
-    )
+    throw new Error(`Expected status ${expectedStatus} but got ${result.status}`)
   }
   return result.json.error
 }
 
 /** Create a test project and return its ID */
-export async function createTestProject(
-  name = 'Test Project',
-): Promise<string> {
+export async function createTestProject(name = 'Test Project'): Promise<string> {
   const result = await post<{ id: string }>('/api/projects', { name })
   const data = expectSuccess(result)
   return data.id
@@ -93,16 +84,13 @@ export async function createTestIssue(
     description?: string
   } = {},
 ) {
-  const result = await post<Record<string, unknown>>(
-    `/api/projects/${projectId}/issues`,
-    {
-      title: opts.title ?? 'Test Issue',
-      statusId: opts.statusId ?? 'todo',
-      engineType: opts.engineType ?? 'echo',
-      model: opts.model ?? 'auto',
-      description: opts.description,
-    },
-  )
+  const result = await post<Record<string, unknown>>(`/api/projects/${projectId}/issues`, {
+    title: opts.title ?? 'Test Issue',
+    statusId: opts.statusId ?? 'todo',
+    engineType: opts.engineType ?? 'echo',
+    model: opts.model ?? 'auto',
+    description: opts.description,
+  })
   return result
 }
 

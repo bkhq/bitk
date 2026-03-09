@@ -42,10 +42,7 @@ function getBaseCommand(): string {
   // 2. Check HOME-relative install locations
   const home = process.env.HOME ?? ''
   if (home) {
-    const homeCandidates = [
-      join(home, '.local/bin/claude'),
-      join(home, '.bun/bin/claude'),
-    ]
+    const homeCandidates = [join(home, '.local/bin/claude'), join(home, '.bun/bin/claude')]
     const found = homeCandidates.find((p) => existsSync(p))
     if (found) {
       _cachedBaseCommand = found
@@ -83,16 +80,9 @@ const CLAUDE_MODELS: EngineModel[] = [
 export class ClaudeCodeExecutor implements EngineExecutor {
   readonly engineType = 'claude-code' as const
   readonly protocol = 'stream-json' as const
-  readonly capabilities: EngineCapability[] = [
-    'session-fork',
-    'context-usage',
-    'plan-mode',
-  ]
+  readonly capabilities: EngineCapability[] = ['session-fork', 'context-usage', 'plan-mode']
 
-  async spawn(
-    options: SpawnOptions,
-    env: ExecutionEnv,
-  ): Promise<SpawnedProcess> {
+  async spawn(options: SpawnOptions, env: ExecutionEnv): Promise<SpawnedProcess> {
     const builder = this.createBaseBuilder(options, env)
 
     if (options.externalSessionId) {
@@ -105,14 +95,8 @@ export class ClaudeCodeExecutor implements EngineExecutor {
     return this.spawnProcess(builder, options, env, 'spawn')
   }
 
-  async spawnFollowUp(
-    options: FollowUpOptions,
-    env: ExecutionEnv,
-  ): Promise<SpawnedProcess> {
-    const builder = this.createBaseBuilder(options, env).param(
-      '--resume',
-      options.sessionId,
-    )
+  async spawnFollowUp(options: FollowUpOptions, env: ExecutionEnv): Promise<SpawnedProcess> {
+    const builder = this.createBaseBuilder(options, env).param('--resume', options.sessionId)
 
     // Truncate conversation history to a specific message and continue from there
     if (options.resetToMessageId) {
@@ -206,9 +190,7 @@ export class ClaudeCodeExecutor implements EngineExecutor {
 
   private defaultNormalizer = new ClaudeLogNormalizer()
 
-  normalizeLog(
-    rawLine: string,
-  ): NormalizedLogEntry | NormalizedLogEntry[] | null {
+  normalizeLog(rawLine: string): NormalizedLogEntry | NormalizedLogEntry[] | null {
     return this.defaultNormalizer.parse(rawLine)
   }
 
@@ -223,9 +205,7 @@ export class ClaudeCodeExecutor implements EngineExecutor {
    * This is the same approach as the reference Rust implementation's
    * `discover_available_command_and_plugins`.
    */
-  async discoverSlashCommandsAndAgents(
-    workingDir: string,
-  ): Promise<DiscoveryResult> {
+  async discoverSlashCommandsAndAgents(workingDir: string): Promise<DiscoveryResult> {
     const resolved = await CommandBuilder.create(getBaseCommand())
       .params(['-p', '--verbose', '--output-format=stream-json'])
       .param('--max-turns', '1')
@@ -344,10 +324,7 @@ export class ClaudeCodeExecutor implements EngineExecutor {
    * Adds all standard flags, model, env vars, and permission-prompt-tool=stdio
    * (permission mode is set via SDK control protocol, not CLI flags).
    */
-  private createBaseBuilder(
-    options: SpawnOptions,
-    env: ExecutionEnv,
-  ): CommandBuilder {
+  private createBaseBuilder(options: SpawnOptions, env: ExecutionEnv): CommandBuilder {
     const permissionMode = options.permissionMode ?? 'auto'
     const isPlanMode = permissionMode === 'plan'
 
@@ -458,9 +435,7 @@ export class ClaudeCodeExecutor implements EngineExecutor {
     )
 
     // Wrap stdout to intercept control_request messages
-    const filteredStdout = handler.wrapStdout(
-      proc.stdout as ReadableStream<Uint8Array>,
-    )
+    const filteredStdout = handler.wrapStdout(proc.stdout as ReadableStream<Uint8Array>)
 
     return {
       subprocess: proc,
@@ -501,9 +476,7 @@ const AUTO_APPROVE_CALLBACK_ID = 'AUTO_APPROVE_CALLBACK_ID'
  * - **supervised**: Non-read tools → `tool_approval`; read tools auto-approved.
  * - **auto**: No hooks needed (AskUserQuestion disabled via --disallowedTools).
  */
-function buildHooks(
-  policy: PermissionPolicy,
-): Record<string, unknown> | undefined {
+function buildHooks(policy: PermissionPolicy): Record<string, unknown> | undefined {
   switch (policy) {
     case 'plan':
       return {

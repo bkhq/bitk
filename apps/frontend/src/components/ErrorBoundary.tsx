@@ -28,12 +28,8 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       return (
         <div className="flex h-screen flex-col items-center justify-center gap-4">
-          <h1 className="text-lg font-semibold text-foreground">
-            {i18n.t('error.title')}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {i18n.t('error.description')}
-          </p>
+          <h1 className="text-lg font-semibold text-foreground">{i18n.t('error.title')}</h1>
+          <p className="text-sm text-muted-foreground">{i18n.t('error.description')}</p>
           <button
             type="button"
             onClick={() => window.location.reload()}

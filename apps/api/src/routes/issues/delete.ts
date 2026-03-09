@@ -6,10 +6,7 @@ import { findProject, getServerUrl } from '@/db/helpers'
 import { issues as issuesTable } from '@/db/schema'
 import { issueEngine } from '@/engines/issue'
 import { logger } from '@/logger'
-import {
-  buildIssueUrl,
-  dispatch as webhookDispatch,
-} from '@/webhooks/dispatcher'
+import { buildIssueUrl, dispatch as webhookDispatch } from '@/webhooks/dispatcher'
 
 const del = new Hono()
 
@@ -72,17 +69,11 @@ del.delete('/:id', async (c) => {
     const childIds = childIssues.map((c) => c.id)
 
     // Soft-delete the issue only — keep logs/tools/attachments intact for restore
-    await tx
-      .update(issuesTable)
-      .set({ isDeleted: 1 })
-      .where(eq(issuesTable.id, issueId))
+    await tx.update(issuesTable).set({ isDeleted: 1 }).where(eq(issuesTable.id, issueId))
 
     // Soft-delete child issues
     if (childIds.length > 0) {
-      await tx
-        .update(issuesTable)
-        .set({ isDeleted: 1 })
-        .where(inArray(issuesTable.id, childIds))
+      await tx.update(issuesTable).set({ isDeleted: 1 }).where(inArray(issuesTable.id, childIds))
     }
   })
 

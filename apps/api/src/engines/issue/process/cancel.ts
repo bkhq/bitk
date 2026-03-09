@@ -66,10 +66,7 @@ export async function cancel(
  * Works on running, spawning, completed, failed, or cancelled processes.
  * Updates DB session status and moves the issue to review.
  */
-export async function terminateProcess(
-  ctx: EngineContext,
-  issueId: string,
-): Promise<void> {
+export async function terminateProcess(ctx: EngineContext, issueId: string): Promise<void> {
   return withIssueLock(ctx, issueId, async () => {
     // Kill active processes (spawning or running)
     const active = ctx.pm.getActiveInGroup(issueId)

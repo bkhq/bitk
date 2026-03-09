@@ -138,9 +138,7 @@ app.post('/terminal', (c) => {
     cwd: process.env.HOME || '/',
     env: {
       ...(Object.fromEntries(
-        Object.entries(process.env).filter(
-          ([k]) => !TERMINAL_STRIP_KEYS.has(k),
-        ),
+        Object.entries(process.env).filter(([k]) => !TERMINAL_STRIP_KEYS.has(k)),
       ) as Record<string, string>),
       TERM: 'xterm-256color',
       LANG: process.env.LANG || 'C.UTF-8',
@@ -159,10 +157,7 @@ app.post('/terminal', (c) => {
     return c.json({ success: false, error: 'Session limit reached' }, 429)
   }
 
-  logger.info(
-    { id, pid: proc.pid, shell: defaultShell },
-    'terminal_session_created',
-  )
+  logger.info({ id, pid: proc.pid, shell: defaultShell }, 'terminal_session_created')
 
   return c.json({ success: true, data: { id } })
 })

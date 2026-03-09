@@ -28,9 +28,7 @@ beforeAll(async () => {
 })
 
 async function createWorkingIssue(title: string) {
-  const [maxRow] = await db
-    .select({ maxNum: db.$count(issuesTable) })
-    .from(issuesTable)
+  const [maxRow] = await db.select({ maxNum: db.$count(issuesTable) }).from(issuesTable)
   const issueNumber = (maxRow?.maxNum ?? 0) + 1
 
   const [issue] = await db
@@ -65,9 +63,7 @@ async function insertPendingMessage(issueId: string, content: string) {
 
 describe('turn completion pending-flush regression', () => {
   test('failed auto-flush keeps DB pending rows for retry', async () => {
-    const issue = await createWorkingIssue(
-      `turn-completion-pending-${Date.now()}`,
-    )
+    const issue = await createWorkingIssue(`turn-completion-pending-${Date.now()}`)
     const pendingPrompt = `pending-msg-${Date.now()}`
     await insertPendingMessage(issue.id, pendingPrompt)
 
@@ -95,8 +91,7 @@ describe('turn completion pending-flush regression', () => {
 
     const ctx: EngineContext = {
       pm: {
-        get: (id: string) =>
-          id === executionId ? ({ meta: managed } as any) : undefined,
+        get: (id: string) => (id === executionId ? ({ meta: managed } as any) : undefined),
         getActive: () => [],
       } as any,
       issueOpLocks: new Map(),

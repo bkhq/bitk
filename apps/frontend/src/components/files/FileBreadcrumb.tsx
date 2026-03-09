@@ -7,11 +7,7 @@ interface FileBreadcrumbProps {
   onNavigate: (path: string) => void
 }
 
-export function FileBreadcrumb({
-  projectName,
-  path,
-  onNavigate,
-}: FileBreadcrumbProps) {
+export function FileBreadcrumb({ projectName, path, onNavigate }: FileBreadcrumbProps) {
   const { t } = useTranslation()
   const segments = path && path !== '.' ? path.split('/') : []
 
@@ -37,9 +33,7 @@ export function FileBreadcrumb({
           <span key={segmentPath} className="flex items-center gap-1 shrink-0">
             <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/50" />
             {isLast ? (
-              <span className="px-1.5 py-0.5 font-semibold text-foreground">
-                {segment}
-              </span>
+              <span className="px-1.5 py-0.5 font-semibold text-foreground">{segment}</span>
             ) : (
               <button
                 type="button"

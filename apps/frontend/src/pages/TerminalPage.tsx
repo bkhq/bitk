@@ -19,9 +19,7 @@ export default function TerminalPage() {
         >
           <ArrowLeft className="h-4 w-4" />
         </button>
-        <span className="text-sm font-medium text-foreground">
-          {t('terminal.title')}
-        </span>
+        <span className="text-sm font-medium text-foreground">{t('terminal.title')}</span>
       </div>
 
       {/* Terminal */}

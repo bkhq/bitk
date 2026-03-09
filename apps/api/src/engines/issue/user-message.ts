@@ -43,8 +43,7 @@ export function persistUserMessage(
   appEvents.emit('log', eventData)
 
   // Store user message ID so agent responses in this turn can reference it
-  const messageId =
-    (eventData.entry as { messageId?: string }).messageId ?? null
+  const messageId = (eventData.entry as { messageId?: string }).messageId ?? null
   if (messageId) {
     ctx.userMessageIds.set(`${issueId}:${turnIdx}`, messageId)
   }
@@ -67,9 +66,7 @@ export function sendInputToRunningProcess(
   }
   const handler = managed.process.protocolHandler
   if (!handler?.sendUserMessage) {
-    throw new Error(
-      'Active process does not support interactive follow-up input',
-    )
+    throw new Error('Active process does not support interactive follow-up input')
   }
 
   // IMPORTANT: send to engine first, then persist.
@@ -92,14 +89,7 @@ export function sendInputToRunningProcess(
   // DB. Skip creating a duplicate entry.
   const messageId = opts?.skipPersistMessage
     ? null
-    : persistUserMessage(
-        ctx,
-        issueId,
-        managed.executionId,
-        prompt,
-        displayPrompt,
-        metadata,
-      )
+    : persistUserMessage(ctx, issueId, managed.executionId, prompt, displayPrompt, metadata)
   logger.debug(
     {
       issueId,

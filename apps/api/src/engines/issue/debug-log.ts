@@ -27,9 +27,7 @@ export class IssueDebugLog {
     const dir = join(ISSUE_LOG_DIR, issueId)
     mkdirSync(dir, { recursive: true })
     this.filePath = join(dir, 'debug.log')
-    this.write(
-      `\n${'='.repeat(80)}\n[${ts()}] execution_start executionId=${executionId}\n`,
-    )
+    this.write(`\n${'='.repeat(80)}\n[${ts()}] execution_start executionId=${executionId}\n`)
   }
 
   stdout(line: string): void {
@@ -60,10 +58,7 @@ function ts(): string {
 /** Create an IssueDebugLog if LOG_LEVEL=debug|trace, otherwise return a no-op.
  *  Fails open: if directory creation or initial write fails, returns no-op
  *  so debug instrumentation never breaks the execution path. */
-export function createIssueDebugLog(
-  issueId: string,
-  executionId: string,
-): IssueDebugLog {
+export function createIssueDebugLog(issueId: string, executionId: string): IssueDebugLog {
   if (!ENABLED) return NOOP_LOG
   try {
     return new IssueDebugLog(issueId, executionId)
@@ -85,8 +80,7 @@ export function teeStreamToDebug(
 
   const decoder = new TextDecoder()
   let buffer = ''
-  const writer =
-    label === 'stdout' ? log.stdout.bind(log) : log.stderr.bind(log)
+  const writer = label === 'stdout' ? log.stdout.bind(log) : log.stderr.bind(log)
 
   const transform = new TransformStream<Uint8Array, Uint8Array>({
     transform(chunk, controller) {

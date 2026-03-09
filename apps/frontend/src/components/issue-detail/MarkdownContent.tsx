@@ -42,8 +42,7 @@ function formatTable(block: string): string {
       .split('|')
       .map((c) => c.trim())
 
-  const isSep = (line: string) =>
-    /^\|?[\s:]*-+[\s:]*(\|[\s:]*-+[\s:]*)*\|?$/.test(line.trim())
+  const isSep = (line: string) => /^\|?[\s:]*-+[\s:]*(\|[\s:]*-+[\s:]*)*\|?$/.test(line.trim())
 
   if (!isSep(lines[1])) return block
 
@@ -60,9 +59,7 @@ function formatTable(block: string): string {
   }
 
   const formatRow = (cells: string[]) => {
-    const padded = Array.from({ length: colCount }, (_, i) =>
-      padEnd(cells[i] ?? '', colWidths[i]),
-    )
+    const padded = Array.from({ length: colCount }, (_, i) => padEnd(cells[i] ?? '', colWidths[i]))
     return `| ${padded.join(' | ')} |`
   }
 
@@ -92,8 +89,7 @@ function preprocessContent(text: string): string {
 
   for (const line of lines) {
     const trimmed = line.trim()
-    const isTableLine =
-      trimmed.startsWith('|') && trimmed.endsWith('|') && trimmed.length > 1
+    const isTableLine = trimmed.startsWith('|') && trimmed.endsWith('|') && trimmed.length > 1
     if (isTableLine) {
       tableBuf.push(line)
     } else {
@@ -137,7 +133,6 @@ export function MarkdownContent({
   return (
     <div
       className={`markdown-shiki ${containerClassName}`}
-      // biome-ignore lint/security/noDangerouslySetInnerHtml: content is sanitized via DOMPurify.sanitize()
       dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(html) }}
     />
   )

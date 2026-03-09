@@ -1,12 +1,4 @@
-import {
-  Eye,
-  Plus,
-  Settings,
-  StickyNote,
-  TerminalSquare,
-  Wifi,
-  WifiOff,
-} from 'lucide-react'
+import { Eye, Plus, Settings, StickyNote, TerminalSquare, Wifi, WifiOff } from 'lucide-react'
 import { useCallback, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
@@ -157,11 +149,7 @@ export function AppSidebar({ activeProjectId }: { activeProjectId: string }) {
           className={`flex items-center justify-center h-9 w-9 ${connected ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}
           title={connected ? t('session.connected') : t('session.disconnected')}
         >
-          {connected ? (
-            <Wifi className="h-4 w-4" />
-          ) : (
-            <WifiOff className="h-4 w-4" />
-          )}
+          {connected ? <Wifi className="h-4 w-4" /> : <WifiOff className="h-4 w-4" />}
         </div>
         <Button
           variant="ghost"

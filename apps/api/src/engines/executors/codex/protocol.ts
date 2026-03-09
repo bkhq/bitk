@@ -91,8 +91,7 @@ function threadParamsToRpc(params: ThreadStartParams): Record<string, unknown> {
   if (params.sandbox) rpc.sandbox = params.sandbox
   if (params.config) rpc.config = params.config
   if (params.baseInstructions) rpc.baseInstructions = params.baseInstructions
-  if (params.developerInstructions)
-    rpc.developerInstructions = params.developerInstructions
+  if (params.developerInstructions) rpc.developerInstructions = params.developerInstructions
   if (params.modelProvider) rpc.modelProvider = params.modelProvider
   return rpc
 }
@@ -112,9 +111,7 @@ export class CodexProtocolHandler {
   private readonly pending = new Map<number | string, PendingRequest>()
   private readonly requestTimeout: number
   private readonly encoder = new TextEncoder()
-  private notificationController:
-    | ReadableStreamDefaultController<Uint8Array>
-    | undefined
+  private notificationController: ReadableStreamDefaultController<Uint8Array> | undefined
   private nextId = 1
   private closed = false
   private _threadId: string | undefined
@@ -175,8 +172,7 @@ export class CodexProtocolHandler {
       account?: unknown
     }
     return {
-      requiresOpenaiAuth:
-        result?.requiresOpenaiAuth ?? result?.requires_openai_auth ?? false,
+      requiresOpenaiAuth: result?.requiresOpenaiAuth ?? result?.requires_openai_auth ?? false,
       account: result?.account ?? null,
     }
   }
@@ -188,10 +184,7 @@ export class CodexProtocolHandler {
     threadId: string
     model?: string
   }> {
-    const result = (await this.sendRequest(
-      'thread/start',
-      threadParamsToRpc(params),
-    )) as {
+    const result = (await this.sendRequest('thread/start', threadParamsToRpc(params))) as {
       thread?: { id?: string }
       model?: string
     }
@@ -202,10 +195,7 @@ export class CodexProtocolHandler {
     }
 
     this._threadId = threadId
-    logger.info(
-      { threadId, model: result?.model },
-      'codex_protocol_thread_started',
-    )
+    logger.info({ threadId, model: result?.model }, 'codex_protocol_thread_started')
     return { threadId, model: result?.model }
   }
 
@@ -293,9 +283,7 @@ export class CodexProtocolHandler {
 
     for (const [id, pending] of this.pending) {
       clearTimeout(pending.timer)
-      pending.reject(
-        new Error(`Connection closed while waiting for response id=${id}`),
-      )
+      pending.reject(new Error(`Connection closed while waiting for response id=${id}`))
     }
     this.pending.clear()
 
@@ -343,10 +331,7 @@ export class CodexProtocolHandler {
   /** Route a single stdout line to the appropriate handler. */
   private processLine(line: string): void {
     if (IO_LOG_ENABLED) {
-      logger.debug(
-        { stream: 'stdout', line: clipForLog(line) },
-        'codex_protocol_io',
-      )
+      logger.debug({ stream: 'stdout', line: clipForLog(line) }, 'codex_protocol_io')
     }
 
     let msg: Record<string, unknown>
@@ -393,20 +378,13 @@ export class CodexProtocolHandler {
   }
 
   /** Send a JSON-RPC request and wait for a matching response. */
-  private sendRequest(
-    method: string,
-    params: Record<string, unknown>,
-  ): Promise<unknown> {
+  private sendRequest(method: string, params: Record<string, unknown>): Promise<unknown> {
     const id = this.nextId++
 
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => {
         this.pending.delete(id)
-        reject(
-          new Error(
-            `JSON-RPC timeout waiting for response to ${method} (id=${id})`,
-          ),
-        )
+        reject(new Error(`JSON-RPC timeout waiting for response to ${method} (id=${id})`))
       }, this.requestTimeout)
 
       this.pending.set(id, { resolve, reject, timer })
@@ -415,10 +393,7 @@ export class CodexProtocolHandler {
   }
 
   /** Send a JSON-RPC notification (no id, no response expected). */
-  private sendNotification(
-    method: string,
-    params?: Record<string, unknown>,
-  ): void {
+  private sendNotification(method: string, params?: Record<string, unknown>): void {
     const msg: Record<string, unknown> = { method }
     if (params !== undefined) {
       msg.params = params
@@ -433,9 +408,7 @@ export class CodexProtocolHandler {
       logger.warn({ id: response.id }, 'codex_protocol_orphan_response')
       // Push orphan response through for downstream processing
       try {
-        this.notificationController?.enqueue(
-          this.encoder.encode(`${JSON.stringify(response)}\n`),
-        )
+        this.notificationController?.enqueue(this.encoder.encode(`${JSON.stringify(response)}\n`))
       } catch {
         /* controller closed */
       }
@@ -462,9 +435,7 @@ export class CodexProtocolHandler {
           id: response.id,
           result: response.result,
         })
-        this.notificationController?.enqueue(
-          this.encoder.encode(`${responseJson}\n`),
-        )
+        this.notificationController?.enqueue(this.encoder.encode(`${responseJson}\n`))
       } catch {
         /* controller closed */
       }
@@ -498,9 +469,7 @@ export class CodexProtocolHandler {
     }
 
     if (method === 'turn/started' && params) {
-      const turnId = (params as Record<string, unknown>).turnId as
-        | string
-        | undefined
+      const turnId = (params as Record<string, unknown>).turnId as string | undefined
       if (turnId) {
         this._turnId = turnId
       }
@@ -523,10 +492,7 @@ export class CodexProtocolHandler {
     try {
       const json = JSON.stringify(data)
       if (IO_LOG_ENABLED) {
-        logger.debug(
-          { stream: 'stdin', line: clipForLog(json) },
-          'codex_protocol_io',
-        )
+        logger.debug({ stream: 'stdin', line: clipForLog(json) }, 'codex_protocol_io')
       }
       this.stdin.write(`${json}\n`)
       this.stdin.flush?.()

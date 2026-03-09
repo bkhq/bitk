@@ -33,8 +33,7 @@ export async function listDownloadedUpdates(): Promise<
         }),
     )
     return results.sort(
-      (a, b) =>
-        new Date(b.modifiedAt).getTime() - new Date(a.modifiedAt).getTime(),
+      (a, b) => new Date(b.modifiedAt).getTime() - new Date(a.modifiedAt).getTime(),
     )
   } catch {
     return []

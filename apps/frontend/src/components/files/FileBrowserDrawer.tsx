@@ -101,11 +101,7 @@ export function FileBrowserDrawer() {
     <>
       {/* Backdrop overlay */}
       {fullscreen ? null : (
-        <div
-          className="fixed inset-0 z-[39] bg-black/20"
-          onClick={close}
-          onKeyDown={undefined}
-        />
+        <div className="fixed inset-0 z-[39] bg-black/20" onClick={close} onKeyDown={undefined} />
       )}
       <div
         className={`fixed top-0 bottom-0 right-0 z-40 flex flex-col border-l border-border bg-background shadow-2xl ${
@@ -197,17 +193,9 @@ export function FileBrowserDrawer() {
                   : 'text-muted-foreground hover:text-foreground hover:bg-accent'
               }`}
               aria-label={t('fileBrowser.hideIgnored')}
-              title={
-                hideIgnored
-                  ? t('fileBrowser.showIgnored')
-                  : t('fileBrowser.hideIgnored')
-              }
+              title={hideIgnored ? t('fileBrowser.showIgnored') : t('fileBrowser.hideIgnored')}
             >
-              {hideIgnored ? (
-                <EyeOff className="h-3.5 w-3.5" />
-              ) : (
-                <Eye className="h-3.5 w-3.5" />
-              )}
+              {hideIgnored ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
             </button>
             <button
               type="button"
@@ -224,9 +212,7 @@ export function FileBrowserDrawer() {
                 onClick={toggleFullscreen}
                 className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
                 aria-label={t('terminal.maximize')}
-                title={
-                  isFullscreen ? t('terminal.back') : t('terminal.maximize')
-                }
+                title={isFullscreen ? t('terminal.back') : t('terminal.maximize')}
               >
                 {isFullscreen ? (
                   <Minimize2 className="h-3.5 w-3.5" />

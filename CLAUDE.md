@@ -7,6 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Kanban app for managing AI coding agents. Issues on the board are assigned to CLI-based AI engines (Claude Code, Codex, Gemini CLI) that execute autonomously in the user's workspace.
 
 Structured as a **Bun Workspaces monorepo**:
+
 - `apps/api` (`@bkd/api`) — Bun/Hono backend server
 - `apps/frontend` (`@bkd/frontend`) — React/Vite frontend
 - `packages/shared` (`@bkd/shared`) — Shared TypeScript types
@@ -117,6 +118,7 @@ Issue routes are split across focused files in `routes/issues/`: `query.ts`, `cr
 The most complex subsystem — bridges API routes and CLI-based AI agents.
 
 **Engine types and protocols:**
+
 - `claude-code` — `stream-json` protocol (streaming JSON over stdout, process exits after each turn)
 - `codex` — `json-rpc` protocol (JSONL JSON-RPC over stdio, process **stays alive** between turns)
 - `gemini` — `acp` protocol
@@ -125,6 +127,7 @@ The most complex subsystem — bridges API routes and CLI-based AI agents.
 Each engine has an executor in `executors/<name>/executor.ts` implementing `EngineExecutor` interface: `spawn`, `spawnFollowUp`, `cancel`, `getAvailability`, `getModels`, `normalizeLog`.
 
 **Key subsystems:**
+
 - **`process-manager.ts`** — Generic `ProcessManager<TMeta>` for any Bun.spawn subprocess. State machine: `spawning → running → completed/failed/cancelled`. Groups processes by issue ID. Auto-cleanup after 5 min, GC every 10 min.
 - **`issue/engine.ts`** — `IssueEngine` singleton facade. Per-issue serial lock prevents concurrent operations. Manages entry counters, turn indexes, log/state callbacks. Public API: `executeIssue`, `followUpIssue`, `restartIssue`, `cancelIssue`, etc.
 - **`issue/orchestration/`** — `execute.ts`, `follow-up.ts`, `restart.ts`, `cancel.ts`
@@ -134,6 +137,7 @@ Each engine has an executor in `executors/<name>/executor.ts` implementing `Engi
 - **`startup-probe.ts`** — Engine discovery with 3-tier cache: memory (10 min) → DB (`appSettings`) → live probe (15s per-engine timeout, all engines probed in parallel)
 
 **Execution flow:**
+
 ```
 Route handler → IssueEngine.executeIssue() → acquires per-issue lock
   → updates DB (sessionStatus='running') → executor.spawn() → ProcessManager.register()
@@ -142,12 +146,14 @@ Route handler → IssueEngine.executeIssue() → acquires per-issue lock
 ```
 
 **Follow-up flow** (Codex is special — process stays alive):
+
 - Claude: spawns new process with `--resume <sessionId>` flag
 - Codex: sends `turn/start` to existing process via JSON-RPC; if process died, spawns new `app-server` with `thread/resume`
 
 #### Real-Time Events (`events/`)
 
 Global SSE endpoint (`GET /api/events`) via Hono `streamSSE`:
+
 - Event types: `log`, `state`, `done`, `issue-updated`, `changes-summary`, `heartbeat` (15s)
 - Subscribes to `IssueEngine` callbacks + `onIssueUpdated` + `onChangesSummary`
 - `changes-summary.ts`: runs `git status/diff` after each issue settles, pushes stats via SSE
@@ -226,9 +232,9 @@ Server (IssueEngine) → SSE /api/events → EventBus singleton (lib/event-bus.t
 ## Conventions
 
 - Use Bun APIs over Node.js equivalents (`Bun.file()`, `Bun.serve()`, `bun:sqlite`, `bun:test`)
-- Linting & formatting: Biome (`biome.json` at root) — no semicolons, single quotes, 2-space indent
-  - **Important**: Biome enforces `import * as z from 'zod'` (not `import { z } from 'zod'`)
-  - Import types must use `import type` (separated style)
+- Linting & formatting: ESLint (`eslint.config.js` at root) + Prettier (`.prettierrc`) — no semicolons, single quotes, 2-space indent
+  - **Important**: ESLint enforces `import * as z from 'zod'` (not `import { z } from 'zod'`) via `no-restricted-imports`
+  - Import types must use `import type` (separated style) via `@typescript-eslint/consistent-type-imports`
   - Node.js imports must use `node:` prefix
 - Frontend tests: vitest + @testing-library/react (`bun run test:frontend`)
 - Backend tests: `bun:test` (`bun run test:api`). Tests use preload to set `DB_PATH` to an isolated temp DB.
@@ -255,11 +261,13 @@ Server (IssueEngine) → SSE /api/events → EventBus singleton (lib/event-bus.t
 ## Project Development
 
 Use the /pma skill to manage project development with a strict three-phase workflow:
+
 1. Investigation
 2. Proposal
 3. Implement -> Verify -> Record
 
 Rules:
+
 - Do not implement before explicit confirmation (`proceed` / `开始实现`).
 - Track tasks in `docs/task/index.md` and `docs/task/PREFIX-NNN.md`.
 - Track non-trivial plans in `docs/plan/index.md` and `docs/plan/PLAN-NNN.md`.

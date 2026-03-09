@@ -75,9 +75,7 @@ function DeleteProjectDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="md:max-w-sm">
         <DialogHeader>
-          <DialogTitle className="text-destructive">
-            {t('project.delete')}
-          </DialogTitle>
+          <DialogTitle className="text-destructive">{t('project.delete')}</DialogTitle>
           <DialogDescription>{t('project.deleteConfirm')}</DialogDescription>
         </DialogHeader>
 
@@ -101,10 +99,7 @@ function DeleteProjectDialog({
           </Button>
           <Button
             variant="destructive"
-            disabled={
-              confirmName.trim() !== project.name.trim() ||
-              deleteProject.isPending
-            }
+            disabled={confirmName.trim() !== project.name.trim() || deleteProject.isPending}
             onClick={() => {
               setError('')
               deleteProject.mutate(project.id, {
@@ -113,9 +108,7 @@ function DeleteProjectDialog({
               })
             }}
           >
-            {deleteProject.isPending
-              ? t('project.deleting')
-              : t('project.delete')}
+            {deleteProject.isPending ? t('project.deleting') : t('project.delete')}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -141,9 +134,7 @@ function WorktreeSection({ project }: { project: Project }) {
 
   if (!worktrees || worktrees.length === 0) {
     return (
-      <p className="py-8 text-center text-sm text-muted-foreground">
-        {t('project.worktreeEmpty')}
-      </p>
+      <p className="py-8 text-center text-sm text-muted-foreground">{t('project.worktreeEmpty')}</p>
     )
   }
 
@@ -156,9 +147,7 @@ function WorktreeSection({ project }: { project: Project }) {
             className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2"
           >
             <div className="min-w-0 flex-1 space-y-0.5">
-              <p className="truncate text-sm font-medium font-mono">
-                {wt.issueId}
-              </p>
+              <p className="truncate text-sm font-medium font-mono">{wt.issueId}</p>
               {wt.branch ? (
                 <p className="flex items-center gap-1 text-xs text-muted-foreground">
                   <GitBranch className="size-3" />
@@ -254,13 +243,9 @@ export function ProjectSettingsDialog({
   const [name, setName] = useState(project.name)
   const [description, setDescription] = useState(project.description ?? '')
   const [directory, setDirectory] = useState(project.directory ?? '')
-  const [repositoryUrl, setRepositoryUrl] = useState(
-    project.repositoryUrl ?? '',
-  )
+  const [repositoryUrl, setRepositoryUrl] = useState(project.repositoryUrl ?? '')
   const [systemPrompt, setSystemPrompt] = useState(project.systemPrompt ?? '')
-  const [envVarsText, setEnvVarsText] = useState(
-    envVarsToText(project.envVars ?? {}),
-  )
+  const [envVarsText, setEnvVarsText] = useState(envVarsToText(project.envVars ?? {}))
   const [dirPickerOpen, setDirPickerOpen] = useState(false)
   const [detectingRemote, setDetectingRemote] = useState(false)
   const [error, setError] = useState('')
@@ -345,31 +330,19 @@ export function ProjectSettingsDialog({
         footer={(active) =>
           active !== 'worktrees' ? (
             <div className="flex items-center justify-between border-t px-5 py-3">
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() => setDeleteDialogOpen(true)}
-              >
+              <Button variant="destructive" size="sm" onClick={() => setDeleteDialogOpen(true)}>
                 {t('project.delete')}
               </Button>
               <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onOpenChange(false)}
-                >
+                <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
                   {t('common.cancel')}
                 </Button>
                 <Button
                   size="sm"
                   onClick={handleSave}
-                  disabled={
-                    updateProject.isPending || !name.trim() || !hasChanges
-                  }
+                  disabled={updateProject.isPending || !name.trim() || !hasChanges}
                 >
-                  {updateProject.isPending
-                    ? t('project.saving')
-                    : t('project.saveChanges')}
+                  {updateProject.isPending ? t('project.saving') : t('project.saveChanges')}
                 </Button>
               </div>
             </div>
@@ -396,16 +369,10 @@ export function ProjectSettingsDialog({
               />
             )}
             {active === 'prompt' && (
-              <PromptSection
-                systemPrompt={systemPrompt}
-                setSystemPrompt={setSystemPrompt}
-              />
+              <PromptSection systemPrompt={systemPrompt} setSystemPrompt={setSystemPrompt} />
             )}
             {active === 'envvars' && (
-              <EnvVarsSection
-                envVarsText={envVarsText}
-                setEnvVarsText={setEnvVarsText}
-              />
+              <EnvVarsSection envVarsText={envVarsText} setEnvVarsText={setEnvVarsText} />
             )}
             {active === 'worktrees' && <WorktreeSection project={project} />}
           </>
@@ -567,11 +534,7 @@ function GeneralSection({
             title={t('project.detectGitRemote')}
             className="shrink-0"
           >
-            {detectingRemote ? (
-              <Loader2 className="size-4 animate-spin" />
-            ) : (
-              'Auto'
-            )}
+            {detectingRemote ? <Loader2 className="size-4 animate-spin" /> : 'Auto'}
           </Button>
         </div>
       </Field>
@@ -600,9 +563,7 @@ function PromptSection({
           placeholder={t('project.systemPromptPlaceholder')}
           className="w-full flex-1 resize-none font-mono text-xs"
         />
-        <p className="text-xs text-muted-foreground">
-          {t('project.systemPromptHint')}
-        </p>
+        <p className="text-xs text-muted-foreground">{t('project.systemPromptHint')}</p>
       </Field>
     </FieldGroup>
   )
@@ -621,9 +582,7 @@ function EnvVarsSection({
     <FieldGroup className="h-full">
       <Field className="flex-1">
         <Label>{t('project.envVars')}</Label>
-        <p className="text-xs text-muted-foreground mb-2">
-          {t('project.envVarsHint')}
-        </p>
+        <p className="text-xs text-muted-foreground mb-2">{t('project.envVarsHint')}</p>
         <Textarea
           value={envVarsText}
           onChange={(e) => setEnvVarsText(e.target.value)}

@@ -29,10 +29,7 @@ function shikiSlim(): Plugin {
           source.endsWith('/shiki/dist/langs.mjs')
         )
           return slim.langs
-        if (
-          source === './themes.mjs' ||
-          source.endsWith('/shiki/dist/themes.mjs')
-        )
+        if (source === './themes.mjs' || source.endsWith('/shiki/dist/themes.mjs'))
           return slim.themes
       }
       // Stub out the Oniguruma WASM engine (unused — JS engine is used)
@@ -69,22 +66,14 @@ const config = defineConfig(() => {
             const pkg = m[1]
             if (pkg === 'react' || pkg === 'scheduler') return 'vendor-react'
             if (pkg === 'react-dom') return 'vendor-react-dom'
-            if (pkg === 'react-router' || pkg === 'react-router-dom')
-              return 'vendor-router'
+            if (pkg === 'react-router' || pkg === 'react-router-dom') return 'vendor-router'
             if (pkg === '@tanstack/react-query') return 'vendor-query'
             if (pkg.startsWith('@dnd-kit/')) return 'vendor-dnd'
-            if (pkg.startsWith('@base-ui/') || pkg === 'lucide-react')
-              return 'vendor-ui'
+            if (pkg.startsWith('@base-ui/') || pkg === 'lucide-react') return 'vendor-ui'
             if (pkg === '@pierre/diffs') return 'vendor-diff'
-            if (pkg === 'shiki' || pkg.startsWith('@shikijs/'))
-              return 'vendor-shiki'
-            if (pkg === 'i18next' || pkg === 'react-i18next')
-              return 'vendor-i18n'
-            if (
-              pkg === 'tailwind-merge' ||
-              pkg === 'clsx' ||
-              pkg === 'class-variance-authority'
-            )
+            if (pkg === 'shiki' || pkg.startsWith('@shikijs/')) return 'vendor-shiki'
+            if (pkg === 'i18next' || pkg === 'react-i18next') return 'vendor-i18n'
+            if (pkg === 'tailwind-merge' || pkg === 'clsx' || pkg === 'class-variance-authority')
               return 'vendor-style'
             if (pkg === 'zustand') return 'vendor-state'
             if (pkg.startsWith('@xterm/')) return 'vendor-xterm'

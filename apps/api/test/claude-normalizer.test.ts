@@ -7,10 +7,7 @@ function line(obj: Record<string, unknown>): string {
 }
 
 // Helper to flatten parse result into array
-function parseAll(
-  normalizer: ClaudeLogNormalizer,
-  rawLine: string,
-): NormalizedLogEntry[] {
+function parseAll(normalizer: ClaudeLogNormalizer, rawLine: string): NormalizedLogEntry[] {
   const result = normalizer.parse(rawLine)
   if (!result) return []
   return Array.isArray(result) ? result : [result]
@@ -788,9 +785,7 @@ describe('ClaudeLogNormalizer', () => {
       const normalizer = new ClaudeLogNormalizer()
 
       // Parse tool_use (registers in toolMap)
-      normalizer.parse(
-        line({ type: 'tool_use', name: 'Read', id: 'tu_clean1', input: {} }),
-      )
+      normalizer.parse(line({ type: 'tool_use', name: 'Read', id: 'tu_clean1', input: {} }))
 
       // First result consumes the toolMap entry
       const first = parseAll(
@@ -823,18 +818,13 @@ describe('ClaudeLogNormalizer', () => {
     const normalizer = new ClaudeLogNormalizer()
 
     test('compact_boundary', () => {
-      const entries = parseAll(
-        normalizer,
-        line({ type: 'system', subtype: 'compact_boundary' }),
-      )
+      const entries = parseAll(normalizer, line({ type: 'system', subtype: 'compact_boundary' }))
       expect(entries).toHaveLength(1)
       expect(entries[0]!.content).toBe('Context compacted')
     })
 
     test('task_started is suppressed', () => {
-      const result = normalizer.parse(
-        line({ type: 'system', subtype: 'task_started' }),
-      )
+      const result = normalizer.parse(line({ type: 'system', subtype: 'task_started' }))
       expect(result).toBeNull()
     })
 

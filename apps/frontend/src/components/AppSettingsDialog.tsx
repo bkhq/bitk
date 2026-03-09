@@ -74,11 +74,7 @@ import { useTheme } from '@/hooks/use-theme'
 import { LANGUAGES } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import { useViewModeStore } from '@/stores/view-mode-store'
-import type {
-  EngineAvailability,
-  EngineModel,
-  EngineProfile,
-} from '@/types/kanban'
+import type { EngineAvailability, EngineModel, EngineProfile } from '@/types/kanban'
 
 const THEME_OPTIONS = [
   { id: 'system' as const, labelKey: 'theme.system' },
@@ -168,8 +164,7 @@ function GeneralSection({ open }: { open: boolean }) {
 
   const serverInfoDirty =
     serverInfoLoaded &&
-    (serverName !== (serverData?.name ?? '') ||
-      serverUrl !== (serverData?.url ?? ''))
+    (serverName !== (serverData?.name ?? '') || serverUrl !== (serverData?.url ?? ''))
 
   const handleSaveServerInfo = () => {
     updateServerInfo.mutate(
@@ -193,17 +188,11 @@ function GeneralSection({ open }: { open: boolean }) {
           <div className="flex-1 rounded-md border bg-muted/50 px-2 py-1.5 text-sm font-mono text-muted-foreground truncate">
             {wsData?.path ?? '/'}
           </div>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setDirPickerOpen(true)}
-          >
+          <Button variant="outline" size="icon" onClick={() => setDirPickerOpen(true)}>
             <FolderOpen className="size-4 text-muted-foreground" />
           </Button>
         </div>
-        <p className="text-[11px] text-muted-foreground">
-          {t('settings.workspacePathHint')}
-        </p>
+        <p className="text-[11px] text-muted-foreground">{t('settings.workspacePathHint')}</p>
         <DirectoryPicker
           open={dirPickerOpen}
           onOpenChange={setDirPickerOpen}
@@ -232,11 +221,7 @@ function GeneralSection({ open }: { open: boolean }) {
       </div>
       {serverInfoDirty && (
         <div className="flex justify-end">
-          <Button
-            size="sm"
-            onClick={handleSaveServerInfo}
-            disabled={updateServerInfo.isPending}
-          >
+          <Button size="sm" onClick={handleSaveServerInfo} disabled={updateServerInfo.isPending}>
             {updateServerInfo.isPending ? (
               <Loader2 className="size-3 animate-spin mr-1" />
             ) : (
@@ -251,17 +236,12 @@ function GeneralSection({ open }: { open: boolean }) {
         <Field>
           <Label>{t('settings.language')}</Label>
           <Select
-            value={
-              LANGUAGES.find((l) => i18n.language.startsWith(l.id))?.id ??
-              i18n.language
-            }
+            value={LANGUAGES.find((l) => i18n.language.startsWith(l.id))?.id ?? i18n.language}
             onValueChange={(value) => i18n.changeLanguage(value ?? undefined)}
           >
             <SelectTrigger>
               <SelectValue
-                placeholder={
-                  LANGUAGES.find((l) => i18n.language.startsWith(l.id))?.label
-                }
+                placeholder={LANGUAGES.find((l) => i18n.language.startsWith(l.id))?.label}
               />
             </SelectTrigger>
             <SelectContent>
@@ -277,9 +257,7 @@ function GeneralSection({ open }: { open: boolean }) {
           <Label>{t('settings.appearance')}</Label>
           <Select
             value={theme}
-            onValueChange={(value) =>
-              setTheme(value as 'system' | 'light' | 'dark')
-            }
+            onValueChange={(value) => setTheme(value as 'system' | 'light' | 'dark')}
           >
             <SelectTrigger>
               <SelectValue />
@@ -297,18 +275,10 @@ function GeneralSection({ open }: { open: boolean }) {
 
       <div className="flex items-center justify-between">
         <div>
-          <span className="text-sm font-medium">
-            {t('settings.fullWidthChat')}
-          </span>
-          <p className="text-[11px] text-muted-foreground">
-            {t('settings.fullWidthChatHint')}
-          </p>
+          <span className="text-sm font-medium">{t('settings.fullWidthChat')}</span>
+          <p className="text-[11px] text-muted-foreground">{t('settings.fullWidthChatHint')}</p>
         </div>
-        <Switch
-          size="sm"
-          checked={fullWidthChat}
-          onCheckedChange={setFullWidthChat}
-        />
+        <Switch size="sm" checked={fullWidthChat} onCheckedChange={setFullWidthChat} />
       </div>
 
       <Field>
@@ -328,9 +298,7 @@ function GeneralSection({ open }: { open: boolean }) {
             ))}
           </SelectContent>
         </Select>
-        <p className="text-[11px] text-muted-foreground">
-          {t('settings.logPageSizeHint')}
-        </p>
+        <p className="text-[11px] text-muted-foreground">{t('settings.logPageSizeHint')}</p>
       </Field>
     </div>
   )
@@ -373,9 +341,7 @@ function CleanupItem({
             </Badge>
           ) : null}
         </div>
-        {hint ? (
-          <p className="text-[10px] text-muted-foreground">{hint}</p>
-        ) : null}
+        {hint ? <p className="text-[10px] text-muted-foreground">{hint}</p> : null}
       </div>
       <Button
         variant="ghost"
@@ -384,11 +350,7 @@ function CleanupItem({
         disabled={disabled || loading || (count != null && count === 0)}
         className="shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
       >
-        {loading ? (
-          <Loader2 className="size-3 animate-spin" />
-        ) : (
-          <Trash2 className="size-3" />
-        )}
+        {loading ? <Loader2 className="size-3 animate-spin" /> : <Trash2 className="size-3" />}
         {t('settings.cleanupAction')}
       </Button>
     </div>
@@ -484,12 +446,7 @@ function LogsSection({ open }: { open: boolean }) {
             <RefreshCw className="size-3" />
             {t('settings.logsRefresh')}
           </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleDownload}
-            disabled={!logsData?.fileSize}
-          >
+          <Button variant="ghost" size="sm" onClick={handleDownload} disabled={!logsData?.fileSize}>
             <Download className="size-3" />
             {t('settings.logsDownload')}
           </Button>
@@ -540,8 +497,7 @@ function LogsSection({ open }: { open: boolean }) {
             className="w-full rounded-md border bg-transparent py-1 pl-7 pr-2 text-[11px] outline-none focus:ring-1 focus:ring-ring"
           />
         </div>
-        {(levelFilter > 0 || keyword) &&
-        filteredLines.length !== logsData?.lines.length ? (
+        {(levelFilter > 0 || keyword) && filteredLines.length !== logsData?.lines.length ? (
           <span className="text-[10px] text-muted-foreground shrink-0">
             {t('settings.logsFiltered', {
               shown: filteredLines.length,
@@ -568,7 +524,6 @@ function LogsSection({ open }: { open: boolean }) {
           className="flex-1 min-h-0 max-h-[400px] overflow-auto rounded-md border bg-muted/30 p-2 font-mono text-[11px] leading-relaxed"
         >
           {filteredLines.map((line, i) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: log lines are static tail output
             <LogLine key={i} line={line} highlight={keyword} />
           ))}
         </div>
@@ -577,13 +532,7 @@ function LogsSection({ open }: { open: boolean }) {
   )
 }
 
-function HighlightText({
-  text,
-  highlight,
-}: {
-  text: string
-  highlight: string
-}) {
+function HighlightText({ text, highlight }: { text: string; highlight: string }) {
   if (!highlight) return <>{text}</>
   const parts = text.split(
     new RegExp(`(${highlight.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'),
@@ -593,10 +542,7 @@ function HighlightText({
     const part = parts[i]
     if (part.toLowerCase() === highlight.toLowerCase()) {
       elements.push(
-        <mark
-          key={`h${i}`}
-          className="bg-yellow-300/40 text-inherit rounded-sm px-px"
-        >
+        <mark key={`h${i}`} className="bg-yellow-300/40 text-inherit rounded-sm px-px">
           {part}
         </mark>,
       )
@@ -607,13 +553,7 @@ function HighlightText({
   return <>{elements}</>
 }
 
-function LogLine({
-  line,
-  highlight = '',
-}: {
-  line: string
-  highlight?: string
-}) {
+function LogLine({ line, highlight = '' }: { line: string; highlight?: string }) {
   let parsed: { level?: number; msg?: string; time?: number } | null = null
   try {
     parsed = JSON.parse(line)
@@ -676,9 +616,7 @@ function CleanupSection({ open }: { open: boolean }) {
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <div>
-          <span className="text-sm font-medium">
-            {t('settings.worktreeAutoCleanup')}
-          </span>
+          <span className="text-sm font-medium">{t('settings.worktreeAutoCleanup')}</span>
           <p className="text-[11px] text-muted-foreground">
             {t('settings.worktreeAutoCleanupHint')}
           </p>
@@ -746,8 +684,7 @@ function CleanupSection({ open }: { open: boolean }) {
               : undefined
           }
           disabled={
-            !cleanupStats?.deletedIssues.issueCount &&
-            !cleanupStats?.deletedIssues.projectCount
+            !cleanupStats?.deletedIssues.issueCount && !cleanupStats?.deletedIssues.projectCount
           }
           loading={runCleanup.isPending}
           onClean={() => runCleanup.mutate(['deletedIssues'])}
@@ -773,9 +710,7 @@ function RecycleBinSection({ open }: { open: boolean }) {
 
   return (
     <div className="space-y-3">
-      <p className="text-xs text-muted-foreground">
-        {t('settings.recycleBinHint')}
-      </p>
+      <p className="text-xs text-muted-foreground">{t('settings.recycleBinHint')}</p>
 
       {isLoading ? (
         <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
@@ -789,14 +724,9 @@ function RecycleBinSection({ open }: { open: boolean }) {
       ) : (
         <div className="flex flex-col gap-1">
           {deletedIssues.map((issue) => (
-            <div
-              key={issue.id}
-              className="flex items-center gap-3 rounded-md border px-3 py-2"
-            >
+            <div key={issue.id} className="flex items-center gap-3 rounded-md border px-3 py-2">
               <div className="min-w-0 flex-1">
-                <div className="truncate text-xs font-medium">
-                  {issue.title}
-                </div>
+                <div className="truncate text-xs font-medium">{issue.title}</div>
                 <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
                   <span>{issue.projectName}</span>
                   <span className="text-muted-foreground/50">·</span>
@@ -826,15 +756,11 @@ function RecycleBinSection({ open }: { open: boolean }) {
 
 function ModelsSection({ open }: { open: boolean }) {
   const { t } = useTranslation()
-  const { data: discovery, isLoading: enginesLoading } =
-    useEngineAvailability(open)
+  const { data: discovery, isLoading: enginesLoading } = useEngineAvailability(open)
   const engines = discovery?.engines
   const models = discovery?.models
   const availableEngines = useMemo(
-    () =>
-      engines?.filter(
-        (e) => e.installed && e.authStatus !== 'unauthenticated',
-      ) ?? [],
+    () => engines?.filter((e) => e.installed && e.authStatus !== 'unauthenticated') ?? [],
     [engines],
   )
   const { data: profiles } = useEngineProfiles(open)
@@ -842,8 +768,7 @@ function ModelsSection({ open }: { open: boolean }) {
   const updateModelSetting = useUpdateEngineModelSetting()
   const updateDefaultEngine = useUpdateDefaultEngine()
   const probe = useProbeEngines()
-  const showNoAvailableEngines =
-    !enginesLoading && availableEngines.length === 0
+  const showNoAvailableEngines = !enginesLoading && availableEngines.length === 0
 
   return (
     <div className="space-y-4">
@@ -852,9 +777,7 @@ function ModelsSection({ open }: { open: boolean }) {
           <Label>{t('settings.defaultEngine')}</Label>
           <div className="mt-1.5 flex flex-wrap gap-1.5">
             {availableEngines.map((eng) => {
-              const profile = profiles?.find(
-                (p) => p.engineType === eng.engineType,
-              )
+              const profile = profiles?.find((p) => p.engineType === eng.engineType)
               const isSelected =
                 eng.engineType === engineSettings?.defaultEngine ||
                 (!engineSettings?.defaultEngine &&
@@ -871,32 +794,20 @@ function ModelsSection({ open }: { open: boolean }) {
                       : 'text-muted-foreground hover:bg-accent/50',
                   )}
                 >
-                  <EngineIcon
-                    engineType={eng.engineType}
-                    className="h-3.5 w-3.5 shrink-0"
-                  />
+                  <EngineIcon engineType={eng.engineType} className="h-3.5 w-3.5 shrink-0" />
                   {profile?.name ?? eng.engineType}
                 </button>
               )
             })}
           </div>
-          <p className="text-[11px] text-muted-foreground">
-            {t('settings.defaultEngineHint')}
-          </p>
+          <p className="text-[11px] text-muted-foreground">{t('settings.defaultEngineHint')}</p>
         </Field>
       ) : null}
 
       <div className="flex items-center justify-between">
         <Label>{t('settings.engines')}</Label>
-        <Button
-          onClick={() => probe.mutate()}
-          variant="ghost"
-          size="sm"
-          disabled={probe.isPending}
-        >
-          <RefreshCw
-            className={cn('size-3', probe.isPending && 'animate-spin')}
-          />
+        <Button onClick={() => probe.mutate()} variant="ghost" size="sm" disabled={probe.isPending}>
+          <RefreshCw className={cn('size-3', probe.isPending && 'animate-spin')} />
           {probe.isPending ? t('settings.probing') : t('settings.probe')}
         </Button>
       </div>
@@ -913,12 +824,9 @@ function ModelsSection({ open }: { open: boolean }) {
           </div>
         ) : (
           availableEngines.map((engine) => {
-            const profile = profiles?.find(
-              (p) => p.engineType === engine.engineType,
-            )
+            const profile = profiles?.find((p) => p.engineType === engine.engineType)
             const engineModels = models?.[engine.engineType] ?? []
-            const savedDefault =
-              engineSettings?.engines[engine.engineType]?.defaultModel
+            const savedDefault = engineSettings?.engines[engine.engineType]?.defaultModel
             return (
               <EngineCard
                 key={engine.engineType}
@@ -967,10 +875,7 @@ function InfoRow({
     <div className="flex items-center justify-between py-1">
       <span className="text-xs text-muted-foreground">{label}</span>
       <span
-        className={cn(
-          'text-xs text-right max-w-[60%] truncate',
-          mono && 'font-mono',
-        )}
+        className={cn('text-xs text-right max-w-[60%] truncate', mono && 'font-mono')}
         title={typeof value === 'string' ? value : undefined}
       >
         {value}
@@ -993,11 +898,7 @@ function AboutSection({ open }: { open: boolean }) {
   }
 
   if (isError || !data) {
-    return (
-      <div className="py-4 text-sm text-muted-foreground">
-        {t('settings.aboutLoadError')}
-      </div>
-    )
+    return <div className="py-4 text-sm text-muted-foreground">{t('settings.aboutLoadError')}</div>
   }
 
   return (
@@ -1021,15 +922,8 @@ function AboutSection({ open }: { open: boolean }) {
               </span>
             }
           />
-          <InfoRow
-            label={t('settings.aboutCommit')}
-            value={data.app.commit}
-            mono
-          />
-          <InfoRow
-            label={t('settings.aboutUptime')}
-            value={formatUptime(data.app.uptime)}
-          />
+          <InfoRow label={t('settings.aboutCommit')} value={data.app.commit} mono />
+          <InfoRow label={t('settings.aboutUptime')} value={formatUptime(data.app.uptime)} />
           <InfoRow
             label={t('settings.aboutStartedAt')}
             value={new Date(data.app.startedAt).toLocaleString()}
@@ -1040,9 +934,7 @@ function AboutSection({ open }: { open: boolean }) {
 
       {/* Runtime */}
       <div>
-        <h4 className="text-xs font-medium mb-1">
-          {t('settings.aboutRuntime')}
-        </h4>
+        <h4 className="text-xs font-medium mb-1">{t('settings.aboutRuntime')}</h4>
         <div className="rounded-md border px-3 py-1 divide-y divide-border">
           <InfoRow label="Bun" value={data.runtime.bun} mono />
           <InfoRow
@@ -1061,15 +953,11 @@ function UpgradeSection({ open }: { open: boolean }) {
   const { data: versionInfo } = useVersionInfo(open)
   const { data: upgradeEnabledData } = useUpgradeEnabled(open)
   const setUpgradeEnabled = useSetUpgradeEnabled()
-  const { data: checkResult } = useUpgradeCheck(
-    open && (upgradeEnabledData?.enabled ?? false),
-  )
+  const { data: checkResult } = useUpgradeCheck(open && (upgradeEnabledData?.enabled ?? false))
   const checkForUpdates = useCheckForUpdates()
   const downloadUpdate = useDownloadUpdate()
   const restartWithUpgrade = useRestartWithUpgrade()
-  const { data: dlStatus } = useDownloadStatus(
-    open && (upgradeEnabledData?.enabled ?? false),
-  )
+  const { data: dlStatus } = useDownloadStatus(open && (upgradeEnabledData?.enabled ?? false))
 
   const isEnabled = upgradeEnabledData?.enabled ?? true
 
@@ -1108,9 +996,7 @@ function UpgradeSection({ open }: { open: boolean }) {
       {/* Version & Build */}
       <div className="mt-1.5 grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
         <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-          <span className="shrink-0 text-muted-foreground">
-            {t('settings.currentVersion')}
-          </span>
+          <span className="shrink-0 text-muted-foreground">{t('settings.currentVersion')}</span>
           <Badge variant="outline" className="shrink-0 font-mono">
             {versionInfo?.version === 'dev'
               ? t('settings.devBuild')
@@ -1123,9 +1009,7 @@ function UpgradeSection({ open }: { open: boolean }) {
           ) : null}
         </div>
         <div className="flex min-w-0 items-center gap-1.5">
-          <span className="shrink-0 text-muted-foreground">
-            {t('settings.buildId')}
-          </span>
+          <span className="shrink-0 text-muted-foreground">{t('settings.buildId')}</span>
           <span
             className="min-w-0 truncate font-mono text-foreground/80"
             title={versionInfo?.commit ?? '...'}
@@ -1138,12 +1022,8 @@ function UpgradeSection({ open }: { open: boolean }) {
       {/* Auto-upgrade toggle */}
       <div className="mt-3 flex items-center justify-between">
         <div>
-          <span className="text-sm font-medium">
-            {t('settings.upgradeEnabled')}
-          </span>
-          <p className="text-[11px] text-muted-foreground">
-            {t('settings.upgradeEnabledHint')}
-          </p>
+          <span className="text-sm font-medium">{t('settings.upgradeEnabled')}</span>
+          <p className="text-[11px] text-muted-foreground">{t('settings.upgradeEnabledHint')}</p>
         </div>
         <Switch size="sm" checked={isEnabled} onCheckedChange={handleToggle} />
       </div>
@@ -1274,9 +1154,7 @@ function UpgradeSection({ open }: { open: boolean }) {
               {t('settings.upgradeUpToDate')}
             </div>
           ) : (
-            <div className="text-xs text-muted-foreground">
-              {t('settings.upgradeNoRelease')}
-            </div>
+            <div className="text-xs text-muted-foreground">{t('settings.upgradeNoRelease')}</div>
           )}
 
           <div className="mt-2 flex items-center justify-between">
@@ -1295,12 +1173,7 @@ function UpgradeSection({ open }: { open: boolean }) {
               onClick={handleCheck}
               disabled={checkForUpdates.isPending}
             >
-              <RefreshCw
-                className={cn(
-                  'h-3 w-3',
-                  checkForUpdates.isPending && 'animate-spin',
-                )}
-              />
+              <RefreshCw className={cn('h-3 w-3', checkForUpdates.isPending && 'animate-spin')} />
               {t('settings.upgradeCheckNow')}
             </Button>
           </div>
@@ -1357,16 +1230,12 @@ function EngineCard({
             )}
           </div>
           <div className="flex items-center gap-1.5 mt-0.5 text-xs text-muted-foreground">
-            {selectedModelName ? (
-              <span className="truncate">{selectedModelName}</span>
-            ) : null}
+            {selectedModelName ? <span className="truncate">{selectedModelName}</span> : null}
             {selectedModelName && hasModels ? (
               <span className="text-muted-foreground/50">·</span>
             ) : null}
             {hasModels ? (
-              <span className="shrink-0">
-                {t('settings.models', { count: models.length })}
-              </span>
+              <span className="shrink-0">{t('settings.models', { count: models.length })}</span>
             ) : null}
           </div>
         </div>
@@ -1377,10 +1246,7 @@ function EngineCard({
               {engine.authStatus === 'authenticated' ? (
                 <StatusBadge ok label={t('settings.engineAuthenticated')} />
               ) : engine.authStatus === 'unauthenticated' ? (
-                <StatusBadge
-                  ok={false}
-                  label={t('settings.engineUnauthenticated')}
-                />
+                <StatusBadge ok={false} label={t('settings.engineUnauthenticated')} />
               ) : null}
             </>
           ) : (
@@ -1418,9 +1284,7 @@ function EngineCard({
               >
                 <span className="flex-1 truncate">
                   {m.name}
-                  {m.isDefault
-                    ? ` (${t('createIssue.engineLabel.default')})`
-                    : ''}
+                  {m.isDefault ? ` (${t('createIssue.engineLabel.default')})` : ''}
                 </span>
                 {isSelected ? <Check className="h-3 w-3 shrink-0" /> : null}
               </button>
@@ -1442,11 +1306,7 @@ function StatusBadge({ ok, label }: { ok: boolean; label: string }) {
           : 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
       )}
     >
-      {ok ? (
-        <Check className="h-2.5 w-2.5" />
-      ) : (
-        <CircleAlert className="h-2.5 w-2.5" />
-      )}
+      {ok ? <Check className="h-2.5 w-2.5" /> : <CircleAlert className="h-2.5 w-2.5" />}
       {label}
     </span>
   )

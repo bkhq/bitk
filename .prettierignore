@@ -1,0 +1,11 @@
+dist
+build
+.next
+.out
+.wrangler
+.turbo
+.cache
+node_modules
+bun.lock
+apps/api/drizzle
+apps/frontend/src/components/ui

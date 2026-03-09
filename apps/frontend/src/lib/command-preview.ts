@@ -3,10 +3,7 @@ export interface CommandPreview {
   isTruncated: boolean
 }
 
-export function getCommandPreview(
-  command: string,
-  maxChars = 90,
-): CommandPreview {
+export function getCommandPreview(command: string, maxChars = 90): CommandPreview {
   const compact = command.replace(/\s+/g, ' ').trim()
   if (!compact) {
     return { summary: '', isTruncated: false }

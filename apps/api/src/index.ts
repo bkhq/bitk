@@ -4,35 +4,22 @@ import { serveStatic, websocket } from 'hono/bun'
 import app from './app'
 import { embeddedStatic } from './embedded-static'
 import { issueEngine } from './engines/issue'
-import {
-  migrateSlashCommandsKey,
-  refreshSlashCommandsCache,
-} from './engines/issue/queries'
+import { migrateSlashCommandsKey, refreshSlashCommandsCache } from './engines/issue/queries'
 import {
   registerSettledReconciliation,
   startPeriodicReconciliation,
   startupReconciliation,
   stopPeriodicReconciliation,
 } from './engines/reconciler'
-import {
-  startChangesSummaryWatcher,
-  stopChangesSummaryWatcher,
-} from './events/changes-summary'
+import { startChangesSummaryWatcher, stopChangesSummaryWatcher } from './events/changes-summary'
 import { startUploadCleanup } from './jobs/upload-cleanup'
 import { startWorktreeCleanup } from './jobs/worktree-cleanup'
 import { logger } from './logger'
 import { APP_DIR, ROOT_DIR } from './root'
 import { printStartupBanner } from './startup-banner'
 import { staticAssets } from './static-assets'
-import {
-  initUpgradeSystem,
-  registerShutdownForUpgrade,
-  stopPeriodicCheck,
-} from './upgrade/service'
-import {
-  initWebhookDispatcher,
-  startDeliveryCleanup,
-} from './webhooks/dispatcher'
+import { initUpgradeSystem, registerShutdownForUpgrade, stopPeriodicCheck } from './upgrade/service'
+import { initWebhookDispatcher, startDeliveryCleanup } from './webhooks/dispatcher'
 
 // ---------- Global error handlers ----------
 // Catch unhandled promise rejections so they are always logged.
@@ -91,9 +78,7 @@ if (staticAssets.size > 0) {
 } else {
   // In package mode, static files live in APP_DIR/public/.
   // In dev mode, they live in apps/frontend/dist/.
-  const staticRoot = APP_DIR
-    ? resolve(APP_DIR, 'public')
-    : resolve(ROOT_DIR, 'apps/frontend/dist')
+  const staticRoot = APP_DIR ? resolve(APP_DIR, 'public') : resolve(ROOT_DIR, 'apps/frontend/dist')
   if (existsSync(staticRoot)) {
     app.use(
       '/assets/*',

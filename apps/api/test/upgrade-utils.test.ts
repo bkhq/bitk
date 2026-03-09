@@ -54,9 +54,7 @@ describe('parseVersionFromFileName', () => {
   it('extracts version from valid app package filenames', () => {
     expect(parseVersionFromFileName('bkd-app-v0.0.5.tar.gz')).toBe('0.0.5')
     expect(parseVersionFromFileName('bkd-app-v1.2.3.tar.gz')).toBe('1.2.3')
-    expect(parseVersionFromFileName('bkd-app-v10.20.30.tar.gz')).toBe(
-      '10.20.30',
-    )
+    expect(parseVersionFromFileName('bkd-app-v10.20.30.tar.gz')).toBe('10.20.30')
   })
 
   it('returns null for binary filenames', () => {
@@ -95,9 +93,7 @@ describe('VALID_FILE_NAME_RE', () => {
 
   it('matches launcher filenames', () => {
     expect(VALID_FILE_NAME_RE.test('bkd-launcher-linux-x64-v0.0.5')).toBe(true)
-    expect(VALID_FILE_NAME_RE.test('bkd-launcher-darwin-arm64-v1.0.0')).toBe(
-      true,
-    )
+    expect(VALID_FILE_NAME_RE.test('bkd-launcher-darwin-arm64-v1.0.0')).toBe(true)
   })
 
   it('rejects path traversal attempts', () => {
@@ -129,12 +125,8 @@ describe('VALID_FILE_NAME_RE', () => {
 
 describe('isPathWithinDir', () => {
   it('accepts paths within the directory', () => {
-    expect(isPathWithinDir('/data/updates/file.tar.gz', '/data/updates')).toBe(
-      true,
-    )
-    expect(isPathWithinDir('/data/updates/subdir/file', '/data/updates')).toBe(
-      true,
-    )
+    expect(isPathWithinDir('/data/updates/file.tar.gz', '/data/updates')).toBe(true)
+    expect(isPathWithinDir('/data/updates/subdir/file', '/data/updates')).toBe(true)
   })
 
   it('rejects paths outside the directory', () => {
@@ -148,20 +140,18 @@ describe('isPathWithinDir', () => {
 
   it('rejects directory prefix attacks', () => {
     // "/data/updates-evil/file" starts with "/data/updates" but is outside
-    expect(isPathWithinDir('/data/updates-evil/file', '/data/updates')).toBe(
-      false,
-    )
+    expect(isPathWithinDir('/data/updates-evil/file', '/data/updates')).toBe(false)
   })
 })
 
 describe('resolveDownloadFileName', () => {
   it('returns original name when it already has a version suffix', () => {
-    expect(
-      resolveDownloadFileName('bkd-linux-x64-v0.0.3', '0.0.3', false),
-    ).toBe('bkd-linux-x64-v0.0.3')
-    expect(
-      resolveDownloadFileName('bkd-app-v0.0.5.tar.gz', '0.0.5', true),
-    ).toBe('bkd-app-v0.0.5.tar.gz')
+    expect(resolveDownloadFileName('bkd-linux-x64-v0.0.3', '0.0.3', false)).toBe(
+      'bkd-linux-x64-v0.0.3',
+    )
+    expect(resolveDownloadFileName('bkd-app-v0.0.5.tar.gz', '0.0.5', true)).toBe(
+      'bkd-app-v0.0.5.tar.gz',
+    )
   })
 
   it('constructs versioned filename for unversioned binary assets', () => {

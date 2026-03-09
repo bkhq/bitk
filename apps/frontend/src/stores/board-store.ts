@@ -7,9 +7,7 @@ import type { Issue } from '@/types/kanban'
 type DragOverEvent = Parameters<
   NonNullable<Parameters<typeof DragDropProvider>[0]['onDragOver']>
 >[0]
-type DragEndEvent = Parameters<
-  NonNullable<Parameters<typeof DragDropProvider>[0]['onDragEnd']>
->[0]
+type DragEndEvent = Parameters<NonNullable<Parameters<typeof DragDropProvider>[0]['onDragEnd']>>[0]
 
 interface BoardState {
   groupedItems: Record<string, Issue[]>
@@ -17,9 +15,7 @@ interface BoardState {
 
   syncFromServer: (issues: Issue[]) => void
   applyDragOver: (event: DragOverEvent) => void
-  applyDragEnd: (
-    event: DragEndEvent,
-  ) => Array<{ id: string; statusId: string; sortOrder: number }>
+  applyDragEnd: (event: DragEndEvent) => Array<{ id: string; statusId: string; sortOrder: number }>
   resetDragging: () => void
 }
 
@@ -36,8 +32,7 @@ export const useBoardStore = create<BoardState>((set, get) => ({
         .sort((a, b) => {
           // Primary: statusUpdatedAt DESC (most recently changed first)
           const timeDiff =
-            new Date(b.statusUpdatedAt).getTime() -
-            new Date(a.statusUpdatedAt).getTime()
+            new Date(b.statusUpdatedAt).getTime() - new Date(a.statusUpdatedAt).getTime()
           if (timeDiff !== 0) return timeDiff
           // Tiebreaker: sortOrder ASC (preserves drag reorder)
           return a.sortOrder - b.sortOrder

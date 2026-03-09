@@ -6,14 +6,7 @@ import { db } from '../src/db'
 import { issues as issuesTable } from '../src/db/schema'
 import { engineRegistry } from '../src/engines/executors'
 import { issueEngine } from '../src/engines/issue'
-import {
-  api,
-  createTestProject,
-  expectSuccess,
-  get,
-  post,
-  waitFor,
-} from './helpers'
+import { api, createTestProject, expectSuccess, get, post, waitFor } from './helpers'
 import './setup'
 
 interface Issue {
@@ -44,15 +37,11 @@ async function createCompletedIssue(title: string): Promise<Issue> {
   )
 
   await waitFor(async () => {
-    const r = await get<Issue>(
-      `/api/projects/${projectId}/issues/${created.id}`,
-    )
+    const r = await get<Issue>(`/api/projects/${projectId}/issues/${created.id}`)
     return expectSuccess(r).statusId === 'review'
   }, 5000)
 
-  return expectSuccess(
-    await get<Issue>(`/api/projects/${projectId}/issues/${created.id}`),
-  )
+  return expectSuccess(await get<Issue>(`/api/projects/${projectId}/issues/${created.id}`))
 }
 
 describe('Execute/Restart spawn failure rollback', () => {
@@ -68,10 +57,10 @@ describe('Execute/Restart spawn failure rollback', () => {
     }
 
     try {
-      const result = await post<unknown>(
-        `/api/projects/${projectId}/issues/${issue.id}/execute`,
-        { engineType: 'echo', prompt: 'force execute failure' },
-      )
+      const result = await post<unknown>(`/api/projects/${projectId}/issues/${issue.id}/execute`, {
+        engineType: 'echo',
+        prompt: 'force execute failure',
+      })
       expect(result.status).toBe(400)
 
       const refreshed = expectSuccess(
@@ -148,9 +137,7 @@ describe('Delete paths terminate active processes', () => {
       expect(expectSuccess(result).id).toBe(issue.id)
       expect(terminatedIssueIds).toEqual([issue.id])
 
-      const deleted = await get<Issue>(
-        `/api/projects/${projectId}/issues/${issue.id}`,
-      )
+      const deleted = await get<Issue>(`/api/projects/${projectId}/issues/${issue.id}`)
       expect(deleted.status).toBe(404)
     } finally {
       ;(issueEngine as any).terminateProcess = originalTerminate
@@ -182,9 +169,7 @@ describe('Delete paths terminate active processes', () => {
       // Best-effort: terminate failure is logged but deletion proceeds
       expect(result.status).toBe(200)
 
-      const deleted = await get<Issue>(
-        `/api/projects/${projectId}/issues/${issue.id}`,
-      )
+      const deleted = await get<Issue>(`/api/projects/${projectId}/issues/${issue.id}`)
       expect(deleted.status).toBe(404)
     } finally {
       ;(issueEngine as any).terminateProcess = originalTerminate
@@ -231,21 +216,14 @@ describe('Delete paths terminate active processes', () => {
     }
 
     try {
-      const result = await api<{ id: string }>(
-        'DELETE',
-        `/api/projects/${project.id}`,
-      )
+      const result = await api<{ id: string }>('DELETE', `/api/projects/${project.id}`)
       expect(result.status).toBe(200)
       expect(expectSuccess(result).id).toBe(project.id)
 
-      expect(new Set(terminatedIssueIds)).toEqual(
-        new Set([runningIssue.id, pendingIssue.id]),
-      )
+      expect(new Set(terminatedIssueIds)).toEqual(new Set([runningIssue.id, pendingIssue.id]))
       expect(terminatedIssueIds.includes(idleIssue.id)).toBe(false)
 
-      const projectAfter = await get<{ id: string }>(
-        `/api/projects/${project.id}`,
-      )
+      const projectAfter = await get<{ id: string }>(`/api/projects/${project.id}`)
       expect(projectAfter.status).toBe(404)
     } finally {
       ;(issueEngine as any).terminateProcess = originalTerminate
@@ -275,10 +253,7 @@ describe('Delete paths terminate active processes', () => {
     }
 
     try {
-      const result = await api<{ id: string }>(
-        'DELETE',
-        `/api/projects/${project.id}`,
-      )
+      const result = await api<{ id: string }>('DELETE', `/api/projects/${project.id}`)
       // Best-effort: terminate failure is logged but deletion proceeds
       expect(result.status).toBe(200)
 
@@ -302,11 +277,9 @@ describe('Auto execute status fallback', () => {
     ).path
 
     try {
-      const setWorkspace = await api<{ path: string }>(
-        'PATCH',
-        '/api/settings/workspace-path',
-        { path: workspaceRoot },
-      )
+      const setWorkspace = await api<{ path: string }>('PATCH', '/api/settings/workspace-path', {
+        path: workspaceRoot,
+      })
       expect(setWorkspace.status).toBe(200)
 
       const project = expectSuccess(
@@ -327,9 +300,7 @@ describe('Auto execute status fallback', () => {
       expect(issue.sessionStatus).toBe('pending')
 
       await waitFor(async () => {
-        const r = await get<Issue>(
-          `/api/projects/${project.id}/issues/${issue.id}`,
-        )
+        const r = await get<Issue>(`/api/projects/${project.id}/issues/${issue.id}`)
         return expectSuccess(r).sessionStatus === 'failed'
       }, 5000)
     } finally {

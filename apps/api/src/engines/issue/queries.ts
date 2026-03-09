@@ -19,12 +19,7 @@ const EMPTY_CATEGORIZED: CategorizedCommands = {
 }
 
 /** All known engine types for cache loading. */
-const ALL_ENGINE_TYPES: EngineType[] = [
-  'claude-code',
-  'codex',
-  'gemini',
-  'echo',
-]
+const ALL_ENGINE_TYPES: EngineType[] = ['claude-code', 'codex', 'gemini', 'echo']
 
 /** Per-engine in-memory cache for categorized commands from DB. */
 const cachedCommands = new Map<EngineType, CategorizedCommands>()
@@ -43,17 +38,11 @@ function parseCategorized(raw: string): CategorizedCommands | null {
     const parsed = JSON.parse(raw)
     // Legacy format: plain string[]
     if (Array.isArray(parsed)) {
-      return parsed.length > 0
-        ? { commands: parsed as string[], agents: [], plugins: [] }
-        : null
+      return parsed.length > 0 ? { commands: parsed as string[], agents: [], plugins: [] } : null
     }
     // New format: { commands, agents, plugins }
     const cat = parsed as CategorizedCommands
-    if (
-      cat.commands?.length > 0 ||
-      cat.agents?.length > 0 ||
-      cat.plugins?.length > 0
-    ) {
+    if (cat.commands?.length > 0 || cat.agents?.length > 0 || cat.plugins?.length > 0) {
       return {
         commands: cat.commands ?? [],
         agents: cat.agents ?? [],
@@ -82,9 +71,7 @@ export async function refreshSlashCommandsCache(): Promise<void> {
 }
 
 /** Refresh cache for a single engine type. */
-export async function refreshSlashCommandsCacheForEngine(
-  engineType: EngineType,
-): Promise<void> {
+export async function refreshSlashCommandsCacheForEngine(engineType: EngineType): Promise<void> {
   const raw = await getAppSetting(slashCommandsKey(engineType))
   const cat = raw ? parseCategorized(raw) : null
   if (cat) {
@@ -94,9 +81,7 @@ export async function refreshSlashCommandsCacheForEngine(
   }
 }
 
-export function getCachedCategorizedCommands(
-  engineType?: EngineType,
-): CategorizedCommands {
+export function getCachedCategorizedCommands(engineType?: EngineType): CategorizedCommands {
   if (engineType) return cachedCommands.get(engineType) ?? EMPTY_CATEGORIZED
   // Fallback: merge all engines
   const merged: CategorizedCommands = { commands: [], agents: [], plugins: [] }
@@ -179,8 +164,7 @@ export function getLogs(
   //   cursor mode  → entries must be after the cursor (forward pagination)
   //   reverse mode → entries must be after the DB page's newest entry
   //   neither      → no bound (include all ring buffer entries)
-  const newestDbId =
-    persisted.length > 0 ? persisted[persisted.length - 1].messageId : undefined
+  const newestDbId = persisted.length > 0 ? persisted[persisted.length - 1].messageId : undefined
   const lowerBound = opts?.cursor ?? newestDbId
 
   const merged = [...persisted]
@@ -214,17 +198,11 @@ export function getActiveProcessesList(ctx: EngineContext): ManagedProcess[] {
   return getActiveProcesses(ctx)
 }
 
-export function getProcess(
-  ctx: EngineContext,
-  executionId: string,
-): ManagedProcess | undefined {
+export function getProcess(ctx: EngineContext, executionId: string): ManagedProcess | undefined {
   return ctx.pm.get(executionId)?.meta
 }
 
-export function hasActiveProcessForIssue(
-  ctx: EngineContext,
-  issueId: string,
-): boolean {
+export function hasActiveProcessForIssue(ctx: EngineContext, issueId: string): boolean {
   return getActiveProcessForIssue(ctx, issueId) !== undefined
 }
 
@@ -241,9 +219,7 @@ export function getCategorizedCommands(
   const active = getActiveProcessForIssue(ctx, issueId)
   if (
     active &&
-    (active.slashCommands.length > 0 ||
-      active.agents.length > 0 ||
-      active.plugins.length > 0)
+    (active.slashCommands.length > 0 || active.agents.length > 0 || active.plugins.length > 0)
   ) {
     return {
       commands: active.slashCommands,
@@ -266,7 +242,5 @@ export function getSlashCommands(
 
 export async function cancelAll(ctx: EngineContext): Promise<void> {
   const active = getActiveProcesses(ctx)
-  await Promise.all(
-    active.map((p) => cancel(ctx, p.executionId, { hard: true })),
-  )
+  await Promise.all(active.map((p) => cancel(ctx, p.executionId, { hard: true })))
 }

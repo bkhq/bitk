@@ -10,10 +10,7 @@ const startedAt = Date.now()
 // GET /api/settings/system-info
 about.get('/system-info', async (c) => {
   const versionInfo = getVersionInfo()
-  const [serverName, serverUrl] = await Promise.all([
-    getServerName(),
-    getServerUrl(),
-  ])
+  const [serverName, serverUrl] = await Promise.all([getServerName(), getServerUrl()])
 
   return c.json({
     success: true,

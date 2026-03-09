@@ -26,10 +26,10 @@ bun run dev:api          # API only (port 3010)
 bun run dev:frontend     # Frontend only (port 3000)
 
 # Code Quality
-bun run lint             # Biome check (all workspaces)
-bun run lint:fix         # Biome auto-fix
-bun run format           # Biome format
-bun run format:check     # Check formatting only
+bun run lint             # ESLint check (all workspaces)
+bun run lint:fix         # ESLint auto-fix
+bun run format           # Prettier format
+bun run format:check     # Prettier check
 
 # Testing
 bun run test             # All tests (parallel)
@@ -61,17 +61,17 @@ bun scripts/package.ts --version 0.0.6 --skip-frontend
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Runtime | [Bun](https://bun.sh) |
-| Backend | [Hono](https://hono.dev) |
-| Database | SQLite + [Drizzle ORM](https://orm.drizzle.team) |
-| Frontend | React 19 + [Vite](https://vite.dev) 7 |
-| Styling | [Tailwind CSS](https://tailwindcss.com) v4 + [shadcn/ui](https://ui.shadcn.com) |
-| DnD | [@dnd-kit/react](https://dndkit.com) |
-| Terminal | [xterm.js](https://xtermjs.org) |
-| i18n | [i18next](https://www.i18next.com) |
-| Linting | [Biome](https://biomejs.dev) |
+| Layer    | Technology                                                                      |
+| -------- | ------------------------------------------------------------------------------- |
+| Runtime  | [Bun](https://bun.sh)                                                           |
+| Backend  | [Hono](https://hono.dev)                                                        |
+| Database | SQLite + [Drizzle ORM](https://orm.drizzle.team)                                |
+| Frontend | React 19 + [Vite](https://vite.dev) 7                                           |
+| Styling  | [Tailwind CSS](https://tailwindcss.com) v4 + [shadcn/ui](https://ui.shadcn.com) |
+| DnD      | [@dnd-kit/react](https://dndkit.com)                                            |
+| Terminal | [xterm.js](https://xtermjs.org)                                                 |
+| i18n     | [i18next](https://www.i18next.com)                                              |
+| Linting  | [ESLint](https://eslint.org) + [Prettier](https://prettier.io)                  |
 
 ## Project Structure
 
@@ -214,28 +214,28 @@ The engine layer is the most complex part of the backend:
 
 ### API (`apps/api/.env`)
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `HOST` | Listen address | `0.0.0.0` |
-| `PORT` | Listen port | `3000` |
-| `API_SECRET` | Bearer token for auth (unset = no auth) | — |
-| `ALLOWED_ORIGIN` | CORS allowed origin | `*` |
-| `DB_PATH` | SQLite database path | `data/db/bkd.db` |
-| `LOG_LEVEL` | Log level | `info` (binary) / `debug` (dev) |
-| `SERVICE_NAME` | Logger name prefix | `bkd` |
-| `LOG_EXECUTOR_IO` | Log executor stdin/stdout | `1` |
-| `MAX_CONCURRENT_EXECUTIONS` | Max parallel agent sessions | `5` |
-| `ANTHROPIC_API_KEY` | Claude API key | — |
-| `OPENAI_API_KEY` | OpenAI / Codex API key | — |
-| `CODEX_API_KEY` | Codex-specific API key (fallback) | — |
-| `GOOGLE_API_KEY` | Google Gemini API key | — |
-| `GEMINI_API_KEY` | Gemini-specific API key (fallback) | — |
-| `ENABLE_RUNTIME_ENDPOINT` | Enable `/api/runtime` debug endpoint | disabled |
+| Variable                    | Description                             | Default                         |
+| --------------------------- | --------------------------------------- | ------------------------------- |
+| `HOST`                      | Listen address                          | `0.0.0.0`                       |
+| `PORT`                      | Listen port                             | `3000`                          |
+| `API_SECRET`                | Bearer token for auth (unset = no auth) | —                               |
+| `ALLOWED_ORIGIN`            | CORS allowed origin                     | `*`                             |
+| `DB_PATH`                   | SQLite database path                    | `data/db/bkd.db`                |
+| `LOG_LEVEL`                 | Log level                               | `info` (binary) / `debug` (dev) |
+| `SERVICE_NAME`              | Logger name prefix                      | `bkd`                           |
+| `LOG_EXECUTOR_IO`           | Log executor stdin/stdout               | `1`                             |
+| `MAX_CONCURRENT_EXECUTIONS` | Max parallel agent sessions             | `5`                             |
+| `ANTHROPIC_API_KEY`         | Claude API key                          | —                               |
+| `OPENAI_API_KEY`            | OpenAI / Codex API key                  | —                               |
+| `CODEX_API_KEY`             | Codex-specific API key (fallback)       | —                               |
+| `GOOGLE_API_KEY`            | Google Gemini API key                   | —                               |
+| `GEMINI_API_KEY`            | Gemini-specific API key (fallback)      | —                               |
+| `ENABLE_RUNTIME_ENDPOINT`   | Enable `/api/runtime` debug endpoint    | disabled                        |
 
 ### Frontend (`apps/frontend/.env`)
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `VITE_DEV_PORT` | Dev server port | `3000` |
-| `VITE_DEV_HOST` | Dev server host | `0.0.0.0` |
-| `VITE_API_PORT` | API port for dev proxy | `3010` |
+| Variable        | Description            | Default   |
+| --------------- | ---------------------- | --------- |
+| `VITE_DEV_PORT` | Dev server port        | `3000`    |
+| `VITE_DEV_HOST` | Dev server host        | `0.0.0.0` |
+| `VITE_API_PORT` | API port for dev proxy | `3010`    |

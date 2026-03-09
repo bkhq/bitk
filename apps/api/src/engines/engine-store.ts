@@ -52,11 +52,9 @@ export async function updateIssueSession(
 ): Promise<IssueRow | undefined> {
   const updates: Record<string, unknown> = {}
   if (changes.engineType !== undefined) updates.engineType = changes.engineType
-  if (changes.sessionStatus !== undefined)
-    updates.sessionStatus = changes.sessionStatus
+  if (changes.sessionStatus !== undefined) updates.sessionStatus = changes.sessionStatus
   if (changes.prompt !== undefined) updates.prompt = changes.prompt
-  if (changes.externalSessionId !== undefined)
-    updates.externalSessionId = changes.externalSessionId
+  if (changes.externalSessionId !== undefined) updates.externalSessionId = changes.externalSessionId
   if (changes.model !== undefined) updates.model = changes.model
 
   if (Object.keys(updates).length === 0) {

@@ -2,9 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import type { NormalizedLogEntry } from '@bkd/shared'
 import { ExecutionStore } from '@/engines/issue/store/execution-store'
 
-function makeEntry(
-  overrides: Partial<NormalizedLogEntry> = {},
-): NormalizedLogEntry {
+function makeEntry(overrides: Partial<NormalizedLogEntry> = {}): NormalizedLogEntry {
   return {
     entryType: 'assistant-message',
     content: 'hello',

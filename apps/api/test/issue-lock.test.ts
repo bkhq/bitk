@@ -38,12 +38,7 @@ describe('withIssueLock deep behavior', () => {
     await expect(first).resolves.toBe('first')
     await expect(second).resolves.toBe('second')
 
-    expect(order).toEqual([
-      'first:start',
-      'first:end',
-      'second:start',
-      'second:end',
-    ])
+    expect(order).toEqual(['first:start', 'first:end', 'second:start', 'second:end'])
     expect(ctx.lockDepth.size).toBe(0)
     expect(ctx.issueOpLocks.size).toBe(0)
   })
@@ -63,13 +58,9 @@ describe('withIssueLock deep behavior', () => {
     await Bun.sleep(5)
 
     // Current implementation counts active holder + queued entries in lockDepth.
-    const queued = Array.from({ length: 9 }, () =>
-      withIssueLock(ctx, issueId, async () => {}),
-    )
+    const queued = Array.from({ length: 9 }, () => withIssueLock(ctx, issueId, async () => {}))
 
-    await expect(withIssueLock(ctx, issueId, async () => {})).rejects.toThrow(
-      'Lock queue full',
-    )
+    await expect(withIssueLock(ctx, issueId, async () => {})).rejects.toThrow('Lock queue full')
 
     if (!releaseFirst) {
       throw new Error('failed to capture releaseFirst')
@@ -95,9 +86,9 @@ describe('withIssueLock deep behavior', () => {
     }) as typeof setTimeout
 
     try {
-      await expect(
-        withIssueLock(ctx, issueId, async () => 'unreachable'),
-      ).rejects.toThrow('Lock acquire timeout')
+      await expect(withIssueLock(ctx, issueId, async () => 'unreachable')).rejects.toThrow(
+        'Lock acquire timeout',
+      )
 
       expect(ctx.issueOpLocks.get(issueId)).toBe(never)
       expect(ctx.lockDepth.get(issueId)).toBe(1)

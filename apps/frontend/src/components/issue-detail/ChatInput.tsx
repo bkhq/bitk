@@ -20,23 +20,14 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Textarea } from '@/components/ui/textarea'
 import { useChangesSummary } from '@/hooks/use-changes-summary'
 import { useEngineAvailability, useFollowUpIssue } from '@/hooks/use-kanban'
@@ -88,11 +79,7 @@ export function ChatInput({
   sessionStatus?: SessionStatus | null
   statusId?: string
   isThinking?: boolean
-  onMessageSent?: (
-    messageId: string,
-    prompt: string,
-    metadata?: Record<string, unknown>,
-  ) => void
+  onMessageSent?: (messageId: string, prompt: string, metadata?: Record<string, unknown>) => void
   slashCommands?: string[]
   agentCommands?: string[]
   pluginCommands?: Array<{ name: string; path: string }>
@@ -195,8 +182,7 @@ export function ChatInput({
   const [mode, setMode] = useState<ModeOption>('auto')
   const [busyAction, setBusyAction] = useState<BusyAction>('queue')
   const activeModel = selectedModel || model || ''
-  const isSessionActive =
-    sessionStatus === 'running' || sessionStatus === 'pending'
+  const isSessionActive = sessionStatus === 'running' || sessionStatus === 'pending'
   const effectiveBusyAction: BusyAction | undefined = isSessionActive
     ? isThinking
       ? 'queue'
@@ -217,20 +203,14 @@ export function ChatInput({
   const allCommands: TaggedCommand[] = useMemo(() => {
     const norm = (cmd: string) => (cmd.startsWith('/') ? cmd : `/${cmd}`)
     const items: TaggedCommand[] = []
-    for (const cmd of slashCommands)
-      items.push({ value: norm(cmd), category: 'command' })
-    for (const a of agentCommands)
-      items.push({ value: norm(a), category: 'agent' })
-    for (const p of pluginCommands)
-      items.push({ value: norm(p.name), category: 'plugin' })
+    for (const cmd of slashCommands) items.push({ value: norm(cmd), category: 'command' })
+    for (const a of agentCommands) items.push({ value: norm(a), category: 'agent' })
+    for (const p of pluginCommands) items.push({ value: norm(p.name), category: 'plugin' })
     return items
   }, [slashCommands, agentCommands, pluginCommands])
 
   // All command values for command detection in handleSend
-  const normalizedCommands = useMemo(
-    () => allCommands.map((c) => c.value),
-    [allCommands],
-  )
+  const normalizedCommands = useMemo(() => allCommands.map((c) => c.value), [allCommands])
 
   // Inline command menu: show when input starts with "/" and has no spaces yet
   const commandQuery = useMemo(() => {
@@ -241,8 +221,7 @@ export function ChatInput({
   }, [input])
 
   const filteredCommands = useMemo(() => {
-    if (commandQuery === null || allCommands.length === 0)
-      return [] as TaggedCommand[]
+    if (commandQuery === null || allCommands.length === 0) return [] as TaggedCommand[]
     if (commandQuery === '') return allCommands
     return allCommands.filter((item) => {
       const target = item.value.toLowerCase()
@@ -267,9 +246,7 @@ export function ChatInput({
 
   const normalizedPrompt = normalizePrompt(input)
   const canSend =
-    (normalizedPrompt.length > 0 || attachedFiles.length > 0) &&
-    !!issueId &&
-    !!projectId
+    (normalizedPrompt.length > 0 || attachedFiles.length > 0) && !!issueId && !!projectId
 
   const addFiles = useCallback(
     (incoming: File[]) => {
@@ -292,9 +269,7 @@ export function ChatInput({
             break
           }
           // Deduplicate by name+size
-          if (
-            !combined.some((f) => f.name === file.name && f.size === file.size)
-          ) {
+          if (!combined.some((f) => f.name === file.name && f.size === file.size)) {
             combined.push(file)
           }
         }
@@ -309,11 +284,7 @@ export function ChatInput({
       const removed = prev[index]
       // Clear preview if the removed file is currently being previewed
       setPreviewFile((current) =>
-        current &&
-        current.name === removed.name &&
-        current.size === removed.size
-          ? null
-          : current,
+        current && current.name === removed.name && current.size === removed.size ? null : current,
       )
       return prev.filter((_, i) => i !== index)
     })
@@ -361,8 +332,7 @@ export function ChatInput({
         const firstWord = prompt.split(/\s/)[0] ?? ''
         const isCommand =
           firstWord.startsWith('/') &&
-          (normalizedCommands.length === 0 ||
-            normalizedCommands.some((cmd) => cmd === firstWord))
+          (normalizedCommands.length === 0 || normalizedCommands.some((cmd) => cmd === firstWord))
         const metadata: Record<string, unknown> | undefined = isTodo
           ? {
               type: 'pending',
@@ -453,12 +423,9 @@ export function ChatInput({
     }
   }
 
-  const handleInput = useCallback(
-    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      setInput(e.target.value)
-    },
-    [],
-  )
+  const handleInput = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInput(e.target.value)
+  }, [])
 
   const handlePaste = useCallback(
     (e: React.ClipboardEvent) => {
@@ -521,9 +488,7 @@ export function ChatInput({
       const onMove = (ev: MouseEvent) => {
         if (!dragRef.current.active) return
         const delta = dragRef.current.startY - ev.clientY
-        setTextareaH(
-          Math.max(36, Math.min(480, dragRef.current.startH + delta)),
-        )
+        setTextareaH(Math.max(36, Math.min(480, dragRef.current.startH + delta)))
       }
       const cleanup = () => {
         dragRef.current.active = false
@@ -607,11 +572,7 @@ export function ChatInput({
             ) : null}
             <ModeSelect value={mode} onChange={setMode} />
             {models.length > 0 ? (
-              <ModelSelect
-                models={models}
-                value={activeModel}
-                onChange={setSelectedModel}
-              />
+              <ModelSelect models={models} value={activeModel} onChange={setSelectedModel} />
             ) : null}
           </div>
         </div>
@@ -645,9 +606,7 @@ export function ChatInput({
                   <code className="font-mono">{item.value}</code>
                   {item.category !== 'command' ? (
                     <span className="ml-auto text-[10px] text-muted-foreground/60 uppercase tracking-wider">
-                      {t(
-                        `chat.${item.category === 'agent' ? 'agents' : 'plugins'}`,
-                      )}
+                      {t(`chat.${item.category === 'agent' ? 'agents' : 'plugins'}`)}
                     </span>
                   ) : null}
                 </button>
@@ -664,11 +623,7 @@ export function ChatInput({
             onChange={handleInput}
             onKeyDown={handleKeyDown}
             onPaste={handlePaste}
-            placeholder={
-              statusId === 'todo'
-                ? t('chat.placeholderTodo')
-                : t('chat.placeholder')
-            }
+            placeholder={statusId === 'todo' ? t('chat.placeholderTodo') : t('chat.placeholder')}
             style={{ height: `${textareaH}px` }}
             className="w-full bg-transparent text-base md:text-sm resize-none outline-none border-none shadow-none placeholder:text-muted-foreground/40 leading-relaxed focus-visible:ring-0 overflow-y-auto"
           />
@@ -689,9 +644,7 @@ export function ChatInput({
                   <FileText className="h-3 w-3 shrink-0 text-muted-foreground" />
                 )}
                 <span className="truncate max-w-[120px]">{file.name}</span>
-                <span className="text-muted-foreground/60">
-                  {formatFileSize(file.size)}
-                </span>
+                <span className="text-muted-foreground/60">{formatFileSize(file.size)}</span>
                 <button
                   type="button"
                   onClick={(e) => {
@@ -755,11 +708,7 @@ export function ChatInput({
             </Button>
           </div>
 
-          <Button
-            type="button"
-            disabled={!canSend || followUp.isPending}
-            onClick={handleSend}
-          >
+          <Button type="button" disabled={!canSend || followUp.isPending} onClick={handleSend}>
             {followUp.isPending ? (
               <span className="flex items-center gap-1.5">
                 <Loader2 className="size-3.5 animate-spin" />
@@ -774,10 +723,7 @@ export function ChatInput({
 
       {/* File preview modal — shadcn Dialog */}
       {previewFile ? (
-        <FilePreviewModal
-          file={previewFile}
-          onClose={() => setPreviewFile(null)}
-        />
+        <FilePreviewModal file={previewFile} onClose={() => setPreviewFile(null)} />
       ) : null}
     </div>
   )
@@ -786,13 +732,7 @@ export function ChatInput({
 // ─── FilePreviewModal ────────────────────────────────────────────────────────
 // Replaced custom modal with shadcn Dialog
 
-function FilePreviewModal({
-  file,
-  onClose,
-}: {
-  file: File
-  onClose: () => void
-}) {
+function FilePreviewModal({ file, onClose }: { file: File; onClose: () => void }) {
   const { t } = useTranslation()
   const [imageUrl, setImageUrl] = useState<string | null>(null)
 
@@ -814,9 +754,7 @@ function FilePreviewModal({
           ) : (
             <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
           )}
-          <DialogTitle className="text-sm font-medium truncate">
-            {file.name}
-          </DialogTitle>
+          <DialogTitle className="text-sm font-medium truncate">{file.name}</DialogTitle>
         </DialogHeader>
 
         <div className="p-4 overflow-auto max-h-[calc(80vh-56px)]">
@@ -834,8 +772,7 @@ function FilePreviewModal({
               <div className="text-center space-y-1">
                 <p className="text-sm font-medium truncate">{file.name}</p>
                 <p className="text-xs text-muted-foreground">
-                  {file.type || t('chat.unknownType')} &middot;{' '}
-                  {formatFileSize(file.size)}
+                  {file.type || t('chat.unknownType')} &middot; {formatFileSize(file.size)}
                 </p>
               </div>
             </div>
@@ -870,22 +807,14 @@ function BusyActionSelect({
           />
         }
       >
-        <span className="truncate max-w-[100px]">
-          {t(`chat.busyAction.${value}`)}
-        </span>
+        <span className="truncate max-w-[100px]">{t(`chat.busyAction.${value}`)}</span>
       </DropdownMenuTrigger>
-      <DropdownMenuContent
-        align="end"
-        side="top"
-        className="min-w-[150px] text-xs"
-      >
+      <DropdownMenuContent align="end" side="top" className="min-w-[150px] text-xs">
         {(['queue', 'cancel'] as const).map((option) => (
           <DropdownMenuItem
             key={option}
             onSelect={() => onChange(option)}
-            className={
-              option === value ? 'bg-primary/10 text-primary font-medium' : ''
-            }
+            className={option === value ? 'bg-primary/10 text-primary font-medium' : ''}
           >
             {t(`chat.busyAction.${option}`)}
           </DropdownMenuItem>
@@ -905,16 +834,10 @@ function EngineInfo({ engineType }: { engineType: string }) {
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger
-        render={<Button variant="ghost" size="icon" title={engineName} />}
-      >
+      <PopoverTrigger render={<Button variant="ghost" size="icon" title={engineName} />}>
         <EngineIcon engineType={engineType} className="size-4" />
       </PopoverTrigger>
-      <PopoverContent
-        side="top"
-        align="start"
-        className="w-auto px-3 py-2 text-xs"
-      >
+      <PopoverContent side="top" align="start" className="w-auto px-3 py-2 text-xs">
         <div className="flex items-center gap-1.5">
           <EngineIcon engineType={engineType} className="h-3 w-3 shrink-0" />
           <span className="font-medium">{engineName}</span>
@@ -937,9 +860,7 @@ function ModelSelect({
   onChange: (v: string) => void
 }) {
   const current = models.find((m) => m.id === value)
-  const displayName = current
-    ? formatModelName(current.name || current.id)
-    : formatModelName(value)
+  const displayName = current ? formatModelName(current.name || current.id) : formatModelName(value)
 
   return (
     <DropdownMenu>
@@ -954,18 +875,12 @@ function ModelSelect({
       >
         <span className="truncate max-w-[140px]">{displayName}</span>
       </DropdownMenuTrigger>
-      <DropdownMenuContent
-        align="end"
-        side="top"
-        className="min-w-[180px] text-xs"
-      >
+      <DropdownMenuContent align="end" side="top" className="min-w-[180px] text-xs">
         {models.map((m) => (
           <DropdownMenuItem
             key={m.id}
             onSelect={() => onChange(m.id)}
-            className={
-              m.id === value ? 'bg-primary/10 text-primary font-medium' : ''
-            }
+            className={m.id === value ? 'bg-primary/10 text-primary font-medium' : ''}
           >
             {formatModelName(m.name || m.id)}
           </DropdownMenuItem>
@@ -990,19 +905,12 @@ function CommandPicker({
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger
-        render={
-          <Button variant="ghost" size="icon" title={t('chat.commands')} />
-        }
-      >
+      <PopoverTrigger render={<Button variant="ghost" size="icon" title={t('chat.commands')} />}>
         <SlashSquare className="size-4" />
       </PopoverTrigger>
       <PopoverContent side="top" align="start" className="w-[260px] p-0">
         <Command>
-          <CommandInput
-            placeholder={t('chat.commandSearch')}
-            className="text-xs h-8"
-          />
+          <CommandInput placeholder={t('chat.commandSearch')} className="text-xs h-8" />
           <CommandList className="max-h-[240px]">
             <CommandEmpty className="text-xs text-muted-foreground/50 px-3 py-2">
               {t('chat.noCommands')}
@@ -1041,17 +949,12 @@ function AgentPicker({
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger
-        render={<Button variant="ghost" size="icon" title={t('chat.agents')} />}
-      >
+      <PopoverTrigger render={<Button variant="ghost" size="icon" title={t('chat.agents')} />}>
         <Bot className="size-4" />
       </PopoverTrigger>
       <PopoverContent side="top" align="start" className="w-[260px] p-0">
         <Command>
-          <CommandInput
-            placeholder={t('chat.agentSearch')}
-            className="text-xs h-8"
-          />
+          <CommandInput placeholder={t('chat.agentSearch')} className="text-xs h-8" />
           <CommandList className="max-h-[240px]">
             <CommandEmpty className="text-xs text-muted-foreground/50 px-3 py-2">
               {t('chat.noAgents')}
@@ -1079,13 +982,7 @@ function AgentPicker({
 // ─── ModeSelect ───────────────────────────────────────────────────────────────
 // Replaced custom dropdown with shadcn DropdownMenu
 
-function ModeSelect({
-  value,
-  onChange,
-}: {
-  value: ModeOption
-  onChange: (v: ModeOption) => void
-}) {
+function ModeSelect({ value, onChange }: { value: ModeOption; onChange: (v: ModeOption) => void }) {
   const { t } = useTranslation()
 
   return (
@@ -1100,22 +997,14 @@ function ModeSelect({
           />
         }
       >
-        <span className="truncate max-w-[84px]">
-          {t(`createIssue.perm.${value}`)}
-        </span>
+        <span className="truncate max-w-[84px]">{t(`createIssue.perm.${value}`)}</span>
       </DropdownMenuTrigger>
-      <DropdownMenuContent
-        align="end"
-        side="top"
-        className="min-w-[130px] text-xs"
-      >
+      <DropdownMenuContent align="end" side="top" className="min-w-[130px] text-xs">
         {MODE_OPTIONS.map((option) => (
           <DropdownMenuItem
             key={option}
             onSelect={() => onChange(option)}
-            className={
-              option === value ? 'bg-primary/10 text-primary font-medium' : ''
-            }
+            className={option === value ? 'bg-primary/10 text-primary font-medium' : ''}
           >
             {t(`createIssue.perm.${option}`)}
           </DropdownMenuItem>

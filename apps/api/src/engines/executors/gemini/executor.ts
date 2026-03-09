@@ -24,10 +24,7 @@ export class GeminiExecutor implements EngineExecutor {
   readonly protocol = 'acp' as const
   readonly capabilities: EngineCapability[] = ['session-fork']
 
-  async spawn(
-    _options: SpawnOptions,
-    _env: ExecutionEnv,
-  ): Promise<SpawnedProcess> {
+  async spawn(_options: SpawnOptions, _env: ExecutionEnv): Promise<SpawnedProcess> {
     // TODO: Implement Gemini CLI spawn
     // 1. Start `npx -y @google/gemini-cli` with appropriate flags
     // 2. Send initial prompt via ACP protocol
@@ -35,10 +32,7 @@ export class GeminiExecutor implements EngineExecutor {
     throw new Error('Gemini engine is not yet available')
   }
 
-  async spawnFollowUp(
-    _options: FollowUpOptions,
-    _env: ExecutionEnv,
-  ): Promise<SpawnedProcess> {
+  async spawnFollowUp(_options: FollowUpOptions, _env: ExecutionEnv): Promise<SpawnedProcess> {
     // TODO: Implement follow-up via ACP session continuation
     throw new Error('Gemini engine is not yet available')
   }
@@ -116,14 +110,11 @@ export class GeminiExecutor implements EngineExecutor {
     try {
       // Gemini CLI — query via `gemini --list-models` or Google API
       // TODO: Implement proper model discovery when Gemini CLI supports it
-      const proc = Bun.spawn(
-        ['npx', '-y', '@google/gemini-cli', '--list-models'],
-        {
-          stdout: 'pipe',
-          stderr: 'pipe',
-          env: safeEnv({ NPM_CONFIG_LOGLEVEL: 'error' }),
-        },
-      )
+      const proc = Bun.spawn(['npx', '-y', '@google/gemini-cli', '--list-models'], {
+        stdout: 'pipe',
+        stderr: 'pipe',
+        env: safeEnv({ NPM_CONFIG_LOGLEVEL: 'error' }),
+      })
 
       const timer = setTimeout(() => proc.kill(), 10000)
       const exitCode = await proc.exited
@@ -158,10 +149,7 @@ export class GeminiExecutor implements EngineExecutor {
       if (data.type === 'response' || data.type === 'message') {
         return {
           entryType: 'assistant-message',
-          content:
-            typeof data.content === 'string'
-              ? data.content
-              : JSON.stringify(data.content),
+          content: typeof data.content === 'string' ? data.content : JSON.stringify(data.content),
           timestamp: data.timestamp ?? new Date().toISOString(),
         }
       }

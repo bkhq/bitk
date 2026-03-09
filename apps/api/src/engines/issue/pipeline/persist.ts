@@ -19,10 +19,7 @@ import { buildToolDetail, persistToolDetail } from '../persistence/tool-detail'
  */
 export function registerPersistStage(
   ctx: EngineContext,
-  on: (
-    cb: (data: AppEventMap['log']) => void,
-    opts: { order: number },
-  ) => () => void,
+  on: (cb: (data: AppEventMap['log']) => void, opts: { order: number }) => () => void,
 ): () => void {
   return on(
     (data) => {
@@ -30,16 +27,9 @@ export function registerPersistStage(
 
       const isToolUse = data.entry.entryType === 'tool-use'
       // For tool-use entries, content & metadata go to the tools table only
-      const dbEntry = isToolUse
-        ? { ...data.entry, content: '', metadata: undefined }
-        : data.entry
+      const dbEntry = isToolUse ? { ...data.entry, content: '', metadata: undefined } : data.entry
 
-      const persisted = persistEntry(
-        ctx,
-        data.issueId,
-        data.executionId,
-        dbEntry,
-      )
+      const persisted = persistEntry(ctx, data.issueId, data.executionId, dbEntry)
 
       if (persisted) {
         if (isToolUse && persisted.messageId) {
@@ -51,11 +41,7 @@ export function registerPersistStage(
           // Wrap tool detail insert + log backfill in a single transaction
           // to keep toolCallRefId consistent with the tool record
           db.transaction((tx) => {
-            const toolRecordId = persistToolDetail(
-              persisted.messageId!,
-              data.issueId,
-              data.entry,
-            )
+            const toolRecordId = persistToolDetail(persisted.messageId!, data.issueId, data.entry)
             if (toolRecordId) {
               tx.update(logsTable)
                 .set({ toolCallRefId: toolRecordId })

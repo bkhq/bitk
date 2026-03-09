@@ -42,9 +42,7 @@ export function ViewModeSelect({
     setMode(next)
     if (activeProjectId) {
       void navigate(
-        next === 'list'
-          ? `/projects/${activeProjectId}/issues`
-          : `/projects/${activeProjectId}`,
+        next === 'list' ? `/projects/${activeProjectId}/issues` : `/projects/${activeProjectId}`,
       )
     }
   }
@@ -84,19 +82,12 @@ export function ViewModeSelect({
       >
         <CurrentIcon className="h-4 w-4" />
       </DropdownMenuTrigger>
-      <DropdownMenuContent
-        side="right"
-        align="center"
-        className="min-w-[120px]"
-      >
+      <DropdownMenuContent side="right" align="center" className="min-w-[120px]">
         {VIEW_MODES.map(({ id, icon: Icon }) => (
           <DropdownMenuItem
             key={id}
             onClick={() => handleSelect(id)}
-            className={cn(
-              'gap-2 text-xs',
-              mode === id && 'bg-accent font-medium',
-            )}
+            className={cn('gap-2 text-xs', mode === id && 'bg-accent font-medium')}
           >
             <Icon className="h-3.5 w-3.5" />
             {labels[id]}

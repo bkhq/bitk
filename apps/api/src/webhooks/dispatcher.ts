@@ -34,9 +34,7 @@ interface IssueMetadata {
   issueUrl?: string
 }
 
-async function getIssueMetadata(
-  issueId: string,
-): Promise<IssueMetadata | null> {
+async function getIssueMetadata(issueId: string): Promise<IssueMetadata | null> {
   try {
     const [row] = await db
       .select({
@@ -75,11 +73,7 @@ async function getIssueMetadata(
   }
 }
 
-export function buildIssueUrl(
-  serverUrl: string,
-  projectId: string,
-  issueId: string,
-): string {
+export function buildIssueUrl(serverUrl: string, projectId: string, issueId: string): string {
   return `${serverUrl.replace(/\/+$/, '')}/projects/${projectId}/issues/${issueId}`
 }
 
@@ -98,9 +92,7 @@ async function getLastAgentLog(issueId: string): Promise<string | null> {
       .orderBy(desc(issueLogs.createdAt))
       .limit(1)
     if (!row?.content) return null
-    return row.content.length > 500
-      ? `${row.content.slice(0, 500)}...`
-      : row.content
+    return row.content.length > 500 ? `${row.content.slice(0, 500)}...` : row.content
   } catch (err) {
     logger.warn({ err, issueId }, 'webhook_get_last_log_failed')
     return null
@@ -129,10 +121,7 @@ function escapeTelegramHtml(s: string): string {
     .replace(/"/g, '&quot;')
 }
 
-function formatTelegramMessage(
-  event: WebhookEventType,
-  payload: Record<string, unknown>,
-): string {
+function formatTelegramMessage(event: WebhookEventType, payload: Record<string, unknown>): string {
   const emoji: Record<string, string> = {
     'issue.created': '\u{1F4DD}',
     'issue.updated': '\u{270F}\u{FE0F}',
@@ -146,8 +135,7 @@ function formatTelegramMessage(
   const lines = [`${icon} <b>${escapeTelegramHtml(event)}</b>`]
 
   // Project
-  if (payload.projectName)
-    lines.push(`Project: ${escapeTelegramHtml(String(payload.projectName))}`)
+  if (payload.projectName) lines.push(`Project: ${escapeTelegramHtml(String(payload.projectName))}`)
 
   // Issue line: #number title (with link if available)
   const issueNumber = payload.issueNumber
@@ -172,16 +160,14 @@ function formatTelegramMessage(
   // Engine + model for session/create events
   if (payload.engineType) {
     let engineLine = `Engine: ${escapeTelegramHtml(String(payload.engineType))}`
-    if (payload.model)
-      engineLine += ` | Model: ${escapeTelegramHtml(String(payload.model))}`
+    if (payload.model) engineLine += ` | Model: ${escapeTelegramHtml(String(payload.model))}`
     lines.push(engineLine)
   }
 
   // Changed fields for issue.updated
   if (payload.changes && typeof payload.changes === 'object') {
     const keys = Object.keys(payload.changes as Record<string, unknown>)
-    if (keys.length > 0)
-      lines.push(`Changed: ${escapeTelegramHtml(keys.join(', '))}`)
+    if (keys.length > 0) lines.push(`Changed: ${escapeTelegramHtml(keys.join(', '))}`)
   }
 
   // Last log for session.failed
@@ -306,10 +292,7 @@ export async function deliver(
   }
 }
 
-export async function dispatch(
-  event: WebhookEventType,
-  payload: Record<string, unknown>,
-) {
+export async function dispatch(event: WebhookEventType, payload: Record<string, unknown>) {
   let rows: WebhookRow[]
   try {
     rows = await db
@@ -364,17 +347,12 @@ export function initWebhookDispatcher() {
             const payload: Record<string, unknown> = {
               event: 'issue.status_changed',
               timestamp: new Date().toISOString(),
-              ...(meta
-                ? buildMetadataPayload(meta)
-                : { issueId: data.issueId }),
+              ...(meta ? buildMetadataPayload(meta) : { issueId: data.issueId }),
               newStatus,
             }
             await dispatch('issue.status_changed', payload)
           } catch (err) {
-            logger.warn(
-              { err, issueId: data.issueId },
-              'webhook_status_changed_failed',
-            )
+            logger.warn({ err, issueId: data.issueId }, 'webhook_status_changed_failed')
           }
         })()
       } else {
@@ -384,16 +362,11 @@ export function initWebhookDispatcher() {
             await dispatch('issue.updated', {
               event: 'issue.updated',
               timestamp: new Date().toISOString(),
-              ...(meta
-                ? buildMetadataPayload(meta)
-                : { issueId: data.issueId }),
+              ...(meta ? buildMetadataPayload(meta) : { issueId: data.issueId }),
               changes,
             })
           } catch (err) {
-            logger.warn(
-              { err, issueId: data.issueId },
-              'webhook_updated_failed',
-            )
+            logger.warn({ err, issueId: data.issueId }, 'webhook_updated_failed')
           }
         })()
       }
@@ -408,9 +381,7 @@ export function initWebhookDispatcher() {
       void (async () => {
         try {
           const eventType: WebhookEventType =
-            data.finalStatus === 'completed'
-              ? 'session.completed'
-              : 'session.failed'
+            data.finalStatus === 'completed' ? 'session.completed' : 'session.failed'
 
           const meta = await getIssueMetadata(data.issueId)
           const payload: Record<string, unknown> = {
@@ -450,9 +421,7 @@ export function initWebhookDispatcher() {
             const payload: Record<string, unknown> = {
               event: 'session.started',
               timestamp: new Date().toISOString(),
-              ...(meta
-                ? buildMetadataPayload(meta)
-                : { issueId: data.issueId }),
+              ...(meta ? buildMetadataPayload(meta) : { issueId: data.issueId }),
               executionId: data.executionId,
             }
             if (meta?.engineType) payload.engineType = meta.engineType
@@ -489,9 +458,7 @@ export async function cleanupDeliveries() {
 
       if (rows.length > 0) {
         const ids = rows.map((r) => r.id)
-        await db
-          .delete(webhookDeliveries)
-          .where(inArray(webhookDeliveries.id, ids))
+        await db.delete(webhookDeliveries).where(inArray(webhookDeliveries.id, ids))
       }
     }
   } catch (err) {

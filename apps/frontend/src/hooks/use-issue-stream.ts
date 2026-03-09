@@ -44,10 +44,7 @@ function contentKey(entry: NormalizedLogEntry): string {
  * byte-level ordering of Crockford Base32 characters across all locales.
  * Entries without messageId (streaming deltas) sort after persisted entries.
  */
-function compareByMessageId(
-  a: NormalizedLogEntry,
-  b: NormalizedLogEntry,
-): number {
+function compareByMessageId(a: NormalizedLogEntry, b: NormalizedLogEntry): number {
   if (a.messageId && b.messageId) {
     return a.messageId < b.messageId ? -1 : a.messageId > b.messageId ? 1 : 0
   }
@@ -65,9 +62,7 @@ function mergeLogsPreferLive(
   if (liveLogs.length === 0) return snapshotLogs
 
   const liveById = new Map(
-    liveLogs
-      .filter((entry) => entry.messageId)
-      .map((entry) => [entry.messageId!, entry]),
+    liveLogs.filter((entry) => entry.messageId).map((entry) => [entry.messageId!, entry]),
   )
 
   const mergedSnapshot = snapshotLogs.map((entry) => {
@@ -75,12 +70,8 @@ function mergeLogsPreferLive(
     return liveById.get(entry.messageId) ?? entry
   })
 
-  const snapshotIds = new Set(
-    snapshotLogs.map((entry) => entry.messageId).filter(Boolean),
-  )
-  const liveOnly = liveLogs.filter(
-    (entry) => entry.messageId && !snapshotIds.has(entry.messageId),
-  )
+  const snapshotIds = new Set(snapshotLogs.map((entry) => entry.messageId).filter(Boolean))
+  const liveOnly = liveLogs.filter((entry) => entry.messageId && !snapshotIds.has(entry.messageId))
 
   return [...mergedSnapshot, ...liveOnly].sort(compareByMessageId)
 }
@@ -96,9 +87,7 @@ export function useIssueStream({
   // Older logs: loaded via "Load More", no cap (user-initiated)
   const [olderLogs, setOlderLogs] = useState<NormalizedLogEntry[]>([])
 
-  const [sessionStatus, setSessionStatus] = useState<SessionStatus | null>(
-    externalStatus ?? null,
-  )
+  const [sessionStatus, setSessionStatus] = useState<SessionStatus | null>(externalStatus ?? null)
   const [hasOlderLogs, setHasOlderLogs] = useState(false)
   const [isLoadingOlder, setIsLoadingOlder] = useState(false)
   const queryClient = useQueryClient()
@@ -123,13 +112,10 @@ export function useIssueStream({
   // that guarantees correct chronological order and no duplicates regardless
   // of how entries arrived (HTTP fetch, SSE, optimistic append, race conditions).
   const logs = useMemo(() => {
-    const combined =
-      olderLogs.length > 0 ? [...olderLogs, ...liveLogs] : liveLogs
+    const combined = olderLogs.length > 0 ? [...olderLogs, ...liveLogs] : liveLogs
     if (combined.length === 0) return combined
 
-    const sorted = (olderLogs.length > 0 ? combined : [...combined]).sort(
-      compareByMessageId,
-    )
+    const sorted = (olderLogs.length > 0 ? combined : [...combined]).sort(compareByMessageId)
 
     // Dedup by messageId (keep first occurrence after sort)
     const deduped = new Set<string>()
@@ -205,11 +191,7 @@ export function useIssueStream({
         return
       }
 
-      if (
-        olderLogsRef.current.some(
-          (entry) => entry.messageId === incoming.messageId,
-        )
-      ) {
+      if (olderLogsRef.current.some((entry) => entry.messageId === incoming.messageId)) {
         setOlderLogs((prev) => {
           const next = prev.map((entry) =>
             entry.messageId === incoming.messageId ? incoming : entry,
@@ -220,11 +202,7 @@ export function useIssueStream({
         return
       }
 
-      if (
-        liveLogsRef.current.some(
-          (entry) => entry.messageId === incoming.messageId,
-        )
-      ) {
+      if (liveLogsRef.current.some((entry) => entry.messageId === incoming.messageId)) {
         setLiveLogs((prev) => {
           const next = prev.map((entry) =>
             entry.messageId === incoming.messageId ? incoming : entry,
@@ -242,15 +220,10 @@ export function useIssueStream({
 
   /** Append a user message with a server-assigned messageId */
   const appendServerMessage = useCallback(
-    (
-      messageId: string,
-      content: string,
-      metadata?: Record<string, unknown>,
-    ) => {
+    (messageId: string, content: string, metadata?: Record<string, unknown>) => {
       const trimmed = content.trim()
       const hasAttachments =
-        Array.isArray(metadata?.attachments) &&
-        (metadata.attachments as unknown[]).length > 0
+        Array.isArray(metadata?.attachments) && (metadata.attachments as unknown[]).length > 0
       // Allow messages with attachments even if text content is empty
       if (!trimmed && !hasAttachments) return
       if (metadata?.type !== 'pending') {
@@ -349,7 +322,7 @@ export function useIssueStream({
 
   // Fetch latest historical logs from DB (reverse mode — newest first).
   // Merges with any SSE entries that may have arrived before the HTTP response.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: _refreshCounter intentionally triggers re-fetch
+
   useEffect(() => {
     if (!issueId || !enabled) return
 
@@ -462,15 +435,7 @@ export function useIssueStream({
     return () => {
       cleanup.unsub()
     }
-  }, [
-    projectId,
-    issueId,
-    enabled,
-    queryClient,
-    appendEntry,
-    upsertEntry,
-    removeEntries,
-  ])
+  }, [projectId, issueId, enabled, queryClient, appendEntry, upsertEntry, removeEntries])
 
   return {
     logs,

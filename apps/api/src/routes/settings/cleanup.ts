@@ -21,13 +21,12 @@ const cleanup = new Hono()
 
 // GET /api/settings/cleanup/stats — get sizes of cleanable data
 cleanup.get('/cleanup/stats', async (c) => {
-  const [logsResult, oldVersionsResult, worktreesResult, deletedIssuesResult] =
-    await Promise.all([
-      getLogsStats(),
-      getOldVersionsStats(),
-      getWorktreesStats(),
-      getDeletedIssuesStats(),
-    ])
+  const [logsResult, oldVersionsResult, worktreesResult, deletedIssuesResult] = await Promise.all([
+    getLogsStats(),
+    getOldVersionsStats(),
+    getWorktreesStats(),
+    getDeletedIssuesStats(),
+  ])
   return c.json({
     success: true,
     data: {
@@ -45,9 +44,7 @@ cleanup.post(
   zValidator(
     'json',
     z.object({
-      targets: z
-        .array(z.enum(['logs', 'oldVersions', 'worktrees', 'deletedIssues']))
-        .min(1),
+      targets: z.array(z.enum(['logs', 'oldVersions', 'worktrees', 'deletedIssues'])).min(1),
     }),
     (result, c) => {
       if (!result.success) {
@@ -243,9 +240,7 @@ async function cleanupLogs(): Promise<{ cleaned: number }> {
   for (let i = 0; i < issueIds.length; i += BATCH) {
     const batch = issueIds.slice(i, i + BATCH)
     // Delete tool calls first (FK dependency)
-    await db
-      .delete(issuesLogsToolsCall)
-      .where(inArray(issuesLogsToolsCall.issueId, batch))
+    await db.delete(issuesLogsToolsCall).where(inArray(issuesLogsToolsCall.issueId, batch))
     // Delete attachments
     await db.delete(attachments).where(inArray(attachments.issueId, batch))
     // Delete logs
@@ -368,9 +363,7 @@ async function cleanupDeletedIssues(): Promise<{ cleaned: number }> {
   for (let i = 0; i < issueIds.length; i += BATCH) {
     const batch = issueIds.slice(i, i + BATCH)
     // Delete related data first (FK order)
-    await db
-      .delete(issuesLogsToolsCall)
-      .where(inArray(issuesLogsToolsCall.issueId, batch))
+    await db.delete(issuesLogsToolsCall).where(inArray(issuesLogsToolsCall.issueId, batch))
     await db.delete(attachments).where(inArray(attachments.issueId, batch))
     await db.delete(issueLogs).where(inArray(issueLogs.issueId, batch))
     await db.delete(issuesTable).where(inArray(issuesTable.id, batch))

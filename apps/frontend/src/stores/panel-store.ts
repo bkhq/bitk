@@ -53,18 +53,15 @@ export const usePanelStore = create<PanelStore>((set) => ({
 
   setWidth: (w) => set({ width: clampWidth(w) }),
 
-  openCreateDialog: (statusId) =>
-    set({ createDialogOpen: true, createDialogStatusId: statusId }),
+  openCreateDialog: (statusId) => set({ createDialogOpen: true, createDialogStatusId: statusId }),
 
-  closeCreateDialog: () =>
-    set({ createDialogOpen: false, createDialogStatusId: undefined }),
+  closeCreateDialog: () => set({ createDialogOpen: false, createDialogStatusId: undefined }),
 }))
 
 // Derived selectors
 export const useSelectedIssueId = () =>
   usePanelStore((s) => (s.panel.kind === 'view' ? s.panel.issueId : null))
-export const useIsPanelOpen = () =>
-  usePanelStore((s) => s.panel.kind !== 'closed')
+export const useIsPanelOpen = () => usePanelStore((s) => s.panel.kind !== 'closed')
 
 // Re-clamp width on window resize (guarded to prevent duplicate listeners during HMR)
 if (typeof window !== 'undefined') {

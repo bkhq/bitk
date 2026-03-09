@@ -61,12 +61,12 @@ Route handler 不再做 "fetch limit+1, trim" 逻辑，直接使用返回的 has
 
 ## 修改文件
 
-| 文件 | 变更 |
-|------|------|
+| 文件                                                | 变更                                |
+| --------------------------------------------------- | ----------------------------------- |
 | `apps/api/src/engines/issue/persistence/queries.ts` | getLogsFromDb 两步查询 + 新返回类型 |
-| `apps/api/src/engines/issue/queries.ts` | getLogs 返回 PaginatedLogResult |
-| `apps/api/src/engines/issue/engine.ts` | IssueEngine.getLogs 签名 |
-| `apps/api/src/routes/issues/logs.ts` | 使用 result.hasMore，移除 trim 逻辑 |
+| `apps/api/src/engines/issue/queries.ts`             | getLogs 返回 PaginatedLogResult     |
+| `apps/api/src/engines/issue/engine.ts`              | IssueEngine.getLogs 签名            |
+| `apps/api/src/routes/issues/logs.ts`                | 使用 result.hasMore，移除 trim 逻辑 |
 
 ## 风险
 

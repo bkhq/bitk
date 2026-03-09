@@ -51,9 +51,7 @@ export function IssueListPanel({
   const filtered = useMemo(() => {
     if (!issues) return []
     if (!searchTerm) return issues
-    return issues.filter((issue) =>
-      issue.title.toLowerCase().includes(searchTerm),
-    )
+    return issues.filter((issue) => issue.title.toLowerCase().includes(searchTerm))
   }, [issues, searchTerm])
 
   // Build child map for parent-child grouping, sorted by statusUpdatedAt DESC
@@ -70,9 +68,7 @@ export function IssueListPanel({
       map.set(
         key,
         children.sort(
-          (a, b) =>
-            new Date(b.statusUpdatedAt).getTime() -
-            new Date(a.statusUpdatedAt).getTime(),
+          (a, b) => new Date(b.statusUpdatedAt).getTime() - new Date(a.statusUpdatedAt).getTime(),
         ),
       )
     }
@@ -91,9 +87,7 @@ export function IssueListPanel({
     return STATUSES.map((status) => ({
       status,
       issues: (map.get(status.id) ?? []).sort(
-        (a, b) =>
-          new Date(b.statusUpdatedAt).getTime() -
-          new Date(a.statusUpdatedAt).getTime(),
+        (a, b) => new Date(b.statusUpdatedAt).getTime() - new Date(a.statusUpdatedAt).getTime(),
       ),
     }))
   }, [filtered, issues])
@@ -111,9 +105,7 @@ export function IssueListPanel({
       <div className="flex items-center justify-between px-2.5 py-2 border-b border-border/60 shrink-0 min-h-[42px] bg-secondary/50">
         <div className="flex items-center gap-1.5 min-w-0">
           {mobileNav}
-          <span className="text-sm font-semibold truncate tracking-tight">
-            {projectName}
-          </span>
+          <span className="text-sm font-semibold truncate tracking-tight">{projectName}</span>
         </div>
         <div className="flex items-center gap-0.5">
           <Button
@@ -190,9 +182,7 @@ export function IssueListPanel({
             isCollapsed={!!collapsed[status.id]}
             onToggle={() => toggleCollapse(status.id)}
             activeIssueId={activeIssueId}
-            onNavigate={(issueId) =>
-              navigate(`/projects/${projectId}/issues/${issueId}`)
-            }
+            onNavigate={(issueId) => navigate(`/projects/${projectId}/issues/${issueId}`)}
           />
         ))}
       </div>
@@ -227,9 +217,7 @@ function StatusGroup({
   onNavigate: (issueId: string) => void
 }) {
   const { t } = useTranslation()
-  const [expandedParents, setExpandedParents] = useState<
-    Record<string, boolean>
-  >({})
+  const [expandedParents, setExpandedParents] = useState<Record<string, boolean>>({})
 
   const toggleParent = (id: string) => {
     setExpandedParents((prev) => ({ ...prev, [id]: !prev[id] }))
@@ -288,9 +276,7 @@ function StatusGroup({
                           type="button"
                           onClick={() => onNavigate(child.id)}
                           className={`w-full flex items-center gap-1 pl-5 pr-2 py-1.5 text-left border-b border-border/20 transition-all duration-150 ${
-                            isChildActive
-                              ? 'bg-primary/[0.06]'
-                              : 'hover:bg-accent/50'
+                            isChildActive ? 'bg-primary/[0.06]' : 'hover:bg-accent/50'
                           }`}
                         >
                           <span
@@ -305,9 +291,7 @@ function StatusGroup({
                           <span
                             title={child.title}
                             className={`text-[12px] truncate ${
-                              isChildActive
-                                ? 'text-foreground font-medium'
-                                : 'text-foreground/80'
+                              isChildActive ? 'text-foreground font-medium' : 'text-foreground/80'
                             }`}
                           >
                             {child.title}

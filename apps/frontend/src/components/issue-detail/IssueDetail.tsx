@@ -12,8 +12,7 @@ import type { Issue } from '@/types/kanban'
 export const badgeBase =
   'inline-flex items-center gap-1 rounded-full border px-2 h-[22px] text-[11px] leading-none font-medium whitespace-nowrap'
 
-const badgeButtonBase =
-  'h-[22px] rounded-full px-2 text-[11px] leading-none font-medium gap-1'
+const badgeButtonBase = 'h-[22px] rounded-full px-2 text-[11px] leading-none font-medium gap-1'
 
 export function IssueDetail({
   issue,
@@ -26,9 +25,7 @@ export function IssueDetail({
   issue: Issue
   projectId?: string
   status?: StatusDefinition
-  onUpdate?: (
-    fields: Partial<Pick<Issue, 'statusId' | 'tags' | 'devMode'>>,
-  ) => void
+  onUpdate?: (fields: Partial<Pick<Issue, 'statusId' | 'tags' | 'devMode'>>) => void
   onDelete?: () => void
   isDeleting?: boolean
 }) {
@@ -40,24 +37,18 @@ export function IssueDetail({
   const worktreeRef = useRef<HTMLDivElement>(null)
   useClickOutside(worktreeRef, showWorktree, () => setShowWorktree(false))
 
-  const { data: worktrees } = useProjectWorktrees(
-    issue.useWorktree && projectId ? projectId : '',
-  )
+  const { data: worktrees } = useProjectWorktrees(issue.useWorktree && projectId ? projectId : '')
   const worktreeEntry = useMemo(
     () => worktrees?.find((w) => w.issueId === issue.id),
     [worktrees, issue.id],
   )
   const worktreePath = worktreeEntry?.path ?? ''
-  const worktreeBranch =
-    worktreeEntry?.branch ?? (issue.id ? `bkd/${issue.id}` : '')
+  const worktreeBranch = worktreeEntry?.branch ?? (issue.id ? `bkd/${issue.id}` : '')
 
   return (
     <div className="shrink-0 relative z-20 flex items-center gap-1.5 px-4 py-1.5 border-t border-border/40 bg-muted/20">
       {/* Status — editable */}
-      <StatusSelect
-        status={status}
-        onChange={(id) => onUpdate?.({ statusId: id })}
-      />
+      <StatusSelect status={status} onChange={(id) => onUpdate?.({ statusId: id })} />
 
       {/* Tags — editable (comma-separated) */}
       {editingTag ? (
@@ -103,9 +94,7 @@ export function IssueDetail({
           title={t('issue.tag')}
         >
           <Tag className="h-3 w-3" />
-          {issue.tags && issue.tags.length > 0
-            ? issue.tags.join(', ')
-            : t('issue.tag')}
+          {issue.tags && issue.tags.length > 0 ? issue.tags.join(', ') : t('issue.tag')}
         </button>
       )}
 
@@ -156,24 +145,16 @@ export function IssueDetail({
               <div className="absolute right-0 bottom-full mb-1.5 z-50 min-w-[240px] rounded-xl border border-border/60 bg-popover/95 backdrop-blur-sm py-2 px-3 shadow-xl text-xs text-popover-foreground space-y-1.5">
                 <div className="flex items-center gap-1.5 text-muted-foreground">
                   <GitBranch className="h-3 w-3 shrink-0" />
-                  <span className="font-medium text-foreground">
-                    {t('chat.worktree')}
-                  </span>
+                  <span className="font-medium text-foreground">{t('chat.worktree')}</span>
                 </div>
                 <div className="space-y-1 text-muted-foreground">
                   <div className="flex items-start gap-2">
-                    <span className="shrink-0">
-                      {t('chat.worktreeBranch')}:
-                    </span>
-                    <code className="font-mono text-foreground/80 break-all">
-                      {worktreeBranch}
-                    </code>
+                    <span className="shrink-0">{t('chat.worktreeBranch')}:</span>
+                    <code className="font-mono text-foreground/80 break-all">{worktreeBranch}</code>
                   </div>
                   <div className="flex items-start gap-2">
                     <span className="shrink-0">{t('chat.worktreePath')}:</span>
-                    <code className="font-mono text-foreground/80 break-all">
-                      {worktreePath}
-                    </code>
+                    <code className="font-mono text-foreground/80 break-all">{worktreePath}</code>
                   </div>
                 </div>
               </div>

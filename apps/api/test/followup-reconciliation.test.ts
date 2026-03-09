@@ -3,14 +3,7 @@ import { eq } from 'drizzle-orm'
 import { db } from '@/db'
 import { issues as issuesTable } from '@/db/schema'
 import { invalidateIssueCache } from '@/routes/issues/_shared'
-import {
-  createTestProject,
-  expectSuccess,
-  get,
-  patch,
-  post,
-  waitFor,
-} from './helpers'
+import { createTestProject, expectSuccess, get, patch, post, waitFor } from './helpers'
 /**
  * Integration/route tests for follow-up and reconciliation flows:
  * 1. Follow-up while engine is busy persists message as pending (returns queued: true)
@@ -78,9 +71,7 @@ describe('Follow-up queuing behavior', () => {
     }
 
     // Verify the message is persisted as pending in logs
-    const logsResult = await get<LogsResponse>(
-      `/api/projects/${projectId}/issues/${issue.id}/logs`,
-    )
+    const logsResult = await get<LogsResponse>(`/api/projects/${projectId}/issues/${issue.id}/logs`)
     const logs = expectSuccess(logsResult)
     const pendingMsgs = logs.logs.filter(
       (l) => l.entryType === 'user-message' && l.metadata?.type === 'pending',
@@ -112,9 +103,7 @@ describe('Follow-up queuing behavior', () => {
     }
 
     // All 3 should be pending
-    const logsResult = await get<LogsResponse>(
-      `/api/projects/${projectId}/issues/${issue.id}/logs`,
-    )
+    const logsResult = await get<LogsResponse>(`/api/projects/${projectId}/issues/${issue.id}/logs`)
     const logs = expectSuccess(logsResult)
     const pendingMsgs = logs.logs.filter(
       (l) => l.entryType === 'user-message' && l.metadata?.type === 'pending',
@@ -146,9 +135,7 @@ describe('Pending messages are consumed on transition to working', () => {
     })
 
     // Verify it exists as pending
-    let logsResult = await get<LogsResponse>(
-      `/api/projects/${projectId}/issues/${issue.id}/logs`,
-    )
+    let logsResult = await get<LogsResponse>(`/api/projects/${projectId}/issues/${issue.id}/logs`)
     let logs = expectSuccess(logsResult)
     const pendingBefore = logs.logs.filter(
       (l) => l.entryType === 'user-message' && l.metadata?.type === 'pending',
@@ -162,17 +149,13 @@ describe('Pending messages are consumed on transition to working', () => {
 
     // Wait for echo engine to complete
     await waitFor(async () => {
-      const r = await get<Issue>(
-        `/api/projects/${projectId}/issues/${issue.id}`,
-      )
+      const r = await get<Issue>(`/api/projects/${projectId}/issues/${issue.id}`)
       const s = expectSuccess(r).sessionStatus
       return s === 'completed' || s === 'failed'
     }, 5000)
 
     // Pending messages should be deleted after successful dispatch
-    logsResult = await get<LogsResponse>(
-      `/api/projects/${projectId}/issues/${issue.id}/logs`,
-    )
+    logsResult = await get<LogsResponse>(`/api/projects/${projectId}/issues/${issue.id}/logs`)
     logs = expectSuccess(logsResult)
     const pendingAfter = logs.logs.filter(
       (l) => l.entryType === 'user-message' && l.metadata?.type === 'pending',
@@ -200,15 +183,11 @@ describe('Execution completion moves issue to review', () => {
 
     // Wait for auto-move to review
     await waitFor(async () => {
-      const r = await get<Issue>(
-        `/api/projects/${projectId}/issues/${issue.id}`,
-      )
+      const r = await get<Issue>(`/api/projects/${projectId}/issues/${issue.id}`)
       return expectSuccess(r).statusId === 'review'
     }, 5000)
 
-    const final = expectSuccess(
-      await get<Issue>(`/api/projects/${projectId}/issues/${issue.id}`),
-    )
+    const final = expectSuccess(await get<Issue>(`/api/projects/${projectId}/issues/${issue.id}`))
     expect(final.statusId).toBe('review')
     expect(final.sessionStatus).toBe('completed')
   })
@@ -226,9 +205,7 @@ describe('Execution completion moves issue to review', () => {
 
     // Wait for initial execution to complete and move to review
     await waitFor(async () => {
-      const r = await get<Issue>(
-        `/api/projects/${projectId}/issues/${issue.id}`,
-      )
+      const r = await get<Issue>(`/api/projects/${projectId}/issues/${issue.id}`)
       return expectSuccess(r).statusId === 'review'
     }, 5000)
 
@@ -241,9 +218,7 @@ describe('Execution completion moves issue to review', () => {
 
     // Should cycle: review -> working -> review
     await waitFor(async () => {
-      const r = await get<Issue>(
-        `/api/projects/${projectId}/issues/${issue.id}`,
-      )
+      const r = await get<Issue>(`/api/projects/${projectId}/issues/${issue.id}`)
       const i = expectSuccess(r)
       return i.statusId === 'review' && i.sessionStatus === 'completed'
     }, 5000)
@@ -268,38 +243,27 @@ describe('Stale working issue auto-correction', () => {
 
     // Wait for echo to complete — it should auto-move to review
     await waitFor(async () => {
-      const r = await get<Issue>(
-        `/api/projects/${projectId}/issues/${issue.id}`,
-      )
+      const r = await get<Issue>(`/api/projects/${projectId}/issues/${issue.id}`)
       const i = expectSuccess(r)
       return i.statusId === 'review'
     }, 5000)
 
     // Force the statusId back to working via direct DB update (simulate stuck state)
-    await db
-      .update(issuesTable)
-      .set({ statusId: 'working' })
-      .where(eq(issuesTable.id, issue.id))
+    await db.update(issuesTable).set({ statusId: 'working' }).where(eq(issuesTable.id, issue.id))
     await invalidateIssueCache(projectId, issue.id)
 
     // Verify it's stuck
-    let current = expectSuccess(
-      await get<Issue>(`/api/projects/${projectId}/issues/${issue.id}`),
-    )
+    let current = expectSuccess(await get<Issue>(`/api/projects/${projectId}/issues/${issue.id}`))
     expect(current.statusId).toBe('working')
     expect(current.sessionStatus).toBe('completed')
 
     // Import and run reconciler directly
-    const { reconcileStaleWorkingIssues } = await import(
-      '../src/engines/reconciler'
-    )
+    const { reconcileStaleWorkingIssues } = await import('../src/engines/reconciler')
     const count = await reconcileStaleWorkingIssues()
     expect(count).toBeGreaterThanOrEqual(1)
 
     // Verify the issue has been corrected to review
-    current = expectSuccess(
-      await get<Issue>(`/api/projects/${projectId}/issues/${issue.id}`),
-    )
+    current = expectSuccess(await get<Issue>(`/api/projects/${projectId}/issues/${issue.id}`))
     expect(current.statusId).toBe('review')
     // sessionStatus should remain completed (already terminal)
     expect(current.sessionStatus).toBe('completed')
@@ -318,9 +282,7 @@ describe('Stale working issue auto-correction', () => {
 
     // Wait for completion
     await waitFor(async () => {
-      const r = await get<Issue>(
-        `/api/projects/${projectId}/issues/${issue.id}`,
-      )
+      const r = await get<Issue>(`/api/projects/${projectId}/issues/${issue.id}`)
       return expectSuccess(r).statusId === 'review'
     }, 5000)
 
@@ -336,9 +298,7 @@ describe('Stale working issue auto-correction', () => {
     await startupReconciliation()
 
     // Verify corrected state
-    const final = expectSuccess(
-      await get<Issue>(`/api/projects/${projectId}/issues/${issue.id}`),
-    )
+    const final = expectSuccess(await get<Issue>(`/api/projects/${projectId}/issues/${issue.id}`))
     expect(final.statusId).toBe('review')
     expect(final.sessionStatus).toBe('failed')
   })
@@ -375,17 +335,13 @@ describe('Follow-up collects and merges pending messages', () => {
 
     // Wait for initial execution to complete
     await waitFor(async () => {
-      const r = await get<Issue>(
-        `/api/projects/${projectId}/issues/${issue.id}`,
-      )
+      const r = await get<Issue>(`/api/projects/${projectId}/issues/${issue.id}`)
       const s = expectSuccess(r).sessionStatus
       return s === 'completed' || s === 'failed'
     }, 5000)
 
     // After execution, pending should be consumed
-    const logsResult = await get<LogsResponse>(
-      `/api/projects/${projectId}/issues/${issue.id}/logs`,
-    )
+    const logsResult = await get<LogsResponse>(`/api/projects/${projectId}/issues/${issue.id}/logs`)
     const logs = expectSuccess(logsResult)
     const pendingMsgs = logs.logs.filter(
       (l) => l.entryType === 'user-message' && l.metadata?.type === 'pending',
@@ -406,9 +362,7 @@ describe('Follow-up collects and merges pending messages', () => {
 
     // Wait for auto-move to review
     await waitFor(async () => {
-      const r = await get<Issue>(
-        `/api/projects/${projectId}/issues/${issue.id}`,
-      )
+      const r = await get<Issue>(`/api/projects/${projectId}/issues/${issue.id}`)
       return expectSuccess(r).statusId === 'review'
     }, 5000)
 
@@ -427,9 +381,7 @@ describe('Follow-up collects and merges pending messages', () => {
 
     // Wait for completion
     await waitFor(async () => {
-      const r = await get<Issue>(
-        `/api/projects/${projectId}/issues/${issue.id}`,
-      )
+      const r = await get<Issue>(`/api/projects/${projectId}/issues/${issue.id}`)
       const i = expectSuccess(r)
       return i.statusId === 'review' && i.sessionStatus === 'completed'
     }, 5000)

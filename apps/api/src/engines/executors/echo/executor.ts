@@ -16,9 +16,7 @@ import type {
  * into in-memory ReadableStreams, useful for UI dev and testing.
  */
 
-const ECHO_MODELS: EngineModel[] = [
-  { id: 'auto', name: 'Auto', isDefault: true },
-]
+const ECHO_MODELS: EngineModel[] = [{ id: 'auto', name: 'Auto', isDefault: true }]
 
 const encoder = new TextEncoder()
 
@@ -114,17 +112,11 @@ export class EchoExecutor implements EngineExecutor {
   readonly protocol = 'stream-json' as const
   readonly capabilities: EngineCapability[] = ['session-fork']
 
-  async spawn(
-    options: SpawnOptions,
-    _env: ExecutionEnv,
-  ): Promise<SpawnedProcess> {
+  async spawn(options: SpawnOptions, _env: ExecutionEnv): Promise<SpawnedProcess> {
     return createMockProcess(options.prompt)
   }
 
-  async spawnFollowUp(
-    options: FollowUpOptions,
-    _env: ExecutionEnv,
-  ): Promise<SpawnedProcess> {
+  async spawnFollowUp(options: FollowUpOptions, _env: ExecutionEnv): Promise<SpawnedProcess> {
     return createMockProcess(options.prompt)
   }
 

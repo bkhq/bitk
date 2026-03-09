@@ -16,9 +16,7 @@ function getStoredTheme(): Theme {
 
 function resolveTheme(theme: Theme): 'light' | 'dark' {
   if (theme !== 'system') return theme
-  return window.matchMedia('(prefers-color-scheme: dark)').matches
-    ? 'dark'
-    : 'light'
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
 }
 
 function applyTheme(theme: Theme) {
@@ -55,14 +53,12 @@ applyTheme(currentTheme)
 
 // React to system preference changes when in 'system' mode
 if (typeof window !== 'undefined') {
-  window
-    .matchMedia('(prefers-color-scheme: dark)')
-    .addEventListener('change', () => {
-      if (currentTheme === 'system') {
-        applyTheme('system')
-        for (const cb of listeners) cb()
-      }
-    })
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    if (currentTheme === 'system') {
+      applyTheme('system')
+      for (const cb of listeners) cb()
+    }
+  })
 }
 
 export function useTheme() {

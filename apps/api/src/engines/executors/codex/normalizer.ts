@@ -279,11 +279,7 @@ export class CodexLogNormalizer {
             toolAction,
           })
         }
-        return entries.length === 1
-          ? entries[0]
-          : entries.length > 0
-            ? entries
-            : null
+        return entries.length === 1 ? entries[0] : entries.length > 0 ? entries : null
       }
 
       // --- File patch end ---
@@ -292,9 +288,7 @@ export class CodexLogNormalizer {
         const callId = msg.call_id as string | undefined
         return {
           entryType: 'tool-use',
-          content: success
-            ? 'Patch applied successfully'
-            : 'Patch apply failed',
+          content: success ? 'Patch applied successfully' : 'Patch apply failed',
           timestamp: now,
           metadata: {
             toolName: 'Edit',
@@ -350,11 +344,7 @@ export class CodexLogNormalizer {
             toolAction: { kind: 'file-edit', path },
           })
         }
-        return entries.length === 1
-          ? entries[0]
-          : entries.length > 0
-            ? entries
-            : null
+        return entries.length === 1 ? entries[0] : entries.length > 0 ? entries : null
       }
 
       // --- MCP tool call begin ---
@@ -394,9 +384,7 @@ export class CodexLogNormalizer {
               tool?: string
             }
           | undefined
-        const result = msg.result as
-          | { content?: unknown[]; is_error?: boolean }
-          | undefined
+        const result = msg.result as { content?: unknown[]; is_error?: boolean } | undefined
         const toolName = `mcp:${invocation?.server ?? 'unknown'}:${invocation?.tool ?? 'unknown'}`
         const isError = result?.is_error ?? false
         // Extract text content from MCP result
@@ -407,17 +395,12 @@ export class CodexLogNormalizer {
               const b = block as Record<string, unknown>
               return b?.type === 'text'
             })
-            .map(
-              (block: unknown) =>
-                (block as Record<string, unknown>).text as string,
-            )
+            .map((block: unknown) => (block as Record<string, unknown>).text as string)
             .join('\n')
         }
         return {
           entryType: 'tool-use',
-          content:
-            resultText ||
-            (isError ? 'MCP tool call failed' : 'MCP tool call completed'),
+          content: resultText || (isError ? 'MCP tool call failed' : 'MCP tool call completed'),
           timestamp: now,
           metadata: {
             toolName,
@@ -494,13 +477,10 @@ export class CodexLogNormalizer {
       // --- Plan update (todo-like step list) ---
       case 'plan_update': {
         this.resetStreamingState()
-        const plan = msg.plan as
-          | Array<{ step: string; status: string }>
-          | undefined
+        const plan = msg.plan as Array<{ step: string; status: string }> | undefined
         const explanation = msg.explanation as string | undefined
         if (!plan) return null
-        const content =
-          explanation?.trim() || `Plan updated (${plan.length} steps)`
+        const content = explanation?.trim() || `Plan updated (${plan.length} steps)`
         return {
           entryType: 'system-message',
           content,
@@ -711,10 +691,7 @@ export class CodexLogNormalizer {
 
   // ---------- Legacy notification handlers (fallback) ----------
 
-  private handleResponse(
-    data: Record<string, unknown>,
-    now: string,
-  ): NormalizedLogEntry | null {
+  private handleResponse(data: Record<string, unknown>, now: string): NormalizedLogEntry | null {
     // Extract session ID from thread/start or thread/fork responses
     const result = data.result as Record<string, unknown> | undefined
     if (!result) return null
@@ -735,10 +712,7 @@ export class CodexLogNormalizer {
     return null
   }
 
-  private handleItemStarted(
-    data: Record<string, unknown>,
-    now: string,
-  ): NormalizedLogEntry | null {
+  private handleItemStarted(data: Record<string, unknown>, now: string): NormalizedLogEntry | null {
     const params = (data.params ?? {}) as Record<string, unknown>
     const item = (params.item ?? {}) as Record<string, unknown>
     const itemType = item.type as string | undefined
@@ -886,10 +860,7 @@ export class CodexLogNormalizer {
     }
   }
 
-  private handleTurnStarted(
-    data: Record<string, unknown>,
-    now: string,
-  ): NormalizedLogEntry {
+  private handleTurnStarted(data: Record<string, unknown>, now: string): NormalizedLogEntry {
     const params = (data.params ?? {}) as Record<string, unknown>
     const turn = (params.turn ?? {}) as Record<string, unknown>
     return {
@@ -903,10 +874,7 @@ export class CodexLogNormalizer {
     }
   }
 
-  private handleTurnCompleted(
-    data: Record<string, unknown>,
-    now: string,
-  ): NormalizedLogEntry {
+  private handleTurnCompleted(data: Record<string, unknown>, now: string): NormalizedLogEntry {
     const params = (data.params ?? {}) as Record<string, unknown>
     const turn = (params.turn ?? {}) as Record<string, unknown>
     const usage = (turn.usage ?? {}) as Record<string, unknown>
@@ -916,9 +884,7 @@ export class CodexLogNormalizer {
     const parts: string[] = []
     if (inputTokens != null) {
       parts.push(
-        inputTokens >= 1000
-          ? `${(inputTokens / 1000).toFixed(1)}k input`
-          : `${inputTokens} input`,
+        inputTokens >= 1000 ? `${(inputTokens / 1000).toFixed(1)}k input` : `${inputTokens} input`,
       )
     }
     if (outputTokens != null) {
@@ -943,10 +909,7 @@ export class CodexLogNormalizer {
     }
   }
 
-  private handleThreadStarted(
-    data: Record<string, unknown>,
-    now: string,
-  ): NormalizedLogEntry {
+  private handleThreadStarted(data: Record<string, unknown>, now: string): NormalizedLogEntry {
     const params = (data.params ?? {}) as Record<string, unknown>
     const threadId = params.threadId as string | undefined
     return {
@@ -974,10 +937,7 @@ export class CodexLogNormalizer {
     return null
   }
 
-  private handleError(
-    data: Record<string, unknown>,
-    now: string,
-  ): NormalizedLogEntry {
+  private handleError(data: Record<string, unknown>, now: string): NormalizedLogEntry {
     const params = (data.params ?? {}) as Record<string, unknown>
     const error = (params.error ?? {}) as Record<string, unknown>
     const willRetry = params.willRetry as boolean | undefined
@@ -1015,9 +975,7 @@ function extractCommandString(item: Record<string, unknown>): string {
       })
       .join(' ')
   }
-  const actions = item.commandActions as
-    | Array<{ command?: unknown }>
-    | undefined
+  const actions = item.commandActions as Array<{ command?: unknown }> | undefined
   const rawCmd = actions?.[0]?.command
   if (typeof rawCmd === 'string' && rawCmd) return rawCmd
   return ''

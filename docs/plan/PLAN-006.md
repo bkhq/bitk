@@ -1,4 +1,55 @@
-# PLAN-006 stdout 断裂后 fallback 到 transcript JSONL
+# PLAN-006 Migrate from Biome to ESLint + Prettier
+
+- **task**: LINT-001
+- **status**: completed
+- **owner**: claude
+
+## Context
+
+Biome (Rust binary) frequently core dumps during lint runs. The `ulimit -c 0` workaround only suppresses the dump file but the process still crashes. Migration to ESLint + Prettier eliminates this instability.
+
+## Steps
+
+1. Install ESLint + Prettier packages at root
+2. Create `eslint.config.js` (flat config) mapping all Biome rules
+3. Create `.prettierrc` + `.prettierignore`
+4. Update root `package.json` scripts, remove `@biomejs/biome`
+5. Convert `biome-ignore` comments → `eslint-disable` equivalents
+6. Delete `biome.json`
+7. Update docs (CLAUDE.md, AGENTS.md, development.md, architecture.md, frontend README)
+8. Run format + lint + tests to verify
+
+## Rule Mapping
+
+| Biome Rule                      | ESLint Equivalent                                           |
+| ------------------------------- | ----------------------------------------------------------- |
+| `noRestrictedImports` (zod)     | `no-restricted-imports`                                     |
+| `useImportType` (separatedType) | `@typescript-eslint/consistent-type-imports`                |
+| `useNodejsImportProtocol`       | `@typescript-eslint/no-require-imports` + manual            |
+| `useConst`                      | `prefer-const`                                              |
+| `noImplicitAnyLet`              | `@typescript-eslint/no-inferrable-types` (partial)          |
+| `noDuplicateObjectKeys`         | `no-dupe-keys`                                              |
+| `noTsIgnore`                    | `@typescript-eslint/ban-ts-comment`                         |
+| `noDebugger`                    | `no-debugger`                                               |
+| `noDelete`                      | `no-restricted-syntax` (UnaryExpression[operator='delete']) |
+| `useDateNow`                    | — (no direct equivalent, skip)                              |
+| `noUselessSwitchCase`           | `no-fallthrough` (partial)                                  |
+| `noUnusedImports`               | `@typescript-eslint/no-unused-vars`                         |
+| `noMisusedPromises`             | `@typescript-eslint/no-misused-promises`                    |
+| `noFloatingPromises`            | `@typescript-eslint/no-floating-promises`                   |
+| React recommended               | `eslint-plugin-react-hooks`                                 |
+
+## Formatter Config (Prettier)
+
+- `semi: false` (matches `semicolons: "asNeeded"` with no-semi convention)
+- `singleQuote: true`
+- `tabWidth: 2`
+- `trailingComma: "all"`
+- `printWidth: 100`
+
+---
+
+# PLAN-006b stdout 断裂后 fallback 到 transcript JSONL
 
 - **status**: completed
 - **task**: STALL-001
@@ -12,6 +63,7 @@ Claude CLI 进程的 stdout pipe 偶发性异常关闭（Bun pipe bug 或 Claude
 ## 调查发现
 
 ### 时间线（真实案例）
+
 - `21:59:24` — stdout_stream_ended（pipe 断裂），consumeStream resolve
 - `21:59:24-21:59:33` — Claude CLI 继续执行：Bash(git commit)、新 API 请求、Stop hook
 - `22:02:11` — stall_detected（3min 静默）
@@ -19,12 +71,14 @@ Claude CLI 进程的 stdout pipe 偶发性异常关闭（Bun pipe bug 或 Claude
 - `22:08:11` — stall_force_kill（9min，SIGKILL）
 
 ### transcript JSONL
+
 - 路径：`~/.claude/projects/${cwd.replaceAll('/', '-')}/${sessionId}.jsonl`
 - 格式：每行一个 JSON 对象，`type` 字段有 `assistant`/`user`/`system`/`progress`/`queue-operation`
 - 由 Claude CLI 内部直接写入（appendFileSync），与 stdout fd 无关
 - stdout 断裂时仍在正常写入
 
 ### 关键代码路径
+
 - `register.ts:125-142` — consumeStream resolve 后只记日志，不做任何恢复
 - `completion-monitor.ts:61` — 等待 subprocess.exited（如果进程不退出就一直等）
 - `gc.ts:142-289` — stall detection 三阶段（2+2+2=6min 检测 + force kill）
@@ -66,6 +120,7 @@ Claude CLI 进程的 stdout pipe 偶发性异常关闭（Bun pipe bug 或 Claude
 ### transcript 格式转换
 
 transcript JSONL 的 `assistant` 条目结构：
+
 ```json
 {
   "type": "assistant",
@@ -76,6 +131,7 @@ transcript JSONL 的 `assistant` 条目结构：
 ```
 
 stream-json stdout 的 `assistant` 条目结构：
+
 ```json
 {
   "type": "assistant",

@@ -22,8 +22,7 @@ import { spawnFollowUpProcess, spawnRetry } from './spawn'
  * so other failures (API errors, network issues, etc.) don't clear a valid session.
  */
 function isSessionIdError(managed: ManagedProcess): boolean {
-  if (managed.logs.toArray().some((l) => l.entryType === 'assistant-message'))
-    return false
+  if (managed.logs.toArray().some((l) => l.entryType === 'assistant-message')) return false
   const reason = (managed.logicalFailureReason ?? '').toLowerCase()
   return reason.includes('no conversation found') || reason.includes('session')
 }
@@ -31,14 +30,8 @@ function isSessionIdError(managed: ManagedProcess): boolean {
 /**
  * Clear the externalSessionId in DB so the next spawn creates a fresh session.
  */
-async function resetBrokenSession(
-  issueId: string,
-  executionId: string,
-): Promise<void> {
-  logger.warn(
-    { issueId, executionId },
-    'session_init_failure_resetting_session',
-  )
+async function resetBrokenSession(issueId: string, executionId: string): Promise<void> {
+  logger.warn({ issueId, executionId }, 'session_init_failure_resetting_session')
   await updateIssueSession(issueId, { externalSessionId: null }).catch((e) =>
     logger.error({ issueId, error: e }, 'session_reset_failed'),
   )
@@ -89,11 +82,8 @@ export function monitorCompletion(
       // If the issue was already settled by handleTurnCompleted (conversational
       // engines where the process stays alive between turns), just clean up.
       if (managed.turnSettled) {
-        const finalState = (
-          managed.logicalFailure ? 'failed' : 'completed'
-        ) as ProcessStatus
-        if (finalState === 'completed')
-          dispatch(managed, { type: 'MARK_COMPLETED' })
+        const finalState = (managed.logicalFailure ? 'failed' : 'completed') as ProcessStatus
+        if (finalState === 'completed') dispatch(managed, { type: 'MARK_COMPLETED' })
         else dispatch(managed, { type: 'MARK_FAILED' })
         syncPmState(ctx, executionId, finalState)
 
@@ -135,13 +125,11 @@ export function monitorCompletion(
             .filter(Boolean)
             .join('\n\n')
           // Use the latest model override (last wins)
-          const lastModel = queued.reduce<string | undefined>(
-            (acc, i) => i.model ?? acc,
+          const lastModel = queued.reduce<string | undefined>((acc, i) => i.model ?? acc, undefined)
+          const lastPermission = queued.reduce<(typeof queued)[0]['permissionMode'] | undefined>(
+            (acc, i) => i.permissionMode ?? acc,
             undefined,
           )
-          const lastPermission = queued.reduce<
-            (typeof queued)[0]['permissionMode'] | undefined
-          >((acc, i) => i.permissionMode ?? acc, undefined)
 
           logger.debug(
             {
@@ -163,10 +151,7 @@ export function monitorCompletion(
           )
           return
         } catch (error) {
-          logger.error(
-            { issueId, executionId, error },
-            'queued_followup_spawn_failed',
-          )
+          logger.error({ issueId, executionId, error }, 'queued_followup_spawn_failed')
         }
       }
 
@@ -205,10 +190,7 @@ export function monitorCompletion(
         // Auto-retry logic (in-memory only, no DB writes for retryCount)
         if (!isRetry && managed.retryCount < MAX_AUTO_RETRIES) {
           managed.retryCount++
-          logger.info(
-            { issueId, executionId, retryCount: managed.retryCount },
-            'auto_retry_issue',
-          )
+          logger.info({ issueId, executionId, retryCount: managed.retryCount }, 'auto_retry_issue')
           emitDiagnosticLog(
             issueId,
             executionId,
@@ -230,10 +212,7 @@ export function monitorCompletion(
         }
       }
     } catch (outerErr) {
-      logger.error(
-        { issueId, executionId, err: outerErr },
-        'monitor_completion_outer_error',
-      )
+      logger.error({ issueId, executionId, err: outerErr }, 'monitor_completion_outer_error')
       dispatch(managed, { type: 'MARK_FAILED' })
       syncPmState(ctx, executionId, 'failed')
       emitStateChange(issueId, executionId, 'failed')
@@ -242,10 +221,7 @@ export function monitorCompletion(
       try {
         await settleIssue(ctx, issueId, executionId, 'failed')
       } catch (settleErr) {
-        logger.error(
-          { issueId, executionId, err: settleErr },
-          'monitor_completion_settle_failed',
-        )
+        logger.error({ issueId, executionId, err: settleErr }, 'monitor_completion_settle_failed')
       }
     }
   })()

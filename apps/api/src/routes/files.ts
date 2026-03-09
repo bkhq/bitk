@@ -29,10 +29,7 @@ function isBinaryBuffer(buf: Buffer): boolean {
 }
 
 /** Return a Set of names that git considers ignored in the given directory. */
-async function getGitIgnoredNames(
-  dir: string,
-  names: string[],
-): Promise<Set<string>> {
+async function getGitIgnoredNames(dir: string, names: string[]): Promise<Set<string>> {
   if (names.length === 0) return new Set()
   try {
     const paths = names.map((n) => resolve(dir, n))
@@ -75,10 +72,7 @@ async function resolveProjectPath(c: Context, relativePath: string) {
   }
   if (!project.directory) {
     return {
-      error: c.json(
-        { success: false, error: 'Project has no directory configured' },
-        400,
-      ),
+      error: c.json({ success: false, error: 'Project has no directory configured' }, 400),
     }
   }
 
@@ -115,10 +109,7 @@ async function resolveProjectPath(c: Context, relativePath: string) {
       const resolvedWs = resolve(workspaceRoot)
       if (!root.startsWith(`${resolvedWs}/`) && root !== resolvedWs) {
         return {
-          error: c.json(
-            { success: false, error: 'Project directory is outside workspace' },
-            403,
-          ),
+          error: c.json({ success: false, error: 'Project directory is outside workspace' }, 403),
         }
       }
     }
@@ -128,10 +119,7 @@ async function resolveProjectPath(c: Context, relativePath: string) {
 
   if (!isInsideRoot(target, root)) {
     return {
-      error: c.json(
-        { success: false, error: 'Path is outside project directory' },
-        403,
-      ),
+      error: c.json({ success: false, error: 'Path is outside project directory' }, 403),
     }
   }
 
@@ -200,9 +188,7 @@ async function handleShow(c: Context, relativePath: string) {
 
     // ── Directory: return entry listing ──
     const dirents = await readdir(target, { withFileTypes: true })
-    const validNames = dirents
-      .filter((d) => d.isFile() || d.isDirectory())
-      .map((d) => d.name)
+    const validNames = dirents.filter((d) => d.isFile() || d.isDirectory()).map((d) => d.name)
 
     const ignoredNames = hideIgnored
       ? await getGitIgnoredNames(target, validNames)

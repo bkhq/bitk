@@ -17,10 +17,7 @@ export function registerShutdownForUpgrade(fn: () => Promise<void>): void {
 
 // --- Archive extraction (package mode) ---
 
-async function extractArchive(
-  archivePath: string,
-  destDir: string,
-): Promise<void> {
+async function extractArchive(archivePath: string, destDir: string): Promise<void> {
   // Extract into a temp directory first, then atomically swap into place.
   // This preserves the existing version directory if extraction fails.
   const tmpDir = `${destDir}.tmp.${Date.now()}`
@@ -28,15 +25,7 @@ async function extractArchive(
 
   try {
     const proc = Bun.spawn(
-      [
-        'tar',
-        '-xzf',
-        archivePath,
-        '-C',
-        tmpDir,
-        '--no-same-owner',
-        '--no-overwrite-dir',
-      ],
+      ['tar', '-xzf', archivePath, '-C', tmpDir, '--no-same-owner', '--no-overwrite-dir'],
       { stdio: ['ignore', 'pipe', 'pipe'] },
     )
     const exitCode = await proc.exited
@@ -48,9 +37,7 @@ async function extractArchive(
     // Verify the extracted package contains server.js
     const serverPath = resolve(tmpDir, 'server.js')
     if (!existsSync(serverPath)) {
-      throw new Error(
-        'Invalid app package: missing server.js in extracted contents',
-      )
+      throw new Error('Invalid app package: missing server.js in extracted contents')
     }
 
     // Swap: backup old version, rename temp into place, clean up backup
@@ -120,16 +107,11 @@ export async function applyUpgradeAndRestart(): Promise<void> {
       // Package mode: extract to data/app/v{version}/, update current pointer, restart
       const version = parseVersionFromFileName(status.fileName ?? '')
       if (!version) {
-        throw new Error(
-          `Cannot determine version from filename: ${status.fileName}`,
-        )
+        throw new Error(`Cannot determine version from filename: ${status.fileName}`)
       }
 
       const versionDir = resolve(APP_BASE, `v${version}`)
-      logger.info(
-        { archivePath: status.filePath, versionDir },
-        'upgrade_extracting_package',
-      )
+      logger.info({ archivePath: status.filePath, versionDir }, 'upgrade_extracting_package')
       await extractArchive(status.filePath, versionDir)
 
       // Activate the new version
@@ -167,10 +149,7 @@ export async function applyUpgradeAndRestart(): Promise<void> {
         throw new Error('Upgrade binary path is outside the updates directory')
       }
 
-      logger.info(
-        { from: process.execPath, to: upgradeBinary },
-        'upgrade_applying',
-      )
+      logger.info({ from: process.execPath, to: upgradeBinary }, 'upgrade_applying')
 
       // Graceful shutdown: stop server, cancel engine processes, release port
       if (registeredShutdownFn) {

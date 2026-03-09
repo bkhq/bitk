@@ -12,24 +12,13 @@ import { ProcessList } from './ProcessList'
 
 export function ProcessManagerDrawer() {
   const { t } = useTranslation()
-  const {
-    isOpen,
-    isFullscreen,
-    width,
-    projectId,
-    close,
-    minimize,
-    toggleFullscreen,
-    setWidth,
-  } = useProcessManagerStore()
+  const { isOpen, isFullscreen, width, projectId, close, minimize, toggleFullscreen, setWidth } =
+    useProcessManagerStore()
   const isMobile = useIsMobile()
   const dragRef = useRef<{ startX: number; startWidth: number } | null>(null)
 
   const { data: project } = useProject(projectId ?? '')
-  const { data, isLoading } = useProjectProcesses(
-    projectId ?? '',
-    !!projectId && isOpen,
-  )
+  const { data, isLoading } = useProjectProcesses(projectId ?? '', !!projectId && isOpen)
 
   if (!isOpen || !projectId) return null
 
@@ -43,11 +32,7 @@ export function ProcessManagerDrawer() {
     <>
       {/* Backdrop overlay */}
       {fullscreen ? null : (
-        <div
-          className="fixed inset-0 z-[39] bg-black/20"
-          onClick={close}
-          onKeyDown={undefined}
-        />
+        <div className="fixed inset-0 z-[39] bg-black/20" onClick={close} onKeyDown={undefined} />
       )}
       <div
         className={`fixed top-0 bottom-0 right-0 z-40 flex flex-col border-l border-border bg-background shadow-2xl ${
@@ -121,9 +106,7 @@ export function ProcessManagerDrawer() {
                 onClick={toggleFullscreen}
                 className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
                 aria-label={t('terminal.maximize')}
-                title={
-                  isFullscreen ? t('terminal.back') : t('terminal.maximize')
-                }
+                title={isFullscreen ? t('terminal.back') : t('terminal.maximize')}
               >
                 {isFullscreen ? (
                   <Minimize2 className="h-3.5 w-3.5" />
@@ -153,9 +136,7 @@ export function ProcessManagerDrawer() {
           ) : processes.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
               <Activity className="h-12 w-12" />
-              <p className="text-sm font-medium">
-                {t('processManager.noProcesses')}
-              </p>
+              <p className="text-sm font-medium">{t('processManager.noProcesses')}</p>
               <p className="text-xs text-center max-w-[240px]">
                 {t('processManager.noProcessesHint')}
               </p>

@@ -109,15 +109,10 @@ export const kanbanApi = {
 
   // Issues
   getReviewIssues: () =>
-    get<Array<Issue & { projectName: string; projectAlias: string }>>(
-      '/api/issues/review',
-    ),
-  getIssues: (projectId: string) =>
-    get<Issue[]>(`/api/projects/${projectId}/issues`),
+    get<Array<Issue & { projectName: string; projectAlias: string }>>('/api/issues/review'),
+  getIssues: (projectId: string) => get<Issue[]>(`/api/projects/${projectId}/issues`),
   getChildIssues: (projectId: string, parentId: string) =>
-    get<Issue[]>(
-      `/api/projects/${projectId}/issues?parentId=${encodeURIComponent(parentId)}`,
-    ),
+    get<Issue[]>(`/api/projects/${projectId}/issues?parentId=${encodeURIComponent(parentId)}`),
   createIssue: (
     projectId: string,
     data: {
@@ -148,15 +143,8 @@ export const kanbanApi = {
     del<{ id: string }>(`/api/projects/${projectId}/issues/${issueId}`),
 
   // Issue session operations (merged from sessions)
-  executeIssue: (
-    projectId: string,
-    issueId: string,
-    data: ExecuteIssueRequest,
-  ) =>
-    post<ExecuteIssueResponse>(
-      `/api/projects/${projectId}/issues/${issueId}/execute`,
-      data,
-    ),
+  executeIssue: (projectId: string, issueId: string, data: ExecuteIssueRequest) =>
+    post<ExecuteIssueResponse>(`/api/projects/${projectId}/issues/${issueId}/execute`, data),
 
   followUpIssue: (opts: {
     projectId: string
@@ -203,10 +191,7 @@ export const kanbanApi = {
     ),
 
   restartIssue: (projectId: string, issueId: string) =>
-    post<ExecuteIssueResponse>(
-      `/api/projects/${projectId}/issues/${issueId}/restart`,
-      {},
-    ),
+    post<ExecuteIssueResponse>(`/api/projects/${projectId}/issues/${issueId}/restart`, {}),
 
   deletePendingMessage: (projectId: string, issueId: string) =>
     del<{
@@ -222,10 +207,9 @@ export const kanbanApi = {
     }>(`/api/projects/${projectId}/issues/${issueId}/pending`),
 
   autoTitleIssue: async (projectId: string, issueId: string) => {
-    const res = await fetch(
-      `/api/projects/${projectId}/issues/${issueId}/auto-title`,
-      { method: 'POST' },
-    )
+    const res = await fetch(`/api/projects/${projectId}/issues/${issueId}/auto-title`, {
+      method: 'POST',
+    })
     if (!res.ok) throw new Error(`Auto-title failed: ${res.status}`)
     return res.json()
   },
@@ -245,27 +229,19 @@ export const kanbanApi = {
     )
   },
   getSlashCommands: (projectId: string, issueId: string) =>
-    get<CategorizedCommands>(
-      `/api/projects/${projectId}/issues/${issueId}/slash-commands`,
-    ),
+    get<CategorizedCommands>(`/api/projects/${projectId}/issues/${issueId}/slash-commands`),
   getIssueChanges: (projectId: string, issueId: string) =>
-    get<IssueChangesResponse>(
-      `/api/projects/${projectId}/issues/${issueId}/changes`,
-    ),
+    get<IssueChangesResponse>(`/api/projects/${projectId}/issues/${issueId}/changes`),
   getIssueFilePatch: (projectId: string, issueId: string, path: string) =>
     get<IssueFilePatchResponse>(
       `/api/projects/${projectId}/issues/${issueId}/changes/file?path=${encodeURIComponent(path)}`,
     ),
 
   // Engines
-  getEngineAvailability: () =>
-    get<EngineDiscoveryResult>('/api/engines/available'),
+  getEngineAvailability: () => get<EngineDiscoveryResult>('/api/engines/available'),
   getEngineProfiles: () => get<EngineProfile[]>('/api/engines/profiles'),
   getEngineSettings: () => get<EngineSettings>('/api/engines/settings'),
-  updateEngineModelSetting: (
-    engineType: string,
-    data: { defaultModel: string },
-  ) =>
+  updateEngineModelSetting: (engineType: string, data: { defaultModel: string }) =>
     patch<{ engineType: string; defaultModel: string }>(
       `/api/engines/${encodeURIComponent(engineType)}/settings`,
       data,
@@ -287,8 +263,7 @@ export const kanbanApi = {
   getLogPageSize: () => get<{ size: number }>('/api/settings/log-page-size'),
   setLogPageSize: (size: number) =>
     patch<{ size: number }>('/api/settings/log-page-size', { size }),
-  getWorktreeAutoCleanup: () =>
-    get<{ enabled: boolean }>('/api/settings/worktree-auto-cleanup'),
+  getWorktreeAutoCleanup: () => get<{ enabled: boolean }>('/api/settings/worktree-auto-cleanup'),
   setWorktreeAutoCleanup: (enabled: boolean) =>
     patch<{ enabled: boolean }>('/api/settings/worktree-auto-cleanup', {
       enabled,
@@ -303,9 +278,7 @@ export const kanbanApi = {
       worktrees: { count: number; totalSize: number }
       deletedIssues: { issueCount: number; projectCount: number }
     }>('/api/settings/cleanup/stats'),
-  runCleanup: (
-    targets: Array<'logs' | 'oldVersions' | 'worktrees' | 'deletedIssues'>,
-  ) =>
+  runCleanup: (targets: Array<'logs' | 'oldVersions' | 'worktrees' | 'deletedIssues'>) =>
     post<Record<string, { cleaned: number }>>('/api/settings/cleanup', {
       targets,
     }),
@@ -325,14 +298,9 @@ export const kanbanApi = {
 
   // Server Info
   getServerInfo: () =>
-    get<{ name: string | null; url: string | null }>(
-      '/api/settings/server-info',
-    ),
+    get<{ name: string | null; url: string | null }>('/api/settings/server-info'),
   updateServerInfo: (data: { name?: string; url?: string }) =>
-    patch<{ name: string | null; url: string | null }>(
-      '/api/settings/server-info',
-      data,
-    ),
+    patch<{ name: string | null; url: string | null }>('/api/settings/server-info', data),
 
   // System Logs
   getSystemLogs: (lines = 200) =>
@@ -340,8 +308,7 @@ export const kanbanApi = {
       `/api/settings/system-logs?lines=${lines}`,
     ),
   downloadSystemLogs: () => `/api/settings/system-logs/download`,
-  clearSystemLogs: () =>
-    post<{ cleared: boolean }>('/api/settings/system-logs/clear', {}),
+  clearSystemLogs: () => post<{ cleared: boolean }>('/api/settings/system-logs/clear', {}),
 
   // About / System Info
   getSystemInfo: () =>
@@ -377,8 +344,7 @@ export const kanbanApi = {
       isCompiled: boolean
       isPackageMode: boolean
     }>('/api/settings/upgrade/version'),
-  getUpgradeEnabled: () =>
-    get<{ enabled: boolean }>('/api/settings/upgrade/enabled'),
+  getUpgradeEnabled: () => get<{ enabled: boolean }>('/api/settings/upgrade/enabled'),
   setUpgradeEnabled: (enabled: boolean) =>
     patch<{ enabled: boolean }>('/api/settings/upgrade/enabled', { enabled }),
   getUpgradeCheck: () =>
@@ -412,50 +378,31 @@ export const kanbanApi = {
       checkedAt: string
     }>('/api/settings/upgrade/check', {}),
   downloadUpdate: (url: string, fileName: string, checksumUrl?: string) =>
-    post<{ status: string; fileName: string }>(
-      '/api/settings/upgrade/download',
-      {
-        url,
-        fileName,
-        ...(checksumUrl ? { checksumUrl } : {}),
-      },
-    ),
+    post<{ status: string; fileName: string }>('/api/settings/upgrade/download', {
+      url,
+      fileName,
+      ...(checksumUrl ? { checksumUrl } : {}),
+    }),
   getDownloadStatus: () =>
     get<{
-      status:
-        | 'idle'
-        | 'downloading'
-        | 'verifying'
-        | 'verified'
-        | 'completed'
-        | 'failed'
+      status: 'idle' | 'downloading' | 'verifying' | 'verified' | 'completed' | 'failed'
       progress: number
       fileName: string | null
       filePath: string | null
       error: string | null
       checksumMatch: boolean | null
     }>('/api/settings/upgrade/download/status'),
-  restartWithUpgrade: () =>
-    post<{ status: string }>('/api/settings/upgrade/restart', {}),
+  restartWithUpgrade: () => post<{ status: string }>('/api/settings/upgrade/restart', {}),
 
   // File Browser
-  listFiles: (
-    projectId: string,
-    path?: string,
-    hideIgnored?: boolean,
-    root?: string | null,
-  ) => {
+  listFiles: (projectId: string, path?: string, hideIgnored?: boolean, root?: string | null) => {
     const encodedPath =
-      path && path !== '.'
-        ? `/${path.split('/').map(encodeURIComponent).join('/')}`
-        : ''
+      path && path !== '.' ? `/${path.split('/').map(encodeURIComponent).join('/')}` : ''
     const params = new URLSearchParams()
     if (hideIgnored) params.set('hideIgnored', 'true')
     if (root) params.set('root', root)
     const qs = params.toString() ? `?${params.toString()}` : ''
-    return get<FileListingResult>(
-      `/api/projects/${projectId}/files/show${encodedPath}${qs}`,
-    )
+    return get<FileListingResult>(`/api/projects/${projectId}/files/show${encodedPath}${qs}`)
   },
 
   // Process Manager
@@ -493,20 +440,15 @@ export const kanbanApi = {
       isActive?: boolean
     },
   ) => patch<Webhook>(`/api/settings/webhooks/${id}`, data),
-  deleteWebhook: (id: string) =>
-    del<{ id: string }>(`/api/settings/webhooks/${id}`),
+  deleteWebhook: (id: string) => del<{ id: string }>(`/api/settings/webhooks/${id}`),
   getWebhookDeliveries: (id: string) =>
     get<WebhookDelivery[]>(`/api/settings/webhooks/${id}/deliveries`),
-  testWebhook: (id: string) =>
-    post<{ sent: boolean }>(`/api/settings/webhooks/${id}/test`, {}),
+  testWebhook: (id: string) => post<{ sent: boolean }>(`/api/settings/webhooks/${id}/test`, {}),
 
   // Notes
   getNotes: () => get<Note[]>('/api/notes'),
-  createNote: (data: { title?: string; content?: string }) =>
-    post<Note>('/api/notes', data),
-  updateNote: (
-    id: string,
-    data: { title?: string; content?: string; isPinned?: boolean },
-  ) => patch<Note>(`/api/notes/${id}`, data),
+  createNote: (data: { title?: string; content?: string }) => post<Note>('/api/notes', data),
+  updateNote: (id: string, data: { title?: string; content?: string; isPinned?: boolean }) =>
+    patch<Note>(`/api/notes/${id}`, data),
   deleteNote: (id: string) => del<{ id: string }>(`/api/notes/${id}`),
 }

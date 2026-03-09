@@ -97,9 +97,7 @@ export function CreateProjectDialog({
       <DialogContent className="md:max-w-lg">
         <DialogHeader>
           <DialogTitle>{t('project.create')}</DialogTitle>
-          <DialogDescription>
-            {t('project.createDescription')}
-          </DialogDescription>
+          <DialogDescription>{t('project.createDescription')}</DialogDescription>
         </DialogHeader>
 
         <FieldGroup>
@@ -122,15 +120,11 @@ export function CreateProjectDialog({
             <Input
               type="text"
               value={alias}
-              onChange={(e) =>
-                setAlias(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ''))
-              }
+              onChange={(e) => setAlias(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ''))}
               placeholder={t('project.aliasPlaceholder')}
               className="w-full"
             />
-            <p className="text-[11px] text-muted-foreground">
-              {t('project.aliasHint')}
-            </p>
+            <p className="text-[11px] text-muted-foreground">{t('project.aliasHint')}</p>
           </Field>
 
           <Field>
@@ -201,11 +195,7 @@ export function CreateProjectDialog({
                 title={t('project.detectGitRemote')}
                 className="shrink-0"
               >
-                {detectingRemote ? (
-                  <Loader2 className="size-4 animate-spin" />
-                ) : (
-                  'Auto'
-                )}
+                {detectingRemote ? <Loader2 className="size-4 animate-spin" /> : 'Auto'}
               </Button>
             </div>
           </Field>
@@ -217,9 +207,7 @@ export function CreateProjectDialog({
             onClick={handleSubmit}
             disabled={createProject.isPending || !name.trim()}
           >
-            {createProject.isPending
-              ? t('project.creating')
-              : t('project.createButton')}
+            {createProject.isPending ? t('project.creating') : t('project.createButton')}
           </Button>
         </FieldGroup>
       </DialogContent>

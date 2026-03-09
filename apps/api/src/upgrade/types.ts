@@ -29,13 +29,7 @@ export interface UpgradeCheckResult {
 }
 
 export interface DownloadStatus {
-  status:
-    | 'idle'
-    | 'downloading'
-    | 'verifying'
-    | 'verified'
-    | 'completed'
-    | 'failed'
+  status: 'idle' | 'downloading' | 'verifying' | 'verified' | 'completed' | 'failed'
   progress: number // 0-100
   fileName: string | null
   filePath: string | null

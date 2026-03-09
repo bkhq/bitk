@@ -93,9 +93,7 @@ export class ClaudeLogNormalizer {
             sessionId: data.session_id,
             cwd: data.cwd,
             model: data.model,
-            slashCommands: Array.isArray(data.slash_commands)
-              ? data.slash_commands
-              : [],
+            slashCommands: Array.isArray(data.slash_commands) ? data.slash_commands : [],
             agents: Array.isArray(data.agents) ? data.agents : [],
             plugins: Array.isArray(data.plugins) ? data.plugins : [],
           },
@@ -148,9 +146,7 @@ export class ClaudeLogNormalizer {
 
   // ---------- Assistant ----------
 
-  private parseAssistant(
-    data: ClaudeAssistant,
-  ): NormalizedLogEntry | NormalizedLogEntry[] | null {
+  private parseAssistant(data: ClaudeAssistant): NormalizedLogEntry | NormalizedLogEntry[] | null {
     const entries: NormalizedLogEntry[] = []
 
     // Extract model name from first assistant message
@@ -163,9 +159,7 @@ export class ClaudeLogNormalizer {
       })
     }
 
-    const contentBlocks = Array.isArray(data.message.content)
-      ? data.message.content
-      : null
+    const contentBlocks = Array.isArray(data.message.content) ? data.message.content : null
 
     // Text content
     const text = extractTextContent(contentBlocks ?? data.message.content)
@@ -237,15 +231,11 @@ export class ClaudeLogNormalizer {
 
   // ---------- User ----------
 
-  private parseUser(
-    data: ClaudeUser,
-  ): NormalizedLogEntry | NormalizedLogEntry[] | null {
+  private parseUser(data: ClaudeUser): NormalizedLogEntry | NormalizedLogEntry[] | null {
     // Skip replay messages (historical context from --resume)
     if (data.isReplay) return null
 
-    const contentBlocks = Array.isArray(data.message.content)
-      ? data.message.content
-      : null
+    const contentBlocks = Array.isArray(data.message.content) ? data.message.content : null
 
     // Synthetic messages (injected by CLI, e.g. hook output)
     if (data.isSynthetic && contentBlocks) {
@@ -304,8 +294,7 @@ export class ClaudeLogNormalizer {
     }
 
     // Slash command output — only treat content wrapped in <local-command-stdout>
-    const rawContent =
-      typeof data.message.content === 'string' ? data.message.content : null
+    const rawContent = typeof data.message.content === 'string' ? data.message.content : null
     if (rawContent) {
       if (rawContent.includes('<local-command-stdout>')) {
         const stripped = rawContent
@@ -387,17 +376,14 @@ export class ClaudeLogNormalizer {
   // ---------- Streaming events ----------
 
   /** Unwrap `{"type":"stream_event","event":{...}}` wrapper and delegate. */
-  private parseStreamEventWrapper(
-    data: ClaudeStreamEventWrapper,
-  ): NormalizedLogEntry | null {
+  private parseStreamEventWrapper(data: ClaudeStreamEventWrapper): NormalizedLogEntry | null {
     if (!data.event) return null
     // Merge outer fields (session_id, parent_tool_use_id, uuid, timestamp)
     // into the inner event so downstream parsers see them.
     const inner: ClaudeStreamEvent = {
       ...data.event,
       session_id: data.event.session_id ?? data.session_id,
-      parent_tool_use_id:
-        data.event.parent_tool_use_id ?? data.parent_tool_use_id ?? undefined,
+      parent_tool_use_id: data.event.parent_tool_use_id ?? data.parent_tool_use_id ?? undefined,
       uuid: data.event.uuid ?? data.uuid,
       timestamp: data.event.timestamp ?? data.timestamp,
     }
@@ -418,16 +404,12 @@ export class ClaudeLogNormalizer {
     }
   }
 
-  private parseContentBlockDelta(
-    _data: ClaudeStreamEvent,
-  ): NormalizedLogEntry | null {
+  private parseContentBlockDelta(_data: ClaudeStreamEvent): NormalizedLogEntry | null {
     // Ignore streaming deltas — complete assistant messages contain the full content.
     return null
   }
 
-  private parseMessageStart(
-    data: ClaudeStreamEvent,
-  ): NormalizedLogEntry | null {
+  private parseMessageStart(data: ClaudeStreamEvent): NormalizedLogEntry | null {
     if (data.message?.model && !this.modelName) {
       this.modelName = data.message.model
       return {
@@ -439,9 +421,7 @@ export class ClaudeLogNormalizer {
     return null
   }
 
-  private parseMessageDelta(
-    data: ClaudeStreamEvent,
-  ): NormalizedLogEntry | null {
+  private parseMessageDelta(data: ClaudeStreamEvent): NormalizedLogEntry | null {
     // Emit token usage from message_delta if not from subagent
     if (!data.parent_tool_use_id && data.usage) {
       const input =
@@ -463,9 +443,7 @@ export class ClaudeLogNormalizer {
 
   // ---------- Result ----------
 
-  private parseResult(
-    data: ClaudeResult,
-  ): NormalizedLogEntry | NormalizedLogEntry[] {
+  private parseResult(data: ClaudeResult): NormalizedLogEntry | NormalizedLogEntry[] {
     const entries: NormalizedLogEntry[] = []
     const isLogicalError = !!data.is_error || data.subtype !== 'success'
 
@@ -517,8 +495,7 @@ export class ClaudeLogNormalizer {
       data.subtype === 'success' &&
       typeof data.result === 'string' &&
       data.result.trim() &&
-      (!this.lastAssistantMessage ||
-        !this.lastAssistantMessage.includes(data.result))
+      (!this.lastAssistantMessage || !this.lastAssistantMessage.includes(data.result))
     ) {
       entries.push({
         entryType: 'assistant-message',
@@ -558,14 +535,10 @@ export class ClaudeLogNormalizer {
 
   // ---------- Unknown ----------
 
-  private parseUnknown(
-    data: Record<string, unknown>,
-  ): NormalizedLogEntry | null {
+  private parseUnknown(data: Record<string, unknown>): NormalizedLogEntry | null {
     const fallbackContent = (data.message ?? data.content ?? '') as string
     const fallbackStr =
-      typeof fallbackContent === 'string'
-        ? fallbackContent
-        : JSON.stringify(fallbackContent)
+      typeof fallbackContent === 'string' ? fallbackContent : JSON.stringify(fallbackContent)
     if (!fallbackStr.trim()) return null
     return {
       entryType: 'system-message',

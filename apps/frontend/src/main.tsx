@@ -44,8 +44,7 @@ eventBus.onIssueUpdated(() => {
       activityTimer = null
       queryClient.invalidateQueries({
         queryKey: ['projects'],
-        predicate: (q) =>
-          q.queryKey.includes('changes') || q.queryKey.includes('processes'),
+        predicate: (q) => q.queryKey.includes('changes') || q.queryKey.includes('processes'),
       })
     }, 2000)
   })
@@ -234,9 +233,7 @@ if (!rootElement.innerHTML) {
           <ServerConfigLoader />
         </ErrorBoundary>
       </BrowserRouter>
-      {import.meta.env.DEV ? (
-        <ReactQueryDevtools initialIsOpen={false} />
-      ) : null}
+      {import.meta.env.DEV ? <ReactQueryDevtools initialIsOpen={false} /> : null}
     </QueryClientProvider>,
   )
 }

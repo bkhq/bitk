@@ -13,16 +13,10 @@ import {
   setServerName,
   setServerUrl,
 } from '@/db/helpers'
-import {
-  DEFAULT_LOG_PAGE_SIZE,
-  LOG_PAGE_SIZE_KEY,
-} from '@/engines/issue/constants'
+import { DEFAULT_LOG_PAGE_SIZE, LOG_PAGE_SIZE_KEY } from '@/engines/issue/constants'
 import { getCachedCategorizedCommands } from '@/engines/issue/queries'
 import type { WriteFilterRule } from '@/engines/write-filter'
-import {
-  DEFAULT_FILTER_RULES,
-  WRITE_FILTER_RULES_KEY,
-} from '@/engines/write-filter'
+import { DEFAULT_FILTER_RULES, WRITE_FILTER_RULES_KEY } from '@/engines/write-filter'
 import { WORKTREE_AUTO_CLEANUP_KEY } from '@/jobs/worktree-cleanup'
 
 const general = new Hono()
@@ -38,21 +32,17 @@ general.get('/workspace-path', async (c) => {
 // PATCH /api/settings/workspace-path
 general.patch(
   '/workspace-path',
-  zValidator(
-    'json',
-    z.object({ path: z.string().min(1).max(1024) }),
-    (result, c) => {
-      if (!result.success) {
-        return c.json(
-          {
-            success: false,
-            error: result.error.issues.map((i) => i.message).join(', '),
-          },
-          400,
-        )
-      }
-    },
-  ),
+  zValidator('json', z.object({ path: z.string().min(1).max(1024) }), (result, c) => {
+    if (!result.success) {
+      return c.json(
+        {
+          success: false,
+          error: result.error.issues.map((i) => i.message).join(', '),
+        },
+        400,
+      )
+    }
+  }),
   async (c) => {
     const { path } = c.req.valid('json')
     const resolved = resolve(path)
@@ -100,21 +90,17 @@ general.get('/write-filter-rules', async (c) => {
 // PUT /api/settings/write-filter-rules
 general.put(
   '/write-filter-rules',
-  zValidator(
-    'json',
-    z.object({ rules: z.array(writeFilterRuleSchema) }),
-    (result, c) => {
-      if (!result.success) {
-        return c.json(
-          {
-            success: false,
-            error: result.error.issues.map((i) => i.message).join(', '),
-          },
-          400,
-        )
-      }
-    },
-  ),
+  zValidator('json', z.object({ rules: z.array(writeFilterRuleSchema) }), (result, c) => {
+    if (!result.success) {
+      return c.json(
+        {
+          success: false,
+          error: result.error.issues.map((i) => i.message).join(', '),
+        },
+        400,
+      )
+    }
+  }),
   async (c) => {
     const { rules } = c.req.valid('json')
     await setAppSetting(WRITE_FILTER_RULES_KEY, JSON.stringify(rules))
@@ -157,9 +143,7 @@ general.patch(
       return c.json({ success: false, error: `Rule not found: ${ruleId}` }, 404)
     }
 
-    const updatedRules = rules.map((r) =>
-      r.id === ruleId ? { ...r, enabled } : r,
-    )
+    const updatedRules = rules.map((r) => (r.id === ruleId ? { ...r, enabled } : r))
     await setAppSetting(WRITE_FILTER_RULES_KEY, JSON.stringify(updatedRules))
     return c.json({
       success: true,
@@ -211,21 +195,17 @@ general.get('/log-page-size', async (c) => {
 // PATCH /api/settings/log-page-size
 general.patch(
   '/log-page-size',
-  zValidator(
-    'json',
-    z.object({ size: z.number().int().min(5).max(200) }),
-    (result, c) => {
-      if (!result.success) {
-        return c.json(
-          {
-            success: false,
-            error: result.error.issues.map((i) => i.message).join(', '),
-          },
-          400,
-        )
-      }
-    },
-  ),
+  zValidator('json', z.object({ size: z.number().int().min(5).max(200) }), (result, c) => {
+    if (!result.success) {
+      return c.json(
+        {
+          success: false,
+          error: result.error.issues.map((i) => i.message).join(', '),
+        },
+        400,
+      )
+    }
+  }),
   async (c) => {
     const { size } = c.req.valid('json')
     await setAppSetting(LOG_PAGE_SIZE_KEY, String(size))
@@ -283,10 +263,7 @@ general.patch(
       }
     }
 
-    const [currentName, currentUrl] = await Promise.all([
-      getServerName(),
-      getServerUrl(),
-    ])
+    const [currentName, currentUrl] = await Promise.all([getServerName(), getServerUrl()])
     return c.json({
       success: true,
       data: { name: currentName, url: currentUrl },
@@ -301,10 +278,7 @@ general.get('/slash-commands', async (c) => {
   const validEngines = ['claude-code', 'codex', 'gemini', 'echo']
   const rawEngine = c.req.query('engine')
   if (rawEngine && !validEngines.includes(rawEngine)) {
-    return c.json(
-      { success: false, error: `Invalid engine type: ${rawEngine}` },
-      400,
-    )
+    return c.json({ success: false, error: `Invalid engine type: ${rawEngine}` }, 400)
   }
   const engine = rawEngine as import('@/engines/types').EngineType | undefined
   let categorized = getCachedCategorizedCommands(engine)
@@ -314,9 +288,7 @@ general.get('/slash-commands', async (c) => {
     categorized.agents.length === 0 &&
     categorized.plugins.length === 0
   ) {
-    const { refreshSlashCommandsCache } = await import(
-      '@/engines/issue/queries'
-    )
+    const { refreshSlashCommandsCache } = await import('@/engines/issue/queries')
     await refreshSlashCommandsCache()
     categorized = getCachedCategorizedCommands(engine)
   }

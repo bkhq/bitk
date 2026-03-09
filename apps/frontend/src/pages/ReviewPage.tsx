@@ -45,17 +45,13 @@ export default function ReviewPage() {
       const onMouseMove = (ev: MouseEvent) => {
         if (!isResizingList.current) return
         const delta = ev.clientX - startX
-        const viewport =
-          typeof window !== 'undefined' ? window.innerWidth : 1600
+        const viewport = typeof window !== 'undefined' ? window.innerWidth : 1600
         const diffSpace = showDiff ? diffWidth : 0
         const dynamicMax = Math.min(
           MAX_LIST_WIDTH,
           viewport - SIDEBAR_WIDTH - diffSpace - MIN_CHAT_WIDTH,
         )
-        const newWidth = Math.min(
-          dynamicMax,
-          Math.max(MIN_LIST_WIDTH, startWidth + delta),
-        )
+        const newWidth = Math.min(dynamicMax, Math.max(MIN_LIST_WIDTH, startWidth + delta))
         setListWidth(newWidth)
       }
 
@@ -75,10 +71,8 @@ export default function ReviewPage() {
     [listWidth, showDiff, diffWidth],
   )
 
-  const availableWidth =
-    typeof window !== 'undefined' ? window.innerWidth - SIDEBAR_WIDTH : 1200
-  const hideListPanel =
-    (isMobile && !!issueId) || (showDiff && diffWidth > availableWidth * 0.5)
+  const availableWidth = typeof window !== 'undefined' ? window.innerWidth - SIDEBAR_WIDTH : 1200
+  const hideListPanel = (isMobile && !!issueId) || (showDiff && diffWidth > availableWidth * 0.5)
 
   const handleDiffWidthChange = useCallback(
     (w: number) => {
@@ -93,10 +87,7 @@ export default function ReviewPage() {
   useEffect(() => {
     if (!showDiff) return
     const viewport = typeof window !== 'undefined' ? window.innerWidth : 1600
-    const maxList = Math.min(
-      MAX_LIST_WIDTH,
-      viewport - SIDEBAR_WIDTH - diffWidth - MIN_CHAT_WIDTH,
-    )
+    const maxList = Math.min(MAX_LIST_WIDTH, viewport - SIDEBAR_WIDTH - diffWidth - MIN_CHAT_WIDTH)
     setListWidth((prev) => Math.max(MIN_LIST_WIDTH, Math.min(prev, maxList)))
   }, [showDiff, diffWidth])
 
@@ -109,9 +100,7 @@ export default function ReviewPage() {
           activeIssueId={issueId}
           width={isMobile ? undefined : listWidth}
           onResizeStart={isMobile ? undefined : handleListResizeStart}
-          mobileNav={
-            isMobile ? <MobileSidebar activeProjectId="" /> : undefined
-          }
+          mobileNav={isMobile ? <MobileSidebar activeProjectId="" /> : undefined}
         />
       ) : null}
 
@@ -129,9 +118,7 @@ export default function ReviewPage() {
         />
       ) : !hideListPanel ? (
         <div className="flex flex-1 items-center justify-center">
-          <p className="text-sm text-muted-foreground">
-            {t('review.selectToStart')}
-          </p>
+          <p className="text-sm text-muted-foreground">{t('review.selectToStart')}</p>
         </div>
       ) : null}
     </div>

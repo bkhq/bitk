@@ -43,17 +43,13 @@ export default function IssueDetailPage() {
         if (!isResizingList.current) return
         const delta = ev.clientX - startX
         // Dynamic max: ensure MIN_CHAT_WIDTH remains after sidebar + list + diff
-        const viewport =
-          typeof window !== 'undefined' ? window.innerWidth : 1600
+        const viewport = typeof window !== 'undefined' ? window.innerWidth : 1600
         const diffSpace = showDiff ? diffWidth : 0
         const dynamicMax = Math.min(
           MAX_LIST_WIDTH,
           viewport - SIDEBAR_WIDTH - diffSpace - MIN_CHAT_WIDTH,
         )
-        const newWidth = Math.min(
-          dynamicMax,
-          Math.max(MIN_LIST_WIDTH, startWidth + delta),
-        )
+        const newWidth = Math.min(dynamicMax, Math.max(MIN_LIST_WIDTH, startWidth + delta))
         setListWidth(newWidth)
       }
 
@@ -75,10 +71,8 @@ export default function IssueDetailPage() {
 
   // On mobile: show list when no issue selected, show chat when issue selected
   // On desktop: hide list panel when diff panel needs more than 50% of available space
-  const availableWidth =
-    typeof window !== 'undefined' ? window.innerWidth - SIDEBAR_WIDTH : 1200
-  const hideListPanel =
-    (isMobile && !!issueId) || (showDiff && diffWidth > availableWidth * 0.5)
+  const availableWidth = typeof window !== 'undefined' ? window.innerWidth - SIDEBAR_WIDTH : 1200
+  const hideListPanel = (isMobile && !!issueId) || (showDiff && diffWidth > availableWidth * 0.5)
 
   const handleDiffWidthChange = useCallback(
     (w: number) => {
@@ -94,10 +88,7 @@ export default function IssueDetailPage() {
   useEffect(() => {
     if (!showDiff) return
     const viewport = typeof window !== 'undefined' ? window.innerWidth : 1600
-    const maxList = Math.min(
-      MAX_LIST_WIDTH,
-      viewport - SIDEBAR_WIDTH - diffWidth - MIN_CHAT_WIDTH,
-    )
+    const maxList = Math.min(MAX_LIST_WIDTH, viewport - SIDEBAR_WIDTH - diffWidth - MIN_CHAT_WIDTH)
     setListWidth((prev) => Math.max(MIN_LIST_WIDTH, Math.min(prev, maxList)))
   }, [showDiff, diffWidth])
 
@@ -110,9 +101,7 @@ export default function IssueDetailPage() {
   if (isLoading) {
     return (
       <div className="flex h-full items-center justify-center bg-background text-foreground">
-        <p className="text-sm text-muted-foreground">
-          {t('kanban.loadingProject')}
-        </p>
+        <p className="text-sm text-muted-foreground">{t('kanban.loadingProject')}</p>
       </div>
     )
   }
@@ -134,9 +123,7 @@ export default function IssueDetailPage() {
           projectName={project.name}
           width={isMobile ? undefined : listWidth}
           onResizeStart={isMobile ? undefined : handleListResizeStart}
-          mobileNav={
-            isMobile ? <MobileSidebar activeProjectId={projectId} /> : undefined
-          }
+          mobileNav={isMobile ? <MobileSidebar activeProjectId={projectId} /> : undefined}
         />
       ) : null}
 
@@ -154,9 +141,7 @@ export default function IssueDetailPage() {
         />
       ) : !hideListPanel ? (
         <div className="flex flex-1 items-center justify-center">
-          <p className="text-sm text-muted-foreground">
-            {t('issue.selectToStart')}
-          </p>
+          <p className="text-sm text-muted-foreground">{t('issue.selectToStart')}</p>
         </div>
       ) : null}
       <CreateIssueDialog />

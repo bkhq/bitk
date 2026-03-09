@@ -2,11 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { kanbanApi } from '@/lib/kanban-api'
 import { useBoardStore } from '@/stores/board-store'
 import { useFileBrowserStore } from '@/stores/file-browser-store'
-import type {
-  ExecuteIssueRequest,
-  Issue,
-  WebhookEventType,
-} from '@/types/kanban'
+import type { ExecuteIssueRequest, Issue, WebhookEventType } from '@/types/kanban'
 
 export const queryKeys = {
   workspacePath: () => ['settings', 'workspacePath'] as const,
@@ -21,36 +17,15 @@ export const queryKeys = {
   issueChanges: (projectId: string, issueId: string) =>
     ['projects', projectId, 'issues', issueId, 'changes'] as const,
   issueFilePatch: (projectId: string, issueId: string, path: string) =>
-    [
-      'projects',
-      projectId,
-      'issues',
-      issueId,
-      'changes',
-      'file',
-      path,
-    ] as const,
+    ['projects', projectId, 'issues', issueId, 'changes', 'file', path] as const,
   childIssues: (projectId: string, parentId: string) =>
     ['projects', projectId, 'issues', 'children', parentId] as const,
   slashCommands: (projectId: string, issueId: string) =>
     ['projects', projectId, 'issues', issueId, 'slash-commands'] as const,
-  projectFiles: (
-    projectId: string,
-    path: string,
-    hideIgnored: boolean,
-    rootPath?: string | null,
-  ) =>
-    [
-      'projects',
-      projectId,
-      'files',
-      path,
-      { hideIgnored, rootPath: rootPath ?? null },
-    ] as const,
-  projectProcesses: (projectId: string) =>
-    ['projects', projectId, 'processes'] as const,
-  projectWorktrees: (projectId: string) =>
-    ['projects', projectId, 'worktrees'] as const,
+  projectFiles: (projectId: string, path: string, hideIgnored: boolean, rootPath?: string | null) =>
+    ['projects', projectId, 'files', path, { hideIgnored, rootPath: rootPath ?? null }] as const,
+  projectProcesses: (projectId: string) => ['projects', projectId, 'processes'] as const,
+  projectWorktrees: (projectId: string) => ['projects', projectId, 'worktrees'] as const,
   logPageSize: () => ['settings', 'logPageSize'] as const,
   worktreeAutoCleanup: () => ['settings', 'worktreeAutoCleanup'] as const,
   upgradeVersion: () => ['upgrade', 'version'] as const,
@@ -64,8 +39,7 @@ export const queryKeys = {
   systemInfo: () => ['settings', 'systemInfo'] as const,
   reviewIssues: () => ['issues', 'review'] as const,
   webhooks: () => ['settings', 'webhooks'] as const,
-  webhookDeliveries: (id: string) =>
-    ['settings', 'webhooks', id, 'deliveries'] as const,
+  webhookDeliveries: (id: string) => ['settings', 'webhooks', id, 'deliveries'] as const,
 }
 
 export function useProjects() {
@@ -177,11 +151,7 @@ export function useIssue(projectId: string, issueId: string) {
   })
 }
 
-export function useIssueChanges(
-  projectId: string,
-  issueId: string,
-  enabled = true,
-) {
+export function useIssueChanges(projectId: string, issueId: string, enabled = true) {
   return useQuery({
     queryKey: queryKeys.issueChanges(projectId, issueId),
     queryFn: () => kanbanApi.getIssueChanges(projectId, issueId),
@@ -240,11 +210,7 @@ export function useCreateIssue(projectId: string) {
 export function useUpdateIssue(projectId: string) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (
-      data: { id: string } & Partial<
-        Omit<Issue, 'id' | 'createdAt' | 'updatedAt'>
-      >,
-    ) => {
+    mutationFn: (data: { id: string } & Partial<Omit<Issue, 'id' | 'createdAt' | 'updatedAt'>>) => {
       const { id, ...rest } = data
       return kanbanApi.updateIssue(projectId, id, rest)
     },
@@ -271,9 +237,7 @@ export function useBulkUpdateIssues(projectId: string) {
       await queryClient.cancelQueries({
         queryKey: queryKeys.issues(projectId),
       })
-      const previous = queryClient.getQueryData<Issue[]>(
-        queryKeys.issues(projectId),
-      )
+      const previous = queryClient.getQueryData<Issue[]>(queryKeys.issues(projectId))
 
       if (previous) {
         const updated = previous.map((issue) => {
@@ -361,8 +325,7 @@ export function useFollowUpIssue(projectId: string) {
 export function useAutoTitleIssue(projectId: string) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (issueId: string) =>
-      kanbanApi.autoTitleIssue(projectId, issueId),
+    mutationFn: (issueId: string) => kanbanApi.autoTitleIssue(projectId, issueId),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.issues(projectId),
@@ -401,11 +364,7 @@ export function useCancelIssue(projectId: string) {
   })
 }
 
-export function useSlashCommands(
-  projectId: string,
-  issueId: string,
-  enabled = false,
-) {
+export function useSlashCommands(projectId: string, issueId: string, enabled = false) {
   return useQuery({
     queryKey: queryKeys.slashCommands(projectId, issueId),
     queryFn: () => kanbanApi.getSlashCommands(projectId, issueId),
@@ -468,8 +427,7 @@ export function useUpdateEngineModelSetting() {
 export function useUpdateDefaultEngine() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (defaultEngine: string) =>
-      kanbanApi.updateDefaultEngine(defaultEngine),
+    mutationFn: (defaultEngine: string) => kanbanApi.updateDefaultEngine(defaultEngine),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.engineSettings() })
     },
@@ -568,8 +526,7 @@ export function useServerInfo(enabled = false) {
 export function useUpdateServerInfo() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (data: { name?: string; url?: string }) =>
-      kanbanApi.updateServerInfo(data),
+    mutationFn: (data: { name?: string; url?: string }) => kanbanApi.updateServerInfo(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.serverInfo() })
       queryClient.invalidateQueries({ queryKey: queryKeys.systemInfo() })
@@ -612,9 +569,8 @@ export function useCleanupStats(enabled = false) {
 export function useRunCleanup() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (
-      targets: Array<'logs' | 'oldVersions' | 'worktrees' | 'deletedIssues'>,
-    ) => kanbanApi.runCleanup(targets),
+    mutationFn: (targets: Array<'logs' | 'oldVersions' | 'worktrees' | 'deletedIssues'>) =>
+      kanbanApi.runCleanup(targets),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.cleanupStats() })
       queryClient.invalidateQueries({ queryKey: queryKeys.deletedIssues() })
@@ -708,11 +664,8 @@ export function useCheckForUpdates() {
 export function useDownloadUpdate() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (args: {
-      url: string
-      fileName: string
-      checksumUrl?: string
-    }) => kanbanApi.downloadUpdate(args.url, args.fileName, args.checksumUrl),
+    mutationFn: (args: { url: string; fileName: string; checksumUrl?: string }) =>
+      kanbanApi.downloadUpdate(args.url, args.fileName, args.checksumUrl),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.upgradeDownloadStatus(),
@@ -729,9 +682,7 @@ export function useDownloadStatus(enabled = false) {
     staleTime: 5_000,
     refetchInterval: (query) => {
       const data = query.state.data
-      return data?.status === 'downloading' || data?.status === 'verifying'
-        ? 1000
-        : false
+      return data?.status === 'downloading' || data?.status === 'verifying' ? 1000 : false
     },
   })
 }
@@ -771,17 +722,12 @@ export function useRestartWithUpgrade() {
 
 // --- File Browser hooks ---
 
-export function useProjectFiles(
-  projectId: string,
-  path: string,
-  enabled = true,
-) {
+export function useProjectFiles(projectId: string, path: string, enabled = true) {
   const hideIgnored = useFileBrowserStore((s) => s.hideIgnored)
   const rootPath = useFileBrowserStore((s) => s.rootPath)
   return useQuery({
     queryKey: queryKeys.projectFiles(projectId, path, hideIgnored, rootPath),
-    queryFn: () =>
-      kanbanApi.listFiles(projectId, path || undefined, hideIgnored, rootPath),
+    queryFn: () => kanbanApi.listFiles(projectId, path || undefined, hideIgnored, rootPath),
     enabled: !!projectId && enabled,
   })
 }
@@ -800,8 +746,7 @@ export function useProjectProcesses(projectId: string, enabled = true) {
 export function useTerminateProcess(projectId: string) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (issueId: string) =>
-      kanbanApi.terminateProcess(projectId, issueId),
+    mutationFn: (issueId: string) => kanbanApi.terminateProcess(projectId, issueId),
     onSuccess: (_data, issueId) => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.projectProcesses(projectId),

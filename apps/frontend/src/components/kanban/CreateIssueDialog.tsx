@@ -25,11 +25,7 @@ import { tStatus } from '@/lib/i18n-utils'
 import type { StatusDefinition } from '@/lib/statuses'
 import { STATUSES } from '@/lib/statuses'
 import { usePanelStore } from '@/stores/panel-store'
-import type {
-  EngineAvailability,
-  EngineModel,
-  EngineProfile,
-} from '@/types/kanban'
+import type { EngineAvailability, EngineModel, EngineProfile } from '@/types/kanban'
 
 // ── Data ──────────────────────────────────────────────
 
@@ -65,9 +61,7 @@ export function CreateIssueForm({
   const { data: engineSettings } = useEngineSettings(true)
 
   const installedEngines = useMemo(
-    () =>
-      discovery?.engines.filter((a) => a.installed && a.executable !== false) ??
-      [],
+    () => discovery?.engines.filter((a) => a.installed && a.executable !== false) ?? [],
     [discovery],
   )
   const allModels = discovery?.models ?? {}
@@ -87,8 +81,7 @@ export function CreateIssueForm({
   const resolvedEngineType = useMemo(() => {
     if (engineType) return engineType
     const defaultEng = engineSettings?.defaultEngine
-    if (defaultEng && installedEngines.some((e) => e.engineType === defaultEng))
-      return defaultEng
+    if (defaultEng && installedEngines.some((e) => e.engineType === defaultEng)) return defaultEng
     return installedEngines[0]?.engineType ?? ''
   }, [engineType, engineSettings, installedEngines])
 
@@ -170,15 +163,12 @@ export function CreateIssueForm({
     }
   }
 
-  const handleTextarea = useCallback(
-    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      setInput(e.target.value)
-      const el = e.target
-      el.style.height = 'auto'
-      el.style.height = `${Math.min(el.scrollHeight, 200)}px`
-    },
-    [],
-  )
+  const handleTextarea = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInput(e.target.value)
+    const el = e.target
+    el.style.height = 'auto'
+    el.style.height = `${Math.min(el.scrollHeight, 200)}px`
+  }, [])
 
   return (
     <div onKeyDown={handleKeyDown}>
@@ -194,9 +184,7 @@ export function CreateIssueForm({
           disabled={createIssue.isPending}
         />
         <div className="flex items-center justify-between px-3 py-2">
-          <span className="text-[11px] text-muted-foreground/50">
-            {t('issue.cmdEnterSubmit')}
-          </span>
+          <span className="text-[11px] text-muted-foreground/50">{t('issue.cmdEnterSubmit')}</span>
           <span className="text-[11px] text-muted-foreground/50 tabular-nums">
             {input.length} / 2000
           </span>
@@ -205,9 +193,7 @@ export function CreateIssueForm({
 
       {/* ─── Properties (selectors) ─────────────── */}
       <div className="pt-3.5">
-        <p className="text-xs font-medium text-muted-foreground mb-2">
-          {t('issue.properties')}
-        </p>
+        <p className="text-xs font-medium text-muted-foreground mb-2">{t('issue.properties')}</p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
           <PropertyRow label={t('issue.tag')}>
             <input
@@ -219,11 +205,7 @@ export function CreateIssueForm({
             />
           </PropertyRow>
           <PropertyRow label={t('issue.status')}>
-            <StatusSelect
-              statuses={STATUSES}
-              value={statusId}
-              onChange={setStatusId}
-            />
+            <StatusSelect statuses={STATUSES} value={statusId} onChange={setStatusId} />
           </PropertyRow>
           <PropertyRow label={t('createIssue.worktree')}>
             <WorktreeToggle value={useWorktree} onChange={setUseWorktree} />
@@ -237,11 +219,7 @@ export function CreateIssueForm({
             />
           </PropertyRow>
           <PropertyRow label={t('createIssue.model')}>
-            <ModelSelect
-              models={currentModels}
-              value={modelId}
-              onChange={setModelId}
-            />
+            <ModelSelect models={currentModels} value={modelId} onChange={setModelId} />
           </PropertyRow>
           <PropertyRow label={t('createIssue.mode')}>
             <PermissionSelect value={permission} onChange={setPermission} />
@@ -257,13 +235,8 @@ export function CreateIssueForm({
               {t('common.cancel')}
             </Button>
           ) : null}
-          <Button
-            onClick={handleSubmit}
-            disabled={createIssue.isPending || !input.trim()}
-          >
-            {createIssue.isPending
-              ? t('createIssue.creating')
-              : t('createIssue.create')}
+          <Button onClick={handleSubmit} disabled={createIssue.isPending || !input.trim()}>
+            {createIssue.isPending ? t('createIssue.creating') : t('createIssue.create')}
           </Button>
         </div>
       </div>
@@ -276,8 +249,7 @@ export function CreateIssueForm({
 export function CreateIssueDialog() {
   const { t } = useTranslation()
   const { projectId = 'default' } = useParams<{ projectId: string }>()
-  const { createDialogOpen, createDialogStatusId, closeCreateDialog } =
-    usePanelStore()
+  const { createDialogOpen, createDialogStatusId, closeCreateDialog } = usePanelStore()
 
   return (
     <Dialog
@@ -306,18 +278,10 @@ export function CreateIssueDialog() {
 
 // ── Property row ──────────────────────────────────────
 
-function PropertyRow({
-  label,
-  children,
-}: {
-  label: string
-  children: React.ReactNode
-}) {
+function PropertyRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-2 rounded-lg border bg-muted/20 px-3 py-2">
-      <span className="text-xs text-muted-foreground w-10 shrink-0">
-        {label}
-      </span>
+      <span className="text-xs text-muted-foreground w-10 shrink-0">{label}</span>
       <div className="flex-1 min-w-0">{children}</div>
     </div>
   )
@@ -364,10 +328,7 @@ function StatusSelect({
             onSelect={() => onChange(s.id)}
             className={s.id === value ? 'bg-accent/50' : ''}
           >
-            <span
-              className="h-2 w-2 rounded-full shrink-0"
-              style={{ backgroundColor: s.color }}
-            />
+            <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: s.color }} />
             <span>{tStatus(t, s.name)}</span>
           </DropdownMenuItem>
         ))}
@@ -391,9 +352,7 @@ function EngineSelect({
 
   const isDefault = !value
   const currentProfile = profiles.find((p) => p.engineType === value)
-  const currentName = isDefault
-    ? t('createIssue.modelDefault')
-    : (currentProfile?.name ?? value)
+  const currentName = isDefault ? t('createIssue.modelDefault') : (currentProfile?.name ?? value)
 
   return (
     <DropdownMenu>
@@ -406,19 +365,13 @@ function EngineSelect({
         }
       >
         {value ? (
-          <EngineIcon
-            engineType={value}
-            className="h-3.5 w-3.5 text-muted-foreground shrink-0"
-          />
+          <EngineIcon engineType={value} className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
         ) : null}
         <span className="truncate">{currentName}</span>
         <ChevronDown className="h-3 w-3 text-muted-foreground ml-auto shrink-0" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="min-w-[200px]">
-        <DropdownMenuItem
-          onSelect={() => onChange('')}
-          className={isDefault ? 'bg-accent/50' : ''}
-        >
+        <DropdownMenuItem onSelect={() => onChange('')} className={isDefault ? 'bg-accent/50' : ''}>
           <span className="font-medium">{t('createIssue.modelDefault')}</span>
           <span className="text-[10px] text-muted-foreground ml-1">
             ({t('createIssue.modelDefaultHint')})
@@ -436,9 +389,7 @@ function EngineSelect({
                 engineType={a.engineType}
                 className="h-3.5 w-3.5 text-muted-foreground shrink-0"
               />
-              <span className="font-medium">
-                {profile?.name ?? a.engineType}
-              </span>
+              <span className="font-medium">{profile?.name ?? a.engineType}</span>
             </DropdownMenuItem>
           )
         })}
@@ -450,13 +401,7 @@ function EngineSelect({
 // ── WorktreeToggle ────────────────────────────────────
 // Replaced manual button with shadcn Switch for better semantics & accessibility
 
-function WorktreeToggle({
-  value,
-  onChange,
-}: {
-  value: boolean
-  onChange: (v: boolean) => void
-}) {
+function WorktreeToggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
   return (
     <div className="flex items-center w-full">
       <Switch checked={value} onCheckedChange={onChange} className="shrink-0" />
@@ -493,10 +438,7 @@ function ModelSelect({
         <ChevronDown className="h-3 w-3 text-muted-foreground ml-auto shrink-0" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="min-w-[220px]">
-        <DropdownMenuItem
-          onSelect={() => onChange('')}
-          className={isDefault ? 'bg-accent/50' : ''}
-        >
+        <DropdownMenuItem onSelect={() => onChange('')} className={isDefault ? 'bg-accent/50' : ''}>
           <span className="font-medium">{t('createIssue.modelDefault')}</span>
           <span className="text-[10px] text-muted-foreground ml-1">
             ({t('createIssue.modelDefaultHint')})
@@ -562,9 +504,7 @@ function PermissionSelect({
               className={perm.id === value ? 'bg-accent/50' : ''}
             >
               <PermIcon className="h-4 w-4 text-muted-foreground shrink-0" />
-              <span className="font-medium">
-                {t(`createIssue.perm.${perm.id}`)}
-              </span>
+              <span className="font-medium">{t(`createIssue.perm.${perm.id}`)}</span>
             </DropdownMenuItem>
           )
         })}

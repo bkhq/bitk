@@ -52,9 +52,7 @@ export default function KanbanPage() {
   if (isLoading) {
     return (
       <div className="flex h-full items-center justify-center bg-background text-foreground">
-        <p className="text-sm text-muted-foreground">
-          {t('kanban.loadingProject')}
-        </p>
+        <p className="text-sm text-muted-foreground">{t('kanban.loadingProject')}</p>
       </div>
     )
   }
@@ -79,9 +77,7 @@ export default function KanbanPage() {
           defaultStatusId={DEFAULT_STATUS_ID}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
-          mobileNav={
-            isMobile ? <MobileSidebar activeProjectId={projectId} /> : undefined
-          }
+          mobileNav={isMobile ? <MobileSidebar activeProjectId={projectId} /> : undefined}
         />
 
         <div className="flex flex-1 min-h-0">
@@ -113,11 +109,7 @@ export default function KanbanPage() {
           style={{ width }}
         >
           <ResizeHandle />
-          <IssuePanel
-            projectId={projectId}
-            issueId={panel.issueId}
-            onClose={close}
-          />
+          <IssuePanel projectId={projectId} issueId={panel.issueId} onClose={close} />
         </div>
       ) : null}
     </div>
@@ -131,8 +123,7 @@ function ResizeHandle() {
   const dragRef = useRef<{ startX: number; startWidth: number } | null>(null)
 
   const maxWidth = Math.round(
-    (typeof window === 'undefined' ? 800 : window.innerWidth) *
-      PANEL_MAX_WIDTH_RATIO,
+    (typeof window === 'undefined' ? 800 : window.innerWidth) * PANEL_MAX_WIDTH_RATIO,
   )
 
   return (

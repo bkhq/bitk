@@ -6,11 +6,11 @@ BitK is a Kanban application for managing AI coding agents. Issues on the board 
 
 The project is a **Bun Workspaces monorepo** with three packages:
 
-| Package | Name | Purpose |
-|---|---|---|
-| `apps/api` | `@bkd/api` | Bun/Hono backend server |
-| `apps/frontend` | `@bkd/frontend` | React/Vite frontend |
-| `packages/shared` | `@bkd/shared` | Shared TypeScript types |
+| Package           | Name            | Purpose                 |
+| ----------------- | --------------- | ----------------------- |
+| `apps/api`        | `@bkd/api`      | Bun/Hono backend server |
+| `apps/frontend`   | `@bkd/frontend` | React/Vite frontend     |
+| `packages/shared` | `@bkd/shared`   | Shared TypeScript types |
 
 Supporting packages: `packages/tsconfig` (shared TS configs: `base`, `hono`, `react`, `utils`).
 
@@ -43,25 +43,27 @@ SQLite via `bun:sqlite` + Drizzle ORM. Configured with WAL mode, foreign keys, 6
 Migrations auto-apply on startup from filesystem, `APP_DIR/migrations/`, or embedded (compiled binary).
 
 **ID conventions:**
+
 - `shortId()` — 8-char nanoid (projects, issues)
 - `id()` — ULID (logs, attachments, tool calls)
 
 **Tables:**
 
-| Table | Key Fields | Notes |
-|---|---|---|
-| `projects` | `id`, `name`, `alias` (unique), `directory`, `repositoryUrl` | Top-level container |
-| `issues` | `id`, `projectId`, `statusId`, `issueNumber`, `title`, `priority`, `sortOrder`, `parentIssueId`, `useWorktree`, `engineType`, `sessionStatus`, `prompt`, `externalSessionId`, `model`, `devMode` | Core entity; check constraint on status values |
-| `issueLogs` | `id` (ULID), `issueId`, `turnIndex`, `entryIndex`, `entryType`, `content`, `metadata` | AI conversation log entries |
-| `issuesLogsToolsCall` | `id` (ULID), `logId`, `issueId`, `toolName`, `toolCallId`, `kind`, `isResult`, `raw` | Tool action detail records |
-| `attachments` | `id` (ULID), `issueId`, `logId`, `originalName`, `storedName`, `mimeType`, `size`, `storagePath` | File uploads |
-| `appSettings` | `key` (PK), `value` | Key-value store for server settings |
+| Table                 | Key Fields                                                                                                                                                                                       | Notes                                          |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------- |
+| `projects`            | `id`, `name`, `alias` (unique), `directory`, `repositoryUrl`                                                                                                                                     | Top-level container                            |
+| `issues`              | `id`, `projectId`, `statusId`, `issueNumber`, `title`, `priority`, `sortOrder`, `parentIssueId`, `useWorktree`, `engineType`, `sessionStatus`, `prompt`, `externalSessionId`, `model`, `devMode` | Core entity; check constraint on status values |
+| `issueLogs`           | `id` (ULID), `issueId`, `turnIndex`, `entryIndex`, `entryType`, `content`, `metadata`                                                                                                            | AI conversation log entries                    |
+| `issuesLogsToolsCall` | `id` (ULID), `logId`, `issueId`, `toolName`, `toolCallId`, `kind`, `isResult`, `raw`                                                                                                             | Tool action detail records                     |
+| `attachments`         | `id` (ULID), `issueId`, `logId`, `originalName`, `storedName`, `mimeType`, `size`, `storagePath`                                                                                                 | File uploads                                   |
+| `appSettings`         | `key` (PK), `value`                                                                                                                                                                              | Key-value store for server settings            |
 
 All tables share `commonFields`: `createdAt`, `updatedAt`, `isDeleted` (soft delete).
 
 **Caching** (`cache.ts`): in-process LRU + TTL cache (Map-based, max 500 entries, 5-minute sweep). Used by DB helpers for projects, settings, and engine discovery.
 
 **Settings** stored in `appSettings`:
+
 - `workspace:defaultPath`, `defaultEngine`, `engine:<type>:defaultModel`
 - `probe:engines`, `probe:models` (persisted engine discovery)
 - `engine:slashCommands:<type>`, `upgrade:enabled`, `upgrade:lastCheckResult`
@@ -71,52 +73,52 @@ All tables share `commonFields`: `createdAt`, `updatedAt`, `isDeleted` (soft del
 
 Hardcoded constants — no DB table:
 
-| Status | Color | Sort |
-|---|---|---|
-| `todo` | `#6b7280` | 0 |
-| `working` | `#3b82f6` | 1 |
-| `review` | `#f59e0b` | 2 |
-| `done` | `#22c55e` | 3 |
+| Status    | Color     | Sort |
+| --------- | --------- | ---- |
+| `todo`    | `#6b7280` | 0    |
+| `working` | `#3b82f6` | 1    |
+| `review`  | `#f59e0b` | 2    |
+| `done`    | `#22c55e` | 3    |
 
 ### API Routes (`routes/`)
 
 **Core routes** (all issue routes scoped under `/api/projects/:projectId/`):
 
-| Route | Methods | File | Description |
-|---|---|---|---|
-| `/api/projects` | GET, POST | `projects.ts` | List/create projects |
-| `/api/projects/:id` | GET, PATCH, DELETE | `projects.ts` | Get/update/soft-delete project |
-| `/api/.../issues` | GET, POST | `issues/query.ts`, `issues/create.ts` | List/create issues |
-| `/api/.../issues/bulk` | PATCH | `issues/create.ts` | Bulk update status/sort/priority |
-| `/api/.../issues/:id` | GET, PATCH, DELETE | `issues/query.ts`, `issues/update.ts`, `issues/delete.ts` | Single issue CRUD |
-| `/api/.../issues/:id/execute` | POST | `issues/command.ts` | Start AI engine execution |
-| `/api/.../issues/:id/follow-up` | POST | `issues/message.ts` | Follow-up to active session |
-| `/api/.../issues/:id/restart` | POST | `issues/command.ts` | Restart session |
-| `/api/.../issues/:id/cancel` | POST | `issues/command.ts` | Cancel active session |
-| `/api/.../issues/:id/messages` | POST | `issues/message.ts` | Queue pending message |
-| `/api/.../issues/:id/logs` | GET | `issues/logs.ts` | Paginated logs (cursor-based) |
-| `/api/.../issues/:id/attachments` | GET, POST | `issues/attachments.ts` | File upload (multipart) |
-| `/api/.../issues/:id/changes` | GET | `issues/changes.ts` | Git diff stats |
-| `/api/.../issues/:id/title/generate` | POST | `issues/title.ts` | AI-generated title |
-| `/api/.../issues/:id/slash-commands` | GET | `issues/command.ts` | Slash commands for engine |
+| Route                                | Methods            | File                                                      | Description                      |
+| ------------------------------------ | ------------------ | --------------------------------------------------------- | -------------------------------- |
+| `/api/projects`                      | GET, POST          | `projects.ts`                                             | List/create projects             |
+| `/api/projects/:id`                  | GET, PATCH, DELETE | `projects.ts`                                             | Get/update/soft-delete project   |
+| `/api/.../issues`                    | GET, POST          | `issues/query.ts`, `issues/create.ts`                     | List/create issues               |
+| `/api/.../issues/bulk`               | PATCH              | `issues/create.ts`                                        | Bulk update status/sort/priority |
+| `/api/.../issues/:id`                | GET, PATCH, DELETE | `issues/query.ts`, `issues/update.ts`, `issues/delete.ts` | Single issue CRUD                |
+| `/api/.../issues/:id/execute`        | POST               | `issues/command.ts`                                       | Start AI engine execution        |
+| `/api/.../issues/:id/follow-up`      | POST               | `issues/message.ts`                                       | Follow-up to active session      |
+| `/api/.../issues/:id/restart`        | POST               | `issues/command.ts`                                       | Restart session                  |
+| `/api/.../issues/:id/cancel`         | POST               | `issues/command.ts`                                       | Cancel active session            |
+| `/api/.../issues/:id/messages`       | POST               | `issues/message.ts`                                       | Queue pending message            |
+| `/api/.../issues/:id/logs`           | GET                | `issues/logs.ts`                                          | Paginated logs (cursor-based)    |
+| `/api/.../issues/:id/attachments`    | GET, POST          | `issues/attachments.ts`                                   | File upload (multipart)          |
+| `/api/.../issues/:id/changes`        | GET                | `issues/changes.ts`                                       | Git diff stats                   |
+| `/api/.../issues/:id/title/generate` | POST               | `issues/title.ts`                                         | AI-generated title               |
+| `/api/.../issues/:id/slash-commands` | GET                | `issues/command.ts`                                       | Slash commands for engine        |
 
 **System routes:**
 
-| Route | Methods | File | Description |
-|---|---|---|---|
-| `/api/health` | GET | `api.ts` | DB health + version |
-| `/api/engines/available` | GET | `engines.ts` | Engine discovery (cached) |
-| `/api/engines/probe` | POST | `engines.ts` | Force live engine re-probe |
-| `/api/engines/settings` | GET | `engines.ts` | Default engine + models |
-| `/api/events` | GET | `events.ts` | Global SSE endpoint |
-| `/api/settings/*` | GET, PATCH, PUT | `settings.ts` | Workspace path, filter rules, worktree settings |
-| `/api/upgrade/*` | GET, POST, PATCH, DELETE | `upgrade.ts` | Self-upgrade pipeline |
-| `/api/terminal/ws` | WS | `terminal.ts` | WebSocket terminal |
-| `/api/files/*` | GET | `files.ts` | File browsing |
-| `/api/filesystem/*` | GET, POST | `filesystem.ts` | Directory navigation |
-| `/api/git/*` | GET | `git.ts` | Git operations |
-| `/api/processes/*` | GET, DELETE | `processes.ts` | Active process management |
-| `/api/worktrees/*` | GET, DELETE | `worktrees.ts` | Worktree management |
+| Route                    | Methods                  | File            | Description                                     |
+| ------------------------ | ------------------------ | --------------- | ----------------------------------------------- |
+| `/api/health`            | GET                      | `api.ts`        | DB health + version                             |
+| `/api/engines/available` | GET                      | `engines.ts`    | Engine discovery (cached)                       |
+| `/api/engines/probe`     | POST                     | `engines.ts`    | Force live engine re-probe                      |
+| `/api/engines/settings`  | GET                      | `engines.ts`    | Default engine + models                         |
+| `/api/events`            | GET                      | `events.ts`     | Global SSE endpoint                             |
+| `/api/settings/*`        | GET, PATCH, PUT          | `settings.ts`   | Workspace path, filter rules, worktree settings |
+| `/api/upgrade/*`         | GET, POST, PATCH, DELETE | `upgrade.ts`    | Self-upgrade pipeline                           |
+| `/api/terminal/ws`       | WS                       | `terminal.ts`   | WebSocket terminal                              |
+| `/api/files/*`           | GET                      | `files.ts`      | File browsing                                   |
+| `/api/filesystem/*`      | GET, POST                | `filesystem.ts` | Directory navigation                            |
+| `/api/git/*`             | GET                      | `git.ts`        | Git operations                                  |
+| `/api/processes/*`       | GET, DELETE              | `processes.ts`  | Active process management                       |
+| `/api/worktrees/*`       | GET, DELETE              | `worktrees.ts`  | Worktree management                             |
 
 ### Engine System (`engines/`)
 
@@ -124,18 +126,19 @@ The most complex subsystem — bridges API routes and CLI-based AI agents.
 
 #### Engine Types & Protocols
 
-| Engine | Protocol | CLI | Behavior |
-|---|---|---|---|
-| `claude-code` | `stream-json` | `claude` binary or `npx @anthropic-ai/claude-code` | Streaming JSON over stdout; process exits after each turn |
-| `codex` | `json-rpc` | `npx @openai/codex app-server` | JSONL JSON-RPC over stdio; process **stays alive** between turns |
-| `gemini` | `acp` | `npx @google/gemini-cli` | ACP protocol |
-| `echo` | — | — | Test/stub executor |
+| Engine        | Protocol      | CLI                                                | Behavior                                                         |
+| ------------- | ------------- | -------------------------------------------------- | ---------------------------------------------------------------- |
+| `claude-code` | `stream-json` | `claude` binary or `npx @anthropic-ai/claude-code` | Streaming JSON over stdout; process exits after each turn        |
+| `codex`       | `json-rpc`    | `npx @openai/codex app-server`                     | JSONL JSON-RPC over stdio; process **stays alive** between turns |
+| `gemini`      | `acp`         | `npx @google/gemini-cli`                           | ACP protocol                                                     |
+| `echo`        | —             | —                                                  | Test/stub executor                                               |
 
 Each executor implements `EngineExecutor`: `spawn`, `spawnFollowUp`, `cancel`, `getAvailability`, `getModels`, `normalizeLog`.
 
 #### Process Manager (`process-manager.ts`)
 
 Generic `ProcessManager<TMeta>` for any `Bun.spawn` subprocess:
+
 - State machine: `spawning → running → completed/failed/cancelled`
 - Groups processes by issue ID; supports `terminateGroup()`
 - Graceful interrupt → SIGKILL after 5s timeout
@@ -154,6 +157,7 @@ routes/ → IssueEngine → executor.spawn() → ProcessManager → Bun.spawn()
 ```
 
 Key sub-modules:
+
 - **`orchestration/`** — `execute.ts`, `follow-up.ts`, `restart.ts`, `cancel.ts`
 - **`lifecycle/`** — Spawn (with session fallback), completion monitoring (auto-retry on failure, pending message coalescence), settlement
 - **`streams/`** — Stdout consumption via async generator, log classification, stderr drain
@@ -166,6 +170,7 @@ Key sub-modules:
 #### Reconciler (`reconciler.ts`)
 
 Safety net for stale sessions:
+
 - **Startup**: marks `running`/`pending` sessions as `failed`; moves orphaned `working` issues to `review`
 - **Periodic**: runs every 60s to catch orphaned working issues
 - **Event-driven**: reconciles 1s after each issue settlement
@@ -178,11 +183,11 @@ Three-tier caching: memory (10 min TTL) → DB (`appSettings`) → live probe (1
 
 BitK runtime behavior depends on three coordinated state axes:
 
-| Axis | Field / Source | Values | Owner |
-|---|---|---|---|
-| Board workflow | `issues.statusId` | `todo`, `working`, `review`, `done` | Route layer + reconciler |
-| Session lifecycle | `issues.sessionStatus` | `pending`, `running`, `completed`, `failed`, `cancelled` | IssueEngine orchestration/lifecycle |
-| Subprocess lifecycle | `ProcessManager` in-memory state | `spawning`, `running`, `completed`, `failed`, `cancelled` | ProcessManager + executor events |
+| Axis                 | Field / Source                   | Values                                                    | Owner                               |
+| -------------------- | -------------------------------- | --------------------------------------------------------- | ----------------------------------- |
+| Board workflow       | `issues.statusId`                | `todo`, `working`, `review`, `done`                       | Route layer + reconciler            |
+| Session lifecycle    | `issues.sessionStatus`           | `pending`, `running`, `completed`, `failed`, `cancelled`  | IssueEngine orchestration/lifecycle |
+| Subprocess lifecycle | `ProcessManager` in-memory state | `spawning`, `running`, `completed`, `failed`, `cancelled` | ProcessManager + executor events    |
 
 #### Critical Transition Paths
 
@@ -226,17 +231,18 @@ BitK runtime behavior depends on three coordinated state axes:
 
 #### Deep Test Coverage Matrix
 
-| Area | Representative tests | Intent |
-|---|---|---|
-| Lock serialization and queue control | `apps/api/test/issue-lock.test.ts` | Verify per-issue mutual exclusion, queue-limit rejection, timeout cleanup behavior |
-| Probe dedup and cache semantics | `apps/api/test/startup-probe.test.ts` | Verify concurrent callers trigger one live probe and cache/DB clearing re-enables fresh probe |
-| Spawn failure rollback | `apps/api/test/api-process-state-regression.test.ts` | Ensure execute/restart failures do not leave stuck `pending/running` session state |
-| Pending-message loss prevention | `apps/api/test/api-pending-messages.test.ts` | Ensure pending messages remain retryable on follow-up flush failure |
-| Deletion safety | `apps/api/test/api-process-state-regression.test.ts`, `apps/api/test/api-issues.test.ts`, `apps/api/test/api-projects.test.ts` | Ensure terminate-before-delete semantics and soft-delete visibility constraints |
+| Area                                 | Representative tests                                                                                                           | Intent                                                                                        |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
+| Lock serialization and queue control | `apps/api/test/issue-lock.test.ts`                                                                                             | Verify per-issue mutual exclusion, queue-limit rejection, timeout cleanup behavior            |
+| Probe dedup and cache semantics      | `apps/api/test/startup-probe.test.ts`                                                                                          | Verify concurrent callers trigger one live probe and cache/DB clearing re-enables fresh probe |
+| Spawn failure rollback               | `apps/api/test/api-process-state-regression.test.ts`                                                                           | Ensure execute/restart failures do not leave stuck `pending/running` session state            |
+| Pending-message loss prevention      | `apps/api/test/api-pending-messages.test.ts`                                                                                   | Ensure pending messages remain retryable on follow-up flush failure                           |
+| Deletion safety                      | `apps/api/test/api-process-state-regression.test.ts`, `apps/api/test/api-issues.test.ts`, `apps/api/test/api-projects.test.ts` | Ensure terminate-before-delete semantics and soft-delete visibility constraints               |
 
 ### Event System (`events/`)
 
 **SSE endpoint** (`GET /api/events`) — single global stream via Hono `streamSSE`:
+
 - Event types: `log`, `state`, `done`, `issue-updated`, `changes-summary`, `heartbeat` (15s interval)
 - Subscribes to: `IssueEngine.onLog`, `.onStateChange`, `.onIssueSettled`, `onIssueUpdated`, `onChangesSummary`
 - Disconnect detection via `AbortSignal`
@@ -245,14 +251,15 @@ BitK runtime behavior depends on three coordinated state axes:
 
 ### Background Jobs (`jobs/`)
 
-| Job | Interval | Description |
-|---|---|---|
-| `upload-cleanup` | 1 hour | Deletes files in `data/uploads/` older than 7 days |
-| `worktree-cleanup` | 30 min | Removes worktrees for `done` issues (>1 day); gated by `worktree:autoCleanup` setting |
+| Job                | Interval | Description                                                                           |
+| ------------------ | -------- | ------------------------------------------------------------------------------------- |
+| `upload-cleanup`   | 1 hour   | Deletes files in `data/uploads/` older than 7 days                                    |
+| `worktree-cleanup` | 30 min   | Removes worktrees for `done` issues (>1 day); gated by `worktree:autoCleanup` setting |
 
 ### Self-Upgrade System (`upgrade/`)
 
 Full self-upgrade pipeline polling GitHub Releases (`repos/bkhq/bkd/releases/latest`) every 1 hour:
+
 - Detects platform asset suffix (`linux-x64`, `linux-arm64`, `darwin-arm64`)
 - **Binary mode**: downloads compiled binary, spawns on restart
 - **Package mode** (`APP_DIR != null`): downloads `.tar.gz`, extracts to `data/app/v{version}/`, writes `version.json`, re-execs launcher
@@ -279,13 +286,13 @@ Full self-upgrade pipeline polling GitHub Releases (`repos/bkhq/bkd/releases/lat
 
 ### Routes
 
-| Path | Page | Description |
-|---|---|---|
-| `/` | `HomePage` | Project dashboard (grid of project cards) |
-| `/projects/:projectId` | `KanbanPage` | Kanban board with drag-and-drop columns |
-| `/projects/:projectId/issues` | `IssueDetailPage` | Three-panel layout: list + chat + diff |
-| `/projects/:projectId/issues/:issueId` | `IssueDetailPage` | Specific issue chat view |
-| `/terminal` | `TerminalPage` | Full-page xterm.js terminal |
+| Path                                   | Page              | Description                               |
+| -------------------------------------- | ----------------- | ----------------------------------------- |
+| `/`                                    | `HomePage`        | Project dashboard (grid of project cards) |
+| `/projects/:projectId`                 | `KanbanPage`      | Kanban board with drag-and-drop columns   |
+| `/projects/:projectId/issues`          | `IssueDetailPage` | Three-panel layout: list + chat + diff    |
+| `/projects/:projectId/issues/:issueId` | `IssueDetailPage` | Specific issue chat view                  |
+| `/terminal`                            | `TerminalPage`    | Full-page xterm.js terminal               |
 
 Three global drawers (lazy-mounted): `TerminalDrawer`, `FileBrowserDrawer`, `ProcessManagerDrawer`.
 
@@ -330,15 +337,15 @@ Mutation hooks: `useCreateProject`, `useUpdateIssue`, `useBulkUpdateIssues` (opt
 
 **Zustand stores** — pure client UI state:
 
-| Store | State |
-|---|---|
-| `board-store` | `groupedItems` by status, `isDragging` (pauses server sync) |
-| `panel-store` | Side panel open/closed, width, create dialog state |
-| `view-mode-store` | Kanban/list toggle (persisted in localStorage) |
-| `terminal-store` | Terminal drawer open/minimized/fullscreen, width |
-| `terminal-session-store` | xterm.js instance, WebSocket, session ID |
-| `file-browser-store` | File browser drawer state, current path, `hideIgnored` |
-| `process-manager-store` | Process manager drawer state |
+| Store                    | State                                                       |
+| ------------------------ | ----------------------------------------------------------- |
+| `board-store`            | `groupedItems` by status, `isDragging` (pauses server sync) |
+| `panel-store`            | Side panel open/closed, width, create dialog state          |
+| `view-mode-store`        | Kanban/list toggle (persisted in localStorage)              |
+| `terminal-store`         | Terminal drawer open/minimized/fullscreen, width            |
+| `terminal-session-store` | xterm.js instance, WebSocket, session ID                    |
+| `file-browser-store`     | File browser drawer state, current path, `hideIgnored`      |
+| `process-manager-store`  | Process manager drawer state                                |
 
 ### Real-Time Data Flow
 
@@ -389,6 +396,7 @@ Frontend re-exports all types via `types/kanban.ts`.
 ### Three Distribution Modes
 
 **1. Full binary** (`bun run compile`):
+
 - Builds Vite frontend
 - Embeds all assets into `static-assets.ts` via `import ... with { type: "file" }`
 - Embeds Drizzle migrations into `embedded-migrations.ts`
@@ -396,22 +404,24 @@ Frontend re-exports all types via `types/kanban.ts`.
 - SHA-256 checksum generated
 
 **2. Launcher binary** (`bun run compile:launcher`):
+
 - Compiles only `scripts/launcher.ts` (~90 MB)
 - At runtime: reads `data/app/version.json`, loads server from `data/app/v{version}/`
 - Auto-downloads latest release if no local version exists
 - Security: URL allowlist, 50 MB cap, mandatory SHA-256 verification
 
 **3. App package** (`bun run package`):
+
 - Bundles server via `bun build` → `server.js`
 - Creates `.tar.gz` (~1 MB) containing `server.js`, `public/`, `migrations/`, `version.json`
 - Used with launcher binary for incremental updates
 
 ### CI/CD (`.github/workflows/`)
 
-| Workflow | Trigger | Purpose |
-|---|---|---|
-| `ci.yml` | PRs to `main` | Lint + format check (no test execution) |
-| `release.yml` | `v*` tags | Build full binary (3 platforms) + app package → GitHub Release |
+| Workflow       | Trigger         | Purpose                                                         |
+| -------------- | --------------- | --------------------------------------------------------------- |
+| `ci.yml`       | PRs to `main`   | Lint + format check (no test execution)                         |
+| `release.yml`  | `v*` tags       | Build full binary (3 platforms) + app package → GitHub Release  |
 | `launcher.yml` | Manual dispatch | Build launcher binary (3 platforms) → `launcher-v1` pre-release |
 
 Release platforms: `linux-x64`, `linux-arm64`, `darwin-arm64`. All builds include SHA-256 checksum verification.
@@ -420,7 +430,7 @@ Release platforms: `linux-x64`, `linux-arm64`, `darwin-arm64`. All builds includ
 
 ## Tooling
 
-- **Linting/Formatting**: Biome — no semicolons, single quotes, 2-space indent, auto-import organize
+- **Linting/Formatting**: ESLint (`eslint.config.js`) + Prettier (`.prettierrc`) — no semicolons, single quotes, 2-space indent
 - **Frontend tests**: vitest + @testing-library/react
 - **Backend tests**: `bun:test` with preload for isolated temp DB
 - **TypeScript**: shared configs in `packages/tsconfig` (strict mode, ESNext target)

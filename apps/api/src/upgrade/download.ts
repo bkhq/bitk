@@ -119,10 +119,7 @@ export async function downloadUpdate(
       if (expected) {
         checksumMatch = actual === expected
         if (!checksumMatch) {
-          logger.error(
-            { expected, actual, fileName },
-            'upgrade_checksum_mismatch',
-          )
+          logger.error({ expected, actual, fileName }, 'upgrade_checksum_mismatch')
           await unlink(tmpPath).catch(() => {})
           isDownloading = false
           downloadStatus = {
@@ -166,10 +163,7 @@ export async function downloadUpdate(
     }
 
     isDownloading = false
-    logger.info(
-      { fileName, filePath, size: received, checksumMatch },
-      'upgrade_download_completed',
-    )
+    logger.info({ fileName, filePath, size: received, checksumMatch }, 'upgrade_download_completed')
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : String(err)
     // Clean up partial .tmp file

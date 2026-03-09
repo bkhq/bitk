@@ -32,20 +32,11 @@ function entryToRow(entry: NormalizedLogEntry): Omit<EntryRow, 'idx'> {
     entry_type: entry.entryType,
     content: entry.content,
     metadata: metadata ? JSON.stringify(metadata) : null,
-    tool_call_id:
-      detail?.toolCallId ??
-      (entry.metadata?.toolCallId as string | undefined) ??
-      null,
-    tool_name:
-      detail?.toolName ??
-      (entry.metadata?.toolName as string | undefined) ??
-      null,
+    tool_call_id: detail?.toolCallId ?? (entry.metadata?.toolCallId as string | undefined) ?? null,
+    tool_name: detail?.toolName ?? (entry.metadata?.toolName as string | undefined) ?? null,
     tool_kind: detail?.kind ?? null,
     is_result:
-      detail?.isResult ||
-      (entry.metadata?.isResult as boolean | undefined) === true
-        ? 1
-        : 0,
+      detail?.isResult || (entry.metadata?.isResult as boolean | undefined) === true ? 1 : 0,
     timestamp: entry.timestamp ?? null,
   }
 }
@@ -79,8 +70,7 @@ function rowToEntry(row: EntryRow): NormalizedLogEntry {
 
   // Reconstruct toolAction from metadata if present
   if (entry.metadata?.toolAction) {
-    entry.toolAction = entry.metadata
-      .toolAction as NormalizedLogEntry['toolAction']
+    entry.toolAction = entry.metadata.toolAction as NormalizedLogEntry['toolAction']
   }
 
   return entry
@@ -149,9 +139,7 @@ export class ExecutionStore {
         ($message_id, $reply_to_message_id, $turn_index, $entry_type, $content,
          $metadata, $tool_call_id, $tool_name, $tool_kind, $is_result, $timestamp)
     `)
-    this.byTurnStmt = this.db.prepare(
-      'SELECT * FROM entries WHERE turn_index = ? ORDER BY idx',
-    )
+    this.byTurnStmt = this.db.prepare('SELECT * FROM entries WHERE turn_index = ? ORDER BY idx')
     this.allEntriesStmt = this.db.prepare('SELECT * FROM entries ORDER BY idx')
     this.toolActionsStmt = this.db.prepare(
       `SELECT * FROM entries
@@ -177,9 +165,7 @@ export class ExecutionStore {
       'SELECT COUNT(*) as cnt FROM entries WHERE turn_index = ?',
     )
     this.totalCountStmt = this.db.prepare('SELECT COUNT(*) as cnt FROM entries')
-    this.hasEntryStmt = this.db.prepare(
-      'SELECT 1 FROM entries WHERE message_id = ? LIMIT 1',
-    )
+    this.hasEntryStmt = this.db.prepare('SELECT 1 FROM entries WHERE message_id = ? LIMIT 1')
   }
 
   /** Append a normalized entry. */

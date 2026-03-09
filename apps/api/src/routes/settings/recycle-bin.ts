@@ -51,21 +51,14 @@ recycleBin.get('/deleted-issues', async (c) => {
 // POST /api/settings/deleted-issues/:id/restore — restore a soft-deleted issue
 recycleBin.post(
   '/deleted-issues/:id/restore',
-  zValidator(
-    'param',
-    z.object({ id: z.string().min(1).max(32) }),
-    (result, c) => {
-      if (!result.success) {
-        return c.json({ success: false, error: 'Invalid issue ID' }, 400)
-      }
-    },
-  ),
+  zValidator('param', z.object({ id: z.string().min(1).max(32) }), (result, c) => {
+    if (!result.success) {
+      return c.json({ success: false, error: 'Invalid issue ID' }, 400)
+    }
+  }),
   async (c) => {
     const issueId = c.req.valid('param').id
-    const [existing] = await db
-      .select()
-      .from(issuesTable)
-      .where(eq(issuesTable.id, issueId))
+    const [existing] = await db.select().from(issuesTable).where(eq(issuesTable.id, issueId))
 
     if (!existing || existing.isDeleted !== 1) {
       return c.json({ success: false, error: 'Deleted issue not found' }, 404)
@@ -78,24 +71,15 @@ recycleBin.post(
       .where(eq(projectsTable.id, existing.projectId))
 
     if (!project) {
-      return c.json(
-        { success: false, error: 'Parent project no longer exists' },
-        400,
-      )
+      return c.json({ success: false, error: 'Parent project no longer exists' }, 400)
     }
 
     // If the project is also soft-deleted, restore it too
     if (project.isDeleted === 1) {
-      await db
-        .update(projectsTable)
-        .set({ isDeleted: 0 })
-        .where(eq(projectsTable.id, project.id))
+      await db.update(projectsTable).set({ isDeleted: 0 }).where(eq(projectsTable.id, project.id))
     }
 
-    await db
-      .update(issuesTable)
-      .set({ isDeleted: 0 })
-      .where(eq(issuesTable.id, issueId))
+    await db.update(issuesTable).set({ isDeleted: 0 }).where(eq(issuesTable.id, issueId))
 
     // Invalidate cached issue lookups for this project to avoid stale data
     await cacheDelByPrefix(`issue:${existing.projectId}:`)

@@ -62,8 +62,7 @@ const commit = gitCommit.stdout.toString().trim() || 'unknown'
 step(`Version: ${version} (${commit})`)
 
 // Default output file name
-const defaultOutfile =
-  version !== 'dev' ? `bkd-app-v${version}.tar.gz` : 'bkd-app.tar.gz'
+const defaultOutfile = version !== 'dev' ? `bkd-app-v${version}.tar.gz` : 'bkd-app.tar.gz'
 mkdirSync(OUT_DIR, { recursive: true })
 const outfile = resolve(OUT_DIR, args.outfile ?? defaultOutfile)
 
@@ -161,10 +160,7 @@ const versionJson = {
   commit,
   builtAt: new Date().toISOString(),
 }
-await Bun.write(
-  resolve(STAGE, 'version.json'),
-  JSON.stringify(versionJson, null, 2),
-)
+await Bun.write(resolve(STAGE, 'version.json'), JSON.stringify(versionJson, null, 2))
 step('Generated version.json')
 
 // --- 7. Create tar.gz archive ---
@@ -197,9 +193,7 @@ const sha256 = hasher.digest('hex')
 const checksumFile = resolve(OUT_DIR, 'checksums.txt')
 const archiveName = outfile.split('/').pop() ?? 'bkd-app.tar.gz'
 const entry = `${sha256}  ${archiveName}\n`
-const existing = existsSync(checksumFile)
-  ? await Bun.file(checksumFile).text()
-  : ''
+const existing = existsSync(checksumFile) ? await Bun.file(checksumFile).text() : ''
 await Bun.write(checksumFile, existing + entry)
 step(`SHA-256: ${sha256}`)
 step(`Checksum file: ${checksumFile}`)

@@ -87,9 +87,7 @@ export function DiffPanel({
       }
       style={fullScreen ? undefined : { width }}
     >
-      {!fullScreen ? (
-        <ResizeHandle width={width} onWidthChange={onWidthChange} />
-      ) : null}
+      {!fullScreen ? <ResizeHandle width={width} onWidthChange={onWidthChange} /> : null}
 
       <div className="flex flex-col h-full min-h-0">
         <div className="flex items-center justify-between px-4 py-2.5 border-b border-border/60 shrink-0 min-h-[45px] bg-background/80 backdrop-blur-sm">
@@ -102,9 +100,7 @@ export function DiffPanel({
             >
               <FolderOpen className="h-4 w-4" />
             </button>
-            <span className="text-sm font-semibold tracking-tight">
-              {t('diff.changes')}
-            </span>
+            <span className="text-sm font-semibold tracking-tight">{t('diff.changes')}</span>
             <span className="text-[11px] font-medium text-muted-foreground/60 bg-muted/50 rounded-full px-1.5 py-0.5 tabular-nums">
               {files.length}
             </span>
@@ -121,9 +117,7 @@ export function DiffPanel({
 
         {changesQuery.isLoading ? (
           <div className="flex-1 flex items-center justify-center px-4">
-            <span className="text-sm text-muted-foreground text-center">
-              {t('common.loading')}
-            </span>
+            <span className="text-sm text-muted-foreground text-center">{t('common.loading')}</span>
           </div>
         ) : changesQuery.isError ? (
           <div className="flex-1 flex items-center justify-center px-4">
@@ -139,9 +133,7 @@ export function DiffPanel({
           </div>
         ) : files.length === 0 ? (
           <div className="flex-1 flex items-center justify-center px-4">
-            <span className="text-sm text-muted-foreground text-center">
-              {t('diff.noChanges')}
-            </span>
+            <span className="text-sm text-muted-foreground text-center">{t('diff.noChanges')}</span>
           </div>
         ) : (
           <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-y-contain touch-pan-y p-2 space-y-2">
@@ -222,9 +214,7 @@ function DiffFileCard({
       <summary className="list-none cursor-pointer select-none px-3 py-2.5 transition-colors duration-150 hover:bg-muted/25">
         <div className="flex items-center gap-2">
           <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground/60 transition-transform duration-150 group-open/card:rotate-90" />
-          <span className="min-w-0 truncate text-[12.5px] font-medium">
-            {path}
-          </span>
+          <span className="min-w-0 truncate text-[12.5px] font-medium">{path}</span>
           <div className="ml-auto flex shrink-0 items-center gap-1.5">
             <FileTypeBadge type={type} />
             <button
@@ -238,14 +228,10 @@ function DiffFileCard({
             </button>
             <span className="flex items-center gap-0.5 text-[11px] font-medium tabular-nums">
               {displayAdditions > 0 ? (
-                <span className="text-emerald-600 dark:text-emerald-400">
-                  +{displayAdditions}
-                </span>
+                <span className="text-emerald-600 dark:text-emerald-400">+{displayAdditions}</span>
               ) : null}
               {displayDeletions > 0 ? (
-                <span className="text-red-600 dark:text-red-400">
-                  -{displayDeletions}
-                </span>
+                <span className="text-red-600 dark:text-red-400">-{displayDeletions}</span>
               ) : null}
             </span>
           </div>
@@ -298,9 +284,7 @@ function DiffFileCard({
             </div>
           )}
           {patch?.truncated ? (
-            <div className="px-3 pb-2 text-[11px] text-muted-foreground">
-              {t('diff.truncated')}
-            </div>
+            <div className="px-3 pb-2 text-[11px] text-muted-foreground">{t('diff.truncated')}</div>
           ) : null}
         </div>
       ) : null}

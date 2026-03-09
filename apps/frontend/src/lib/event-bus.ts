@@ -11,10 +11,7 @@ export interface IssueEventHandler {
 
 export type ChangesSummaryData = ChangesSummary
 
-type IssueUpdatedListener = (data: {
-  issueId: string
-  changes: Record<string, unknown>
-}) => void
+type IssueUpdatedListener = (data: { issueId: string; changes: Record<string, unknown> }) => void
 type ChangesSummaryListener = (data: ChangesSummaryData) => void
 type IssueActivityListener = (issueId: string) => void
 type ConnectionListener = (connected: boolean) => void
@@ -114,9 +111,7 @@ class EventBus {
           issueId: string
           finalStatus: SessionStatus
         }
-        this.dispatch(data.issueId, (h) =>
-          h.onDone({ finalStatus: data.finalStatus }),
-        )
+        this.dispatch(data.issueId, (h) => h.onDone({ finalStatus: data.finalStatus }))
         this.notifyActivity(data.issueId)
       } catch {
         /* ignore */
@@ -171,9 +166,7 @@ class EventBus {
 
       // Before first successful connection: fast fixed-interval retry
       // After first connection: exponential backoff for reconnections
-      const delay = this.hasConnectedOnce
-        ? this.reconnectDelay
-        : INITIAL_RETRY_DELAY
+      const delay = this.hasConnectedOnce ? this.reconnectDelay : INITIAL_RETRY_DELAY
       if (this.hasConnectedOnce) {
         this.reconnectDelay = Math.min(delay * 2, MAX_RECONNECT_DELAY)
       }
@@ -250,10 +243,7 @@ class EventBus {
     return this.connected
   }
 
-  private dispatch(
-    issueId: string,
-    fn: (handler: IssueEventHandler) => void,
-  ): void {
+  private dispatch(issueId: string, fn: (handler: IssueEventHandler) => void): void {
     const set = this.handlers.get(issueId)
     if (!set) return
     for (const handler of set) {

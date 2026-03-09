@@ -9,9 +9,7 @@ import { getIssueUrl } from '@/stores/server-store'
 import { ChatBody } from './ChatBody'
 import { SubIssueDialog } from './SubIssueDialog'
 
-const LazyDiffPanel = lazy(() =>
-  import('./DiffPanel').then((m) => ({ default: m.DiffPanel })),
-)
+const LazyDiffPanel = lazy(() => import('./DiffPanel').then((m) => ({ default: m.DiffPanel })))
 
 export function ChatArea({
   projectId,
@@ -49,7 +47,7 @@ export function ChatArea({
   const titleBeforeAutoRef = useRef<string | null>(null)
 
   // Detect title change to clear auto-titling state
-  // biome-ignore lint/correctness/useExhaustiveDependencies: titleBeforeAutoRef is a stable ref, not needed as dependency
+
   useEffect(() => {
     if (isAutoTitling && titleBeforeAutoRef.current !== null && issue) {
       if (issue.title !== titleBeforeAutoRef.current) {
@@ -104,9 +102,7 @@ export function ChatArea({
     }
   }, [issue])
 
-  const defaultBack = showBackToList
-    ? `/projects/${projectId}/issues`
-    : `/projects/${projectId}`
+  const defaultBack = showBackToList ? `/projects/${projectId}/issues` : `/projects/${projectId}`
   const resolvedBackPath = backPath ?? defaultBack
 
   const handleAfterDelete = useCallback(() => {
@@ -235,11 +231,7 @@ export function ChatArea({
                 .catch(() => {})
             }}
           >
-            {copied ? (
-              <Check className="h-3.5 w-3.5" />
-            ) : (
-              <Link className="h-3.5 w-3.5" />
-            )}
+            {copied ? <Check className="h-3.5 w-3.5" /> : <Link className="h-3.5 w-3.5" />}
           </Button>
         </div>
 

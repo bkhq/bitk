@@ -13,10 +13,7 @@ import type { EngineContext } from '../context'
  */
 export function registerTokenUsageStage(
   _ctx: EngineContext,
-  on: (
-    cb: (data: AppEventMap['log']) => void,
-    opts: { order: number },
-  ) => () => void,
+  on: (cb: (data: AppEventMap['log']) => void, opts: { order: number }) => () => void,
 ): () => void {
   return on(
     (data) => {
@@ -28,10 +25,8 @@ export function registerTokenUsageStage(
       // Only process result entries that signal turn completion
       if (!meta.turnCompleted) return
 
-      const inputTokens =
-        typeof meta.inputTokens === 'number' ? meta.inputTokens : 0
-      const outputTokens =
-        typeof meta.outputTokens === 'number' ? meta.outputTokens : 0
+      const inputTokens = typeof meta.inputTokens === 'number' ? meta.inputTokens : 0
+      const outputTokens = typeof meta.outputTokens === 'number' ? meta.outputTokens : 0
       const costUsd = typeof meta.costUsd === 'number' ? meta.costUsd : 0
 
       if (inputTokens === 0 && outputTokens === 0 && costUsd === 0) return
@@ -46,10 +41,7 @@ export function registerTokenUsageStage(
           .where(sql`${issues.id} = ${data.issueId}`)
           .run()
       } catch (error) {
-        logger.warn(
-          { issueId: data.issueId, error },
-          'token_usage_accumulate_failed',
-        )
+        logger.warn({ issueId: data.issueId, error }, 'token_usage_accumulate_failed')
       }
     },
     { order: 15 },

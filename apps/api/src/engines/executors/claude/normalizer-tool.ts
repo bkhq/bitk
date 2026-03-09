@@ -15,10 +15,7 @@ export function extractTextContent(content: unknown): string | null {
 }
 
 /** Generate concise, human-readable content for a tool invocation. */
-export function generateToolContent(
-  toolName: string,
-  input: Record<string, unknown>,
-): string {
+export function generateToolContent(toolName: string, input: Record<string, unknown>): string {
   switch (toolName) {
     case 'Read':
       return String(input.file_path ?? input.path ?? toolName)
@@ -29,9 +26,7 @@ export function generateToolContent(
     case 'Bash':
       return String(input.command ?? input.cmd ?? toolName)
     case 'Grep':
-      return input.path
-        ? `${input.pattern} in ${input.path}`
-        : String(input.pattern ?? toolName)
+      return input.path ? `${input.pattern} in ${input.path}` : String(input.pattern ?? toolName)
     case 'Glob':
       return input.path
         ? `${input.pattern ?? input.filePattern} in ${input.path}`
@@ -45,9 +40,7 @@ export function generateToolContent(
     case 'Task':
       return input.description ? `Task: ${input.description}` : 'Task'
     case 'Agent':
-      return input.description
-        ? `Agent: ${input.description}`
-        : String(input.prompt ?? 'Agent')
+      return input.description ? `Agent: ${input.description}` : String(input.prompt ?? 'Agent')
     case 'TodoWrite':
       return 'TODO list updated'
     case 'ExitPlanMode':
@@ -91,10 +84,7 @@ export function classifyToolKind(toolName: string): string {
 }
 
 /** Classify a tool action (for ToolAction discriminated union). */
-export function classifyToolAction(
-  toolName: string,
-  input: Record<string, unknown>,
-): ToolAction {
+export function classifyToolAction(toolName: string, input: Record<string, unknown>): ToolAction {
   switch (toolName) {
     case 'Read':
       return {
@@ -112,9 +102,7 @@ export function classifyToolAction(
       return {
         kind: 'command-run',
         command: String(input.command ?? input.cmd ?? ''),
-        category: classifyCommand(
-          String(input.command ?? input.cmd ?? ''),
-        ) as CommandCategory,
+        category: classifyCommand(String(input.command ?? input.cmd ?? '')) as CommandCategory,
       }
     case 'Grep':
     case 'Glob':
@@ -130,9 +118,7 @@ export function classifyToolAction(
 }
 
 /** Normalize tool_result content to a plain string. */
-export function normalizeToolResultContent(
-  content: string | unknown[] | undefined,
-): string {
+export function normalizeToolResultContent(content: string | unknown[] | undefined): string {
   if (typeof content === 'string') return content
   if (Array.isArray(content)) {
     return content
@@ -172,10 +158,7 @@ export function normalizeExecutionError(raw: string): {
   summary: string
 } {
   const lower = raw.toLowerCase()
-  if (
-    lower.includes('lsp server plugin:rust-analyzer-lsp') &&
-    lower.includes('crashed')
-  ) {
+  if (lower.includes('lsp server plugin:rust-analyzer-lsp') && lower.includes('crashed')) {
     return {
       kind: 'rust_analyzer_crash',
       summary:

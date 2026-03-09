@@ -2,16 +2,9 @@ import { beforeAll, describe, expect, test } from 'bun:test'
 import { eq } from 'drizzle-orm'
 import { db } from '@/db'
 import { promotePendingMessages } from '@/db/pending-messages'
-import {
-  issueLogs,
-  issues as issuesTable,
-  projects as projectsTable,
-} from '@/db/schema'
+import { issueLogs, issues as issuesTable, projects as projectsTable } from '@/db/schema'
 // We import the shared helpers directly
-import {
-  getPendingMessages,
-  markPendingMessagesDispatched,
-} from '@/routes/issues/_shared'
+import { getPendingMessages, markPendingMessagesDispatched } from '@/routes/issues/_shared'
 
 /**
  * Pending messages unit tests — tests the low-level pending message
@@ -115,10 +108,7 @@ describe('getPendingMessages', () => {
 
     const pending = await getPendingMessages(issue.id)
     expect(pending.length).toBe(2)
-    expect(pending.map((m) => m.content)).toEqual([
-      'pending one',
-      'pending two',
-    ])
+    expect(pending.map((m) => m.content)).toEqual(['pending one', 'pending two'])
   })
 
   test('returns empty array when no pending messages exist', async () => {
@@ -257,12 +247,8 @@ describe('Pending message lifecycle', () => {
 
     // 3. Merge into a prompt (simulates collectPendingMessages logic)
     const basePrompt = 'base instruction'
-    const merged = [basePrompt, ...pending.map((m) => m.content)]
-      .filter(Boolean)
-      .join('\n\n')
-    expect(merged).toBe(
-      'base instruction\n\nfirst message\n\nsecond message\n\nthird message',
-    )
+    const merged = [basePrompt, ...pending.map((m) => m.content)].filter(Boolean).join('\n\n')
+    expect(merged).toBe('base instruction\n\nfirst message\n\nsecond message\n\nthird message')
 
     // 4. Mark as dispatched after successful dispatch
     await markPendingMessagesDispatched(pending.map((m) => m.id))
@@ -291,9 +277,7 @@ describe('Pending message lifecycle', () => {
     await insertPendingMessage(issue.id, 'only message')
 
     const pending = await getPendingMessages(issue.id)
-    const merged = ['', ...pending.map((m) => m.content)]
-      .filter(Boolean)
-      .join('\n\n')
+    const merged = ['', ...pending.map((m) => m.content)].filter(Boolean).join('\n\n')
     expect(merged).toBe('only message')
   })
 
@@ -307,9 +291,7 @@ describe('Pending message lifecycle', () => {
     const merged =
       pending.length === 0
         ? basePrompt
-        : [basePrompt, ...pending.map((m) => m.content)]
-            .filter(Boolean)
-            .join('\n\n')
+        : [basePrompt, ...pending.map((m) => m.content)].filter(Boolean).join('\n\n')
     expect(merged).toBe('just the base')
   })
 })
@@ -337,9 +319,7 @@ describe('promotePendingMessages', () => {
     expect(updated).toHaveLength(1)
     expect(updated[0]!.messageId).toBe(pending[0]!.id)
     expect(updated[0]!.metadata?.type).toBeUndefined()
-    expect(updated[0]!.metadata?.attachments).toEqual([
-      { id: 'att-1', name: 'spec.txt', size: 12 },
-    ])
+    expect(updated[0]!.metadata?.attachments).toEqual([{ id: 'att-1', name: 'spec.txt', size: 12 }])
 
     const pendingAfter = await getPendingMessages(issue.id)
     expect(pendingAfter).toHaveLength(0)

@@ -10,10 +10,7 @@ import { applyAutoTitle } from '../title'
  */
 export function registerAutoTitleStage(
   ctx: EngineContext,
-  on: (
-    cb: (data: AppEventMap['log']) => void,
-    opts: { order: number },
-  ) => () => void,
+  on: (cb: (data: AppEventMap['log']) => void, opts: { order: number }) => () => void,
 ): () => void {
   return on(
     (data) => {

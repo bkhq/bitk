@@ -21,8 +21,7 @@ export function KanbanBoard({
   const { data: issues, isLoading: issuesLoading } = useIssues(projectId)
   const bulkUpdate = useBulkUpdateIssues(projectId)
 
-  const { groupedItems, syncFromServer, applyDragOver, applyDragEnd } =
-    useBoardStore()
+  const { groupedItems, syncFromServer, applyDragOver, applyDragEnd } = useBoardStore()
   const selectedIssueId = useSelectedIssueId()
 
   useEffect(() => {
@@ -50,9 +49,7 @@ export function KanbanBoard({
   if (issuesLoading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="text-sm text-muted-foreground">
-          {t('kanban.loadingBoard')}
-        </div>
+        <div className="text-sm text-muted-foreground">{t('kanban.loadingBoard')}</div>
       </div>
     )
   }

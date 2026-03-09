@@ -1,15 +1,5 @@
-import type {
-  ChatMessage,
-  NormalizedLogEntry,
-  TaskPlanChatMessage,
-} from '@bkd/shared'
-import {
-  CheckCircle2,
-  ChevronUp,
-  Circle,
-  ListTodo,
-  Loader2,
-} from 'lucide-react'
+import type { ChatMessage, NormalizedLogEntry, TaskPlanChatMessage } from '@bkd/shared'
+import { CheckCircle2, ChevronUp, Circle, ListTodo, Loader2 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useChatMessages } from '@/hooks/use-chat-messages'
@@ -27,9 +17,7 @@ function ChatMessageRow({ message }: { message: ChatMessage }) {
           <div className="group py-1.5 animate-message-enter">
             <details className="rounded-lg border border-border/30 bg-muted/10 transition-all duration-200 open:bg-muted/20">
               <summary className="cursor-pointer list-none px-3 py-2 text-xs text-muted-foreground hover:bg-muted/20 transition-colors">
-                <code className="font-mono text-foreground/70">
-                  {message.entry.content}
-                </code>
+                <code className="font-mono text-foreground/70">{message.entry.content}</code>
               </summary>
               {message.commandOutput ? (
                 <div className="px-3 pb-3 pt-1.5 border-t border-border/20">
@@ -72,9 +60,7 @@ function TaskPlanMessage({ message }: { message: TaskPlanChatMessage }) {
   const { todos, completedCount } = message
 
   const inProgressItem = todos.find((it) => it.status === 'in_progress')
-  const statusText = inProgressItem
-    ? inProgressItem.activeForm || inProgressItem.content
-    : null
+  const statusText = inProgressItem ? inProgressItem.activeForm || inProgressItem.content : null
 
   return (
     <div className="animate-message-enter">
@@ -83,7 +69,6 @@ function TaskPlanMessage({ message }: { message: TaskPlanChatMessage }) {
         {expanded ? (
           <div className="px-3 pt-2 pb-1 space-y-0.5 border-b border-border/20">
             {todos.map((item, idx) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: todos do not reorder independently within a plan snapshot; content is not unique
               <div key={idx} className="flex items-start gap-1.5 text-xs">
                 {item.status === 'completed' ? (
                   <CheckCircle2 className="h-3 w-3 shrink-0 text-emerald-500 mt-0.5" />
@@ -101,9 +86,7 @@ function TaskPlanMessage({ message }: { message: TaskPlanChatMessage }) {
                         : ''
                   }
                 >
-                  {item.status === 'in_progress'
-                    ? item.activeForm || item.content
-                    : item.content}
+                  {item.status === 'in_progress' ? item.activeForm || item.content : item.content}
                 </span>
               </div>
             ))}
@@ -117,16 +100,12 @@ function TaskPlanMessage({ message }: { message: TaskPlanChatMessage }) {
           className="flex w-full items-center gap-2 px-3 py-2 text-xs transition-colors hover:bg-muted/20"
         >
           <ListTodo className="h-3.5 w-3.5 shrink-0 text-indigo-500" />
-          <span className="font-medium text-muted-foreground">
-            {t('session.tool.taskPlan')}
-          </span>
+          <span className="font-medium text-muted-foreground">{t('session.tool.taskPlan')}</span>
           <span className="text-muted-foreground/50">
             ({completedCount}/{todos.length})
           </span>
           {statusText ? (
-            <span className="truncate text-blue-600 dark:text-blue-400">
-              {statusText}
-            </span>
+            <span className="truncate text-blue-600 dark:text-blue-400">{statusText}</span>
           ) : null}
           <ChevronUp
             className={`ml-auto h-3 w-3 shrink-0 text-muted-foreground/50 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}
@@ -174,8 +153,7 @@ export function SessionMessages({
     const el = scrollRef?.current
     if (!el) return
     const handler = () => {
-      nearBottomRef.current =
-        el.scrollHeight - el.scrollTop - el.clientHeight < 150
+      nearBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 150
     }
     el.addEventListener('scroll', handler, { passive: true })
     return () => el.removeEventListener('scroll', handler)
@@ -199,7 +177,7 @@ export function SessionMessages({
 
   const prevLenRef = useRef(messages.length)
   const prevFirstIdRef = useRef(messages[0]?.id)
-  // biome-ignore lint/correctness/useExhaustiveDependencies: prevLenRef/prevFirstIdRef are stable refs, not needed as dependencies
+
   useEffect(() => {
     if (!initialScrollDone.current) return
     const firstId = messages[0]?.id
@@ -226,9 +204,7 @@ export function SessionMessages({
   if (messages.length === 0 && !isRunning) return null
 
   return (
-    <div
-      className={`flex flex-col py-2 px-5${fullWidthChat ? '' : ' max-w-4xl'}`}
-    >
+    <div className={`flex flex-col py-2 px-5${fullWidthChat ? '' : ' max-w-4xl'}`}>
       {hasOlderLogs && onLoadOlder ? (
         <div className="flex justify-center py-2">
           <button

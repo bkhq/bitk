@@ -1,8 +1,5 @@
 import { cleanupStaleSessions } from '@/db/helpers'
-import {
-  collectPendingWithAttachments,
-  markPendingMessagesDispatched,
-} from '@/db/pending-messages'
+import { collectPendingWithAttachments, markPendingMessagesDispatched } from '@/db/pending-messages'
 import { getIssueWithSession, updateIssueSession } from '@/engines/engine-store'
 import { engineRegistry } from '@/engines/executors'
 import type { EngineContext } from '@/engines/issue/context'
@@ -36,8 +33,7 @@ export async function restartIssue(
     if (status !== 'failed' && status !== 'cancelled')
       throw new Error(`Cannot restart issue in session status: ${status}`)
 
-    if (!issue.sessionFields.engineType)
-      throw new Error('No engine type set on issue')
+    if (!issue.sessionFields.engineType) throw new Error('No engine type set on issue')
     if (!issue.sessionFields.prompt) throw new Error('No prompt set on issue')
 
     ensureNoActiveProcess(ctx, issueId)
@@ -47,8 +43,7 @@ export async function restartIssue(
     if (!executor) throw new Error(`No executor for engine type: ${engineType}`)
 
     // Collect pending messages to merge into the restart prompt
-    const { prompt: pendingPrompt, pendingIds } =
-      await collectPendingWithAttachments(issueId)
+    const { prompt: pendingPrompt, pendingIds } = await collectPendingWithAttachments(issueId)
 
     await updateIssueSession(issueId, { sessionStatus: 'running' })
 
@@ -62,10 +57,7 @@ export async function restartIssue(
         worktreePath = await createWorktree(baseDir, issue.projectId, issueId)
         workingDir = worktreePath
       } catch (error) {
-        logger.warn(
-          { issueId, error },
-          'worktree_creation_failed_fallback_to_base',
-        )
+        logger.warn({ issueId, error }, 'worktree_creation_failed_fallback_to_base')
       }
     }
 
@@ -113,12 +105,8 @@ export async function restartIssue(
         { issueId, executionId, error: spawnError },
         'restart_spawn_failed_reverting_session',
       )
-      await updateIssueSession(issueId, { sessionStatus: 'failed' }).catch(
-        (e) =>
-          logger.error(
-            { issueId, error: e },
-            'restart_spawn_failed_revert_session_error',
-          ),
+      await updateIssueSession(issueId, { sessionStatus: 'failed' }).catch((e) =>
+        logger.error({ issueId, error: e }, 'restart_spawn_failed_revert_session_error'),
       )
       emitStateChange(issueId, executionId, 'failed')
       throw spawnError
@@ -142,9 +130,7 @@ export async function restartIssue(
     )
     restartManaged.spawnCwd = workingDir
     restartManaged.externalSessionId =
-      spawned.externalSessionId ??
-      issue.sessionFields.externalSessionId ??
-      undefined
+      spawned.externalSessionId ?? issue.sessionFields.externalSessionId ?? undefined
     monitorCompletion(ctx, executionId, issueId, engineType, false)
 
     // Mark pending messages as dispatched after successful spawn

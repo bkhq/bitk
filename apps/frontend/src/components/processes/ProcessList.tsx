@@ -18,11 +18,7 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import {
-  useCancelIssue,
-  useRestartIssue,
-  useTerminateProcess,
-} from '@/hooks/use-kanban'
+import { useCancelIssue, useRestartIssue, useTerminateProcess } from '@/hooks/use-kanban'
 import type { ProcessInfo } from '@/types/kanban'
 
 function StatusIcon({ status }: { status: string | null }) {
@@ -43,9 +39,7 @@ function StatusIcon({ status }: { status: string | null }) {
   }
 }
 
-function statusVariant(
-  status: string | null,
-): 'default' | 'secondary' | 'destructive' | 'outline' {
+function statusVariant(status: string | null): 'default' | 'secondary' | 'destructive' | 'outline' {
   switch (status) {
     case 'running':
     case 'spawning':
@@ -74,13 +68,7 @@ function isIdle(proc: ProcessInfo): boolean {
   return !proc.turnInFlight && !!proc.lastIdleAt
 }
 
-function ProcessCard({
-  proc,
-  projectId,
-}: {
-  proc: ProcessInfo
-  projectId: string
-}) {
+function ProcessCard({ proc, projectId }: { proc: ProcessInfo; projectId: string }) {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const cancelMutation = useCancelIssue(projectId)
@@ -97,30 +85,21 @@ function ProcessCard({
         <button
           type="button"
           className="text-xs font-medium text-foreground truncate hover:underline cursor-pointer text-left min-w-0"
-          onClick={() =>
-            navigate(`/projects/${projectId}/issues/${proc.issueId}`)
-          }
+          onClick={() => navigate(`/projects/${projectId}/issues/${proc.issueId}`)}
         >
-          <span className="text-muted-foreground">#{proc.issueNumber}</span>{' '}
-          {proc.issueTitle}
+          <span className="text-muted-foreground">#{proc.issueNumber}</span> {proc.issueTitle}
         </button>
       </div>
 
       {/* Meta row */}
       <div className="flex flex-wrap items-center gap-1.5">
         {proc.processState && (
-          <Badge
-            variant={statusVariant(proc.processState)}
-            className="text-[10px] px-1.5 py-0"
-          >
+          <Badge variant={statusVariant(proc.processState)} className="text-[10px] px-1.5 py-0">
             {t(`session.status.${proc.processState}`)}
           </Badge>
         )}
         {idle && (
-          <Badge
-            variant="outline"
-            className="text-[10px] px-1.5 py-0 text-yellow-600"
-          >
+          <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-yellow-600">
             <Clock className="h-2.5 w-2.5 mr-0.5" />
             {t('processManager.idle')} {formatDuration(proc.lastIdleAt)}
           </Badge>
@@ -136,10 +115,7 @@ function ProcessCard({
           </Badge>
         )}
         {proc.pid != null && (
-          <Badge
-            variant="outline"
-            className="text-[10px] px-1.5 py-0 font-mono"
-          >
+          <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-mono">
             PID {proc.pid}
           </Badge>
         )}
@@ -182,8 +158,7 @@ function ProcessCard({
 
       {/* Actions */}
       <div className="flex items-center gap-1.5 pt-1">
-        {(proc.processState === 'running' ||
-          proc.processState === 'spawning') && (
+        {(proc.processState === 'running' || proc.processState === 'spawning') && (
           <Button
             variant="outline"
             size="sm"
@@ -192,13 +167,10 @@ function ProcessCard({
             onClick={() => cancelMutation.mutate(proc.issueId)}
           >
             <Square className="h-3 w-3" />
-            {cancelMutation.isPending
-              ? t('processManager.cancelling')
-              : t('processManager.cancel')}
+            {cancelMutation.isPending ? t('processManager.cancelling') : t('processManager.cancel')}
           </Button>
         )}
-        {(proc.processState === 'failed' ||
-          proc.processState === 'cancelled') && (
+        {(proc.processState === 'failed' || proc.processState === 'cancelled') && (
           <Button
             variant="outline"
             size="sm"

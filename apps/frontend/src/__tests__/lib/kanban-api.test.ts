@@ -137,8 +137,6 @@ describe('kanbanApi error handling', () => {
   it('throws when success is false', async () => {
     mockFetch.mockResolvedValueOnce(mockErrorResponse('Something went wrong'))
 
-    await expect(kanbanApi.getProjects()).rejects.toThrow(
-      'Something went wrong',
-    )
+    await expect(kanbanApi.getProjects()).rejects.toThrow('Something went wrong')
   })
 })

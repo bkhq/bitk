@@ -20,9 +20,7 @@ describe('computeFileSha256', () => {
     const hash = await computeFileSha256(filePath)
     // sha256("hello world\n") = a948904f2f0f479b8f8564e9d1d33c4d...
     expect(hash).toMatch(/^[a-f0-9]{64}$/)
-    expect(hash).toBe(
-      'a948904f2f0f479b8f8197694b30184b0d2ed1c1cd2a1ec0fb85d299a192a447',
-    )
+    expect(hash).toBe('a948904f2f0f479b8f8197694b30184b0d2ed1c1cd2a1ec0fb85d299a192a447')
   })
 
   it('computes correct sha256 for empty file', async () => {
@@ -30,9 +28,7 @@ describe('computeFileSha256', () => {
     await Bun.write(filePath, '')
     const hash = await computeFileSha256(filePath)
     // sha256("") = e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
-    expect(hash).toBe(
-      'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
-    )
+    expect(hash).toBe('e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855')
   })
 
   it('produces different hashes for different content', async () => {

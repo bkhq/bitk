@@ -78,9 +78,7 @@ export function FileList({ entries, onNavigate }: FileListProps) {
                   )}
                   <span
                     className={`truncate ${
-                      entry.type === 'directory'
-                        ? 'text-foreground font-medium'
-                        : 'text-foreground'
+                      entry.type === 'directory' ? 'text-foreground font-medium' : 'text-foreground'
                     }`}
                   >
                     {entry.name}

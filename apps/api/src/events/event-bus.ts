@@ -58,10 +58,7 @@ export class AppEventBus {
       try {
         entry.callback(data)
       } catch (err) {
-        logger.warn(
-          { event: key, order: entry.order, err },
-          'event_subscriber_error',
-        )
+        logger.warn({ event: key, order: entry.order, err }, 'event_subscriber_error')
       }
     }
   }

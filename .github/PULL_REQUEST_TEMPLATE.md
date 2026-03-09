@@ -1,7 +1,9 @@
 ## Description
+
 <!-- Brief description of changes -->
 
 ## Type of Change
+
 - [ ] `fix:` Bug fix
 - [ ] `feat:` New feature
 - [ ] `refactor:` Code refactoring
@@ -11,6 +13,7 @@
 - [ ] `ci:` CI/CD changes
 
 ## Checklist
+
 - [ ] `bun run lint` passes (all workspaces)
 - [ ] `bun run test` passes
 - [ ] Follows conventional commits format

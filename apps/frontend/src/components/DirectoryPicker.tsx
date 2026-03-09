@@ -51,7 +51,6 @@ export function DirectoryPicker({
     }
   }
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: fetchDirs is a stable inner function, not needed as dependency
   useEffect(() => {
     if (open) {
       void fetchDirs(initialPath || undefined)
@@ -86,10 +85,7 @@ export function DirectoryPicker({
     if (!dirData || !newFolderName.trim()) return
     setCreating(true)
     try {
-      const result = await kanbanApi.createDir(
-        dirData.current,
-        newFolderName.trim(),
-      )
+      const result = await kanbanApi.createDir(dirData.current, newFolderName.trim())
       setShowNewFolder(false)
       setNewFolderName('')
       void fetchDirs(result.path)
@@ -106,9 +102,7 @@ export function DirectoryPicker({
         <DialogHeader>
           <div>
             <DialogTitle>{t('directory.browse')}</DialogTitle>
-            <DialogDescription>
-              {t('directory.browseDescription')}
-            </DialogDescription>
+            <DialogDescription>{t('directory.browseDescription')}</DialogDescription>
           </div>
         </DialogHeader>
 
@@ -156,11 +150,7 @@ export function DirectoryPicker({
                 onClick={handleCreateFolder}
                 disabled={!newFolderName.trim() || creating}
               >
-                {creating ? (
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                ) : (
-                  t('directory.create')
-                )}
+                {creating ? <Loader2 className="h-3 w-3 animate-spin" /> : t('directory.create')}
               </Button>
             </div>
           )}
@@ -172,9 +162,7 @@ export function DirectoryPicker({
                 <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
               </div>
             ) : error ? (
-              <div className="px-3 py-4 text-center text-sm text-destructive">
-                {error}
-              </div>
+              <div className="px-3 py-4 text-center text-sm text-destructive">{error}</div>
             ) : (
               <div className="divide-y">
                 {dirData?.parent && (
@@ -209,18 +197,10 @@ export function DirectoryPicker({
 
           {/* Actions */}
           <div className="flex gap-2">
-            <Button
-              variant="outline"
-              className="flex-1"
-              onClick={() => onOpenChange(false)}
-            >
+            <Button variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>
               {t('common.cancel')}
             </Button>
-            <Button
-              className="flex-1"
-              onClick={handleSelect}
-              disabled={!dirData || loading}
-            >
+            <Button className="flex-1" onClick={handleSelect} disabled={!dirData || loading}>
               {t('common.select')}
             </Button>
           </div>

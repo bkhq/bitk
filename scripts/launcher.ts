@@ -25,9 +25,7 @@ import { dirname, resolve } from 'node:path'
 
 // --- Constants ---
 
-const ROOT_DIR = process.env.BKD_ROOT
-  ? resolve(process.env.BKD_ROOT)
-  : dirname(process.execPath)
+const ROOT_DIR = process.env.BKD_ROOT ? resolve(process.env.BKD_ROOT) : dirname(process.execPath)
 
 const APP_BASE = resolve(ROOT_DIR, 'data/app')
 const VERSION_FILE = resolve(APP_BASE, 'version.json')
@@ -103,16 +101,13 @@ function isAllowedHost(url: string): boolean {
 async function fetchLatestAppPackage(): Promise<AppPackageInfo | null> {
   console.log('[launcher] Checking GitHub for latest release...')
   try {
-    const res = await fetch(
-      `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`,
-      {
-        headers: {
-          Accept: 'application/vnd.github.v3+json',
-          'User-Agent': 'bkd-launcher',
-        },
-        signal: AbortSignal.timeout(15_000),
+    const res = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`, {
+      headers: {
+        Accept: 'application/vnd.github.v3+json',
+        'User-Agent': 'bkd-launcher',
       },
-    )
+      signal: AbortSignal.timeout(15_000),
+    })
 
     if (!res.ok) {
       console.error(`[launcher] GitHub API returned ${res.status}`)
@@ -149,9 +144,7 @@ async function fetchLatestAppPackage(): Promise<AppPackageInfo | null> {
 
     // Fallback: legacy per-asset .sha256 file
     if (!checksumAsset && pkgAsset) {
-      const legacy = data.assets.find(
-        (a) => a.name === `${pkgAsset!.name}.sha256`,
-      )
+      const legacy = data.assets.find((a) => a.name === `${pkgAsset!.name}.sha256`)
       if (legacy) {
         checksumAsset = {
           name: legacy.name,
@@ -177,10 +170,7 @@ async function fetchLatestAppPackage(): Promise<AppPackageInfo | null> {
 
 // --- Auto-download: download file ---
 
-async function downloadToFile(
-  url: string,
-  destPath: string,
-): Promise<Buffer | null> {
+async function downloadToFile(url: string, destPath: string): Promise<Buffer | null> {
   if (!isAllowedHost(url)) {
     console.error(`[launcher] Refusing download from untrusted host: ${url}`)
     return null
@@ -297,18 +287,15 @@ async function verifyChecksum(
 
 // --- Auto-download: extract and install ---
 
-async function extractAndInstall(
-  tmpFile: string,
-  versionDir: string,
-): Promise<boolean> {
+async function extractAndInstall(tmpFile: string, versionDir: string): Promise<boolean> {
   const tmpExtractDir = resolve(APP_BASE, `${versionDir}.tmp.${Date.now()}`)
   mkdirSync(tmpExtractDir, { recursive: true })
 
   try {
-    const proc = Bun.spawn(
-      ['tar', '-xzf', tmpFile, '-C', tmpExtractDir, '--no-same-owner'],
-      { stdout: 'inherit', stderr: 'inherit' },
-    )
+    const proc = Bun.spawn(['tar', '-xzf', tmpFile, '-C', tmpExtractDir, '--no-same-owner'], {
+      stdout: 'inherit',
+      stderr: 'inherit',
+    })
     const exitCode = await proc.exited
     if (exitCode !== 0) {
       console.error(`[launcher] tar extract failed with code ${exitCode}`)
@@ -322,10 +309,7 @@ async function extractAndInstall(
     await rename(tmpExtractDir, versionDir)
     return true
   } catch (err) {
-    console.error(
-      '[launcher] Extract/install failed:',
-      err instanceof Error ? err.message : err,
-    )
+    console.error('[launcher] Extract/install failed:', err instanceof Error ? err.message : err)
     rmSync(tmpExtractDir, { recursive: true, force: true })
     return false
   }
@@ -376,11 +360,7 @@ async function downloadAndExtract(info: AppPackageInfo): Promise<boolean> {
       rmSync(tmpFile, { force: true })
       return false
     }
-    const valid = await verifyChecksum(
-      data,
-      info.checksumAsset,
-      info.asset.name,
-    )
+    const valid = await verifyChecksum(data, info.checksumAsset, info.asset.name)
     if (!valid) {
       rmSync(tmpFile, { force: true })
       return false
@@ -396,9 +376,7 @@ async function downloadAndExtract(info: AppPackageInfo): Promise<boolean> {
     // Validate extracted package contains server.js before activating
     const serverJs = resolve(versionDir, 'server.js')
     if (!existsSync(serverJs)) {
-      console.error(
-        `[launcher] Extracted package is missing server.js — removing broken version`,
-      )
+      console.error(`[launcher] Extracted package is missing server.js — removing broken version`)
       rmSync(versionDir, { recursive: true, force: true })
       rmSync(tmpFile, { force: true })
       return false
@@ -409,10 +387,7 @@ async function downloadAndExtract(info: AppPackageInfo): Promise<boolean> {
     console.log(`[launcher] Version ${info.version} installed successfully`)
     return true
   } catch (err) {
-    console.error(
-      '[launcher] Download/extract failed:',
-      err instanceof Error ? err.message : err,
-    )
+    console.error('[launcher] Download/extract failed:', err instanceof Error ? err.message : err)
     rmSync(tmpFile, { force: true })
     return false
   }
@@ -437,25 +412,19 @@ async function main() {
   if (!version) {
     version = detectLatestVersion()
     if (version) {
-      console.log(
-        `[launcher] No version.json, auto-detected version: ${version}`,
-      )
+      console.log(`[launcher] No version.json, auto-detected version: ${version}`)
       await writeVersionFile(version)
     }
   }
 
   if (version && !SEMVER_RE.test(version)) {
-    console.error(
-      `[launcher] Invalid version in current file: ${JSON.stringify(version)}`,
-    )
+    console.error(`[launcher] Invalid version in current file: ${JSON.stringify(version)}`)
     process.exit(1)
   }
 
   // 3. Auto-download from GitHub if no local version
   if (!version) {
-    console.log(
-      '[launcher] No app version found locally, attempting auto-download...',
-    )
+    console.log('[launcher] No app version found locally, attempting auto-download...')
 
     const latest = await fetchLatestAppPackage()
     if (!latest) {
@@ -464,9 +433,7 @@ async function main() {
       console.error('Manual setup:')
       console.error('  1. Download the app package from GitHub releases')
       console.error(`  2. mkdir -p ${APP_BASE}/v<VERSION>`)
-      console.error(
-        `  3. tar -xzf bkd-app-v<VERSION>.tar.gz -C ${APP_BASE}/v<VERSION>`,
-      )
+      console.error(`  3. tar -xzf bkd-app-v<VERSION>.tar.gz -C ${APP_BASE}/v<VERSION>`)
       console.error(`  4. echo '{"version":"<VERSION>"}' > ${VERSION_FILE}`)
       console.error('  5. Run this launcher again')
       mkdirSync(resolve(ROOT_DIR, 'data'), { recursive: true })

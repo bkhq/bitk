@@ -33,10 +33,7 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
       }
 
       return (
-        <code
-          className="rounded bg-muted/70 px-1.5 py-0.5 text-[0.875em] font-mono"
-          {...rest}
-        >
+        <code className="rounded bg-muted/70 px-1.5 py-0.5 text-[0.875em] font-mono" {...rest}>
           {children}
         </code>
       )
@@ -45,10 +42,7 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
   )
 
   return (
-    <div
-      className="markdown-body !bg-transparent px-6 py-5"
-      data-theme={resolved}
-    >
+    <div className="markdown-body !bg-transparent px-6 py-5" data-theme={resolved}>
       <Markdown
         remarkPlugins={[remarkGfm]}
         components={{

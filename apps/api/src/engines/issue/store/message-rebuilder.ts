@@ -44,19 +44,12 @@ function isToolUseResult(entry: NormalizedLogEntry): boolean {
 }
 
 function isTodoWriteEntry(entry: NormalizedLogEntry): boolean {
-  const name =
-    entry.toolDetail?.toolName ??
-    (entry.metadata?.toolName as string | undefined)
+  const name = entry.toolDetail?.toolName ?? (entry.metadata?.toolName as string | undefined)
   return name === 'TodoWrite'
 }
 
-function isFilteredTool(
-  entry: NormalizedLogEntry,
-  rules: WriteFilterRule[],
-): boolean {
-  const name =
-    entry.toolDetail?.toolName ??
-    (entry.metadata?.toolName as string | undefined)
+function isFilteredTool(entry: NormalizedLogEntry, rules: WriteFilterRule[]): boolean {
+  const name = entry.toolDetail?.toolName ?? (entry.metadata?.toolName as string | undefined)
   if (!name) return false
   return isToolFiltered(name, rules)
 }
@@ -70,8 +63,7 @@ function buildToolGroup(
 ): ToolGroupChatMessage {
   const stats: Record<string, number> = {}
   for (const item of items) {
-    const kind =
-      item.action.toolDetail?.kind ?? item.action.toolAction?.kind ?? 'other'
+    const kind = item.action.toolDetail?.kind ?? item.action.toolAction?.kind ?? 'other'
     stats[kind] = (stats[kind] ?? 0) + 1
   }
 
@@ -105,9 +97,7 @@ function buildToolGroup(
 
 // ---------- TodoWrite → TaskPlan ----------
 
-function extractTodos(
-  entry: NormalizedLogEntry,
-): TaskPlanChatMessage['todos'] | null {
+function extractTodos(entry: NormalizedLogEntry): TaskPlanChatMessage['todos'] | null {
   const meta = entry.metadata
   if (!meta) return null
 
@@ -156,10 +146,7 @@ export function rebuildMessages(
   // Build turn → duration map from system-message metadata
   const turnDuration = new Map<number, number>()
   for (const entry of entries) {
-    if (
-      entry.entryType === 'system-message' &&
-      typeof entry.metadata?.duration === 'number'
-    ) {
+    if (entry.entryType === 'system-message' && typeof entry.metadata?.duration === 'number') {
       turnDuration.set(entry.turnIndex ?? 0, entry.metadata.duration as number)
     }
   }
@@ -169,8 +156,7 @@ export function rebuildMessages(
   for (const entry of entries) {
     if (isToolUseResult(entry)) {
       const callId =
-        entry.toolDetail?.toolCallId ??
-        (entry.metadata?.toolCallId as string | undefined)
+        entry.toolDetail?.toolCallId ?? (entry.metadata?.toolCallId as string | undefined)
       if (callId) resultMap.set(callId, entry)
     }
   }
@@ -180,9 +166,7 @@ export function rebuildMessages(
 
     // Check if the entire group is just TodoWrite calls
     const todoItems = toolBuffer.filter((item) => isTodoWriteEntry(item.action))
-    const nonTodoItems = toolBuffer.filter(
-      (item) => !isTodoWriteEntry(item.action),
-    )
+    const nonTodoItems = toolBuffer.filter((item) => !isTodoWriteEntry(item.action))
 
     // Extract task plan from last TodoWrite in the group
     if (todoItems.length > 0) {
@@ -214,8 +198,7 @@ export function rebuildMessages(
     // Tool action: buffer it with its paired result
     if (isToolUseAction(entry)) {
       const callId =
-        entry.toolDetail?.toolCallId ??
-        (entry.metadata?.toolCallId as string | undefined)
+        entry.toolDetail?.toolCallId ?? (entry.metadata?.toolCallId as string | undefined)
       let result: NormalizedLogEntry | null = null
       if (callId) {
         result = resultMap.get(callId) ?? null

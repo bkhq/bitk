@@ -2,10 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1"
-    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>BKD</title>
     <script>
@@ -13,8 +10,7 @@
       ;(function () {
         var t = localStorage.getItem('bkd-theme')
         var dark =
-          t === 'dark' ||
-          (t !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches)
+          t === 'dark' || (t !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches)
         if (dark) document.documentElement.classList.add('dark')
       })()
     </script>

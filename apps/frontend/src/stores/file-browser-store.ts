@@ -55,9 +55,7 @@ export const useFileBrowserStore = create<FileBrowserStore>((set) => ({
       projectId,
       rootPath: rootPath ?? null,
       currentPath:
-        s.projectId === projectId && s.rootPath === (rootPath ?? null)
-          ? s.currentPath
-          : '.',
+        s.projectId === projectId && s.rootPath === (rootPath ?? null) ? s.currentPath : '.',
     })),
   openFullscreen: (projectId, rootPath) =>
     set((s) => ({
@@ -67,9 +65,7 @@ export const useFileBrowserStore = create<FileBrowserStore>((set) => ({
       projectId,
       rootPath: rootPath ?? null,
       currentPath:
-        s.projectId === projectId && s.rootPath === (rootPath ?? null)
-          ? s.currentPath
-          : '.',
+        s.projectId === projectId && s.rootPath === (rootPath ?? null) ? s.currentPath : '.',
     })),
   close: () => set({ isOpen: false }),
   toggle: (projectId) =>
@@ -91,8 +87,7 @@ export const useFileBrowserStore = create<FileBrowserStore>((set) => ({
         currentPath: s.projectId === projectId ? s.currentPath : '.',
       }
     }),
-  minimize: () =>
-    set({ isOpen: false, isMinimized: true, isFullscreen: false }),
+  minimize: () => set({ isOpen: false, isMinimized: true, isFullscreen: false }),
   restore: () => set({ isOpen: true, isMinimized: false }),
   toggleFullscreen: () => set((s) => ({ isFullscreen: !s.isFullscreen })),
   setWidth: (w) => set({ width: clampWidth(w) }),

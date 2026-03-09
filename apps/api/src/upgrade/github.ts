@@ -5,16 +5,13 @@ import type { ReleaseInfo } from './types'
 /** Fetch the latest release from GitHub API (internal to upgrade module) */
 export async function fetchLatestRelease(): Promise<ReleaseInfo | null> {
   try {
-    const res = await fetch(
-      'https://api.github.com/repos/bkhq/bkd/releases/latest',
-      {
-        headers: {
-          Accept: 'application/vnd.github.v3+json',
-          'User-Agent': `bkd/${VERSION}`,
-        },
-        signal: AbortSignal.timeout(15_000),
+    const res = await fetch('https://api.github.com/repos/bkhq/bkd/releases/latest', {
+      headers: {
+        Accept: 'application/vnd.github.v3+json',
+        'User-Agent': `bkd/${VERSION}`,
       },
-    )
+      signal: AbortSignal.timeout(15_000),
+    })
 
     if (res.status === 404) {
       // No releases yet

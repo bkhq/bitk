@@ -35,9 +35,7 @@ class DefaultEngineRegistry implements EngineRegistry {
   }
 
   async getAvailable(): Promise<EngineAvailability[]> {
-    const results = await Promise.all(
-      this.getAll().map((executor) => executor.getAvailability()),
-    )
+    const results = await Promise.all(this.getAll().map((executor) => executor.getAvailability()))
     return results
   }
 
