@@ -209,12 +209,13 @@ export function ShikiPatchDiff({ patch, filePath }: { patch: string, filePath?: 
         const parsed = parsePatchFiles(normalizedPatch)
         const files = parsed.flatMap(p => p.files)
         if (files.length > 0) setFileDiffs(files)
-      }
-      catch {
+      } catch {
         // parsing failed — stay null, fallback to code block
       }
     })
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
   }, [normalizedPatch])
 
   if (!fileDiffs) {

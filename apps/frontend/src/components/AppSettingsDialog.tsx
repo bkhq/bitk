@@ -714,7 +714,7 @@ function CleanupSection({ open }: { open: boolean }) {
           if (del?.projectCount) parts.push(t('settings.cleanupDetailProjects', { count: del.projectCount }))
           const hint = parts.length > 0
             ? parts.join(t('settings.cleanupDetailSep'))
-              + (totalSize > 0 ? ` (${formatSize(totalSize)})` : '')
+            + (totalSize > 0 ? ` (${formatSize(totalSize)})` : '')
             : undefined
 
           return (
