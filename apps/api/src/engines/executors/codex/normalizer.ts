@@ -705,14 +705,16 @@ export class CodexLogNormalizer {
 
       // --- Turn complete (v2 codex/event) ---
       // Schema type discriminant is "task_complete" in EventMsg but "turn_complete" in our events
+      // Note: last_agent_message is NOT used as content because the same text was already
+      // streamed via agent_message_delta / agent_message events as assistant-message entries.
+      // Using it here would produce a duplicate system-message with identical content.
       case 'turn_complete':
       case 'task_complete': {
         this.resetStreamingState()
         const turnId = msg.turn_id as string | undefined
-        const lastMessage = msg.last_agent_message as string | null | undefined
         return {
           entryType: 'system-message',
-          content: lastMessage || 'Turn completed',
+          content: 'Turn completed',
           timestamp: now,
           metadata: {
             turnCompleted: true,

@@ -215,10 +215,12 @@ export function ShikiPatchDiff({ patch }: { patch: string }) {
 export function ToolPanel({
   summary,
   children,
+  actions,
   collapsible = false,
 }: {
   summary: React.ReactNode
   children: React.ReactNode
+  actions?: React.ReactNode
   collapsible?: boolean
 }) {
   if (collapsible) {
@@ -226,6 +228,7 @@ export function ToolPanel({
       <details className="group/panel transition-all duration-200">
         <summary className="flex items-center cursor-pointer list-none px-3 py-1.5 transition-colors hover:bg-muted/10">
           <div className="flex-1 min-w-0">{summary}</div>
+          {actions ? <div className="shrink-0 ml-1">{actions}</div> : null}
           <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground/40 transition-transform group-open/panel:rotate-90 ml-1" />
         </summary>
         <div className="border-t border-border">{children}</div>
@@ -234,8 +237,11 @@ export function ToolPanel({
   }
   return (
     <div>
-      <div className="px-3 py-1.5">{summary}</div>
-      <div className="border-t border-border">{children}</div>
+      <div className="flex items-center px-3 py-1.5">
+        <div className="flex-1 min-w-0">{summary}</div>
+        {actions ? <div className="shrink-0 ml-1">{actions}</div> : null}
+      </div>
+      {children ? <div className="border-t border-border">{children}</div> : null}
     </div>
   )
 }
