@@ -6,9 +6,9 @@ import { Readable } from 'node:stream'
  * Used by ClaudeProtocolHandler to write JSON to stdin.
  */
 export interface StdinWriter {
-  write(data: string | Uint8Array): void
-  end(): void
-  flush?(): void
+  write: (data: string | Uint8Array) => void
+  end: () => void
+  flush?: () => void
 }
 
 interface SpawnResult {
@@ -17,7 +17,7 @@ interface SpawnResult {
   stdout: ReadableStream<Uint8Array>
   stderr: ReadableStream<Uint8Array>
   exited: Promise<number>
-  kill(signal?: number): void
+  kill: (signal?: number) => void
 }
 
 interface SpawnOptions {
@@ -79,10 +79,20 @@ export function spawnNode(
     ? nodeReadableToWebStream(child.stderr)
     : emptyReadableStream()
 
-  // Create exited promise from exit event
+  // Create exited promise from exit event.
+  // Preserve signal exit codes (128 + signal) for compatibility with
+  // completion-monitor.ts which derives signal info from exitCode > 128.
   const exited = new Promise<number>((resolve, reject) => {
-    child.on('exit', (code) => {
-      resolve(code ?? 1)
+    child.on('exit', (code, signal) => {
+      if (code !== null) {
+        resolve(code)
+      } else if (signal) {
+        // Match Bun convention: signal-terminated → 128 + signal number
+        const sigNum = SIGNAL_NUMBERS[signal] ?? 15
+        resolve(128 + sigNum)
+      } else {
+        resolve(1)
+      }
     })
     child.on('error', (err) => {
       reject(err)
@@ -103,6 +113,14 @@ export function spawnNode(
       }
     },
   }
+}
+
+const SIGNAL_NUMBERS: Record<string, number> = {
+  SIGHUP: 1,
+  SIGINT: 2,
+  SIGQUIT: 3,
+  SIGKILL: 9,
+  SIGTERM: 15,
 }
 
 function nodeReadableToWebStream(readable: Readable): ReadableStream<Uint8Array> {
