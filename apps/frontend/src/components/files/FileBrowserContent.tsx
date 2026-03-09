@@ -128,7 +128,7 @@ export function FileBrowserContent({
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-auto min-h-0 p-4 flex flex-col">
+      <div className="flex-1 overflow-auto min-h-0 px-4 pb-4 pt-2 flex flex-col">
         {!effectiveRoot
           ? (
               <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
