@@ -1,5 +1,5 @@
 import type { NotificationChannel, WebhookEventType } from '@bkd/shared'
-import { WEBHOOK_EVENT_TYPES } from '@bkd/shared'
+import { WEBHOOK_EVENT_GROUPS, WEBHOOK_EVENT_TYPES } from '@bkd/shared'
 import {
   BotMessageSquare,
   Check,
@@ -35,10 +35,19 @@ const EVENT_LABEL_KEYS: Record<WebhookEventType, string> = {
   'issue.created': 'settings.webhooksEventIssueCreated',
   'issue.updated': 'settings.webhooksEventIssueUpdated',
   'issue.deleted': 'settings.webhooksEventIssueDeleted',
-  'issue.status_changed': 'settings.webhooksEventIssueStatusChanged',
+  'issue.status.todo': 'settings.webhooksEventStatusTodo',
+  'issue.status.working': 'settings.webhooksEventStatusWorking',
+  'issue.status.review': 'settings.webhooksEventStatusReview',
+  'issue.status.done': 'settings.webhooksEventStatusDone',
   'session.started': 'settings.webhooksEventSessionStarted',
   'session.completed': 'settings.webhooksEventSessionCompleted',
   'session.failed': 'settings.webhooksEventSessionFailed',
+}
+
+const GROUP_LABEL_KEYS: Record<string, string> = {
+  issue: 'settings.webhooksGroupIssue',
+  status: 'settings.webhooksGroupStatus',
+  session: 'settings.webhooksGroupSession',
 }
 
 export function WebhookSection({ open }: { open: boolean }) {
@@ -263,22 +272,31 @@ function WebhookForm({ webhook, onClose }: { webhook?: Webhook, onClose: () => v
 
       <div className="space-y-1.5">
         <Label className="text-xs">{t('settings.webhooksEvents')}</Label>
-        <div className="flex flex-wrap gap-1.5">
-          {WEBHOOK_EVENT_TYPES.map(event => (
-            <button
-              key={event}
-              type="button"
-              onClick={() => toggleEvent(event)}
-              className={cn(
-                'inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs transition-colors cursor-pointer',
-                events.includes(event) ?
-                  'border-primary/30 bg-primary/10 text-primary' :
-                  'border-border bg-muted/50 text-muted-foreground hover:bg-muted',
-              )}
-            >
-              {events.includes(event) && <Check className="mr-1 size-3" />}
-              {t(EVENT_LABEL_KEYS[event])}
-            </button>
+        <div className="space-y-2">
+          {WEBHOOK_EVENT_GROUPS.map(group => (
+            <div key={group.category}>
+              <div className="text-[10px] text-muted-foreground/60 uppercase tracking-wider mb-1">
+                {t(GROUP_LABEL_KEYS[group.category] ?? group.category)}
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {group.events.map(event => (
+                  <button
+                    key={event}
+                    type="button"
+                    onClick={() => toggleEvent(event)}
+                    className={cn(
+                      'inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs transition-colors cursor-pointer',
+                      events.includes(event) ?
+                        'border-primary/30 bg-primary/10 text-primary' :
+                        'border-border bg-muted/50 text-muted-foreground hover:bg-muted',
+                    )}
+                  >
+                    {events.includes(event) && <Check className="mr-1 size-3" />}
+                    {t(EVENT_LABEL_KEYS[event])}
+                  </button>
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       </div>

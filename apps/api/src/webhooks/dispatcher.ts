@@ -99,6 +99,37 @@ async function getLastAgentLog(issueId: string): Promise<string | null> {
   }
 }
 
+/** Get last user message + agent reply for rich notification context. */
+async function getLastConversation(issueId: string): Promise<{ userMessage?: string, agentReply?: string } | null> {
+  try {
+    const rows = await db
+      .select({ entryType: issueLogs.entryType, content: issueLogs.content })
+      .from(issueLogs)
+      .where(
+        and(
+          eq(issueLogs.issueId, issueId),
+          inArray(issueLogs.entryType, ['user-message', 'assistant-message']),
+          eq(issueLogs.isDeleted, 0),
+        ),
+      )
+      .orderBy(desc(issueLogs.createdAt))
+      .limit(4)
+    if (rows.length === 0) return null
+
+    const truncate = (s: string) => s.length > 300 ? `${s.slice(0, 300)}...` : s
+    const agentRow = rows.find(r => r.entryType === 'assistant-message')
+    const userRow = rows.find(r => r.entryType === 'user-message')
+
+    return {
+      userMessage: userRow?.content ? truncate(userRow.content) : undefined,
+      agentReply: agentRow?.content ? truncate(agentRow.content) : undefined,
+    }
+  } catch (err) {
+    logger.warn({ err, issueId }, 'webhook_get_last_conversation_failed')
+    return null
+  }
+}
+
 function buildMetadataPayload(meta: IssueMetadata): Record<string, unknown> {
   const payload: Record<string, unknown> = {
     issueId: meta.issueId,
@@ -126,7 +157,10 @@ function formatTelegramMessage(event: WebhookEventType, payload: Record<string, 
     'issue.created': '\u{1F4DD}',
     'issue.updated': '\u{270F}\u{FE0F}',
     'issue.deleted': '\u{1F5D1}',
-    'issue.status_changed': '\u{1F504}',
+    'issue.status.todo': '\u{1F4CB}',
+    'issue.status.working': '\u{1F6E0}\u{FE0F}',
+    'issue.status.review': '\u{1F50D}',
+    'issue.status.done': '\u{2705}',
     'session.started': '\u{25B6}\u{FE0F}',
     'session.completed': '\u{2705}',
     'session.failed': '\u{274C}',
@@ -148,11 +182,7 @@ function formatTelegramMessage(event: WebhookEventType, payload: Record<string, 
 
   // Status info
   if (payload.newStatus) {
-    let statusLine = `Status: → ${escapeTelegramHtml(String(payload.newStatus))}`
-    if (payload.newStatus === 'review') {
-      statusLine += ' (session completed)'
-    }
-    lines.push(statusLine)
+    lines.push(`Status: → ${escapeTelegramHtml(String(payload.newStatus))}`)
   } else if (payload.statusId) {
     lines.push(`Status: ${escapeTelegramHtml(String(payload.statusId))}`)
   }
@@ -174,6 +204,15 @@ function formatTelegramMessage(event: WebhookEventType, payload: Record<string, 
   if (payload.lastLog) {
     lines.push('')
     lines.push(`\u{1F4AC} ${escapeTelegramHtml(String(payload.lastLog))}`)
+  }
+
+  // Conversation context for status changes (e.g., review)
+  if (payload.userMessage) {
+    lines.push('')
+    lines.push(`\u{1F464} ${escapeTelegramHtml(String(payload.userMessage))}`)
+  }
+  if (payload.agentReply) {
+    lines.push(`\u{1F916} ${escapeTelegramHtml(String(payload.agentReply))}`)
   }
 
   // Link
@@ -318,7 +357,10 @@ export async function dispatch(event: WebhookEventType, payload: Record<string, 
     } catch {
       continue
     }
-    if (!subscribed.includes(event)) continue
+    // Backwards compat: legacy `issue.status_changed` matches all granular status events
+    const matches = subscribed.includes(event)
+      || (event.startsWith('issue.status.') && subscribed.includes('issue.status_changed'))
+    if (!matches) continue
 
     // Fire and forget — don't block the event bus
     void deliver(row, event, payload).catch((err) => {
@@ -330,7 +372,7 @@ export async function dispatch(event: WebhookEventType, payload: Record<string, 
 // ── Event listeners ─────────────────────────────────────
 
 export function initWebhookDispatcher() {
-  // Issue lifecycle events — dispatch status_changed OR updated, not both
+  // Issue lifecycle events — dispatch granular status events OR updated
   appEvents.on(
     'issue-updated',
     (data) => {
@@ -338,19 +380,33 @@ export function initWebhookDispatcher() {
 
       if (changes.statusId) {
         const newStatus = String(changes.statusId)
-        // Only notify for meaningful status changes: todo, review, done
-        if (!['todo', 'review', 'done'].includes(newStatus)) return
+        const statusEventMap: Record<string, WebhookEventType> = {
+          todo: 'issue.status.todo',
+          working: 'issue.status.working',
+          review: 'issue.status.review',
+          done: 'issue.status.done',
+        }
+        const eventType = statusEventMap[newStatus]
+        if (!eventType) return
 
         void (async () => {
           try {
             const meta = await getIssueMetadata(data.issueId)
             const payload: Record<string, unknown> = {
-              event: 'issue.status_changed',
+              event: eventType,
               timestamp: new Date().toISOString(),
               ...(meta ? buildMetadataPayload(meta) : { issueId: data.issueId }),
               newStatus,
             }
-            await dispatch('issue.status_changed', payload)
+
+            // Attach conversation context for review status
+            if (newStatus === 'review') {
+              const convo = await getLastConversation(data.issueId)
+              if (convo?.userMessage) payload.userMessage = convo.userMessage
+              if (convo?.agentReply) payload.agentReply = convo.agentReply
+            }
+
+            await dispatch(eventType, payload)
           } catch (err) {
             logger.warn({ err, issueId: data.issueId }, 'webhook_status_changed_failed')
           }
@@ -394,6 +450,11 @@ export function initWebhookDispatcher() {
 
           if (meta?.engineType) payload.engineType = meta.engineType
           if (meta?.model) payload.model = meta.model
+
+          // Attach conversation context for completed/failed sessions
+          const convo = await getLastConversation(data.issueId)
+          if (convo?.userMessage) payload.userMessage = convo.userMessage
+          if (convo?.agentReply) payload.agentReply = convo.agentReply
 
           // Attach last agent log for failed sessions
           if (eventType === 'session.failed') {
