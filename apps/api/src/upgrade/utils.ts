@@ -21,7 +21,7 @@ export function isNewerVersion(current: string, latest: string): boolean {
     v
       .replace(/^v/, '')
       .split('.')
-      .map((p) => Number.parseInt(p, 10) || 0)
+      .map(p => Number.parseInt(p, 10) || 0)
 
   const curr = parseParts(current)
   const lat = parseParts(latest)

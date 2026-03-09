@@ -50,15 +50,15 @@ export function useChangesSummary(projectId: string | undefined, issueId: string
   }, [issueId, projectId, queryClient])
 
   // Derive summary from REST response
-  const restSummary = restData
-    ? {
+  const restSummary = restData ?
+      {
         issueId: issueId ?? '',
         fileCount: restData.files.length,
         additions: restData.additions,
         deletions: restData.deletions,
         root: restData.root,
-      }
-    : null
+      } :
+    null
 
   // SSE data takes priority, but preserve REST root as fallback
   // (SSE payloads don't carry root, so worktree paths would be lost)

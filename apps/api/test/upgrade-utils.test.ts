@@ -181,6 +181,6 @@ describe('resolveDownloadFileName', () => {
 describe('detectPlatformAssetSuffix', () => {
   it('returns a non-empty string in the format os-arch', () => {
     const suffix = detectPlatformAssetSuffix()
-    expect(suffix).toMatch(/^[\w]+-[\w]+$/)
+    expect(suffix).toMatch(/^\w+-\w+$/)
   })
 })

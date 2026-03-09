@@ -62,34 +62,41 @@ export function WebhookSection({ open }: { open: boolean }) {
 
       {showForm && <WebhookForm onClose={() => setShowForm(false)} />}
 
-      {isLoading ? (
-        <div className="flex items-center justify-center py-8">
-          <Loader2 className="size-4 animate-spin text-muted-foreground" />
-        </div>
-      ) : webhooks && webhooks.length > 0 ? (
-        <div className="space-y-2">
-          {webhooks.map((webhook) => (
-            <div key={webhook.id}>
-              {editingId === webhook.id ? (
-                <WebhookForm webhook={webhook} onClose={() => setEditingId(null)} />
-              ) : (
-                <WebhookCard
-                  webhook={webhook}
-                  isExpanded={expandedId === webhook.id}
-                  onToggleExpand={() =>
-                    setExpandedId(expandedId === webhook.id ? null : webhook.id)
-                  }
-                  onEdit={() => setEditingId(webhook.id)}
-                />
-              )}
+      {isLoading ?
+          (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="size-4 animate-spin text-muted-foreground" />
             </div>
-          ))}
-        </div>
-      ) : !showForm ? (
-        <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
-          {t('settings.webhooksEmpty')}
-        </div>
-      ) : null}
+          ) :
+        webhooks && webhooks.length > 0 ?
+            (
+              <div className="space-y-2">
+                {webhooks.map(webhook => (
+                  <div key={webhook.id}>
+                    {editingId === webhook.id ?
+                        (
+                          <WebhookForm webhook={webhook} onClose={() => setEditingId(null)} />
+                        ) :
+                        (
+                          <WebhookCard
+                            webhook={webhook}
+                            isExpanded={expandedId === webhook.id}
+                            onToggleExpand={() =>
+                              setExpandedId(expandedId === webhook.id ? null : webhook.id)}
+                            onEdit={() => setEditingId(webhook.id)}
+                          />
+                        )}
+                  </div>
+                ))}
+              </div>
+            ) :
+            !showForm ?
+                (
+                  <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
+                    {t('settings.webhooksEmpty')}
+                  </div>
+                ) :
+              null}
     </div>
   )
 }
@@ -111,7 +118,7 @@ const CHANNEL_OPTIONS: {
   },
 ]
 
-function WebhookForm({ webhook, onClose }: { webhook?: Webhook; onClose: () => void }) {
+function WebhookForm({ webhook, onClose }: { webhook?: Webhook, onClose: () => void }) {
   const { t } = useTranslation()
   const createWebhook = useCreateWebhook()
   const updateWebhook = useUpdateWebhook()
@@ -129,7 +136,7 @@ function WebhookForm({ webhook, onClose }: { webhook?: Webhook; onClose: () => v
   const isTelegram = channel === 'telegram'
 
   const toggleEvent = useCallback((event: WebhookEventType) => {
-    setEvents((prev) => (prev.includes(event) ? prev.filter((e) => e !== event) : [...prev, event]))
+    setEvents(prev => (prev.includes(event) ? prev.filter(e => e !== event) : [...prev, event]))
   }, [])
 
   const handleSubmit = () => {
@@ -158,111 +165,115 @@ function WebhookForm({ webhook, onClose }: { webhook?: Webhook; onClose: () => v
     <div className="rounded-md border bg-card p-4 space-y-3">
       <div className="space-y-1.5">
         <Label className="text-xs">{t('settings.webhooksChannelType')}</Label>
-        {isEditing ? (
-          <div className="flex gap-1.5">
-            {(() => {
-              const opt = CHANNEL_OPTIONS.find((o) => o.value === channel) ?? CHANNEL_OPTIONS[0]
-              const Icon = opt.icon
-              return (
-                <span className="inline-flex items-center rounded-md border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs text-primary gap-1.5">
-                  <Icon className="size-3.5" />
-                  {t(opt.labelKey)}
-                </span>
-              )
-            })()}
-          </div>
-        ) : (
-          <div className="flex gap-1.5">
-            {CHANNEL_OPTIONS.map((opt) => {
-              const Icon = opt.icon
-              return (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => setChannel(opt.value)}
-                  className={cn(
-                    'inline-flex items-center rounded-md border px-3 py-1.5 text-xs transition-colors cursor-pointer gap-1.5',
-                    channel === opt.value
-                      ? 'border-primary/30 bg-primary/10 text-primary'
-                      : 'border-border bg-muted/50 text-muted-foreground hover:bg-muted',
-                  )}
-                >
-                  <Icon className="size-3.5" />
-                  {t(opt.labelKey)}
-                </button>
-              )
-            })}
-          </div>
-        )}
+        {isEditing ?
+            (
+              <div className="flex gap-1.5">
+                {(() => {
+                  const opt = CHANNEL_OPTIONS.find(o => o.value === channel) ?? CHANNEL_OPTIONS[0]
+                  const Icon = opt.icon
+                  return (
+                    <span className="inline-flex items-center rounded-md border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs text-primary gap-1.5">
+                      <Icon className="size-3.5" />
+                      {t(opt.labelKey)}
+                    </span>
+                  )
+                })()}
+              </div>
+            ) :
+            (
+              <div className="flex gap-1.5">
+                {CHANNEL_OPTIONS.map((opt) => {
+                  const Icon = opt.icon
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setChannel(opt.value)}
+                      className={cn(
+                        'inline-flex items-center rounded-md border px-3 py-1.5 text-xs transition-colors cursor-pointer gap-1.5',
+                        channel === opt.value ?
+                          'border-primary/30 bg-primary/10 text-primary' :
+                          'border-border bg-muted/50 text-muted-foreground hover:bg-muted',
+                      )}
+                    >
+                      <Icon className="size-3.5" />
+                      {t(opt.labelKey)}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
       </div>
 
-      {isTelegram ? (
-        <>
-          <div className="space-y-1.5">
-            <Label className="text-xs">{t('settings.webhooksTelegramBotToken')}</Label>
-            <Input
-              type="password"
-              value={secret}
-              onChange={(e) => setSecret(e.target.value)}
-              placeholder={t('settings.webhooksTelegramBotTokenPlaceholder')}
-              className="text-sm"
-            />
-            <p className="text-[11px] text-muted-foreground">
-              {t('settings.webhooksTelegramBotTokenHint')}
-            </p>
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs">{t('settings.webhooksTelegramChatId')}</Label>
-            <Input
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder={t('settings.webhooksTelegramChatIdPlaceholder')}
-              className="text-sm"
-            />
-            <p className="text-[11px] text-muted-foreground">
-              {t('settings.webhooksTelegramChatIdHint')}
-            </p>
-          </div>
-        </>
-      ) : (
-        <>
-          <div className="space-y-1.5">
-            <Label className="text-xs">{t('settings.webhooksUrl')}</Label>
-            <Input
-              type="url"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder={t('settings.webhooksUrlPlaceholder')}
-              className="text-sm"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs">{t('settings.webhooksSecret')}</Label>
-            <Input
-              type="password"
-              value={secret}
-              onChange={(e) => setSecret(e.target.value)}
-              placeholder={t('settings.webhooksSecretPlaceholder')}
-              className="text-sm"
-            />
-            <p className="text-[11px] text-muted-foreground">{t('settings.webhooksSecretHint')}</p>
-          </div>
-        </>
-      )}
+      {isTelegram ?
+          (
+            <>
+              <div className="space-y-1.5">
+                <Label className="text-xs">{t('settings.webhooksTelegramBotToken')}</Label>
+                <Input
+                  type="password"
+                  value={secret}
+                  onChange={e => setSecret(e.target.value)}
+                  placeholder={t('settings.webhooksTelegramBotTokenPlaceholder')}
+                  className="text-sm"
+                />
+                <p className="text-[11px] text-muted-foreground">
+                  {t('settings.webhooksTelegramBotTokenHint')}
+                </p>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">{t('settings.webhooksTelegramChatId')}</Label>
+                <Input
+                  value={url}
+                  onChange={e => setUrl(e.target.value)}
+                  placeholder={t('settings.webhooksTelegramChatIdPlaceholder')}
+                  className="text-sm"
+                />
+                <p className="text-[11px] text-muted-foreground">
+                  {t('settings.webhooksTelegramChatIdHint')}
+                </p>
+              </div>
+            </>
+          ) :
+          (
+            <>
+              <div className="space-y-1.5">
+                <Label className="text-xs">{t('settings.webhooksUrl')}</Label>
+                <Input
+                  type="url"
+                  value={url}
+                  onChange={e => setUrl(e.target.value)}
+                  placeholder={t('settings.webhooksUrlPlaceholder')}
+                  className="text-sm"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">{t('settings.webhooksSecret')}</Label>
+                <Input
+                  type="password"
+                  value={secret}
+                  onChange={e => setSecret(e.target.value)}
+                  placeholder={t('settings.webhooksSecretPlaceholder')}
+                  className="text-sm"
+                />
+                <p className="text-[11px] text-muted-foreground">{t('settings.webhooksSecretHint')}</p>
+              </div>
+            </>
+          )}
 
       <div className="space-y-1.5">
         <Label className="text-xs">{t('settings.webhooksEvents')}</Label>
         <div className="flex flex-wrap gap-1.5">
-          {WEBHOOK_EVENT_TYPES.map((event) => (
+          {WEBHOOK_EVENT_TYPES.map(event => (
             <button
               key={event}
               type="button"
               onClick={() => toggleEvent(event)}
               className={cn(
                 'inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs transition-colors cursor-pointer',
-                events.includes(event)
-                  ? 'border-primary/30 bg-primary/10 text-primary'
-                  : 'border-border bg-muted/50 text-muted-foreground hover:bg-muted',
+                events.includes(event) ?
+                  'border-primary/30 bg-primary/10 text-primary' :
+                  'border-border bg-muted/50 text-muted-foreground hover:bg-muted',
               )}
             >
               {events.includes(event) && <Check className="mr-1 size-3" />}
@@ -287,11 +298,11 @@ function WebhookForm({ webhook, onClose }: { webhook?: Webhook; onClose: () => v
             disabled={!url || (isTelegram && !secret) || events.length === 0 || isPending}
           >
             {isPending ? <Loader2 className="mr-1 size-3.5 animate-spin" /> : null}
-            {isPending
-              ? isEditing
-                ? t('settings.webhooksUpdating')
-                : t('settings.webhooksCreating')
-              : t('settings.webhooksSave')}
+            {isPending ?
+              isEditing ?
+                  t('settings.webhooksUpdating') :
+                  t('settings.webhooksCreating') :
+                t('settings.webhooksSave')}
           </Button>
         </div>
       </div>
@@ -340,11 +351,13 @@ function WebhookCard({
 
         <div className="min-w-0 flex-1 cursor-pointer" onClick={onEdit}>
           <div className="flex items-center gap-2">
-            {isTelegram ? (
-              <BotMessageSquare className="size-3.5 shrink-0 text-muted-foreground" />
-            ) : (
-              <Globe className="size-3.5 shrink-0 text-muted-foreground" />
-            )}
+            {isTelegram ?
+                (
+                  <BotMessageSquare className="size-3.5 shrink-0 text-muted-foreground" />
+                ) :
+                (
+                  <Globe className="size-3.5 shrink-0 text-muted-foreground" />
+                )}
             <span className="truncate text-sm font-mono">
               {isTelegram ? `Telegram (${webhook.url})` : webhook.url}
             </span>
@@ -355,10 +368,10 @@ function WebhookCard({
             )}
           </div>
           <div className="mt-0.5 flex gap-1 pl-5.5">
-            {webhook.events.map((event) => (
+            {webhook.events.map(event => (
               <span key={event} className="text-[10px] text-muted-foreground">
                 {t(EVENT_LABEL_KEYS[event])}
-                {event !== webhook.events[webhook.events.length - 1] && ','}
+                {event !== webhook.events.at(-1) && ','}
               </span>
             ))}
           </div>
@@ -374,11 +387,13 @@ function WebhookCard({
             disabled={testWebhook.isPending}
             title={t('settings.webhooksTest')}
           >
-            {testWebhook.isPending ? (
-              <Loader2 className="size-3.5 animate-spin" />
-            ) : (
-              <Send className="size-3.5" />
-            )}
+            {testWebhook.isPending ?
+                (
+                  <Loader2 className="size-3.5 animate-spin" />
+                ) :
+                (
+                  <Send className="size-3.5" />
+                )}
           </Button>
           <Button
             variant="ghost"
@@ -387,11 +402,13 @@ function WebhookCard({
             onClick={handleDelete}
             disabled={deleteWebhook.isPending}
           >
-            {deleteWebhook.isPending ? (
-              <Loader2 className="size-3.5 animate-spin" />
-            ) : (
-              <Trash2 className="size-3.5" />
-            )}
+            {deleteWebhook.isPending ?
+                (
+                  <Loader2 className="size-3.5 animate-spin" />
+                ) :
+                (
+                  <Trash2 className="size-3.5" />
+                )}
           </Button>
         </div>
       </div>
@@ -427,16 +444,23 @@ function DeliveryList({ webhookId }: { webhookId: string }) {
         {t('settings.webhooksDeliveries')}
       </div>
       <div className="max-h-48 overflow-y-auto">
-        {deliveries.map((d) => (
+        {deliveries.map(d => (
           <div key={d.id} className="flex items-center gap-2 border-t px-3 py-1.5 text-xs">
-            {d.success ? (
-              <CircleCheck className="size-3.5 shrink-0 text-green-500" />
-            ) : (
-              <CircleAlert className="size-3.5 shrink-0 text-destructive" />
-            )}
+            {d.success ?
+                (
+                  <CircleCheck className="size-3.5 shrink-0 text-green-500" />
+                ) :
+                (
+                  <CircleAlert className="size-3.5 shrink-0 text-destructive" />
+                )}
             <span className="text-muted-foreground">{d.event}</span>
             <span className="text-muted-foreground">{d.statusCode ?? '—'}</span>
-            {d.duration != null && <span className="text-muted-foreground">{d.duration}ms</span>}
+            {d.duration != null && (
+              <span className="text-muted-foreground">
+                {d.duration}
+                ms
+              </span>
+            )}
             <span className="ml-auto text-muted-foreground">
               {new Date(d.createdAt).toLocaleTimeString()}
             </span>

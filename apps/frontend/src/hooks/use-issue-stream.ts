@@ -62,7 +62,7 @@ function mergeLogsPreferLive(
   if (liveLogs.length === 0) return snapshotLogs
 
   const liveById = new Map(
-    liveLogs.filter((entry) => entry.messageId).map((entry) => [entry.messageId!, entry]),
+    liveLogs.filter(entry => entry.messageId).map(entry => [entry.messageId!, entry]),
   )
 
   const mergedSnapshot = snapshotLogs.map((entry) => {
@@ -70,8 +70,8 @@ function mergeLogsPreferLive(
     return liveById.get(entry.messageId) ?? entry
   })
 
-  const snapshotIds = new Set(snapshotLogs.map((entry) => entry.messageId).filter(Boolean))
-  const liveOnly = liveLogs.filter((entry) => entry.messageId && !snapshotIds.has(entry.messageId))
+  const snapshotIds = new Set(snapshotLogs.map(entry => entry.messageId).filter(Boolean))
+  const liveOnly = liveLogs.filter(entry => entry.messageId && !snapshotIds.has(entry.messageId))
 
   return [...mergedSnapshot, ...liveOnly].sort(compareByMessageId)
 }
@@ -143,7 +143,7 @@ export function useIssueStream({
   /** Clear logs and re-fetch from server. */
   const refreshLogs = useCallback(() => {
     clearLogs()
-    setRefreshCounter((c) => c + 1)
+    setRefreshCounter(c => c + 1)
   }, [clearLogs])
 
   /** Register an entry's identity into the seen sets. */
@@ -191,9 +191,9 @@ export function useIssueStream({
         return
       }
 
-      if (olderLogsRef.current.some((entry) => entry.messageId === incoming.messageId)) {
+      if (olderLogsRef.current.some(entry => entry.messageId === incoming.messageId)) {
         setOlderLogs((prev) => {
-          const next = prev.map((entry) =>
+          const next = prev.map(entry =>
             entry.messageId === incoming.messageId ? incoming : entry,
           )
           olderLogsRef.current = next
@@ -202,9 +202,9 @@ export function useIssueStream({
         return
       }
 
-      if (liveLogsRef.current.some((entry) => entry.messageId === incoming.messageId)) {
+      if (liveLogsRef.current.some(entry => entry.messageId === incoming.messageId)) {
         setLiveLogs((prev) => {
-          const next = prev.map((entry) =>
+          const next = prev.map(entry =>
             entry.messageId === incoming.messageId ? incoming : entry,
           )
           liveLogsRef.current = next
@@ -245,12 +245,12 @@ export function useIssueStream({
     if (messageIds.length === 0) return
     const idSet = new Set(messageIds)
     setLiveLogs((prev) => {
-      const next = prev.filter((e) => !e.messageId || !idSet.has(e.messageId))
+      const next = prev.filter(e => !e.messageId || !idSet.has(e.messageId))
       liveLogsRef.current = next
       return next
     })
     setOlderLogs((prev) => {
-      const next = prev.filter((e) => !e.messageId || !idSet.has(e.messageId))
+      const next = prev.filter(e => !e.messageId || !idSet.has(e.messageId))
       olderLogsRef.current = next
       return next
     })

@@ -24,7 +24,7 @@ recycleBin.get('/deleted-issues', async (c) => {
     .orderBy(issuesTable.updatedAt)
 
   // Fetch project names for display
-  const projectIds = [...new Set(rows.map((r) => r.projectId))]
+  const projectIds = [...new Set(rows.map(r => r.projectId))]
   const projectNames = new Map<string, string>()
   if (projectIds.length > 0) {
     const projects = await db
@@ -36,7 +36,7 @@ recycleBin.get('/deleted-issues', async (c) => {
     }
   }
 
-  const items = rows.map((r) => ({
+  const items = rows.map(r => ({
     id: r.id,
     title: r.title,
     projectId: r.projectId,

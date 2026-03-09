@@ -227,7 +227,7 @@ async function queryCodexModels(): Promise<EngineModel[]> {
       cursor = result?.nextCursor
     } while (cursor)
 
-    logger.debug({ count: models.length, models: models.map((m) => m.id) }, 'codex_models_done')
+    logger.debug({ count: models.length, models: models.map(m => m.id) }, 'codex_models_done')
     return models
   } catch (error) {
     const stderr = await stderrReader.catch(() => '')

@@ -74,10 +74,10 @@ function detectLatestVersion(): string | null {
   if (!existsSync(APP_BASE)) return null
   try {
     const versions = readdirSync(APP_BASE, { withFileTypes: true })
-      .filter((d) => d.isDirectory() && /^v\d+\.\d+\.\d+$/.test(d.name))
-      .map((d) => d.name.slice(1))
+      .filter(d => d.isDirectory() && /^v\d+\.\d+\.\d+$/.test(d.name))
+      .map(d => d.name.slice(1))
       .sort(compareSemver)
-    return versions.length > 0 ? versions[versions.length - 1] : null
+    return versions.length > 0 ? versions.at(-1) : null
   } catch (err) {
     console.error(
       `[launcher] Failed to scan ${APP_BASE}:`,
@@ -103,7 +103,7 @@ async function fetchLatestAppPackage(): Promise<AppPackageInfo | null> {
   try {
     const res = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`, {
       headers: {
-        Accept: 'application/vnd.github.v3+json',
+        'Accept': 'application/vnd.github.v3+json',
         'User-Agent': 'bkd-launcher',
       },
       signal: AbortSignal.timeout(15_000),
@@ -144,7 +144,7 @@ async function fetchLatestAppPackage(): Promise<AppPackageInfo | null> {
 
     // Fallback: legacy per-asset .sha256 file
     if (!checksumAsset && pkgAsset) {
-      const legacy = data.assets.find((a) => a.name === `${pkgAsset!.name}.sha256`)
+      const legacy = data.assets.find(a => a.name === `${pkgAsset!.name}.sha256`)
       if (legacy) {
         checksumAsset = {
           name: legacy.name,

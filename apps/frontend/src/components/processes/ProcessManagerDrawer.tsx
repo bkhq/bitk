@@ -15,7 +15,7 @@ export function ProcessManagerDrawer() {
   const { isOpen, isFullscreen, width, projectId, close, minimize, toggleFullscreen, setWidth } =
     useProcessManagerStore()
   const isMobile = useIsMobile()
-  const dragRef = useRef<{ startX: number; startWidth: number } | null>(null)
+  const dragRef = useRef<{ startX: number, startWidth: number } | null>(null)
 
   const { data: project } = useProject(projectId ?? '')
   const { data, isLoading } = useProjectProcesses(projectId ?? '', !!projectId && isOpen)
@@ -31,9 +31,11 @@ export function ProcessManagerDrawer() {
   return (
     <>
       {/* Backdrop overlay */}
-      {fullscreen ? null : (
-        <div className="fixed inset-0 z-[39] bg-black/20" onClick={close} onKeyDown={undefined} />
-      )}
+      {fullscreen ?
+        null :
+          (
+            <div className="fixed inset-0 z-[39] bg-black/20" onClick={close} onKeyDown={undefined} />
+          )}
       <div
         className={`fixed top-0 bottom-0 right-0 z-40 flex flex-col border-l border-border bg-background shadow-2xl ${
           fullscreen ? 'left-0' : ''
@@ -108,11 +110,13 @@ export function ProcessManagerDrawer() {
                 aria-label={t('terminal.maximize')}
                 title={isFullscreen ? t('terminal.back') : t('terminal.maximize')}
               >
-                {isFullscreen ? (
-                  <Minimize2 className="h-3.5 w-3.5" />
-                ) : (
-                  <Maximize2 className="h-3.5 w-3.5" />
-                )}
+                {isFullscreen ?
+                    (
+                      <Minimize2 className="h-3.5 w-3.5" />
+                    ) :
+                    (
+                      <Maximize2 className="h-3.5 w-3.5" />
+                    )}
               </button>
             )}
             <button
@@ -129,21 +133,25 @@ export function ProcessManagerDrawer() {
 
         {/* Content */}
         <div className="flex-1 overflow-auto min-h-0 p-3">
-          {isLoading ? (
-            <div className="flex items-center justify-center py-16">
-              <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-            </div>
-          ) : processes.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
-              <Activity className="h-12 w-12" />
-              <p className="text-sm font-medium">{t('processManager.noProcesses')}</p>
-              <p className="text-xs text-center max-w-[240px]">
-                {t('processManager.noProcessesHint')}
-              </p>
-            </div>
-          ) : (
-            <ProcessList processes={processes} projectId={projectId} />
-          )}
+          {isLoading ?
+              (
+                <div className="flex items-center justify-center py-16">
+                  <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                </div>
+              ) :
+            processes.length === 0 ?
+                (
+                  <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
+                    <Activity className="h-12 w-12" />
+                    <p className="text-sm font-medium">{t('processManager.noProcesses')}</p>
+                    <p className="text-xs text-center max-w-[240px]">
+                      {t('processManager.noProcessesHint')}
+                    </p>
+                  </div>
+                ) :
+                (
+                  <ProcessList processes={processes} projectId={projectId} />
+                )}
         </div>
       </div>
     </>

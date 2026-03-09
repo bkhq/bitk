@@ -82,7 +82,7 @@ export function ChatInput({
   onMessageSent?: (messageId: string, prompt: string, metadata?: Record<string, unknown>) => void
   slashCommands?: string[]
   agentCommands?: string[]
-  pluginCommands?: Array<{ name: string; path: string }>
+  pluginCommands?: Array<{ name: string, path: string }>
   onRefreshLogs?: () => void
   pendingEditContent?: string | null
   onPendingEditConsumed?: () => void
@@ -166,7 +166,7 @@ export function ChatInput({
   const additions = changesSummary?.additions ?? 0
   const deletions = changesSummary?.deletions ?? 0
   const changesRoot = (changesSummary as { root?: string } | null)?.root
-  const openFileBrowser = useFileBrowserStore((s) => s.open)
+  const openFileBrowser = useFileBrowserStore(s => s.open)
 
   // Fetch models for current engine
   const { data: discovery } = useEngineAvailability(!!engineType)
@@ -183,20 +183,20 @@ export function ChatInput({
   const [busyAction, setBusyAction] = useState<BusyAction>('queue')
   const activeModel = selectedModel || model || ''
   const isSessionActive = sessionStatus === 'running' || sessionStatus === 'pending'
-  const effectiveBusyAction: BusyAction | undefined = isSessionActive
-    ? isThinking
-      ? 'queue'
-      : busyAction
-    : undefined
+  const effectiveBusyAction: BusyAction | undefined = isSessionActive ?
+    isThinking ?
+      'queue' :
+      busyAction :
+    undefined
 
   // Normalized slash commands only (for CommandPicker button + command detection)
   const normalizedSlashCommands = useMemo(
-    () => slashCommands.map((cmd) => (cmd.startsWith('/') ? cmd : `/${cmd}`)),
+    () => slashCommands.map(cmd => (cmd.startsWith('/') ? cmd : `/${cmd}`)),
     [slashCommands],
   )
 
   // Build tagged command list with category labels (for inline menu)
-  type TaggedCommand = {
+  interface TaggedCommand {
     value: string
     category: 'command' | 'agent' | 'plugin'
   }
@@ -210,7 +210,7 @@ export function ChatInput({
   }, [slashCommands, agentCommands, pluginCommands])
 
   // All command values for command detection in handleSend
-  const normalizedCommands = useMemo(() => allCommands.map((c) => c.value), [allCommands])
+  const normalizedCommands = useMemo(() => allCommands.map(c => c.value), [allCommands])
 
   // Inline command menu: show when input starts with "/" and has no spaces yet
   const commandQuery = useMemo(() => {
@@ -260,16 +260,16 @@ export function ChatInput({
                 limit: MAX_FILE_SIZE / 1024 / 1024,
               }),
             )
-            setTimeout(() => setSendError(null), 5000)
+            setTimeout(setSendError, 5000, null)
             continue
           }
           if (combined.length >= MAX_FILES) {
             setSendError(t('chat.tooManyFiles', { max: MAX_FILES }))
-            setTimeout(() => setSendError(null), 5000)
+            setTimeout(setSendError, 5000, null)
             break
           }
           // Deduplicate by name+size
-          if (!combined.some((f) => f.name === file.name && f.size === file.size)) {
+          if (!combined.some(f => f.name === file.name && f.size === file.size)) {
             combined.push(file)
           }
         }
@@ -283,7 +283,7 @@ export function ChatInput({
     setAttachedFiles((prev) => {
       const removed = prev[index]
       // Clear preview if the removed file is currently being previewed
-      setPreviewFile((current) =>
+      setPreviewFile(current =>
         current && current.name === removed.name && current.size === removed.size ? null : current,
       )
       return prev.filter((_, i) => i !== index)
@@ -321,35 +321,35 @@ export function ChatInput({
       // Append message with server-assigned messageId
       if (result.messageId) {
         const filesMeta =
-          filesToSend.length > 0
-            ? filesToSend.map((f) => ({
+          filesToSend.length > 0 ?
+              filesToSend.map(f => ({
                 id: '',
                 name: f.name,
                 mimeType: f.type,
                 size: f.size,
-              }))
-            : undefined
+              })) :
+            undefined
         const firstWord = prompt.split(/\s/)[0] ?? ''
         const isCommand =
           firstWord.startsWith('/') &&
-          (normalizedCommands.length === 0 || normalizedCommands.some((cmd) => cmd === firstWord))
-        const metadata: Record<string, unknown> | undefined = isTodo
-          ? {
+          (normalizedCommands.length === 0 || normalizedCommands.includes(firstWord))
+        const metadata: Record<string, unknown> | undefined = isTodo ?
+            {
               type: 'pending',
               ...(filesMeta ? { attachments: filesMeta } : {}),
-            }
-          : isDone
-            ? { type: 'done', ...(filesMeta ? { attachments: filesMeta } : {}) }
-            : isWorking && isThinking
-              ? {
+            } :
+          isDone ?
+              { type: 'done', ...(filesMeta ? { attachments: filesMeta } : {}) } :
+            isWorking && isThinking ?
+                {
                   type: 'pending',
                   ...(filesMeta ? { attachments: filesMeta } : {}),
-                }
-              : isCommand
-                ? { type: 'command' }
-                : filesMeta
-                  ? { attachments: filesMeta }
-                  : undefined
+                } :
+              isCommand ?
+                  { type: 'command' } :
+                filesMeta ?
+                    { attachments: filesMeta } :
+                  undefined
         onMessageSent?.(result.messageId, prompt, metadata)
       }
       // Auto-scroll to bottom after sending
@@ -369,7 +369,7 @@ export function ChatInput({
         setInput(prompt)
         setAttachedFiles(filesToSend)
       }
-      setTimeout(() => setSendError(null), 5000)
+      setTimeout(setSendError, 5000, null)
     } finally {
       isSendingRef.current = false
     }
@@ -393,12 +393,12 @@ export function ChatInput({
     if (showCommandMenu) {
       if (e.key === 'ArrowDown') {
         e.preventDefault()
-        setCommandIndex((i) => (i < filteredCommands.length - 1 ? i + 1 : 0))
+        setCommandIndex(i => (i < filteredCommands.length - 1 ? i + 1 : 0))
         return
       }
       if (e.key === 'ArrowUp') {
         e.preventDefault()
-        setCommandIndex((i) => (i > 0 ? i - 1 : filteredCommands.length - 1))
+        setCommandIndex(i => (i > 0 ? i - 1 : filteredCommands.length - 1))
         return
       }
       if ((e.key === 'Enter' && !e.metaKey && !e.ctrlKey) || e.key === 'Tab') {
@@ -413,7 +413,7 @@ export function ChatInput({
       if (e.key === 'Escape') {
         e.preventDefault()
         // Add a space to dismiss the menu while keeping the text
-        setInput((prev) => `${prev} `)
+        setInput(prev => `${prev} `)
         return
       }
     }
@@ -459,7 +459,7 @@ export function ChatInput({
     (e: React.DragEvent) => {
       e.preventDefault()
       setIsDragOver(false)
-      const files = Array.from(e.dataTransfer.files)
+      const files = [...e.dataTransfer.files]
       if (files.length > 0) addFiles(files)
     },
     [addFiles],
@@ -467,7 +467,7 @@ export function ChatInput({
 
   const handleFileSelect = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      const files = Array.from(e.target.files ?? [])
+      const files = [...e.target.files ?? []]
       if (files.length > 0) addFiles(files)
       // Reset input so same file can be re-selected
       e.target.value = ''
@@ -513,9 +513,9 @@ export function ChatInput({
     <div className="shrink-0 w-full min-w-0 px-2 pb-2 relative z-30">
       <div
         className={`rounded-xl border bg-card/80 backdrop-blur-sm shadow-sm transition-all duration-200 focus-within:border-border focus-within:shadow-md ${
-          isDragOver
-            ? 'border-primary/50 bg-primary/[0.03] ring-2 ring-primary/20'
-            : 'border-border/60'
+          isDragOver ?
+            'border-primary/50 bg-primary/[0.03] ring-2 ring-primary/20' :
+            'border-border/60'
         }`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
@@ -530,11 +530,13 @@ export function ChatInput({
         </div>
 
         {/* Drag overlay hint */}
-        {isDragOver ? (
-          <div className="flex items-center justify-center py-4 text-xs text-primary font-medium">
-            {t('chat.attachDragHint')}
-          </div>
-        ) : null}
+        {isDragOver ?
+            (
+              <div className="flex items-center justify-center py-4 text-xs text-primary font-medium">
+                {t('chat.attachDragHint')}
+              </div>
+            ) :
+          null}
 
         {/* Status bar */}
         <div className="flex items-center gap-1.5 px-2 py-1.5 border-b border-border/30">
@@ -542,18 +544,20 @@ export function ChatInput({
             type="button"
             onClick={onToggleDiff}
             className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs transition-all duration-200 ${
-              diffOpen
-                ? 'bg-primary/[0.08] ring-1 ring-primary/20 text-foreground'
-                : 'bg-muted/40 hover:bg-muted/60 text-muted-foreground'
+              diffOpen ?
+                'bg-primary/[0.08] ring-1 ring-primary/20 text-foreground' :
+                'bg-muted/40 hover:bg-muted/60 text-muted-foreground'
             }`}
           >
             <span className="inline-flex items-center gap-1.5">
               <span>{t('chat.filesChanged', { count: changedCount })}</span>
               <span className="font-mono tabular-nums text-emerald-600 dark:text-emerald-400 font-medium">
-                +{additions}
+                +
+                {additions}
               </span>
               <span className="font-mono tabular-nums text-red-600 dark:text-red-400 font-medium">
-                -{deletions}
+                -
+                {deletions}
               </span>
             </span>
           </button>
@@ -567,53 +571,63 @@ export function ChatInput({
           </button>
 
           <div className="ml-auto flex items-center gap-1">
-            {isSessionActive && !isThinking ? (
-              <BusyActionSelect value={busyAction} onChange={setBusyAction} />
-            ) : null}
+            {isSessionActive && !isThinking ?
+                (
+                  <BusyActionSelect value={busyAction} onChange={setBusyAction} />
+                ) :
+              null}
             <ModeSelect value={mode} onChange={setMode} />
-            {models.length > 0 ? (
-              <ModelSelect models={models} value={activeModel} onChange={setSelectedModel} />
-            ) : null}
+            {models.length > 0 ?
+                (
+                  <ModelSelect models={models} value={activeModel} onChange={setSelectedModel} />
+                ) :
+              null}
           </div>
         </div>
 
         {/* Error banner */}
-        {sendError ? (
-          <div className="mx-2 mt-2 rounded-lg bg-destructive/10 border border-destructive/20 px-2 py-2 text-xs text-destructive">
-            {sendError}
-          </div>
-        ) : null}
+        {sendError ?
+            (
+              <div className="mx-2 mt-2 rounded-lg bg-destructive/10 border border-destructive/20 px-2 py-2 text-xs text-destructive">
+                {sendError}
+              </div>
+            ) :
+          null}
 
         {/* Inline command menu */}
-        {showCommandMenu ? (
-          <div className="mx-2 mt-1 rounded-lg border border-border/40 bg-popover shadow-md overflow-hidden">
-            <div className="max-h-[200px] overflow-y-auto py-1">
-              {filteredCommands.map((item, i) => (
-                <button
-                  key={`${item.category}:${item.value}`}
-                  type="button"
-                  onMouseDown={(e) => {
-                    e.preventDefault()
-                    setInput(resolveCommandInput(item))
-                    textareaRef.current?.focus()
-                  }}
-                  className={`w-full flex items-center gap-2 text-left px-3 py-1.5 text-xs transition-colors ${
-                    i === commandIndex
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-foreground/80 hover:bg-muted/50'
-                  }`}
-                >
-                  <code className="font-mono">{item.value}</code>
-                  {item.category !== 'command' ? (
-                    <span className="ml-auto text-[10px] text-muted-foreground/60 uppercase tracking-wider">
-                      {t(`chat.${item.category === 'agent' ? 'agents' : 'plugins'}`)}
-                    </span>
-                  ) : null}
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : null}
+        {showCommandMenu ?
+            (
+              <div className="mx-2 mt-1 rounded-lg border border-border/40 bg-popover shadow-md overflow-hidden">
+                <div className="max-h-[200px] overflow-y-auto py-1">
+                  {filteredCommands.map((item, i) => (
+                    <button
+                      key={`${item.category}:${item.value}`}
+                      type="button"
+                      onMouseDown={(e) => {
+                        e.preventDefault()
+                        setInput(resolveCommandInput(item))
+                        textareaRef.current?.focus()
+                      }}
+                      className={`w-full flex items-center gap-2 text-left px-3 py-1.5 text-xs transition-colors ${
+                        i === commandIndex ?
+                          'bg-primary/10 text-primary' :
+                          'text-foreground/80 hover:bg-muted/50'
+                      }`}
+                    >
+                      <code className="font-mono">{item.value}</code>
+                      {item.category !== 'command' ?
+                          (
+                            <span className="ml-auto text-[10px] text-muted-foreground/60 uppercase tracking-wider">
+                              {t(`chat.${item.category === 'agent' ? 'agents' : 'plugins'}`)}
+                            </span>
+                          ) :
+                        null}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) :
+          null}
 
         {/* Textarea — shadcn Textarea, style overrides to match original */}
         <div className="px-2 py-2">
@@ -630,36 +644,40 @@ export function ChatInput({
         </div>
 
         {/* File preview bar — below textarea */}
-        {attachedFiles.length > 0 ? (
-          <div className="flex flex-wrap gap-1.5 px-2 pb-1.5">
-            {attachedFiles.map((file, idx) => (
-              <div
-                key={`${file.name}-${file.size}`}
-                className="group/file flex items-center gap-1.5 rounded-lg bg-muted/50 border border-border/40 px-2 py-1 text-xs cursor-pointer hover:bg-muted/70 transition-colors"
-                onClick={() => setPreviewFile(file)}
-              >
-                {file.type.startsWith('image/') ? (
-                  <ImageIcon className="h-3 w-3 shrink-0 text-blue-500" />
-                ) : (
-                  <FileText className="h-3 w-3 shrink-0 text-muted-foreground" />
-                )}
-                <span className="truncate max-w-[120px]">{file.name}</span>
-                <span className="text-muted-foreground/60">{formatFileSize(file.size)}</span>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    removeFile(idx)
-                  }}
-                  className="ml-0.5 rounded p-0.5 text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10 transition-colors"
-                  title={t('chat.removeFile')}
-                >
-                  <X className="h-3 w-3" />
-                </button>
+        {attachedFiles.length > 0 ?
+            (
+              <div className="flex flex-wrap gap-1.5 px-2 pb-1.5">
+                {attachedFiles.map((file, idx) => (
+                  <div
+                    key={`${file.name}-${file.size}`}
+                    className="group/file flex items-center gap-1.5 rounded-lg bg-muted/50 border border-border/40 px-2 py-1 text-xs cursor-pointer hover:bg-muted/70 transition-colors"
+                    onClick={() => setPreviewFile(file)}
+                  >
+                    {file.type.startsWith('image/') ?
+                        (
+                          <ImageIcon className="h-3 w-3 shrink-0 text-blue-500" />
+                        ) :
+                        (
+                          <FileText className="h-3 w-3 shrink-0 text-muted-foreground" />
+                        )}
+                    <span className="truncate max-w-[120px]">{file.name}</span>
+                    <span className="text-muted-foreground/60">{formatFileSize(file.size)}</span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        removeFile(idx)
+                      }}
+                      className="ml-0.5 rounded p-0.5 text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10 transition-colors"
+                      title={t('chat.removeFile')}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        ) : null}
+            ) :
+          null}
 
         {/* Hidden file input */}
         <input
@@ -682,22 +700,26 @@ export function ChatInput({
             >
               <Paperclip className="size-4" />
             </Button>
-            {normalizedSlashCommands.length > 0 ? (
-              <CommandPicker
-                commands={normalizedSlashCommands}
-                onSelect={(cmd) => selectSlashCommand(cmd)}
-              />
-            ) : null}
-            {agentCommands.length > 0 ? (
-              <AgentPicker
-                agents={agentCommands}
-                onSelect={(a) => {
-                  const name = a.startsWith('/') ? a.slice(1) : a
-                  setInput(`use agent ${name} `)
-                  textareaRef.current?.focus()
-                }}
-              />
-            ) : null}
+            {normalizedSlashCommands.length > 0 ?
+                (
+                  <CommandPicker
+                    commands={normalizedSlashCommands}
+                    onSelect={cmd => selectSlashCommand(cmd)}
+                  />
+                ) :
+              null}
+            {agentCommands.length > 0 ?
+                (
+                  <AgentPicker
+                    agents={agentCommands}
+                    onSelect={(a) => {
+                      const name = a.startsWith('/') ? a.slice(1) : a
+                      setInput(`use agent ${name} `)
+                      textareaRef.current?.focus()
+                    }}
+                  />
+                ) :
+              null}
             <Button
               variant="ghost"
               size="icon"
@@ -709,22 +731,26 @@ export function ChatInput({
           </div>
 
           <Button type="button" disabled={!canSend || followUp.isPending} onClick={handleSend}>
-            {followUp.isPending ? (
-              <span className="flex items-center gap-1.5">
-                <Loader2 className="size-3.5 animate-spin" />
-                {t('session.sending')}
-              </span>
-            ) : (
-              t('chat.send')
-            )}
+            {followUp.isPending ?
+                (
+                  <span className="flex items-center gap-1.5">
+                    <Loader2 className="size-3.5 animate-spin" />
+                    {t('session.sending')}
+                  </span>
+                ) :
+                (
+                  t('chat.send')
+                )}
           </Button>
         </div>
       </div>
 
       {/* File preview modal — shadcn Dialog */}
-      {previewFile ? (
-        <FilePreviewModal file={previewFile} onClose={() => setPreviewFile(null)} />
-      ) : null}
+      {previewFile ?
+          (
+            <FilePreviewModal file={previewFile} onClose={() => setPreviewFile(null)} />
+          ) :
+        null}
     </div>
   )
 }
@@ -732,7 +758,7 @@ export function ChatInput({
 // ─── FilePreviewModal ────────────────────────────────────────────────────────
 // Replaced custom modal with shadcn Dialog
 
-function FilePreviewModal({ file, onClose }: { file: File; onClose: () => void }) {
+function FilePreviewModal({ file, onClose }: { file: File, onClose: () => void }) {
   const { t } = useTranslation()
   const [imageUrl, setImageUrl] = useState<string | null>(null)
 
@@ -746,37 +772,44 @@ function FilePreviewModal({ file, onClose }: { file: File; onClose: () => void }
   }, [file])
 
   return (
-    <Dialog open onOpenChange={(open) => !open && onClose()}>
+    <Dialog open onOpenChange={open => !open && onClose()}>
       <DialogContent className="max-w-[600px] max-h-[80vh] overflow-hidden p-0">
         <DialogHeader className="flex flex-row items-center gap-2 px-4 py-3 border-b border-border/30 space-y-0">
-          {file.type.startsWith('image/') ? (
-            <ImageIcon className="h-4 w-4 shrink-0 text-blue-500" />
-          ) : (
-            <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
-          )}
+          {file.type.startsWith('image/') ?
+              (
+                <ImageIcon className="h-4 w-4 shrink-0 text-blue-500" />
+              ) :
+              (
+                <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+              )}
           <DialogTitle className="text-sm font-medium truncate">{file.name}</DialogTitle>
         </DialogHeader>
 
         <div className="p-4 overflow-auto max-h-[calc(80vh-56px)]">
-          {imageUrl ? (
-            <img
-              src={imageUrl}
-              alt={file.name}
-              className="max-w-full max-h-[60vh] rounded-lg object-contain mx-auto"
-            />
-          ) : (
-            <div className="space-y-3">
-              <div className="flex items-center justify-center w-16 h-16 rounded-xl bg-muted/60 mx-auto">
-                <FileText className="h-8 w-8 text-muted-foreground/60" />
-              </div>
-              <div className="text-center space-y-1">
-                <p className="text-sm font-medium truncate">{file.name}</p>
-                <p className="text-xs text-muted-foreground">
-                  {file.type || t('chat.unknownType')} &middot; {formatFileSize(file.size)}
-                </p>
-              </div>
-            </div>
-          )}
+          {imageUrl ?
+              (
+                <img
+                  src={imageUrl}
+                  alt={file.name}
+                  className="max-w-full max-h-[60vh] rounded-lg object-contain mx-auto"
+                />
+              ) :
+              (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-center w-16 h-16 rounded-xl bg-muted/60 mx-auto">
+                    <FileText className="h-8 w-8 text-muted-foreground/60" />
+                  </div>
+                  <div className="text-center space-y-1">
+                    <p className="text-sm font-medium truncate">{file.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {file.type || t('chat.unknownType')}
+                      {' '}
+                      &middot;
+                      {formatFileSize(file.size)}
+                    </p>
+                  </div>
+                </div>
+              )}
         </div>
       </DialogContent>
     </Dialog>
@@ -798,19 +831,19 @@ function BusyActionSelect({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        render={
+        render={(
           <Button
             variant="ghost"
             size="sm"
             className="h-6 px-2 text-xs text-muted-foreground gap-1"
             title={t('chat.busyAction.label')}
           />
-        }
+        )}
       >
         <span className="truncate max-w-[100px]">{t(`chat.busyAction.${value}`)}</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" side="top" className="min-w-[150px] text-xs">
-        {(['queue', 'cancel'] as const).map((option) => (
+        {(['queue', 'cancel'] as const).map(option => (
           <DropdownMenuItem
             key={option}
             onSelect={() => onChange(option)}
@@ -859,24 +892,24 @@ function ModelSelect({
   value: string
   onChange: (v: string) => void
 }) {
-  const current = models.find((m) => m.id === value)
+  const current = models.find(m => m.id === value)
   const displayName = current ? formatModelName(current.name || current.id) : formatModelName(value)
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        render={
+        render={(
           <Button
             variant="ghost"
             size="sm"
             className="h-6 px-2 text-xs text-muted-foreground gap-1"
           />
-        }
+        )}
       >
         <span className="truncate max-w-[140px]">{displayName}</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" side="top" className="min-w-[180px] text-xs">
-        {models.map((m) => (
+        {models.map(m => (
           <DropdownMenuItem
             key={m.id}
             onSelect={() => onChange(m.id)}
@@ -915,7 +948,7 @@ function CommandPicker({
             <CommandEmpty className="text-xs text-muted-foreground/50 px-3 py-2">
               {t('chat.noCommands')}
             </CommandEmpty>
-            {commands.map((cmd) => (
+            {commands.map(cmd => (
               <CommandItem
                 key={cmd}
                 value={cmd}
@@ -959,7 +992,7 @@ function AgentPicker({
             <CommandEmpty className="text-xs text-muted-foreground/50 px-3 py-2">
               {t('chat.noAgents')}
             </CommandEmpty>
-            {agents.map((agent) => (
+            {agents.map(agent => (
               <CommandItem
                 key={agent}
                 value={agent}
@@ -982,25 +1015,25 @@ function AgentPicker({
 // ─── ModeSelect ───────────────────────────────────────────────────────────────
 // Replaced custom dropdown with shadcn DropdownMenu
 
-function ModeSelect({ value, onChange }: { value: ModeOption; onChange: (v: ModeOption) => void }) {
+function ModeSelect({ value, onChange }: { value: ModeOption, onChange: (v: ModeOption) => void }) {
   const { t } = useTranslation()
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        render={
+        render={(
           <Button
             variant="ghost"
             size="sm"
             className="h-6 px-2 text-xs text-muted-foreground gap-1"
             title={t('createIssue.mode')}
           />
-        }
+        )}
       >
         <span className="truncate max-w-[84px]">{t(`createIssue.perm.${value}`)}</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" side="top" className="min-w-[130px] text-xs">
-        {MODE_OPTIONS.map((option) => (
+        {MODE_OPTIONS.map(option => (
           <DropdownMenuItem
             key={option}
             onSelect={() => onChange(option)}

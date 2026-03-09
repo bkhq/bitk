@@ -46,7 +46,7 @@ logs.get('/:id/logs', async (c) => {
   // nextCursor: use ULID messageId directly.
   // For reverse → oldest entry in batch (first) so client passes as `before`.
   // For forward → newest entry (last) for next newer page via `cursor`.
-  const cursorEntry = isReverse ? result.entries[0] : result.entries[result.entries.length - 1]
+  const cursorEntry = isReverse ? result.entries[0] : result.entries.at(-1)
   const nextCursor = result.hasMore && cursorEntry?.messageId ? cursorEntry.messageId : null
 
   return c.json({

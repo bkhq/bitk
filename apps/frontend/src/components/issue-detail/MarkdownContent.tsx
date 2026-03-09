@@ -9,12 +9,12 @@ function displayWidth(str: string): number {
     const code = ch.codePointAt(0) ?? 0
     // CJK Unified Ideographs, CJK Compatibility, Fullwidth forms, etc.
     if (
-      (code >= 0x2e80 && code <= 0x9fff) ||
-      (code >= 0xf900 && code <= 0xfaff) ||
-      (code >= 0xfe30 && code <= 0xfe4f) ||
-      (code >= 0xff00 && code <= 0xff60) ||
-      (code >= 0xffe0 && code <= 0xffe6) ||
-      (code >= 0x20000 && code <= 0x2fa1f)
+      (code >= 0x2E80 && code <= 0x9FFF) ||
+      (code >= 0xF900 && code <= 0xFAFF) ||
+      (code >= 0xFE30 && code <= 0xFE4F) ||
+      (code >= 0xFF00 && code <= 0xFF60) ||
+      (code >= 0xFFE0 && code <= 0xFFE6) ||
+      (code >= 0x20000 && code <= 0x2FA1F)
     ) {
       w += 2
     } else {
@@ -32,7 +32,7 @@ function padEnd(str: string, targetWidth: number): string {
 
 /** Reformat a markdown table block with space-padded columns. */
 function formatTable(block: string): string {
-  const lines = block.split('\n').filter((l) => l.trim())
+  const lines = block.split('\n').filter(l => l.trim())
   if (lines.length < 2) return block
 
   const parseCells = (line: string) =>
@@ -40,17 +40,17 @@ function formatTable(block: string): string {
       .replace(/^\|/, '')
       .replace(/\|$/, '')
       .split('|')
-      .map((c) => c.trim())
+      .map(c => c.trim())
 
   const isSep = (line: string) => /^\|?[\s:]*-+[\s:]*(\|[\s:]*-+[\s:]*)*\|?$/.test(line.trim())
 
   if (!isSep(lines[1])) return block
 
-  const allCells = lines.filter((l) => !isSep(l)).map(parseCells)
-  const colCount = Math.max(...allCells.map((r) => r.length))
+  const allCells = lines.filter(l => !isSep(l)).map(parseCells)
+  const colCount = Math.max(...allCells.map(r => r.length))
 
   // Calculate max display width per column
-  const colWidths: number[] = Array(colCount).fill(0)
+  const colWidths: number[] = new Array(colCount).fill(0)
   for (const row of allCells) {
     for (let i = 0; i < colCount; i++) {
       const w = displayWidth(row[i] ?? '')
@@ -63,12 +63,12 @@ function formatTable(block: string): string {
     return `| ${padded.join(' | ')} |`
   }
 
-  const sepLine = `| ${colWidths.map((w) => '-'.repeat(w)).join(' | ')} |`
+  const sepLine = `| ${colWidths.map(w => '-'.repeat(w)).join(' | ')} |`
 
   const header = parseCells(lines[0])
   const dataRows = lines
     .slice(2)
-    .filter((l) => !isSep(l))
+    .filter(l => !isSep(l))
     .map(parseCells)
 
   return [formatRow(header), sepLine, ...dataRows.map(formatRow)].join('\n')

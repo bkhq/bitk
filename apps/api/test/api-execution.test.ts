@@ -85,7 +85,7 @@ describe('Auto-execute on issue creation', () => {
     }, 5000)
 
     // Check logs exist
-    const logsResult = await get<{ issue: Issue; logs: unknown[] }>(
+    const logsResult = await get<{ issue: Issue, logs: unknown[] }>(
       `/api/projects/${projectId}/issues/${data.id}/logs`,
     )
     expect(logsResult.status).toBe(200)
@@ -125,7 +125,7 @@ describe('POST /api/projects/:projectId/issues/:id/execute', () => {
     }, 5000)
 
     // Now manually execute again
-    const result = await post<{ executionId: string; issueId: string }>(
+    const result = await post<{ executionId: string, issueId: string }>(
       `/api/projects/${projectId}/issues/${issue.id}/execute`,
       { engineType: 'echo', prompt: 'Manual prompt' },
     )
@@ -153,7 +153,7 @@ describe('POST /api/projects/:projectId/issues/:id/follow-up', () => {
     }, 5000)
 
     // Send follow-up
-    const result = await post<{ executionId: string; issueId: string }>(
+    const result = await post<{ executionId: string, issueId: string }>(
       `/api/projects/${projectId}/issues/${issue.id}/follow-up`,
       { prompt: 'Please elaborate on this' },
     )
@@ -177,7 +177,7 @@ describe('POST /api/projects/:projectId/issues/:id/follow-up', () => {
       return expectSuccess(r).sessionStatus === 'completed'
     }, 5000)
 
-    const result = await post<{ executionId: string; issueId: string }>(
+    const result = await post<{ executionId: string, issueId: string }>(
       `/api/projects/${projectId}/issues/${issue.id}/follow-up`,
       { prompt: 'With model', model: 'auto' },
     )
@@ -217,7 +217,7 @@ describe('POST /api/projects/:projectId/issues/:id/cancel', () => {
     ) as Issue
 
     // Try to cancel immediately (may already be done due to echo speed)
-    const result = await post<{ issueId: string; status: string }>(
+    const result = await post<{ issueId: string, status: string }>(
       `/api/projects/${projectId}/issues/${issue.id}/cancel`,
       {},
     )
@@ -247,7 +247,7 @@ describe('POST /api/projects/:projectId/issues/:id/restart', () => {
     await post<unknown>(`/api/projects/${projectId}/issues/${issue.id}/cancel`, {})
 
     // Restart
-    const result = await post<{ executionId: string; issueId: string }>(
+    const result = await post<{ executionId: string, issueId: string }>(
       `/api/projects/${projectId}/issues/${issue.id}/restart`,
       {},
     )
@@ -277,7 +277,7 @@ describe('GET /api/projects/:projectId/issues/:id/logs (after execution)', () =>
       return expectSuccess(r).sessionStatus === 'completed'
     }, 5000)
 
-    const result = await get<{ issue: Issue; logs: unknown[] }>(
+    const result = await get<{ issue: Issue, logs: unknown[] }>(
       `/api/projects/${projectId}/issues/${issue.id}/logs`,
     )
     expect(result.status).toBe(200)
@@ -302,7 +302,7 @@ describe('GET /api/projects/:projectId/issues/:id/logs', () => {
       return expectSuccess(r).sessionStatus === 'completed'
     }, 5000)
 
-    const result = await get<{ issue: Issue; logs: unknown[] }>(
+    const result = await get<{ issue: Issue, logs: unknown[] }>(
       `/api/projects/${projectId}/issues/${issue.id}/logs`,
     )
     expect(result.status).toBe(200)

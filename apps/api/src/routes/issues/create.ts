@@ -27,7 +27,7 @@ create.post(
       return c.json(
         {
           success: false,
-          error: result.error.issues.map((i) => i.message).join(', '),
+          error: result.error.issues.map(i => i.message).join(', '),
         },
         400,
       )
@@ -56,7 +56,7 @@ create.post(
         resolvedModel = savedModel
       } else {
         const models = await engineRegistry.getModels(resolvedEngine as EngineType)
-        resolvedModel = models.find((m) => m.isDefault)?.id ?? models[0]?.id ?? 'auto'
+        resolvedModel = models.find(m => m.isDefault)?.id ?? models[0]?.id ?? 'auto'
       }
     }
 

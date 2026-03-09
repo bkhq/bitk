@@ -48,11 +48,11 @@ function extractTodos(entry: NormalizedLogEntry): TaskPlanChatMessage['todos'] |
   if (!meta) return null
   const args = (meta.arguments ?? meta.input) as
     | {
-        todos?: Array<{ content: string; status: string; activeForm?: string }>
-      }
-    | undefined
+      todos?: Array<{ content: string, status: string, activeForm?: string }>
+    } |
+    undefined
   if (!args?.todos || !Array.isArray(args.todos)) return null
-  return args.todos.map((t) => ({
+  return args.todos.map(t => ({
     content: t.content ?? '',
     status: t.status ?? 'pending',
     activeForm: typeof t.activeForm === 'string' ? t.activeForm : undefined,
@@ -71,7 +71,7 @@ function rebuildMessages(entries: NormalizedLogEntry[]): ChatMessage[] {
   let toolBuffer: ToolGroupItem[] = []
   // Deferred thinking entry — consumed by the next tool group as its description,
   // or flushed as a standalone thinking message if no tool calls follow.
-  let pendingThinking: { content: string; entry: NormalizedLogEntry } | null = null
+  let pendingThinking: { content: string, entry: NormalizedLogEntry } | null = null
 
   // Build turn → duration map from system-message metadata
   const turnDuration = new Map<number, number>()
@@ -149,14 +149,14 @@ function rebuildMessages(entries: NormalizedLogEntry[]): ChatMessage[] {
   function flushToolBuffer(): void {
     if (toolBuffer.length === 0) return
 
-    const todoItems = toolBuffer.filter((item) => isTodoWriteEntry(item.action))
-    const nonTodoItems = toolBuffer.filter((item) => !isTodoWriteEntry(item.action))
+    const todoItems = toolBuffer.filter(item => isTodoWriteEntry(item.action))
+    const nonTodoItems = toolBuffer.filter(item => !isTodoWriteEntry(item.action))
 
     // Save thinking before task-plan flush so non-todo tools can still use it
     const savedThinking = pendingThinking
 
     if (todoItems.length > 0) {
-      const lastTodo = todoItems[todoItems.length - 1]
+      const lastTodo = todoItems.at(-1)
       const todos = extractTodos(lastTodo.action)
       if (todos) {
         if (nonTodoItems.length === 0) {
@@ -168,7 +168,7 @@ function rebuildMessages(entries: NormalizedLogEntry[]): ChatMessage[] {
           id: entryId(lastTodo.action, nextId('tp')),
           entry: lastTodo.action,
           todos,
-          completedCount: todos.filter((t) => t.status === 'completed').length,
+          completedCount: todos.filter(t => t.status === 'completed').length,
         } satisfies TaskPlanChatMessage)
       }
     }
@@ -284,13 +284,13 @@ function rebuildMessages(entries: NormalizedLogEntry[]): ChatMessage[] {
           size: number
         }>
         const status =
-          metaType === 'pending'
-            ? 'pending'
-            : metaType === 'done'
-              ? 'done'
-              : metaType === 'command'
-                ? 'command'
-                : 'normal'
+          metaType === 'pending' ?
+            'pending' :
+            metaType === 'done' ?
+              'done' :
+              metaType === 'command' ?
+                'command' :
+                'normal'
         const msg: UserChatMessage = {
           type: 'user',
           id: entryId(entry, nextId('um')),

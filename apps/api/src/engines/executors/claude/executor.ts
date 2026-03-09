@@ -43,7 +43,7 @@ function getBaseCommand(): string {
   const home = process.env.HOME ?? ''
   if (home) {
     const homeCandidates = [join(home, '.local/bin/claude'), join(home, '.bun/bin/claude')]
-    const found = homeCandidates.find((p) => existsSync(p))
+    const found = homeCandidates.find(p => existsSync(p))
     if (found) {
       _cachedBaseCommand = found
       return _cachedBaseCommand
@@ -264,7 +264,7 @@ export class ClaudeCodeExecutor implements EngineExecutor {
               type?: string
               subtype?: string
               slash_commands?: string[]
-              plugins?: Array<{ name: string; path: string }>
+              plugins?: Array<{ name: string, path: string }>
               agents?: string[]
             }
             if (data.type === 'system' && data.subtype === 'init') {
@@ -290,7 +290,7 @@ export class ClaudeCodeExecutor implements EngineExecutor {
             type?: string
             subtype?: string
             slash_commands?: string[]
-            plugins?: Array<{ name: string; path: string }>
+            plugins?: Array<{ name: string, path: string }>
             agents?: string[]
           }
           if (data.type === 'system' && data.subtype === 'init') {
@@ -398,9 +398,9 @@ export class ClaudeCodeExecutor implements EngineExecutor {
         cwd: resolved.cwd ?? options.workingDir,
         program: resolved.resolvedPath,
         args: resolved.args,
-        ...(mode === 'followup' && 'sessionId' in options
-          ? { resumeSessionId: (options as FollowUpOptions).sessionId }
-          : {}),
+        ...(mode === 'followup' && 'sessionId' in options ?
+            { resumeSessionId: (options as FollowUpOptions).sessionId } :
+            {}),
       },
       `claude_${mode}_command`,
     )
@@ -453,9 +453,11 @@ export class ClaudeCodeExecutor implements EngineExecutor {
 export interface DiscoveryResult {
   slashCommands: string[]
   agents: string[]
-  plugins: Array<{ name: string; path: string }>
-  /** True when the system/init message was actually parsed.
-   *  False means the process exited or timed out before sending init. */
+  plugins: Array<{ name: string, path: string }>
+  /**
+   * True when the system/init message was actually parsed.
+   *  False means the process exited or timed out before sending init.
+   */
   initReceived: boolean
 }
 

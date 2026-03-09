@@ -6,7 +6,7 @@ interface ServerStore {
   setServerInfo: (name: string | null, url: string | null) => void
 }
 
-export const useServerStore = create<ServerStore>((set) => ({
+export const useServerStore = create<ServerStore>(set => ({
   name: null,
   url: null,
   setServerInfo: (name, url) =>

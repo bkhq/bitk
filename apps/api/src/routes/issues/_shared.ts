@@ -213,7 +213,7 @@ export function normalizePrompt(input: string): string {
 export async function collectPendingMessages(
   issueId: string,
   basePrompt: string,
-): Promise<{ prompt: string; pendingIds: string[] }> {
+): Promise<{ prompt: string, pendingIds: string[] }> {
   const { prompt: pendingPrompt, pendingIds } = await collectPendingWithAttachments(issueId)
   if (pendingIds.length === 0) return { prompt: basePrompt, pendingIds: [] }
   const prompt = [basePrompt, pendingPrompt].filter(Boolean).join('\n\n')
@@ -226,7 +226,7 @@ export async function collectPendingMessages(
  * - review → move to working, then execute
  * - working → proceed as-is
  */
-export async function ensureWorking(issue: IssueRow): Promise<{ ok: boolean; reason?: string }> {
+export async function ensureWorking(issue: IssueRow): Promise<{ ok: boolean, reason?: string }> {
   if (issue.statusId === 'todo') {
     return {
       ok: false,
@@ -295,12 +295,12 @@ export function triggerIssueExecution(
 
       // Relocate any pending messages: hide old pending row, include content in prompt
       const relocated = await relocatePendingForProcessing(issueId)
-      const basePrompt = systemPrompt
-        ? `${systemPrompt}\n\n${issue.prompt ?? ''}`
-        : (issue.prompt ?? '')
-      const effectivePrompt = relocated
-        ? [basePrompt, relocated.prompt].filter(Boolean).join('\n\n')
-        : basePrompt
+      const basePrompt = systemPrompt ?
+        `${systemPrompt}\n\n${issue.prompt ?? ''}` :
+          (issue.prompt ?? '')
+      const effectivePrompt = relocated ?
+          [basePrompt, relocated.prompt].filter(Boolean).join('\n\n') :
+        basePrompt
 
       await issueEngine.executeIssue(issueId, {
         engineType: (issue.engineType ?? 'echo') as EngineType,

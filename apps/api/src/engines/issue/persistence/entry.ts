@@ -14,9 +14,9 @@ export function persistEntry(
   const idx = ctx.entryCounters.get(executionId) ?? 0
   const turnIdx = ctx.turnIndexes.get(executionId) ?? 0
   const replyTo =
-    entry.entryType !== 'user-message'
-      ? (ctx.userMessageIds.get(`${issueId}:${turnIdx}`) ?? null)
-      : null
+    entry.entryType !== 'user-message' ?
+        (ctx.userMessageIds.get(`${issueId}:${turnIdx}`) ?? null) :
+      null
   const persisted = persistLogEntry(issueId, executionId, entry, idx, turnIdx, replyTo)
   if (persisted) {
     ctx.entryCounters.set(executionId, idx + 1)

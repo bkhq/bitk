@@ -126,7 +126,7 @@ export async function startupReconciliation(): Promise<void> {
     .where(and(inArray(issuesTable.sessionStatus, staleStatuses), eq(issuesTable.isDeleted, 0)))
 
   if (staleRows.length > 0) {
-    const ids = staleRows.map((r) => r.id)
+    const ids = staleRows.map(r => r.id)
     await db
       .update(issuesTable)
       .set({ sessionStatus: 'failed' })

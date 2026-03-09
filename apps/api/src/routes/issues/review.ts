@@ -25,7 +25,7 @@ review.get('/', async (c) => {
     )
     .orderBy(desc(issuesTable.statusUpdatedAt))
 
-  const data = rows.map((r) => ({
+  const data = rows.map(r => ({
     ...serializeIssue(r.issue),
     projectName: r.projectName,
     projectAlias: r.projectAlias,

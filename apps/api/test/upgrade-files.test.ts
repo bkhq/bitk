@@ -42,7 +42,7 @@ describe('listDownloadedUpdates sorting', () => {
     writeFileSync(resolve(tmpDir, 'bkd-linux-x64-v0.0.6.tmp'), 'partial')
 
     const entries = await readdir(tmpDir)
-    const filtered = entries.filter((name) => !name.endsWith('.tmp'))
+    const filtered = entries.filter(name => !name.endsWith('.tmp'))
     expect(filtered).toEqual(['bkd-linux-x64-v0.0.5'])
     expect(filtered).not.toContain('bkd-linux-x64-v0.0.6.tmp')
   })

@@ -15,7 +15,7 @@ function parseCommandTokens(command: string): string[] {
       } else {
         current += ch
       }
-    } else if (ch === '"' || ch === "'") {
+    } else if (ch === '"' || ch === '\'') {
       quote = ch
     } else if (/\s/.test(ch)) {
       if (current) {

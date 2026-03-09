@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test } from 'bun:test'
+import { describe, expect, test } from 'bun:test'
 import type { NormalizedLogEntry } from '@bkd/shared'
 import { rebuildMessages } from '@/engines/issue/store/message-rebuilder'
 import type { WriteFilterRule } from '@/engines/write-filter'
@@ -176,7 +176,7 @@ describe('rebuildMessages', () => {
 
     const msgs = rebuildMessages(entries, opts)
     // Should have task-plan + tool-group (Edit + Bash)
-    const types = msgs.map((m) => m.type)
+    const types = msgs.map(m => m.type)
     expect(types).toContain('task-plan')
     expect(types).toContain('tool-group')
   })

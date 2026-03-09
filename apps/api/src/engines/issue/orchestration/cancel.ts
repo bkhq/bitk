@@ -72,7 +72,7 @@ function isEscalationStale(
 async function escalateCancel(
   ctx: EngineContext,
   issueId: string,
-  processes: Array<{ managed: ManagedProcess; escalationId: string }>,
+  processes: Array<{ managed: ManagedProcess, escalationId: string }>,
 ): Promise<void> {
   for (const { managed, escalationId } of processes) {
     const { executionId } = managed
@@ -169,7 +169,7 @@ export async function cancelIssue(
 
   const result = await withIssueLock(ctx, issueId, async () => {
     logger.info({ issueId }, 'issue_cancel_requested')
-    const active = getActiveProcesses(ctx).filter((p) => p.issueId === issueId)
+    const active = getActiveProcesses(ctx).filter(p => p.issueId === issueId)
     for (const p of active) {
       logger.debug(
         { issueId, executionId: p.executionId, pid: getPidFromManaged(p) },

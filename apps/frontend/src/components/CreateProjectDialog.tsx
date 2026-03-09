@@ -103,12 +103,14 @@ export function CreateProjectDialog({
         <FieldGroup>
           <Field>
             <Label>
-              {t('project.name')} <span className="text-destructive">*</span>
+              {t('project.name')}
+              {' '}
+              <span className="text-destructive">*</span>
             </Label>
             <Input
               type="text"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={e => setName(e.target.value)}
               placeholder={t('project.namePlaceholder')}
               autoFocus
               className="w-full"
@@ -120,7 +122,7 @@ export function CreateProjectDialog({
             <Input
               type="text"
               value={alias}
-              onChange={(e) => setAlias(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ''))}
+              onChange={e => setAlias(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ''))}
               placeholder={t('project.aliasPlaceholder')}
               className="w-full"
             />
@@ -131,7 +133,7 @@ export function CreateProjectDialog({
             <Label>{t('project.description')}</Label>
             <Textarea
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              onChange={e => setDescription(e.target.value)}
               placeholder={t('project.descriptionPlaceholder')}
               rows={3}
               className="w-full resize-none"
@@ -144,7 +146,7 @@ export function CreateProjectDialog({
               <Input
                 type="text"
                 value={directory}
-                onChange={(e) => setDirectory(e.target.value)}
+                onChange={e => setDirectory(e.target.value)}
                 placeholder={t('project.directoryPlaceholder')}
                 className="w-full"
               />
@@ -171,7 +173,7 @@ export function CreateProjectDialog({
               <Input
                 type="text"
                 value={repositoryUrl}
-                onChange={(e) => setRepositoryUrl(e.target.value)}
+                onChange={e => setRepositoryUrl(e.target.value)}
                 placeholder={t('project.repositoryUrlPlaceholder')}
                 className="w-full"
               />

@@ -44,7 +44,7 @@ eventBus.onIssueUpdated(() => {
       activityTimer = null
       queryClient.invalidateQueries({
         queryKey: ['projects'],
-        predicate: (q) => q.queryKey.includes('changes') || q.queryKey.includes('processes'),
+        predicate: q => q.queryKey.includes('changes') || q.queryKey.includes('processes'),
       })
     }, 2000)
   })
@@ -56,22 +56,22 @@ const IssueDetailPage = lazy(() => import('./pages/IssueDetailPage'))
 const ReviewPage = lazy(() => import('./pages/ReviewPage'))
 const TerminalPage = lazy(() => import('./pages/TerminalPage'))
 const LazyTerminalDrawer = lazy(() =>
-  import('./components/terminal/TerminalDrawer').then((m) => ({
+  import('./components/terminal/TerminalDrawer').then(m => ({
     default: m.TerminalDrawer,
   })),
 )
 const LazyFileBrowserDrawer = lazy(() =>
-  import('./components/files/FileBrowserDrawer').then((m) => ({
+  import('./components/files/FileBrowserDrawer').then(m => ({
     default: m.FileBrowserDrawer,
   })),
 )
 const LazyProcessManagerDrawer = lazy(() =>
-  import('./components/processes/ProcessManagerDrawer').then((m) => ({
+  import('./components/processes/ProcessManagerDrawer').then(m => ({
     default: m.ProcessManagerDrawer,
   })),
 )
 const LazyNotesDrawer = lazy(() =>
-  import('./components/notes/NotesDrawer').then((m) => ({
+  import('./components/notes/NotesDrawer').then(m => ({
     default: m.NotesDrawer,
   })),
 )
@@ -85,7 +85,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
 }
 
 function TerminalDrawerMount() {
-  const isOpen = useTerminalStore((s) => s.isOpen)
+  const isOpen = useTerminalStore(s => s.isOpen)
 
   if (!isOpen) return null
 
@@ -97,7 +97,7 @@ function TerminalDrawerMount() {
 }
 
 function FileBrowserDrawerMount() {
-  const isOpen = useFileBrowserStore((s) => s.isOpen)
+  const isOpen = useFileBrowserStore(s => s.isOpen)
 
   if (!isOpen) return null
 
@@ -109,7 +109,7 @@ function FileBrowserDrawerMount() {
 }
 
 function ProcessManagerDrawerMount() {
-  const isOpen = useProcessManagerStore((s) => s.isOpen)
+  const isOpen = useProcessManagerStore(s => s.isOpen)
 
   if (!isOpen) return null
 
@@ -121,7 +121,7 @@ function ProcessManagerDrawerMount() {
 }
 
 function NotesDrawerMount() {
-  const isOpen = useNotesStore((s) => s.isOpen)
+  const isOpen = useNotesStore(s => s.isOpen)
 
   if (!isOpen) return null
 
@@ -134,7 +134,7 @@ function NotesDrawerMount() {
 
 function ServerConfigLoader() {
   const { data } = useSystemInfo(true)
-  const setServerInfo = useServerStore((s) => s.setServerInfo)
+  const setServerInfo = useServerStore(s => s.setServerInfo)
 
   useEffect(() => {
     if (!data) return
@@ -158,68 +158,68 @@ if (!rootElement.innerHTML) {
         <ErrorBoundary>
           <AppShell>
             <Suspense
-              fallback={
+              fallback={(
                 <div className="flex h-full items-center justify-center">
                   <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
                 </div>
-              }
+              )}
             >
               <Routes>
                 <Route
                   path="/"
-                  element={
+                  element={(
                     <ErrorBoundary>
                       <HomePage />
                     </ErrorBoundary>
-                  }
+                  )}
                 />
                 <Route
                   path="/projects/:projectId"
-                  element={
+                  element={(
                     <ErrorBoundary>
                       <KanbanPage />
                     </ErrorBoundary>
-                  }
+                  )}
                 />
                 <Route
                   path="/projects/:projectId/issues"
-                  element={
+                  element={(
                     <ErrorBoundary>
                       <IssueDetailPage />
                     </ErrorBoundary>
-                  }
+                  )}
                 />
                 <Route
                   path="/projects/:projectId/issues/:issueId"
-                  element={
+                  element={(
                     <ErrorBoundary>
                       <IssueDetailPage />
                     </ErrorBoundary>
-                  }
+                  )}
                 />
                 <Route
                   path="/review"
-                  element={
+                  element={(
                     <ErrorBoundary>
                       <ReviewPage />
                     </ErrorBoundary>
-                  }
+                  )}
                 />
                 <Route
                   path="/review/:projectAlias/:issueId"
-                  element={
+                  element={(
                     <ErrorBoundary>
                       <ReviewPage />
                     </ErrorBoundary>
-                  }
+                  )}
                 />
                 <Route
                   path="/terminal"
-                  element={
+                  element={(
                     <ErrorBoundary>
                       <TerminalPage />
                     </ErrorBoundary>
-                  }
+                  )}
                 />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>

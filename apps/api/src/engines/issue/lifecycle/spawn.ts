@@ -200,12 +200,12 @@ export async function spawnRetry(
     envVars: projCtx.envVars,
     systemPrompt: projCtx.systemPrompt,
   }
-  const spawned = issue.sessionFields.externalSessionId
-    ? await spawnWithSessionFallback(executor, issueId, {
+  const spawned = issue.sessionFields.externalSessionId ?
+      await spawnWithSessionFallback(executor, issueId, {
         ...spawnOpts,
         sessionId: issue.sessionFields.externalSessionId,
-      })
-    : await spawnFresh(executor, issueId, spawnOpts)
+      }) :
+      await spawnFresh(executor, issueId, spawnOpts)
 
   const normalizer = createLogNormalizer(executor)
 
@@ -216,7 +216,7 @@ export async function spawnRetry(
     issueId,
     engineType,
     spawned,
-    (line) => normalizer.parse(line),
+    line => normalizer.parse(line),
     turnIndex,
     worktreePath,
     false,
@@ -239,7 +239,7 @@ export async function spawnFollowUpProcess(
   displayPrompt?: string,
   metadata?: Record<string, unknown>,
   opts?: { skipPersistMessage?: boolean },
-): Promise<{ executionId: string; messageId?: string | null }> {
+): Promise<{ executionId: string, messageId?: string | null }> {
   logger.debug(
     { issueId, model, permissionMode, promptChars: prompt.length },
     'issue_followup_spawn_process_requested',
@@ -277,9 +277,9 @@ export async function spawnFollowUpProcess(
   emitStateChange(issueId, executionId, 'running')
   // When flushing pending messages, the user message is already persisted in the
   // DB. Skip creating a duplicate entry.
-  const messageId = opts?.skipPersistMessage
-    ? null
-    : persistUserMessage(ctx, issueId, executionId, prompt, displayPrompt, metadata)
+  const messageId = opts?.skipPersistMessage ?
+    null :
+      persistUserMessage(ctx, issueId, executionId, prompt, displayPrompt, metadata)
 
   const baseDir = await resolveWorkingDir(issue.projectId)
 
@@ -348,7 +348,7 @@ export async function spawnFollowUpProcess(
         logger.error({ issueId, messageId, error: e }, 'spawn_failed_remove_user_message_error')
       }
     }
-    await updateIssueSession(issueId, { sessionStatus: 'failed' }).catch((e) =>
+    await updateIssueSession(issueId, { sessionStatus: 'failed' }).catch(e =>
       logger.error({ issueId, error: e }, 'spawn_failed_revert_session_error'),
     )
     emitStateChange(issueId, executionId, 'failed')
@@ -365,7 +365,7 @@ export async function spawnFollowUpProcess(
     issueId,
     engineType,
     spawned,
-    (line) => normalizer.parse(line),
+    line => normalizer.parse(line),
     turnIndex,
     worktreePath,
     metadata?.type === 'system',

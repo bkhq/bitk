@@ -68,7 +68,7 @@ function isIdle(proc: ProcessInfo): boolean {
   return !proc.turnInFlight && !!proc.lastIdleAt
 }
 
-function ProcessCard({ proc, projectId }: { proc: ProcessInfo; projectId: string }) {
+function ProcessCard({ proc, projectId }: { proc: ProcessInfo, projectId: string }) {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const cancelMutation = useCancelIssue(projectId)
@@ -87,7 +87,12 @@ function ProcessCard({ proc, projectId }: { proc: ProcessInfo; projectId: string
           className="text-xs font-medium text-foreground truncate hover:underline cursor-pointer text-left min-w-0"
           onClick={() => navigate(`/projects/${projectId}/issues/${proc.issueId}`)}
         >
-          <span className="text-muted-foreground">#{proc.issueNumber}</span> {proc.issueTitle}
+          <span className="text-muted-foreground">
+            #
+            {proc.issueNumber}
+          </span>
+          {' '}
+          {proc.issueTitle}
         </button>
       </div>
 
@@ -101,7 +106,9 @@ function ProcessCard({ proc, projectId }: { proc: ProcessInfo; projectId: string
         {idle && (
           <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-yellow-600">
             <Clock className="h-2.5 w-2.5 mr-0.5" />
-            {t('processManager.idle')} {formatDuration(proc.lastIdleAt)}
+            {t('processManager.idle')}
+            {' '}
+            {formatDuration(proc.lastIdleAt)}
           </Badge>
         )}
         {proc.engineType && (
@@ -116,7 +123,9 @@ function ProcessCard({ proc, projectId }: { proc: ProcessInfo; projectId: string
         )}
         {proc.pid != null && (
           <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-mono">
-            PID {proc.pid}
+            PID
+            {' '}
+            {proc.pid}
           </Badge>
         )}
         {proc.turnInFlight && (
@@ -138,13 +147,15 @@ function ProcessCard({ proc, projectId }: { proc: ProcessInfo; projectId: string
           <button
             type="button"
             className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground cursor-pointer"
-            onClick={() => setShowCommand((v) => !v)}
+            onClick={() => setShowCommand(v => !v)}
           >
-            {showCommand ? (
-              <ChevronDown className="h-3 w-3" />
-            ) : (
-              <ChevronRight className="h-3 w-3" />
-            )}
+            {showCommand ?
+                (
+                  <ChevronDown className="h-3 w-3" />
+                ) :
+                (
+                  <ChevronRight className="h-3 w-3" />
+                )}
             <Terminal className="h-3 w-3" />
             {t('processManager.command')}
           </button>
@@ -179,9 +190,9 @@ function ProcessCard({ proc, projectId }: { proc: ProcessInfo; projectId: string
             onClick={() => restartMutation.mutate(proc.issueId)}
           >
             <RotateCcw className="h-3 w-3" />
-            {restartMutation.isPending
-              ? t('processManager.restarting')
-              : t('processManager.restart')}
+            {restartMutation.isPending ?
+                t('processManager.restarting') :
+                t('processManager.restart')}
           </Button>
         )}
         {/* Terminate — always available, force-kills process regardless of state */}
@@ -193,9 +204,9 @@ function ProcessCard({ proc, projectId }: { proc: ProcessInfo; projectId: string
           onClick={() => terminateMutation.mutate(proc.issueId)}
         >
           <Skull className="h-3 w-3" />
-          {terminateMutation.isPending
-            ? t('processManager.terminating')
-            : t('processManager.terminate')}
+          {terminateMutation.isPending ?
+              t('processManager.terminating') :
+              t('processManager.terminate')}
         </Button>
       </div>
     </div>
@@ -211,7 +222,7 @@ export function ProcessList({
 }) {
   return (
     <div className="flex flex-col gap-2">
-      {processes.map((proc) => (
+      {processes.map(proc => (
         <ProcessCard key={proc.issueId} proc={proc} projectId={projectId} />
       ))}
     </div>

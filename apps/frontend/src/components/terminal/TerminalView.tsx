@@ -103,9 +103,9 @@ function wsUrl(sessionId: string): string {
   const proto = location.protocol === 'https:' ? 'wss:' : 'ws:'
   // Bun runtime lacks socket.destroySoon() — Vite WS proxy crashes.
   // In dev mode, connect directly to API server to bypass Vite proxy.
-  const host = import.meta.env.DEV
-    ? `${location.hostname}:${import.meta.env.VITE_API_PORT || 3010}`
-    : location.host
+  const host = import.meta.env.DEV ?
+    `${location.hostname}:${import.meta.env.VITE_API_PORT || 3010}` :
+    location.host
   return `${proto}//${host}/api/terminal/ws/${sessionId}`
 }
 
@@ -113,7 +113,7 @@ function wsUrl(sessionId: string): string {
 
 const store = useTerminalSessionStore
 
-function getOrCreateTerminal(): { terminal: Terminal; fitAddon: FitAddon } {
+function getOrCreateTerminal(): { terminal: Terminal, fitAddon: FitAddon } {
   const state = store.getState()
   if (state.terminal && state.fitAddon) {
     return { terminal: state.terminal, fitAddon: state.fitAddon }
@@ -186,7 +186,7 @@ function connectWs(sessionId: string, terminal: Terminal, fitAddon: FitAddon): v
     if (evt.reason === 'PTY exited') {
       store.getState().set({ sessionId: null })
       if (!store.getState().disposed) {
-        terminal.writeln('\r\n\x1b[90m[session ended, reconnecting...]\x1b[0m')
+        terminal.writeln('\r\n\x1B[90m[session ended, reconnecting...]\x1B[0m')
         const timer = setTimeout(() => {
           store.getState().set({ reconnectTimer: null })
           void initConnection(terminal, fitAddon)

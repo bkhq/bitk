@@ -38,7 +38,7 @@ function createMockStdout() {
 }
 
 /** Small delay for async background reader processing. */
-const tick = () => new Promise((r) => setTimeout(r, 30))
+const tick = () => new Promise(r => setTimeout(r, 30))
 
 describe('CodexProtocolHandler', () => {
   test('initialize sends request and resolves on response', async () => {

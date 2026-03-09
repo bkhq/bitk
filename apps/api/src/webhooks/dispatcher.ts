@@ -264,9 +264,9 @@ export async function deliver(
 
   try {
     result =
-      webhook.channel === 'telegram'
-        ? await deliverTelegram(webhook, event, payload)
-        : await deliverWebhook(webhook, event, payload)
+      webhook.channel === 'telegram' ?
+          await deliverTelegram(webhook, event, payload) :
+          await deliverWebhook(webhook, event, payload)
   } catch (err) {
     result = {
       statusCode: null,
@@ -457,7 +457,7 @@ export async function cleanupDeliveries() {
         .offset(100)
 
       if (rows.length > 0) {
-        const ids = rows.map((r) => r.id)
+        const ids = rows.map(r => r.id)
         await db.delete(webhookDeliveries).where(inArray(webhookDeliveries.id, ids))
       }
     }

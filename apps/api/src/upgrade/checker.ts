@@ -35,25 +35,25 @@ export async function checkForUpdates(): Promise<UpgradeCheckResult> {
   let matchingAsset: ReleaseAsset | undefined
   if (isPackageMode) {
     matchingAsset = release.assets.find(
-      (a) =>
+      a =>
         a.name.startsWith('bkd-app') && a.name.endsWith('.tar.gz') && !a.name.endsWith('.sha256'),
     )
   } else {
     const suffix = detectPlatformAssetSuffix()
     matchingAsset = release.assets.find(
-      (a) => a.name.includes(suffix) && !a.name.endsWith('.sha256') && !a.name.endsWith('.tar.gz'),
+      a => a.name.includes(suffix) && !a.name.endsWith('.sha256') && !a.name.endsWith('.tar.gz'),
     )
   }
   // Find checksums.txt (preferred), fallback to legacy per-asset .sha256
   const checksumAsset =
-    release.assets.find((a) => a.name === 'checksums.txt') ??
-    release.assets.find((a) => a.name === `${matchingAsset?.name}.sha256`)
+    release.assets.find(a => a.name === 'checksums.txt') ??
+    release.assets.find(a => a.name === `${matchingAsset?.name}.sha256`)
   // Only report an update if a newer version exists AND a matching asset is available
   const hasUpdate = !!matchingAsset && isNewerVersion(VERSION, release.version)
 
-  const downloadFileName = matchingAsset
-    ? resolveDownloadFileName(matchingAsset.name, release.version, isPackageMode)
-    : null
+  const downloadFileName = matchingAsset ?
+      resolveDownloadFileName(matchingAsset.name, release.version, isPackageMode) :
+    null
 
   const result: UpgradeCheckResult = {
     hasUpdate,

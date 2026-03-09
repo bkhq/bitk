@@ -57,7 +57,7 @@ query.get('/', async (c) => {
 
   return c.json({
     success: true,
-    data: rows.map((r) => serializeIssue(r, childCounts[r.id])),
+    data: rows.map(r => serializeIssue(r, childCounts[r.id])),
   })
 })
 
@@ -92,7 +92,7 @@ query.get('/:id', async (c) => {
     success: true,
     data: {
       ...serializeIssue(issue, children.length),
-      children: children.map((ch) => serializeIssue(ch)),
+      children: children.map(ch => serializeIssue(ch)),
     },
   })
 })

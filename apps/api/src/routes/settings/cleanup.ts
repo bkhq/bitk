@@ -51,7 +51,7 @@ cleanup.post(
         return c.json(
           {
             success: false,
-            error: result.error.issues.map((i) => i.message).join(', '),
+            error: result.error.issues.map(i => i.message).join(', '),
           },
           400,
         )
@@ -96,7 +96,7 @@ async function getLogsStats() {
     .select({ id: issuesTable.id })
     .from(issuesTable)
     .where(eq(issuesTable.isDeleted, 1))
-  const ids = deletedIssueIds.map((i) => i.id)
+  const ids = deletedIssueIds.map(i => i.id)
   if (ids.length === 0) return { logCount: 0, toolCallCount: 0 }
 
   const [logCount] = await db
@@ -114,7 +114,7 @@ async function getLogsStats() {
 }
 
 async function getOldVersionsStats() {
-  const items: Array<{ name: string; size: number }> = []
+  const items: Array<{ name: string, size: number }> = []
 
   // Check data/updates/
   if (existsSync(UPDATES_DIR)) {
@@ -232,7 +232,7 @@ async function cleanupLogs(): Promise<{ cleaned: number }> {
     .from(issuesTable)
     .where(eq(issuesTable.isDeleted, 1))
 
-  const issueIds = deletedIssues.map((i) => i.id)
+  const issueIds = deletedIssues.map(i => i.id)
   if (issueIds.length === 0) return { cleaned: 0 }
 
   const BATCH = 500
@@ -359,7 +359,7 @@ async function cleanupDeletedIssues(): Promise<{ cleaned: number }> {
 
   // Hard-delete in batches (issues + related data)
   const BATCH = 500
-  const issueIds = deletedIssues.map((i) => i.id)
+  const issueIds = deletedIssues.map(i => i.id)
   for (let i = 0; i < issueIds.length; i += BATCH) {
     const batch = issueIds.slice(i, i + BATCH)
     // Delete related data first (FK order)
@@ -371,7 +371,7 @@ async function cleanupDeletedIssues(): Promise<{ cleaned: number }> {
   }
 
   // Hard-delete soft-deleted projects
-  const projectIds = deletedProjects.map((p) => p.id)
+  const projectIds = deletedProjects.map(p => p.id)
   for (let i = 0; i < projectIds.length; i += BATCH) {
     const batch = projectIds.slice(i, i + BATCH)
     await db.delete(projectsTable).where(inArray(projectsTable.id, batch))

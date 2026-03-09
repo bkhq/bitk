@@ -232,7 +232,7 @@ Server (IssueEngine) → SSE /api/events → EventBus singleton (lib/event-bus.t
 ## Conventions
 
 - Use Bun APIs over Node.js equivalents (`Bun.file()`, `Bun.serve()`, `bun:sqlite`, `bun:test`)
-- Linting & formatting: ESLint (`eslint.config.js` at root) + Prettier (`.prettierrc`) — no semicolons, single quotes, 2-space indent
+- Linting & formatting: @antfu/eslint-config (`eslint.config.js` at root) — no semicolons, single quotes, 2-space indent
   - **Important**: ESLint enforces `import * as z from 'zod'` (not `import { z } from 'zod'`) via `no-restricted-imports`
   - Import types must use `import type` (separated style) via `@typescript-eslint/consistent-type-imports`
   - Node.js imports must use `node:` prefix

@@ -36,7 +36,7 @@ export function KanbanBoard({
       let items = groupedItems[status.id] ?? []
       if (query) {
         items = items.filter(
-          (issue) =>
+          issue =>
             issue.title.toLowerCase().includes(query) ||
             issue.issueNumber.toString().includes(query),
         )
@@ -65,7 +65,7 @@ export function KanbanBoard({
       }}
     >
       <div className="flex h-full gap-3 overflow-x-auto p-3 snap-x snap-mandatory md:snap-none">
-        {STATUSES.map((status) => (
+        {STATUSES.map(status => (
           <KanbanColumn
             key={status.id}
             status={status}

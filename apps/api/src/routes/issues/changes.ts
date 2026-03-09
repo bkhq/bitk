@@ -69,7 +69,7 @@ async function resolveChangesDir(
 async function runGit(
   args: string[],
   cwd: string,
-): Promise<{ code: number; stdout: string; stderr: string }> {
+): Promise<{ code: number, stdout: string, stderr: string }> {
   const proc = Bun.spawn(['git', ...args], {
     cwd,
     stdout: 'pipe',
@@ -115,7 +115,7 @@ async function listChangedFiles(cwd: string): Promise<GitChangedFile[]> {
   if (code !== 0) return []
   return stdout
     .split('\n')
-    .map((line) => line.trimEnd())
+    .map(line => line.trimEnd())
     .filter(Boolean)
     .map(parsePorcelainLine)
     .filter((f): f is GitChangedFile => !!f)
@@ -125,7 +125,7 @@ async function listChangedFiles(cwd: string): Promise<GitChangedFile[]> {
 async function summarizeFileLines(
   cwd: string,
   file: GitChangedFile,
-): Promise<{ additions: number; deletions: number }> {
+): Promise<{ additions: number, deletions: number }> {
   if (file.type === 'untracked') {
     if (!isPathInsideRoot(cwd, file.path)) return { additions: 0, deletions: 0 }
     try {
@@ -145,7 +145,7 @@ async function summarizeFileLines(
 
     const firstLine = stdout
       .split('\n')
-      .map((line) => line.trim())
+      .map(line => line.trim())
       .find(Boolean)
     if (!firstLine) return { additions: 0, deletions: 0 }
 
@@ -188,7 +188,7 @@ changes.get('/:id/changes', async (c) => {
   const files = await listChangedFiles(root)
 
   const filesWithStats = await Promise.all(
-    files.map(async (file) => ({
+    files.map(async file => ({
       ...file,
       ...(await summarizeFileLines(root, file)),
     })),
@@ -234,14 +234,15 @@ changes.get('/:id/changes/file', async (c) => {
   }
 
   const gitRepo = await isGitRepo(root)
-  if (!gitRepo)
+  if (!gitRepo) {
     return c.json({
       success: true,
       data: { path, patch: '', truncated: false },
     })
+  }
 
   const changedFiles = await listChangedFiles(root)
-  const file = changedFiles.find((f) => f.path === path)
+  const file = changedFiles.find(f => f.path === path)
   if (!file) {
     return c.json({
       success: true,

@@ -38,7 +38,7 @@ export async function withIssueLock<T>(
   const acquired = await Promise.race([
     tail.then(() => true as const),
     new Promise<'timeout'>((resolve) => {
-      acquireTimer = setTimeout(() => resolve('timeout'), LOCK_ACQUIRE_TIMEOUT_MS)
+      acquireTimer = setTimeout(resolve, LOCK_ACQUIRE_TIMEOUT_MS, 'timeout')
     }),
   ])
   if (acquireTimer !== undefined) clearTimeout(acquireTimer)

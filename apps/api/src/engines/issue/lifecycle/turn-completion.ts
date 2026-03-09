@@ -54,7 +54,7 @@ export function handleTurnCompleted(
       // network issues, etc.) don't clear a valid session.
       const hasAssistantOutput = managed.logs
         .toArray()
-        .some((l) => l.entryType === 'assistant-message')
+        .some(l => l.entryType === 'assistant-message')
       const reason = (managed.logicalFailureReason ?? '').toLowerCase()
       const isSessionError =
         finalStatus === 'failed' &&
@@ -142,7 +142,7 @@ export function handleTurnCompleted(
         const currentStatus = freshIssue?.sessionFields.sessionStatus
         const hasOtherActive = ctx.pm
           .getActive()
-          .some((e) => e.meta.issueId === issueId && e.id !== executionId)
+          .some(e => e.meta.issueId === issueId && e.id !== executionId)
         if (
           hasOtherActive ||
           (currentStatus !== finalStatus &&
@@ -184,7 +184,7 @@ export async function flushQueuedInputs(
   // throws, the messages remain in pendingInputs for the next flush attempt.
   const all = [...managed.pendingInputs]
   const mergedPrompt = all
-    .map((i) => i.prompt)
+    .map(i => i.prompt)
     .filter(Boolean)
     .join('\n\n')
   // Use the latest model override (last wins)
@@ -192,7 +192,7 @@ export async function flushQueuedInputs(
   // Merge display prompts for the UI message bubble
   const mergedDisplay =
     all
-      .map((i) => i.displayPrompt)
+      .map(i => i.displayPrompt)
       .filter(Boolean)
       .join('\n\n') || undefined
 
@@ -216,7 +216,7 @@ export async function flushQueuedInputs(
       managed,
       mergedPrompt,
       mergedDisplay,
-      all[all.length - 1]?.metadata,
+      all.at(-1)?.metadata,
     )
     // Remove only the consumed messages — new inputs queued during the
     // await above are preserved for the next flush cycle.

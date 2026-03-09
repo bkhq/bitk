@@ -23,8 +23,9 @@ async function saveCategorizedCommandsToSettings(
     categorized.commands.length === 0 &&
     categorized.agents.length === 0 &&
     categorized.plugins.length === 0
-  )
+  ) {
     return
+  }
   await setAppSetting(slashCommandsKey(engineType), JSON.stringify(categorized))
   await refreshSlashCommandsCacheForEngine(engineType)
 }
@@ -82,13 +83,13 @@ export async function consumeStream(
         // Extract categorized commands from SDK init message
         if (entry.entryType === 'system-message' && entry.metadata?.subtype === 'init') {
           const meta = entry.metadata
-          managed.slashCommands = Array.isArray(meta.slashCommands)
-            ? (meta.slashCommands as string[])
-            : []
+          managed.slashCommands = Array.isArray(meta.slashCommands) ?
+              (meta.slashCommands as string[]) :
+              []
           managed.agents = Array.isArray(meta.agents) ? (meta.agents as string[]) : []
-          managed.plugins = Array.isArray(meta.plugins)
-            ? (meta.plugins as Array<{ name: string; path: string }>)
-            : []
+          managed.plugins = Array.isArray(meta.plugins) ?
+              (meta.plugins as Array<{ name: string, path: string }>) :
+              []
           void saveCategorizedCommandsToSettings(managed.engineType, {
             commands: managed.slashCommands,
             agents: managed.agents,

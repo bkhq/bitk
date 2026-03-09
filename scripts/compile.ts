@@ -27,10 +27,10 @@ import { Glob } from 'bun'
 
 const { values: args } = parseArgs({
   options: {
-    mode: { type: 'string', default: 'full' },
-    target: { type: 'string' },
-    outfile: { type: 'string' },
-    version: { type: 'string' },
+    'mode': { type: 'string', default: 'full' },
+    'target': { type: 'string' },
+    'outfile': { type: 'string' },
+    'version': { type: 'string' },
     'skip-frontend': { type: 'boolean', default: false },
   },
   strict: false,

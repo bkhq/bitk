@@ -37,5 +37,5 @@ export async function loadFilterRules(): Promise<WriteFilterRule[]> {
 }
 
 export function isToolFiltered(toolName: string, rules: WriteFilterRule[]): boolean {
-  return rules.some((r) => r.enabled && r.type === 'tool-name' && r.match === toolName)
+  return rules.some(r => r.enabled && r.type === 'tool-name' && r.match === toolName)
 }

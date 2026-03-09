@@ -55,7 +55,7 @@ function readTranscriptAfter(transcriptPath: string, afterTimestamp: string): st
     return []
   }
 
-  const lines = raw.split('\n').filter((l) => l.trim())
+  const lines = raw.split('\n').filter(l => l.trim())
   const outputLines: string[] = []
 
   for (const line of lines) {

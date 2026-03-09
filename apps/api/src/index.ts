@@ -162,7 +162,7 @@ async function shutdown(signal: string) {
     {
       signal,
       activeProcessCount: activeProcesses.length,
-      activeIssues: activeProcesses.map((p) => p.issueId),
+      activeIssues: activeProcesses.map(p => p.issueId),
       uptimeSeconds: Math.round(process.uptime()),
     },
     'server_shutdown',

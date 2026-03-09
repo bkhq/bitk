@@ -37,7 +37,7 @@ general.patch(
       return c.json(
         {
           success: false,
-          error: result.error.issues.map((i) => i.message).join(', '),
+          error: result.error.issues.map(i => i.message).join(', '),
         },
         400,
       )
@@ -95,7 +95,7 @@ general.put(
       return c.json(
         {
           success: false,
-          error: result.error.issues.map((i) => i.message).join(', '),
+          error: result.error.issues.map(i => i.message).join(', '),
         },
         400,
       )
@@ -116,7 +116,7 @@ general.patch(
       return c.json(
         {
           success: false,
-          error: result.error.issues.map((i) => i.message).join(', '),
+          error: result.error.issues.map(i => i.message).join(', '),
         },
         400,
       )
@@ -138,16 +138,16 @@ general.patch(
       rules = [...DEFAULT_FILTER_RULES]
     }
 
-    const rule = rules.find((r) => r.id === ruleId)
+    const rule = rules.find(r => r.id === ruleId)
     if (!rule) {
       return c.json({ success: false, error: `Rule not found: ${ruleId}` }, 404)
     }
 
-    const updatedRules = rules.map((r) => (r.id === ruleId ? { ...r, enabled } : r))
+    const updatedRules = rules.map(r => (r.id === ruleId ? { ...r, enabled } : r))
     await setAppSetting(WRITE_FILTER_RULES_KEY, JSON.stringify(updatedRules))
     return c.json({
       success: true,
-      data: updatedRules.find((r) => r.id === ruleId),
+      data: updatedRules.find(r => r.id === ruleId),
     })
   },
 )
@@ -168,7 +168,7 @@ general.patch(
       return c.json(
         {
           success: false,
-          error: result.error.issues.map((i) => i.message).join(', '),
+          error: result.error.issues.map(i => i.message).join(', '),
         },
         400,
       )
@@ -200,7 +200,7 @@ general.patch(
       return c.json(
         {
           success: false,
-          error: result.error.issues.map((i) => i.message).join(', '),
+          error: result.error.issues.map(i => i.message).join(', '),
         },
         400,
       )
@@ -235,7 +235,7 @@ general.patch(
         return c.json(
           {
             success: false,
-            error: result.error.issues.map((i) => i.message).join(', '),
+            error: result.error.issues.map(i => i.message).join(', '),
           },
           400,
         )

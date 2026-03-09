@@ -28,9 +28,9 @@ export function generateToolContent(toolName: string, input: Record<string, unkn
     case 'Grep':
       return input.path ? `${input.pattern} in ${input.path}` : String(input.pattern ?? toolName)
     case 'Glob':
-      return input.path
-        ? `${input.pattern ?? input.filePattern} in ${input.path}`
-        : String(input.pattern ?? input.filePattern ?? toolName)
+      return input.path ?
+        `${input.pattern ?? input.filePattern} in ${input.path}` :
+          String(input.pattern ?? input.filePattern ?? toolName)
     case 'LS':
       return String(input.path ?? toolName)
     case 'WebFetch':

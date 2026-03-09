@@ -27,7 +27,7 @@ import { ChatInput } from './ChatInput'
 import { IssueDetail } from './IssueDetail'
 
 const LazySessionMessages = lazy(() =>
-  import('./SessionMessages').then((m) => ({ default: m.SessionMessages })),
+  import('./SessionMessages').then(m => ({ default: m.SessionMessages })),
 )
 
 const TERMINAL_STATUSES: ReadonlySet<string> = new Set(['completed', 'failed', 'cancelled'])
@@ -43,9 +43,9 @@ function deriveWorkingStep(logs: NormalizedLogEntry[]): string | null {
     const input = md.input as { todos?: Array<Record<string, unknown>> } | undefined
     const todos = Array.isArray(input?.todos) ? input.todos : []
     if (todos.length === 0) continue
-    const inProgress = todos.find((todo) => todo.status === 'in_progress')
-    const pending = todos.find((todo) => todo.status === 'pending')
-    const completed = [...todos].reverse().find((todo) => todo.status === 'completed')
+    const inProgress = todos.find(todo => todo.status === 'in_progress')
+    const pending = todos.find(todo => todo.status === 'pending')
+    const completed = todos.toReversed().find(todo => todo.status === 'completed')
     const current = inProgress ?? pending ?? completed ?? todos[0]
     const activeForm = typeof current.activeForm === 'string' ? current.activeForm : null
     const content = typeof current.content === 'string' ? current.content : null
@@ -286,26 +286,30 @@ export function ChatBody({
 
         {/* Scroll-to-top / scroll-to-bottom floating buttons */}
         <div className="absolute right-3 bottom-3 flex flex-col gap-1.5">
-          {showScrollTop ? (
-            <button
-              type="button"
-              onClick={scrollToTop}
-              className="rounded-full border border-border/50 bg-background/90 p-1.5 text-muted-foreground shadow-sm backdrop-blur-sm transition-colors hover:bg-accent hover:text-foreground"
-              title={t('session.scrollToTop')}
-            >
-              <ArrowUpToLine className="h-3.5 w-3.5" />
-            </button>
-          ) : null}
-          {showScrollBottom ? (
-            <button
-              type="button"
-              onClick={scrollToBottom}
-              className="rounded-full border border-border/50 bg-background/90 p-1.5 text-muted-foreground shadow-sm backdrop-blur-sm transition-colors hover:bg-accent hover:text-foreground"
-              title={t('session.scrollToBottom')}
-            >
-              <ArrowDownToLine className="h-3.5 w-3.5" />
-            </button>
-          ) : null}
+          {showScrollTop ?
+              (
+                <button
+                  type="button"
+                  onClick={scrollToTop}
+                  className="rounded-full border border-border/50 bg-background/90 p-1.5 text-muted-foreground shadow-sm backdrop-blur-sm transition-colors hover:bg-accent hover:text-foreground"
+                  title={t('session.scrollToTop')}
+                >
+                  <ArrowUpToLine className="h-3.5 w-3.5" />
+                </button>
+              ) :
+            null}
+          {showScrollBottom ?
+              (
+                <button
+                  type="button"
+                  onClick={scrollToBottom}
+                  className="rounded-full border border-border/50 bg-background/90 p-1.5 text-muted-foreground shadow-sm backdrop-blur-sm transition-colors hover:bg-accent hover:text-foreground"
+                  title={t('session.scrollToBottom')}
+                >
+                  <ArrowDownToLine className="h-3.5 w-3.5" />
+                </button>
+              ) :
+            null}
         </div>
       </div>
 
@@ -314,7 +318,7 @@ export function ChatBody({
         issue={issue}
         projectId={projectId}
         status={STATUS_MAP.get(issue.statusId)}
-        onUpdate={(fields) => updateIssue.mutate({ id: issueId, ...fields })}
+        onUpdate={fields => updateIssue.mutate({ id: issueId, ...fields })}
         onDelete={handleDelete}
         isDeleting={deleteIssueMutation.isPending}
       />
@@ -347,11 +351,13 @@ export function ChatBody({
           <AlertDialogHeader>
             <AlertDialogTitle>{t('issue.delete')}</AlertDialogTitle>
             <AlertDialogDescription>{t('issue.deleteConfirm')}</AlertDialogDescription>
-            {issue.childCount && issue.childCount > 0 ? (
-              <AlertDialogDescription className="text-destructive">
-                {t('issue.deleteWithChildren')}
-              </AlertDialogDescription>
-            ) : null}
+            {issue.childCount && issue.childCount > 0 ?
+                (
+                  <AlertDialogDescription className="text-destructive">
+                    {t('issue.deleteWithChildren')}
+                  </AlertDialogDescription>
+                ) :
+              null}
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleteIssueMutation.isPending}>

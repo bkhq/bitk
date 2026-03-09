@@ -5,7 +5,8 @@ import { emitIssueSettled } from '@/engines/issue/events'
 import { cleanupDomainData } from '@/engines/issue/process/state'
 import { logger } from '@/logger'
 
-/** Common settle flow: persist status, auto-move, clean domain data, emit event.
+/**
+ * Common settle flow: persist status, auto-move, clean domain data, emit event.
  *
  * NOTE: Worktree cleanup is NOT done here. Worktrees are preserved across
  * completed/failed settlements so follow-ups can reuse them. Cleanup is

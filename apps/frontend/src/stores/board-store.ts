@@ -15,7 +15,7 @@ interface BoardState {
 
   syncFromServer: (issues: Issue[]) => void
   applyDragOver: (event: DragOverEvent) => void
-  applyDragEnd: (event: DragEndEvent) => Array<{ id: string; statusId: string; sortOrder: number }>
+  applyDragEnd: (event: DragEndEvent) => Array<{ id: string, statusId: string, sortOrder: number }>
   resetDragging: () => void
 }
 
@@ -28,7 +28,7 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     const groups: Record<string, Issue[]> = {}
     for (const status of STATUSES) {
       groups[status.id] = issues
-        .filter((i) => i.statusId === status.id)
+        .filter(i => i.statusId === status.id)
         .sort((a, b) => {
           // Primary: statusUpdatedAt DESC (most recently changed first)
           const timeDiff =

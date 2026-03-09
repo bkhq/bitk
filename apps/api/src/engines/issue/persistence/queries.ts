@@ -113,7 +113,7 @@ export function getLogsFromDb(
   // Batch-fetch tool details for any rows that might be tool-use entries
   const toolByLogId = new Map<string, (typeof toolsTable)['$inferSelect']>()
   if (rows.length > 0) {
-    const logIds = rows.map((r) => r.id)
+    const logIds = rows.map(r => r.id)
     const toolRows = db.select().from(toolsTable).where(inArray(toolsTable.logId, logIds)).all()
     for (const r of toolRows) toolByLogId.set(r.logId, r)
   }
@@ -154,7 +154,7 @@ export function getLogsFromDb(
 
       return base
     })
-    .filter((entry) => isVisibleForMode(entry, devMode))
+    .filter(entry => isVisibleForMode(entry, devMode))
 
   return { entries, hasMore }
 }

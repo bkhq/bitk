@@ -34,7 +34,7 @@ interface NotesStore {
 export { MIN_WIDTH as NOTES_MIN_WIDTH }
 export const NOTES_MAX_WIDTH_RATIO = MAX_WIDTH_RATIO
 
-export const useNotesStore = create<NotesStore>((set) => ({
+export const useNotesStore = create<NotesStore>(set => ({
   isOpen: false,
   isMinimized: false,
   isFullscreen: false,
@@ -51,9 +51,9 @@ export const useNotesStore = create<NotesStore>((set) => ({
     }),
   minimize: () => set({ isOpen: false, isMinimized: true, isFullscreen: false }),
   restore: () => set({ isOpen: true, isMinimized: false }),
-  toggleFullscreen: () => set((s) => ({ isFullscreen: !s.isFullscreen })),
-  setWidth: (w) => set({ width: clampWidth(w) }),
-  selectNote: (id) => set({ selectedNoteId: id }),
+  toggleFullscreen: () => set(s => ({ isFullscreen: !s.isFullscreen })),
+  setWidth: w => set({ width: clampWidth(w) }),
+  selectNote: id => set({ selectedNoteId: id }),
 }))
 
 // Re-clamp width on window resize

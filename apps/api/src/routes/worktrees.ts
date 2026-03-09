@@ -6,7 +6,7 @@ import { removeWorktree, WORKTREE_BASE } from '@/engines/issue/utils/worktree'
 import { logger } from '@/logger'
 
 /** Only accept IDs that match the nanoid/ULID patterns used in the project */
-const VALID_ID = /^[a-zA-Z0-9_-]{4,32}$/
+const VALID_ID = /^[\w-]{4,32}$/
 
 interface WorktreeEntry {
   issueId: string

@@ -141,43 +141,53 @@ export function FileViewer({ file, onBack }: FileViewerProps) {
           <span className="font-medium text-sm">{fileName}</span>
         </div>
         <div className="flex items-center gap-3 text-xs text-muted-foreground">
-          {isMd ? (
-            <button
-              type="button"
-              onClick={() => setShowRendered((v) => !v)}
-              className="flex items-center gap-1 rounded px-1.5 py-0.5 hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
-              title={showRendered ? t('fileBrowser.viewSource') : t('fileBrowser.viewRendered')}
-            >
-              {showRendered ? <Code className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-              <span>
-                {showRendered ? t('fileBrowser.viewSource') : t('fileBrowser.viewRendered')}
-              </span>
-            </button>
-          ) : null}
+          {isMd ?
+              (
+                <button
+                  type="button"
+                  onClick={() => setShowRendered(v => !v)}
+                  className="flex items-center gap-1 rounded px-1.5 py-0.5 hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
+                  title={showRendered ? t('fileBrowser.viewSource') : t('fileBrowser.viewRendered')}
+                >
+                  {showRendered ? <Code className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                  <span>
+                    {showRendered ? t('fileBrowser.viewSource') : t('fileBrowser.viewRendered')}
+                  </span>
+                </button>
+              ) :
+            null}
           <span>
-            {lineCount} {t('fileBrowser.lines')}
+            {lineCount}
+            {' '}
+            {t('fileBrowser.lines')}
           </span>
           <span>{formatSize(file.size)}</span>
-          {file.isTruncated ? (
-            <span className="text-yellow-600 dark:text-yellow-400">
-              {t('fileBrowser.truncated')}
-            </span>
-          ) : null}
+          {file.isTruncated ?
+              (
+                <span className="text-yellow-600 dark:text-yellow-400">
+                  {t('fileBrowser.truncated')}
+                </span>
+              ) :
+            null}
         </div>
       </div>
       <div className="flex-1 overflow-auto min-h-0">
-        {loading ? (
-          <div className="flex items-center justify-center py-16">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-          </div>
-        ) : isMd && showRendered ? (
-          <MarkdownRenderer content={file.content} />
-        ) : (
-          <div
-            className="shiki-line-numbers text-xs [&_pre]:!bg-transparent [&_pre]:px-2 [&_pre]:py-1.5 [&_pre]:overflow-x-auto [&_code]:leading-snug"
-            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(html) }}
-          />
-        )}
+        {loading ?
+            (
+              <div className="flex items-center justify-center py-16">
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+              </div>
+            ) :
+          isMd && showRendered ?
+              (
+                <MarkdownRenderer content={file.content} />
+              ) :
+              (
+                <div
+                  className="shiki-line-numbers text-xs [&_pre]:!bg-transparent [&_pre]:px-2 [&_pre]:py-1.5 [&_pre]:overflow-x-auto [&_code]:leading-snug"
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(html) }}
+                />
+              )}
       </div>
     </div>
   )

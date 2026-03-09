@@ -18,7 +18,7 @@ function evictExpired(): void {
 
 function evictLRU(): void {
   if (store.size <= MAX_CACHE_ENTRIES) return
-  const entries = [...accessOrder.entries()].sort((a, b) => a[1] - b[1])
+  const entries = accessOrder.entries().toSorted((a, b) => a[1] - b[1])
   const toRemove = entries.slice(0, store.size - MAX_CACHE_ENTRIES)
   for (const [key] of toRemove) {
     store.delete(key)

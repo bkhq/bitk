@@ -25,7 +25,7 @@ import {
 function buildFileContext(savedFiles: SavedFile[]): string {
   if (savedFiles.length === 0) return ''
   const parts = savedFiles.map(
-    (f) =>
+    f =>
       `[Attached file: ${f.originalName.replace(/[\r\n]/g, ' ').slice(0, 255)} at ${f.absolutePath.replace(/[\r\n]/g, '')}]`,
   )
   return `\n\n--- Attached files ---\n${parts.join('\n')}`
@@ -42,16 +42,16 @@ async function parseFollowUpBody(c: {
   }
 }): Promise<
   | {
-      ok: true
-      prompt: string
-      model?: string
-      permissionMode?: string
-      busyAction?: string
-      meta?: boolean
-      displayPrompt?: string
-      files: File[]
-    }
-  | { ok: false; error: string }
+    ok: true
+    prompt: string
+    model?: string
+    permissionMode?: string
+    busyAction?: string
+    meta?: boolean
+    displayPrompt?: string
+    files: File[]
+  } |
+  { ok: false, error: string }
 > {
   const contentType = c.req.header('content-type') ?? ''
   if (contentType.includes('multipart/form-data')) {
@@ -108,7 +108,7 @@ async function parseFollowUpBody(c: {
   if (!parsed.success) {
     return {
       ok: false,
-      error: parsed.error.issues.map((i) => i.message).join(', '),
+      error: parsed.error.issues.map(i => i.message).join(', '),
     }
   }
   return { ok: true, ...parsed.data, files: [] }
@@ -125,7 +125,7 @@ async function insertAttachmentRecords(
 ): Promise<void> {
   if (savedFiles.length === 0) return
   await db.insert(attachments).values(
-    savedFiles.map((f) => ({
+    savedFiles.map(f => ({
       id: f.id,
       issueId,
       logId,
@@ -276,9 +276,9 @@ message.post('/:id/follow-up', async (c) => {
     const knownCommands = [
       ...categorized.commands,
       ...categorized.agents,
-      ...categorized.plugins.map((p) => p.name),
-    ].map((cmd) => (cmd.startsWith('/') ? cmd : `/${cmd}`))
-    const isCommand = firstWord.startsWith('/') && knownCommands.some((cmd) => cmd === firstWord)
+      ...categorized.plugins.map(p => p.name),
+    ].map(cmd => (cmd.startsWith('/') ? cmd : `/${cmd}`))
+    const isCommand = firstWord.startsWith('/') && knownCommands.includes(firstWord)
     const followUpMeta: Record<string, unknown> = {
       ...attachmentsMeta,
       ...(parsed.meta ? { type: 'system' } : isCommand ? { type: 'command' } : {}),

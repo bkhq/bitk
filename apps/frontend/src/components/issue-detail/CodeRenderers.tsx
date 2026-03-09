@@ -5,7 +5,7 @@ import { useTheme } from '@/hooks/use-theme'
 import { codeToHtml } from '@/lib/shiki'
 
 const LazyMultiFileDiff = lazy(() =>
-  import('@pierre/diffs/react').then((m) => ({ default: m.MultiFileDiff })),
+  import('@pierre/diffs/react').then(m => ({ default: m.MultiFileDiff })),
 )
 
 // ── Shared helpers ───────────────────────────────────────

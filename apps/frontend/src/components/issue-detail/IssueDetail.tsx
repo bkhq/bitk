@@ -39,7 +39,7 @@ export function IssueDetail({
 
   const { data: worktrees } = useProjectWorktrees(issue.useWorktree && projectId ? projectId : '')
   const worktreeEntry = useMemo(
-    () => worktrees?.find((w) => w.issueId === issue.id),
+    () => worktrees?.find(w => w.issueId === issue.id),
     [worktrees, issue.id],
   )
   const worktreePath = worktreeEntry?.path ?? ''
@@ -48,71 +48,75 @@ export function IssueDetail({
   return (
     <div className="shrink-0 relative z-20 flex items-center gap-1.5 px-4 py-1.5 border-t border-border/40 bg-muted/20">
       {/* Status — editable */}
-      <StatusSelect status={status} onChange={(id) => onUpdate?.({ statusId: id })} />
+      <StatusSelect status={status} onChange={id => onUpdate?.({ statusId: id })} />
 
       {/* Tags — editable (comma-separated) */}
-      {editingTag ? (
-        <input
-          ref={tagInputRef}
-          type="text"
-          value={tagInput}
-          onChange={(e) => setTagInput(e.target.value)}
-          onBlur={() => {
-            const newTags = tagInput
-              .split(',')
-              .map((s) => s.trim())
-              .filter(Boolean)
-            const prev = issue.tags ?? []
-            if (JSON.stringify(newTags) !== JSON.stringify(prev)) {
-              onUpdate?.({ tags: newTags.length > 0 ? newTags : null })
-            }
-            setEditingTag(false)
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') e.currentTarget.blur()
-            if (e.key === 'Escape') {
-              setTagInput((issue.tags ?? []).join(', '))
-              setEditingTag(false)
-            }
-          }}
-          placeholder={t('issue.tagPlaceholder')}
-          className={`${badgeBase} border-primary/40 bg-background outline-none w-40`}
-        />
-      ) : (
-        <button
-          type="button"
-          onClick={() => {
-            setTagInput((issue.tags ?? []).join(', '))
-            setEditingTag(true)
-            requestAnimationFrame(() => tagInputRef.current?.focus())
-          }}
-          className={`${badgeBase} cursor-pointer transition-colors ${
-            issue.tags && issue.tags.length > 0
-              ? 'border-border/50 bg-muted/30 text-muted-foreground hover:border-border'
-              : 'border-dashed border-border/40 text-muted-foreground/40 hover:text-muted-foreground/60 hover:border-border/60'
-          }`}
-          title={t('issue.tag')}
-        >
-          <Tag className="h-3 w-3" />
-          {issue.tags && issue.tags.length > 0 ? issue.tags.join(', ') : t('issue.tag')}
-        </button>
-      )}
+      {editingTag ?
+          (
+            <input
+              ref={tagInputRef}
+              type="text"
+              value={tagInput}
+              onChange={e => setTagInput(e.target.value)}
+              onBlur={() => {
+                const newTags = tagInput
+                  .split(',')
+                  .map(s => s.trim())
+                  .filter(Boolean)
+                const prev = issue.tags ?? []
+                if (JSON.stringify(newTags) !== JSON.stringify(prev)) {
+                  onUpdate?.({ tags: newTags.length > 0 ? newTags : null })
+                }
+                setEditingTag(false)
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') e.currentTarget.blur()
+                if (e.key === 'Escape') {
+                  setTagInput((issue.tags ?? []).join(', '))
+                  setEditingTag(false)
+                }
+              }}
+              placeholder={t('issue.tagPlaceholder')}
+              className={`${badgeBase} border-primary/40 bg-background outline-none w-40`}
+            />
+          ) :
+          (
+            <button
+              type="button"
+              onClick={() => {
+                setTagInput((issue.tags ?? []).join(', '))
+                setEditingTag(true)
+                requestAnimationFrame(() => tagInputRef.current?.focus())
+              }}
+              className={`${badgeBase} cursor-pointer transition-colors ${
+                issue.tags && issue.tags.length > 0 ?
+                  'border-border/50 bg-muted/30 text-muted-foreground hover:border-border' :
+                  'border-dashed border-border/40 text-muted-foreground/40 hover:text-muted-foreground/60 hover:border-border/60'
+              }`}
+              title={t('issue.tag')}
+            >
+              <Tag className="h-3 w-3" />
+              {issue.tags && issue.tags.length > 0 ? issue.tags.join(', ') : t('issue.tag')}
+            </button>
+          )}
 
       {/* Delete */}
-      {onDelete ? (
-        <Button
-          type="button"
-          onClick={onDelete}
-          size="sm"
-          variant="outline"
-          disabled={isDeleting}
-          className={`${badgeButtonBase} cursor-pointer border-border/50 bg-muted/20 text-muted-foreground/60 hover:text-destructive hover:border-destructive/30 hover:bg-destructive/10`}
-          title={t('issue.delete')}
-        >
-          <Trash2 className="h-3 w-3" />
-          <span>{isDeleting ? t('issue.deleting') : t('issue.delete')}</span>
-        </Button>
-      ) : null}
+      {onDelete ?
+          (
+            <Button
+              type="button"
+              onClick={onDelete}
+              size="sm"
+              variant="outline"
+              disabled={isDeleting}
+              className={`${badgeButtonBase} cursor-pointer border-border/50 bg-muted/20 text-muted-foreground/60 hover:text-destructive hover:border-destructive/30 hover:bg-destructive/10`}
+              title={t('issue.delete')}
+            >
+              <Trash2 className="h-3 w-3" />
+              <span>{isDeleting ? t('issue.deleting') : t('issue.delete')}</span>
+            </Button>
+          ) :
+        null}
 
       {/* Dev mode toggle + Worktree (right side) */}
       <div className="ml-auto flex items-center gap-1.5">
@@ -122,45 +126,55 @@ export function IssueDetail({
           size="sm"
           variant="outline"
           className={`${badgeButtonBase} cursor-pointer ${
-            issue.devMode
-              ? 'border-amber-400/40 bg-amber-500/10 text-amber-600 dark:text-amber-400'
-              : 'border-border/50 bg-muted/20 text-muted-foreground/60 hover:text-muted-foreground'
+            issue.devMode ?
+              'border-amber-400/40 bg-amber-500/10 text-amber-600 dark:text-amber-400' :
+              'border-border/50 bg-muted/20 text-muted-foreground/60 hover:text-muted-foreground'
           }`}
           title={t('issue.devMode')}
         >
           <Bug className="h-3 w-3" />
           <span>{t('issue.dev')}</span>
         </Button>
-        {issue.useWorktree ? (
-          <div ref={worktreeRef} className="relative flex">
-            <button
-              type="button"
-              onClick={() => setShowWorktree((v) => !v)}
-              className={`${badgeBase} cursor-pointer transition-colors border-emerald-400/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:opacity-80`}
-            >
-              <GitBranch className="h-3 w-3" />
-              {t('chat.worktree')}
-            </button>
-            {showWorktree ? (
-              <div className="absolute right-0 bottom-full mb-1.5 z-50 min-w-[240px] rounded-xl border border-border/60 bg-popover/95 backdrop-blur-sm py-2 px-3 shadow-xl text-xs text-popover-foreground space-y-1.5">
-                <div className="flex items-center gap-1.5 text-muted-foreground">
-                  <GitBranch className="h-3 w-3 shrink-0" />
-                  <span className="font-medium text-foreground">{t('chat.worktree')}</span>
-                </div>
-                <div className="space-y-1 text-muted-foreground">
-                  <div className="flex items-start gap-2">
-                    <span className="shrink-0">{t('chat.worktreeBranch')}:</span>
-                    <code className="font-mono text-foreground/80 break-all">{worktreeBranch}</code>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <span className="shrink-0">{t('chat.worktreePath')}:</span>
-                    <code className="font-mono text-foreground/80 break-all">{worktreePath}</code>
-                  </div>
-                </div>
+        {issue.useWorktree ?
+            (
+              <div ref={worktreeRef} className="relative flex">
+                <button
+                  type="button"
+                  onClick={() => setShowWorktree(v => !v)}
+                  className={`${badgeBase} cursor-pointer transition-colors border-emerald-400/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:opacity-80`}
+                >
+                  <GitBranch className="h-3 w-3" />
+                  {t('chat.worktree')}
+                </button>
+                {showWorktree ?
+                    (
+                      <div className="absolute right-0 bottom-full mb-1.5 z-50 min-w-[240px] rounded-xl border border-border/60 bg-popover/95 backdrop-blur-sm py-2 px-3 shadow-xl text-xs text-popover-foreground space-y-1.5">
+                        <div className="flex items-center gap-1.5 text-muted-foreground">
+                          <GitBranch className="h-3 w-3 shrink-0" />
+                          <span className="font-medium text-foreground">{t('chat.worktree')}</span>
+                        </div>
+                        <div className="space-y-1 text-muted-foreground">
+                          <div className="flex items-start gap-2">
+                            <span className="shrink-0">
+                              {t('chat.worktreeBranch')}
+                              :
+                            </span>
+                            <code className="font-mono text-foreground/80 break-all">{worktreeBranch}</code>
+                          </div>
+                          <div className="flex items-start gap-2">
+                            <span className="shrink-0">
+                              {t('chat.worktreePath')}
+                              :
+                            </span>
+                            <code className="font-mono text-foreground/80 break-all">{worktreePath}</code>
+                          </div>
+                        </div>
+                      </div>
+                    ) :
+                  null}
               </div>
-            ) : null}
-          </div>
-        ) : null}
+            ) :
+          null}
       </div>
     </div>
   )
@@ -184,7 +198,7 @@ export function StatusSelect({
     <div ref={ref} className="relative flex">
       <Button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => setOpen(v => !v)}
         size="sm"
         variant="outline"
         className={`${badgeButtonBase} cursor-pointer transition-colors hover:opacity-80`}
@@ -200,32 +214,34 @@ export function StatusSelect({
         {tStatus(t, status.name)}
         <ChevronDown className="h-3 w-3 opacity-50" />
       </Button>
-      {open ? (
-        <div className="absolute left-0 bottom-full mb-1.5 z-50 min-w-[120px] rounded-xl border border-border/60 bg-popover/95 backdrop-blur-sm py-1 shadow-xl text-xs text-popover-foreground">
-          {STATUSES.map((s) => {
-            const isActive = s.id === status.id
-            return (
-              <button
-                key={s.id}
-                type="button"
-                onClick={() => {
-                  if (s.id !== status.id) onChange(s.id)
-                  setOpen(false)
-                }}
-                className={`flex items-center gap-2 w-full px-3 py-1.5 text-left transition-colors ${
-                  isActive ? 'bg-primary/10 font-medium' : 'hover:bg-accent/50'
-                }`}
-              >
-                <span
-                  className="h-2 w-2 rounded-full shrink-0"
-                  style={{ backgroundColor: s.color }}
-                />
-                {tStatus(t, s.name)}
-              </button>
-            )
-          })}
-        </div>
-      ) : null}
+      {open ?
+          (
+            <div className="absolute left-0 bottom-full mb-1.5 z-50 min-w-[120px] rounded-xl border border-border/60 bg-popover/95 backdrop-blur-sm py-1 shadow-xl text-xs text-popover-foreground">
+              {STATUSES.map((s) => {
+                const isActive = s.id === status.id
+                return (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => {
+                      if (s.id !== status.id) onChange(s.id)
+                      setOpen(false)
+                    }}
+                    className={`flex items-center gap-2 w-full px-3 py-1.5 text-left transition-colors ${
+                      isActive ? 'bg-primary/10 font-medium' : 'hover:bg-accent/50'
+                    }`}
+                  >
+                    <span
+                      className="h-2 w-2 rounded-full shrink-0"
+                      style={{ backgroundColor: s.color }}
+                    />
+                    {tStatus(t, s.name)}
+                  </button>
+                )
+              })}
+            </div>
+          ) :
+        null}
     </div>
   )
 }

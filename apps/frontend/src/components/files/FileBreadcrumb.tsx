@@ -32,17 +32,19 @@ export function FileBreadcrumb({ projectName, path, onNavigate }: FileBreadcrumb
         return (
           <span key={segmentPath} className="flex items-center gap-1 shrink-0">
             <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/50" />
-            {isLast ? (
-              <span className="px-1.5 py-0.5 font-semibold text-foreground">{segment}</span>
-            ) : (
-              <button
-                type="button"
-                onClick={() => onNavigate(segmentPath)}
-                className="px-1.5 py-0.5 rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-              >
-                {segment}
-              </button>
-            )}
+            {isLast ?
+                (
+                  <span className="px-1.5 py-0.5 font-semibold text-foreground">{segment}</span>
+                ) :
+                (
+                  <button
+                    type="button"
+                    onClick={() => onNavigate(segmentPath)}
+                    className="px-1.5 py-0.5 rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                  >
+                    {segment}
+                  </button>
+                )}
           </span>
         )
       })}

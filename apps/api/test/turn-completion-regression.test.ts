@@ -117,6 +117,6 @@ describe('turn completion pending-flush regression', () => {
 
     const pending = await getPendingMessages(issue.id)
     expect(pending.length).toBeGreaterThanOrEqual(1)
-    expect(pending.some((p) => p.content === pendingPrompt)).toBe(true)
+    expect(pending.some(p => p.content === pendingPrompt)).toBe(true)
   })
 })

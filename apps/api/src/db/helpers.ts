@@ -62,7 +62,7 @@ export async function cleanupStaleSessions(): Promise<number> {
 
   if (staleIssues.length === 0) return 0
 
-  const issueIds = staleIssues.map((s) => s.id)
+  const issueIds = staleIssues.map(s => s.id)
 
   // Mark stale issue sessions as failed
   await db

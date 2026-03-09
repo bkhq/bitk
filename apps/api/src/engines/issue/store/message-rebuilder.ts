@@ -104,12 +104,12 @@ function extractTodos(entry: NormalizedLogEntry): TaskPlanChatMessage['todos'] |
   // TodoWrite arguments contain the todos array
   const args = (meta.arguments ?? meta.input) as
     | {
-        todos?: Array<{ content: string; status: string; activeForm?: string }>
-      }
-    | undefined
+      todos?: Array<{ content: string, status: string, activeForm?: string }>
+    } |
+    undefined
   if (!args?.todos || !Array.isArray(args.todos)) return null
 
-  return args.todos.map((t) => ({
+  return args.todos.map(t => ({
     content: t.content ?? '',
     status: t.status ?? 'pending',
     activeForm: typeof t.activeForm === 'string' ? t.activeForm : undefined,
@@ -165,12 +165,12 @@ export function rebuildMessages(
     if (toolBuffer.length === 0) return
 
     // Check if the entire group is just TodoWrite calls
-    const todoItems = toolBuffer.filter((item) => isTodoWriteEntry(item.action))
-    const nonTodoItems = toolBuffer.filter((item) => !isTodoWriteEntry(item.action))
+    const todoItems = toolBuffer.filter(item => isTodoWriteEntry(item.action))
+    const nonTodoItems = toolBuffer.filter(item => !isTodoWriteEntry(item.action))
 
     // Extract task plan from last TodoWrite in the group
     if (todoItems.length > 0) {
-      const lastTodo = todoItems[todoItems.length - 1]
+      const lastTodo = todoItems.at(-1)
       const todos = extractTodos(lastTodo.action)
       if (todos) {
         messages.push({
@@ -178,7 +178,7 @@ export function rebuildMessages(
           id: entryId(lastTodo.action, nextId('tp')),
           entry: lastTodo.action,
           todos,
-          completedCount: todos.filter((t) => t.status === 'completed').length,
+          completedCount: todos.filter(t => t.status === 'completed').length,
         } satisfies TaskPlanChatMessage)
       }
     }

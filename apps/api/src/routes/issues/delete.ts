@@ -66,7 +66,7 @@ del.delete('/:id', async (c) => {
           eq(issuesTable.isDeleted, 0),
         ),
       )
-    const childIds = childIssues.map((c) => c.id)
+    const childIds = childIssues.map(c => c.id)
 
     // Soft-delete the issue only — keep logs/tools/attachments intact for restore
     await tx.update(issuesTable).set({ isDeleted: 1 }).where(eq(issuesTable.id, issueId))

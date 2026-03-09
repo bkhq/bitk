@@ -31,9 +31,9 @@ export { dbPath, sqlite }
 
 // In package mode, migrations live inside APP_DIR/migrations/.
 // In dev mode, they live in apps/api/drizzle/.
-const migrationsFolder = APP_DIR
-  ? resolve(APP_DIR, 'migrations')
-  : resolve(ROOT_DIR, 'apps/api/drizzle')
+const migrationsFolder = APP_DIR ?
+    resolve(APP_DIR, 'migrations') :
+    resolve(ROOT_DIR, 'apps/api/drizzle')
 const journalPath = resolve(migrationsFolder, 'meta/_journal.json')
 
 function runMigrations(folder: string) {
@@ -43,9 +43,9 @@ function runMigrations(folder: string) {
     sqlite.run('PRAGMA foreign_keys = ON')
   } catch (err: unknown) {
     sqlite.run('PRAGMA foreign_keys = ON')
-    const errObj = err as { message?: string; cause?: { message?: string } }
+    const errObj = err as { message?: string, cause?: { message?: string } }
     const msg = String(errObj?.message ?? '') + String(errObj?.cause?.message ?? '')
-    const alreadyExists = /^(table|index) "?.+"? already exists$/im.test(msg)
+    const alreadyExists = /^(table|index) .+ already exists$/im.test(msg)
     if (!alreadyExists) {
       throw err
     }

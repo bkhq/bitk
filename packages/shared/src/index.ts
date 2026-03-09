@@ -1,7 +1,7 @@
 // @bkd/shared — Types shared between @bkd/api and @bkd/frontend
 // Re-exported from packages/shared for cross-workspace consumption.
 
-export type Project = {
+export interface Project {
   id: string
   alias: string
   name: string
@@ -16,9 +16,9 @@ export type Project = {
 
 export type EngineType = 'claude-code' | 'codex' | 'gemini' | 'echo'
 
-export type PluginInfo = { name: string; path: string }
+export interface PluginInfo { name: string, path: string }
 
-export type CategorizedCommands = {
+export interface CategorizedCommands {
   commands: string[]
   agents: string[]
   plugins: PluginInfo[]
@@ -27,7 +27,7 @@ export type PermissionMode = 'auto' | 'supervised' | 'plan'
 export type BusyAction = 'queue' | 'cancel'
 export type SessionStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled'
 
-export type Issue = {
+export interface Issue {
   id: string
   projectId: string
   statusId: string
@@ -53,17 +53,17 @@ export type Issue = {
   updatedAt: string
 }
 
-export type ApiResponse<T> = { success: true; data: T } | { success: false; error: string }
+export type ApiResponse<T> = { success: true, data: T } | { success: false, error: string }
 
 export type LogEntryType =
-  | 'user-message'
-  | 'assistant-message'
-  | 'tool-use'
-  | 'system-message'
-  | 'error-message'
-  | 'thinking'
-  | 'loading'
-  | 'token-usage'
+  | 'user-message' |
+  'assistant-message' |
+  'tool-use' |
+  'system-message' |
+  'error-message' |
+  'thinking' |
+  'loading' |
+  'token-usage'
 export type CommandCategory = 'read' | 'search' | 'edit' | 'fetch' | 'other'
 
 export interface FileChange {
@@ -72,18 +72,18 @@ export interface FileChange {
 }
 
 export type ToolAction =
-  | { kind: 'file-read'; path: string }
-  | { kind: 'file-edit'; path: string; changes?: FileChange[] }
-  | {
-      kind: 'command-run'
-      command: string
-      result?: string
-      category?: CommandCategory
-    }
-  | { kind: 'search'; query: string }
-  | { kind: 'web-fetch'; url: string }
-  | { kind: 'tool'; toolName: string; arguments?: unknown; result?: unknown }
-  | { kind: 'other'; description: string }
+  | { kind: 'file-read', path: string } |
+  { kind: 'file-edit', path: string, changes?: FileChange[] } |
+  {
+    kind: 'command-run'
+    command: string
+    result?: string
+    category?: CommandCategory
+  } |
+  { kind: 'search', query: string } |
+  { kind: 'web-fetch', url: string } |
+  { kind: 'tool', toolName: string, arguments?: unknown, result?: unknown } |
+  { kind: 'other', description: string }
 
 export interface ToolDetail {
   kind: string
@@ -156,7 +156,7 @@ export interface TaskPlanChatMessage {
   type: 'task-plan'
   id: string
   entry: NormalizedLogEntry
-  todos: Array<{ content: string; status: string; activeForm?: string }>
+  todos: Array<{ content: string, status: string, activeForm?: string }>
   completedCount: number
 }
 
@@ -180,13 +180,13 @@ export interface ErrorChatMessage {
 }
 
 export type ChatMessage =
-  | UserChatMessage
-  | AssistantChatMessage
-  | ToolGroupChatMessage
-  | TaskPlanChatMessage
-  | ThinkingChatMessage
-  | SystemChatMessage
-  | ErrorChatMessage
+  | UserChatMessage |
+  AssistantChatMessage |
+  ToolGroupChatMessage |
+  TaskPlanChatMessage |
+  ThinkingChatMessage |
+  SystemChatMessage |
+  ErrorChatMessage
 
 // ── Tool Progress (lightweight real-time SSE event) ──────
 
@@ -315,33 +315,33 @@ export interface ChangesSummary {
 
 /** SSE wire format — what the frontend receives via EventSource. */
 export interface SSEEventMap {
-  log: { issueId: string; entry: NormalizedLogEntry }
-  'log-updated': { issueId: string; entry: NormalizedLogEntry }
-  'log-removed': { issueId: string; messageIds: string[] }
+  'log': { issueId: string, entry: NormalizedLogEntry }
+  'log-updated': { issueId: string, entry: NormalizedLogEntry }
+  'log-removed': { issueId: string, messageIds: string[] }
   'tool-progress': ToolProgressEvent
   'tool-group': ToolGroupEvent
-  state: { issueId: string; executionId: string; state: string }
-  done: { issueId: string; finalStatus: string }
-  'issue-updated': { issueId: string; changes: Record<string, unknown> }
+  'state': { issueId: string, executionId: string, state: string }
+  'done': { issueId: string, finalStatus: string }
+  'issue-updated': { issueId: string, changes: Record<string, unknown> }
   'changes-summary': ChangesSummary
-  heartbeat: { ts: string }
+  'heartbeat': { ts: string }
 }
 
 /** Internal bus format — superset of SSEEventMap, carries engine context. */
 export interface AppEventMap {
-  log: {
+  'log': {
     issueId: string
     executionId: string
     entry: NormalizedLogEntry
     streaming: boolean
   }
-  'log-updated': { issueId: string; entry: NormalizedLogEntry }
-  'log-removed': { issueId: string; messageIds: string[] }
-  state: { issueId: string; executionId: string; state: string }
-  done: { issueId: string; executionId: string; finalStatus: string }
-  'issue-updated': { issueId: string; changes: Record<string, unknown> }
+  'log-updated': { issueId: string, entry: NormalizedLogEntry }
+  'log-removed': { issueId: string, messageIds: string[] }
+  'state': { issueId: string, executionId: string, state: string }
+  'done': { issueId: string, executionId: string, finalStatus: string }
+  'issue-updated': { issueId: string, changes: Record<string, unknown> }
   'changes-summary': ChangesSummary
-  heartbeat: { ts: string }
+  'heartbeat': { ts: string }
 }
 
 // ── File Browser ──────────────────────────────────────────
@@ -394,13 +394,13 @@ export interface ProjectProcessesResponse {
 // ── Webhooks ─────────────────────────────────────────────
 
 export type WebhookEventType =
-  | 'issue.created'
-  | 'issue.updated'
-  | 'issue.deleted'
-  | 'issue.status_changed'
-  | 'session.started'
-  | 'session.completed'
-  | 'session.failed'
+  | 'issue.created' |
+  'issue.updated' |
+  'issue.deleted' |
+  'issue.status_changed' |
+  'session.started' |
+  'session.completed' |
+  'session.failed'
 
 export const WEBHOOK_EVENT_TYPES: WebhookEventType[] = [
   'issue.created',

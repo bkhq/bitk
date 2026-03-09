@@ -40,9 +40,9 @@ export function IssueListPanel({
   const navigate = useNavigate()
   const { data: issues } = useIssues(projectId)
   const { data: project } = useProject(projectId)
-  const openCreateDialog = usePanelStore((s) => s.openCreateDialog)
-  const toggleFileBrowser = useFileBrowserStore((s) => s.toggle)
-  const toggleProcessManager = useProcessManagerStore((s) => s.toggle)
+  const openCreateDialog = usePanelStore(s => s.openCreateDialog)
+  const toggleFileBrowser = useFileBrowserStore(s => s.toggle)
+  const toggleProcessManager = useProcessManagerStore(s => s.toggle)
   const [search, setSearch] = useState('')
   const [showSettings, setShowSettings] = useState(false)
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
@@ -51,7 +51,7 @@ export function IssueListPanel({
   const filtered = useMemo(() => {
     if (!issues) return []
     if (!searchTerm) return issues
-    return issues.filter((issue) => issue.title.toLowerCase().includes(searchTerm))
+    return issues.filter(issue => issue.title.toLowerCase().includes(searchTerm))
   }, [issues, searchTerm])
 
   // Build child map for parent-child grouping, sorted by statusUpdatedAt DESC
@@ -77,14 +77,14 @@ export function IssueListPanel({
 
   const grouped = useMemo(() => {
     if (!issues) return []
-    const rootIssues = filtered.filter((i) => !i.parentIssueId)
+    const rootIssues = filtered.filter(i => !i.parentIssueId)
     const map = new Map<string, Issue[]>()
     for (const issue of rootIssues) {
       const list = map.get(issue.statusId) ?? []
       list.push(issue)
       map.set(issue.statusId, list)
     }
-    return STATUSES.map((status) => ({
+    return STATUSES.map(status => ({
       status,
       issues: (map.get(status.id) ?? []).sort(
         (a, b) => new Date(b.statusUpdatedAt).getTime() - new Date(a.statusUpdatedAt).getTime(),
@@ -93,7 +93,7 @@ export function IssueListPanel({
   }, [filtered, issues])
 
   const toggleCollapse = (statusId: string) => {
-    setCollapsed((prev) => ({ ...prev, [statusId]: !prev[statusId] }))
+    setCollapsed(prev => ({ ...prev, [statusId]: !prev[statusId] }))
   }
 
   return (
@@ -156,20 +156,22 @@ export function IssueListPanel({
           <input
             type="text"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={e => setSearch(e.target.value)}
             placeholder={t('common.search')}
             className="flex-1 bg-transparent text-xs outline-none placeholder:text-muted-foreground/40"
           />
         </div>
       </div>
 
-      {project ? (
-        <ProjectSettingsDialog
-          open={showSettings}
-          onOpenChange={setShowSettings}
-          project={project}
-        />
-      ) : null}
+      {project ?
+          (
+            <ProjectSettingsDialog
+              open={showSettings}
+              onOpenChange={setShowSettings}
+              project={project}
+            />
+          ) :
+        null}
 
       {/* Grouped issue list */}
       <div className="flex-1 overflow-y-auto">
@@ -182,19 +184,21 @@ export function IssueListPanel({
             isCollapsed={!!collapsed[status.id]}
             onToggle={() => toggleCollapse(status.id)}
             activeIssueId={activeIssueId}
-            onNavigate={(issueId) => navigate(`/projects/${projectId}/issues/${issueId}`)}
+            onNavigate={issueId => navigate(`/projects/${projectId}/issues/${issueId}`)}
           />
         ))}
       </div>
 
       {/* Resize handle */}
-      {onResizeStart ? (
-        <div
-          role="separator"
-          onMouseDown={onResizeStart}
-          className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-primary/20 active:bg-primary/30 transition-colors z-20"
-        />
-      ) : null}
+      {onResizeStart ?
+          (
+            <div
+              role="separator"
+              onMouseDown={onResizeStart}
+              className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-primary/20 active:bg-primary/30 transition-colors z-20"
+            />
+          ) :
+        null}
     </div>
   )
 }
@@ -220,7 +224,7 @@ function StatusGroup({
   const [expandedParents, setExpandedParents] = useState<Record<string, boolean>>({})
 
   const toggleParent = (id: string) => {
-    setExpandedParents((prev) => ({ ...prev, [id]: !prev[id] }))
+    setExpandedParents(prev => ({ ...prev, [id]: !prev[id] }))
   }
 
   return (
@@ -267,8 +271,8 @@ function StatusGroup({
                 />
 
                 {/* Indented children */}
-                {isExpanded && children
-                  ? children.map((child) => {
+                {isExpanded && children ?
+                    children.map((child) => {
                       const isChildActive = child.id === activeIssueId
                       return (
                         <button
@@ -281,12 +285,13 @@ function StatusGroup({
                         >
                           <span
                             className={`text-[10px] font-mono shrink-0 tabular-nums ${
-                              isChildActive
-                                ? 'text-primary font-medium'
-                                : 'text-muted-foreground/60'
+                              isChildActive ?
+                                'text-primary font-medium' :
+                                'text-muted-foreground/60'
                             }`}
                           >
-                            #{child.issueNumber}
+                            #
+                            {child.issueNumber}
                           </span>
                           <span
                             title={child.title}
@@ -298,25 +303,27 @@ function StatusGroup({
                           </span>
                         </button>
                       )
-                    })
-                  : null}
+                    }) :
+                  null}
               </div>
             )
           })}
-          {issues.length === 0 ? (
-            <div className="border-b border-border/20 px-2 py-3 min-h-[44px] flex items-center justify-center">
-              <span className="text-[11px] text-muted-foreground/55 text-center pointer-events-none">
-                {t('issue.emptyStatusHint')}
-              </span>
-            </div>
-          ) : null}
+          {issues.length === 0 ?
+              (
+                <div className="border-b border-border/20 px-2 py-3 min-h-[44px] flex items-center justify-center">
+                  <span className="text-[11px] text-muted-foreground/55 text-center pointer-events-none">
+                    {t('issue.emptyStatusHint')}
+                  </span>
+                </div>
+              ) :
+            null}
         </div>
       ) : null}
     </div>
   )
 }
 
-const IssueRow = memo(function IssueRow({
+const IssueRow = memo(({
   issue,
   isActive,
   hasChildren,
@@ -330,7 +337,7 @@ const IssueRow = memo(function IssueRow({
   isExpanded: boolean
   onNavigate: (issueId: string) => void
   onToggleChildren: () => void
-}) {
+}) => {
   return (
     <div
       role="button"
@@ -346,30 +353,35 @@ const IssueRow = memo(function IssueRow({
         isActive ? 'bg-primary/[0.06]' : 'hover:bg-accent/50'
       }`}
     >
-      {hasChildren ? (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation()
-            onToggleChildren()
-          }}
-          className="h-3.5 w-3.5 p-0 shrink-0 rounded hover:bg-accent transition-colors"
-        >
-          {isExpanded ? (
-            <ChevronDown className="h-3 w-3 text-muted-foreground" />
-          ) : (
-            <ChevronRight className="h-3 w-3 text-muted-foreground" />
+      {hasChildren ?
+          (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation()
+                onToggleChildren()
+              }}
+              className="h-3.5 w-3.5 p-0 shrink-0 rounded hover:bg-accent transition-colors"
+            >
+              {isExpanded ?
+                  (
+                    <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                  ) :
+                  (
+                    <ChevronRight className="h-3 w-3 text-muted-foreground" />
+                  )}
+            </button>
+          ) :
+          (
+            <span className="w-3.5 shrink-0" />
           )}
-        </button>
-      ) : (
-        <span className="w-3.5 shrink-0" />
-      )}
       <span
         className={`text-[11px] font-mono shrink-0 tabular-nums ${
           isActive ? 'text-primary font-medium' : 'text-muted-foreground/70'
         }`}
       >
-        #{issue.issueNumber}
+        #
+        {issue.issueNumber}
       </span>
       <span
         title={issue.title}

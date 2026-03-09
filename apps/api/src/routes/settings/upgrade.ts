@@ -57,7 +57,7 @@ upgrade.patch(
       return c.json(
         {
           success: false,
-          error: result.error.issues.map((i) => i.message).join(', '),
+          error: result.error.issues.map(i => i.message).join(', '),
         },
         400,
       )
@@ -97,7 +97,7 @@ upgrade.post(
         return c.json(
           {
             success: false,
-            error: result.error.issues.map((i) => i.message).join(', '),
+            error: result.error.issues.map(i => i.message).join(', '),
           },
           400,
         )
@@ -167,7 +167,7 @@ upgrade.delete(
         return c.json(
           {
             success: false,
-            error: result.error.issues.map((i) => i.message).join(', '),
+            error: result.error.issues.map(i => i.message).join(', '),
           },
           400,
         )

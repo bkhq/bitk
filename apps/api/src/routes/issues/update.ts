@@ -28,7 +28,7 @@ update.patch(
       return c.json(
         {
           success: false,
-          error: result.error.issues.map((i) => i.message).join(', '),
+          error: result.error.issues.map(i => i.message).join(', '),
         },
         400,
       )
@@ -44,7 +44,7 @@ update.patch(
     const body = c.req.valid('json')
 
     // Validate ownership: only check requested IDs against this project
-    const requestedIds = body.updates.map((u) => u.id)
+    const requestedIds = body.updates.map(u => u.id)
     const ownedRows = await db
       .select({ id: issuesTable.id })
       .from(issuesTable)
@@ -55,10 +55,10 @@ update.patch(
           eq(issuesTable.isDeleted, 0),
         ),
       )
-    const projectIssueIdSet = new Set(ownedRows.map((r) => r.id))
+    const projectIssueIdSet = new Set(ownedRows.map(r => r.id))
 
     const updated: ReturnType<typeof serializeIssue>[] = []
-    const skippedIds = requestedIds.filter((id) => !projectIssueIdSet.has(id))
+    const skippedIds = requestedIds.filter(id => !projectIssueIdSet.has(id))
     // Collect issues that need execution after transaction commits
     const toExecute: Array<{
       id: string
@@ -67,7 +67,7 @@ update.patch(
       model: string | null
     }> = []
     // Collect issues that already have a session but need pending messages flushed
-    const toFlush: Array<{ id: string; model: string | null }> = []
+    const toFlush: Array<{ id: string, model: string | null }> = []
     // Collect issues transitioning to done that need active processes cancelled
     const toCancel: string[] = []
     // Track which issues actually had a status change (not just reorder within same column)
@@ -186,7 +186,7 @@ update.patch(
       return c.json(
         {
           success: false,
-          error: result.error.issues.map((i) => i.message).join(', '),
+          error: result.error.issues.map(i => i.message).join(', '),
         },
         400,
       )

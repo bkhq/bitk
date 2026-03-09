@@ -178,7 +178,7 @@ describe('Delete paths terminate active processes', () => {
 
   test('project delete terminates all active issue processes before soft-delete', async () => {
     const project = expectSuccess(
-      await post<{ id: string; alias: string }>('/api/projects', {
+      await post<{ id: string, alias: string }>('/api/projects', {
         name: `Project delete terminate success ${Date.now()}`,
       }),
     )
@@ -232,7 +232,7 @@ describe('Delete paths terminate active processes', () => {
 
   test('project delete proceeds even when terminateProcess fails (best-effort)', async () => {
     const project = expectSuccess(
-      await post<{ id: string; alias: string }>('/api/projects', {
+      await post<{ id: string, alias: string }>('/api/projects', {
         name: `Project delete terminate failure ${Date.now()}`,
       }),
     )

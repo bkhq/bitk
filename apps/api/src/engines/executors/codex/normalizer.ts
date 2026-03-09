@@ -352,11 +352,11 @@ export class CodexLogNormalizer {
         this.resetStreamingState()
         const invocation = msg.invocation as
           | {
-              server?: string
-              tool?: string
-              arguments?: unknown
-            }
-          | undefined
+            server?: string
+            tool?: string
+            arguments?: unknown
+          } |
+          undefined
         if (!invocation) return null
         const toolName = `mcp:${invocation.server ?? 'unknown'}:${invocation.tool ?? 'unknown'}`
         return {
@@ -380,11 +380,11 @@ export class CodexLogNormalizer {
       case 'mcp_tool_call_end': {
         const invocation = msg.invocation as
           | {
-              server?: string
-              tool?: string
-            }
-          | undefined
-        const result = msg.result as { content?: unknown[]; is_error?: boolean } | undefined
+            server?: string
+            tool?: string
+          } |
+          undefined
+        const result = msg.result as { content?: unknown[], is_error?: boolean } | undefined
         const toolName = `mcp:${invocation?.server ?? 'unknown'}:${invocation?.tool ?? 'unknown'}`
         const isError = result?.is_error ?? false
         // Extract text content from MCP result
@@ -477,7 +477,7 @@ export class CodexLogNormalizer {
       // --- Plan update (todo-like step list) ---
       case 'plan_update': {
         this.resetStreamingState()
-        const plan = msg.plan as Array<{ step: string; status: string }> | undefined
+        const plan = msg.plan as Array<{ step: string, status: string }> | undefined
         const explanation = msg.explanation as string | undefined
         if (!plan) return null
         const content = explanation?.trim() || `Plan updated (${plan.length} steps)`
@@ -535,10 +535,10 @@ export class CodexLogNormalizer {
       case 'token_count': {
         const info = msg.info as
           | {
-              last_token_usage?: { total_tokens?: number }
-              model_context_window?: number
-            }
-          | undefined
+            last_token_usage?: { total_tokens?: number }
+            model_context_window?: number
+          } |
+          undefined
         if (!info?.last_token_usage) return null
         const totalTokens = info.last_token_usage.total_tokens ?? 0
         const contextWindow = info.model_context_window ?? 0
@@ -804,9 +804,9 @@ export class CodexLogNormalizer {
       const patches = item.patches as unknown[] | undefined
       const path = item.path as string | undefined
       const patchCount = patches?.length ?? 0
-      const summary = path
-        ? `File changed: ${path} (${patchCount} patch${patchCount !== 1 ? 'es' : ''})`
-        : `File changed (${patchCount} patch${patchCount !== 1 ? 'es' : ''})`
+      const summary = path ?
+        `File changed: ${path} (${patchCount} patch${patchCount !== 1 ? 'es' : ''})` :
+        `File changed (${patchCount} patch${patchCount !== 1 ? 'es' : ''})`
       return {
         entryType: 'tool-use',
         content: summary,
@@ -889,9 +889,9 @@ export class CodexLogNormalizer {
     }
     if (outputTokens != null) {
       parts.push(
-        outputTokens >= 1000
-          ? `${(outputTokens / 1000).toFixed(1)}k output`
-          : `${outputTokens} output`,
+        outputTokens >= 1000 ?
+          `${(outputTokens / 1000).toFixed(1)}k output` :
+          `${outputTokens} output`,
       )
     }
 

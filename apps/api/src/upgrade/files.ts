@@ -14,14 +14,14 @@ export function ensureUpdatesDir(): void {
 
 /** List downloaded update files (excluding .tmp partials) */
 export async function listDownloadedUpdates(): Promise<
-  Array<{ name: string; size: number; modifiedAt: string }>
+  Array<{ name: string, size: number, modifiedAt: string }>
 > {
   ensureUpdatesDir()
   try {
     const entries = await readdir(UPDATES_DIR)
     const results = await Promise.all(
       entries
-        .filter((name) => !name.endsWith('.tmp'))
+        .filter(name => !name.endsWith('.tmp'))
         .map(async (name) => {
           const fp = resolve(UPDATES_DIR, name)
           const s = await stat(fp)

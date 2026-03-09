@@ -16,14 +16,14 @@ export interface EngineContext {
   /** Injected function reference — breaks lifecycle → orchestration cycle. */
   followUpIssue:
     | ((
-        issueId: string,
-        prompt: string,
-        model?: string,
-        permissionMode?: PermissionPolicy,
-        busyAction?: 'queue' | 'cancel',
-        displayPrompt?: string,
-        metadata?: Record<string, unknown>,
-        opts?: { skipPersistMessage?: boolean },
-      ) => Promise<{ executionId: string; messageId?: string | null }>)
-    | null
+      issueId: string,
+      prompt: string,
+      model?: string,
+      permissionMode?: PermissionPolicy,
+      busyAction?: 'queue' | 'cancel',
+      displayPrompt?: string,
+      metadata?: Record<string, unknown>,
+      opts?: { skipPersistMessage?: boolean },
+    ) => Promise<{ executionId: string, messageId?: string | null }>) |
+    null
 }

@@ -49,7 +49,7 @@ engines.patch(
       return c.json(
         {
           success: false,
-          error: result.error.issues.map((i) => i.message).join(', '),
+          error: result.error.issues.map(i => i.message).join(', '),
         },
         400,
       )
@@ -70,7 +70,7 @@ engines.patch(
       return c.json(
         {
           success: false,
-          error: result.error.issues.map((i) => i.message).join(', '),
+          error: result.error.issues.map(i => i.message).join(', '),
         },
         400,
       )
@@ -103,7 +103,7 @@ engines.get('/:engineType/models', async (c) => {
   }
 
   const models = await getEngineModels(engineType)
-  const defaultModel = models.find((m) => m.isDefault)?.id
+  const defaultModel = models.find(m => m.isDefault)?.id
 
   return c.json({
     success: true,

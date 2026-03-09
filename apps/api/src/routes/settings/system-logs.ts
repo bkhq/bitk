@@ -36,14 +36,14 @@ systemLogs.get('/system-logs', async (c) => {
     content = await file.text()
   }
 
-  const allLines = content.split('\n').filter((l) => l.length > 0)
+  const allLines = content.split('\n').filter(l => l.length > 0)
   const tailLines = allLines.slice(-clampedLines)
 
   // For totalLines, estimate from file size if we only read a chunk
   const totalLines =
-    fileSize > MAX_TAIL_BYTES
-      ? Math.round((fileSize / MAX_TAIL_BYTES) * allLines.length)
-      : allLines.length
+    fileSize > MAX_TAIL_BYTES ?
+        Math.round((fileSize / MAX_TAIL_BYTES) * allLines.length) :
+      allLines.length
 
   return c.json({
     success: true,

@@ -33,8 +33,8 @@ filesystem.get('/dirs', async (c) => {
   try {
     const entries = await readdir(current, { withFileTypes: true })
     const dirs = entries
-      .filter((e) => e.isDirectory() && !e.name.startsWith('.'))
-      .map((e) => e.name)
+      .filter(e => e.isDirectory() && !e.name.startsWith('.'))
+      .map(e => e.name)
       .sort((a, b) => a.localeCompare(b))
 
     return c.json({
@@ -61,7 +61,7 @@ filesystem.post(
       return c.json(
         {
           success: false,
-          error: result.error.issues.map((i) => i.message).join(', '),
+          error: result.error.issues.map(i => i.message).join(', '),
         },
         400,
       )

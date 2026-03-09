@@ -4,13 +4,13 @@ import type { NormalizedLogEntry } from '@/engines/types'
 
 export function isTurnCompletionEntry(entry: NormalizedLogEntry): boolean {
   if (entry.metadata?.turnCompleted === true) return true
-  if (entry.metadata && Object.prototype.hasOwnProperty.call(entry.metadata, 'resultSubtype')) {
+  if (entry.metadata && Object.hasOwn(entry.metadata, 'resultSubtype')) {
     return true
   }
   return (
     entry.entryType === 'system-message' &&
     !!entry.metadata &&
-    Object.prototype.hasOwnProperty.call(entry.metadata, 'duration')
+    Object.hasOwn(entry.metadata, 'duration')
   )
 }
 

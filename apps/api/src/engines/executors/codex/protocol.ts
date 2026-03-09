@@ -31,7 +31,7 @@ interface JsonRpcNotification {
 interface JsonRpcResponse {
   id: number | string
   result?: unknown
-  error?: { code?: number; message?: string }
+  error?: { code?: number, message?: string }
 }
 
 interface JsonRpcServerRequest {
@@ -246,7 +246,7 @@ export class CodexProtocolHandler {
     const result = (await this.sendRequest('turn/start', {
       threadId,
       input: [{ type: 'text', text: prompt }],
-    })) as { turn?: { id?: string }; turnId?: string }
+    })) as { turn?: { id?: string }, turnId?: string }
 
     const turnId = result?.turn?.id ?? result?.turnId
     if (turnId) {
@@ -477,8 +477,8 @@ export class CodexProtocolHandler {
 
     if (method === 'thread/started' && params) {
       const thread = (params as Record<string, unknown>).thread as
-        | Record<string, unknown>
-        | undefined
+        | Record<string, unknown> |
+        undefined
       const threadId = thread?.id as string | undefined
       if (threadId && !this._threadId) {
         this._threadId = threadId

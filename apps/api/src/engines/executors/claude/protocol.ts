@@ -91,10 +91,12 @@ interface ControlRequest {
 export class ClaudeProtocolHandler {
   private stdin: FileSink
   private closed = false
-  /** Called when ANY stdout data is received from the process, signaling it is alive.
+  /**
+   * Called when ANY stdout data is received from the process, signaling it is alive.
    *  Used by the engine layer to update lastActivityAt at the earliest possible point,
    *  before downstream consumers (consumeStream) process the data. This prevents
-   *  false stall detection when downstream processing (DB writes, etc.) is slow. */
+   *  false stall detection when downstream processing (DB writes, etc.) is slow.
+   */
   onActivity?: () => void
   /** Called when a Result message is received, signaling turn completion. */
   onResult?: (data: unknown) => void

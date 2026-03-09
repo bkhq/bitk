@@ -2,16 +2,16 @@
 
 /** Top-level message envelope from Claude CLI stdout (stream-json format). */
 export type ClaudeJson =
-  | ClaudeSystem
-  | ClaudeAssistant
-  | ClaudeUser
-  | ClaudeToolUse
-  | ClaudeToolResult
-  | ClaudeStreamEvent
-  | ClaudeStreamEventWrapper
-  | ClaudeResult
-  | ClaudeError
-  | ClaudeRateLimit
+  | ClaudeSystem |
+  ClaudeAssistant |
+  ClaudeUser |
+  ClaudeToolUse |
+  ClaudeToolResult |
+  ClaudeStreamEvent |
+  ClaudeStreamEventWrapper |
+  ClaudeResult |
+  ClaudeError |
+  ClaudeRateLimit
 
 export interface ClaudeSystem {
   type: 'system'
@@ -23,7 +23,7 @@ export interface ClaudeSystem {
   apiKeySource?: string
   status?: string
   slash_commands?: string[]
-  plugins?: Array<{ name: string; path: string }>
+  plugins?: Array<{ name: string, path: string }>
   agents?: string[]
   compact_metadata?: Record<string, unknown>
   output?: string
@@ -71,12 +71,12 @@ export interface ClaudeToolResult {
 
 export interface ClaudeStreamEvent {
   type:
-    | 'content_block_delta'
-    | 'content_block_start'
-    | 'content_block_stop'
-    | 'message_start'
-    | 'message_delta'
-    | 'message_stop'
+    | 'content_block_delta' |
+    'content_block_start' |
+    'content_block_stop' |
+    'message_start' |
+    'message_delta' |
+    'message_stop'
   index?: number
   delta?: {
     type?: string
@@ -121,7 +121,7 @@ export interface ClaudeResult {
 
 export interface ClaudeError {
   type: 'error'
-  error?: { type?: string; message?: string }
+  error?: { type?: string, message?: string }
   message?: string
   timestamp?: string
 }
@@ -144,20 +144,20 @@ export interface ClaudeMessage {
 }
 
 export type ClaudeContentItem =
-  | { type: 'text'; text: string }
-  | { type: 'thinking'; thinking: string }
-  | {
-      type: 'tool_use'
-      id?: string
-      name?: string
-      input?: Record<string, unknown>
-    }
-  | {
-      type: 'tool_result'
-      tool_use_id?: string
-      content?: string | unknown[]
-      is_error?: boolean
-    }
+  | { type: 'text', text: string } |
+  { type: 'thinking', thinking: string } |
+  {
+    type: 'tool_use'
+    id?: string
+    name?: string
+    input?: Record<string, unknown>
+  } |
+  {
+    type: 'tool_result'
+    tool_use_id?: string
+    content?: string | unknown[]
+    is_error?: boolean
+  }
 
 export interface ClaudeUsage {
   input_tokens?: number

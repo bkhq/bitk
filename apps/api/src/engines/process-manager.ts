@@ -31,9 +31,11 @@ export interface ProcessManagerOptions<TMeta = unknown> {
   autoCleanupDelayMs?: number
   /** GC interval (ms). 0 = disabled. Default: 600_000 */
   gcIntervalMs?: number
-  /** Timeout (ms) before SIGKILL after interrupt. Default: 5_000.
+  /**
+   * Timeout (ms) before SIGKILL after interrupt. Default: 5_000.
    *  For engines that emit a Result message after interrupt (e.g. Claude Code),
-   *  callers should set a higher value (e.g. 30_000) to allow graceful exit. */
+   *  callers should set a higher value (e.g. 30_000) to allow graceful exit.
+   */
   killTimeoutMs?: number
   logger?: ProcessManagerLogger
   /** Called when a managed entry is removed (cleanup, GC, or dispose). */
@@ -96,7 +98,7 @@ export class ProcessManager<TMeta> {
     id: string,
     subprocess: Subprocess,
     meta: TMeta,
-    opts?: { group?: string; startAsRunning?: boolean },
+    opts?: { group?: string, startAsRunning?: boolean },
   ): ManagedEntry<TMeta> {
     if (this.entries.has(id)) {
       throw new Error(`[${this.name}] Process already registered: ${id}`)
@@ -192,7 +194,7 @@ export class ProcessManager<TMeta> {
     const ids = this.groupIndex.get(group)
     if (!ids) return
     await Promise.all(
-      Array.from(ids).map((id) => {
+      Array.from(ids, (id) => {
         const entry = this.entries.get(id)
         return this.terminate(id, entry && interruptFn ? () => interruptFn(entry) : undefined)
       }),
@@ -200,7 +202,7 @@ export class ProcessManager<TMeta> {
   }
 
   async terminateAll(): Promise<void> {
-    await Promise.all(Array.from(this.entries.keys()).map((id) => this.terminate(id)))
+    await Promise.all(Array.from(this.entries.keys(), id => this.terminate(id)))
   }
 
   forceKill(id: string): void {
@@ -232,7 +234,7 @@ export class ProcessManager<TMeta> {
   }
 
   getActive(): ManagedEntry<TMeta>[] {
-    return Array.from(this.entries.values()).filter((e) => this.isActive(e))
+    return [...this.entries.values()].filter(e => this.isActive(e))
   }
 
   getActiveInGroup(group: string): ManagedEntry<TMeta>[] {
@@ -349,8 +351,9 @@ export class ProcessManager<TMeta> {
     const entry = this.entries.get(id)
     if (!entry) return
     const prev = entry.state
-    if (TERMINAL_STATES.has(prev)) return // idempotent — already terminal
-    ;(entry as { state: ProcessState }).state = next
+    if (TERMINAL_STATES.has(prev)) {
+      return // idempotent — already terminal
+    }(entry as { state: ProcessState }).state = next
 
     if (TERMINAL_STATES.has(next) && !entry.finishedAt) {
       entry.finishedAt = new Date()

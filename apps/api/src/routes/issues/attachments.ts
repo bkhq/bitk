@@ -36,7 +36,7 @@ attachmentsRouter.get('/:id/attachments/:attachmentId', async (c) => {
 
   // SEC-025: Prevent path traversal — resolved path must be inside the uploads directory
   const normalizedUploadDir = UPLOAD_DIR.endsWith('/') ? UPLOAD_DIR.slice(0, -1) : UPLOAD_DIR
-  if (!filePath.startsWith(normalizedUploadDir + '/')) {
+  if (!filePath.startsWith(`${normalizedUploadDir}/`)) {
     return c.json({ success: false, error: 'Invalid attachment path' }, 400)
   }
 

@@ -32,7 +32,7 @@ interface TerminalStore {
 export { MIN_WIDTH as TERMINAL_MIN_WIDTH }
 export const TERMINAL_MAX_WIDTH_RATIO = MAX_WIDTH_RATIO
 
-export const useTerminalStore = create<TerminalStore>((set) => ({
+export const useTerminalStore = create<TerminalStore>(set => ({
   isOpen: false,
   isMinimized: false,
   isFullscreen: false,
@@ -48,8 +48,8 @@ export const useTerminalStore = create<TerminalStore>((set) => ({
     }),
   minimize: () => set({ isOpen: false, isMinimized: true, isFullscreen: false }),
   restore: () => set({ isOpen: true, isMinimized: false }),
-  toggleFullscreen: () => set((s) => ({ isFullscreen: !s.isFullscreen })),
-  setWidth: (w) => set({ width: clampWidth(w) }),
+  toggleFullscreen: () => set(s => ({ isFullscreen: !s.isFullscreen })),
+  setWidth: w => set({ width: clampWidth(w) }),
 }))
 
 // Re-clamp width on window resize

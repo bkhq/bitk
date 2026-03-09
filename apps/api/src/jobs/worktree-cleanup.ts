@@ -35,8 +35,8 @@ async function runWorktreeCleanup(): Promise<void> {
   }
 
   const projectDirNames = projectEntries
-    .filter((e) => e.isDirectory())
-    .map((e) => e.name)
+    .filter(e => e.isDirectory())
+    .map(e => e.name)
     .slice(0, MAX_BATCH)
 
   if (projectDirNames.length === 0) return
@@ -46,7 +46,7 @@ async function runWorktreeCleanup(): Promise<void> {
     .select({ id: projectsTable.id, directory: projectsTable.directory })
     .from(projectsTable)
     .where(inArray(projectsTable.id, projectDirNames))
-  const projectMap = new Map(projectRows.map((p) => [p.id, p.directory]))
+  const projectMap = new Map(projectRows.map(p => [p.id, p.directory]))
 
   const cutoff = new Date(Date.now() - DONE_AGE_MS)
   let cleaned = 0
@@ -63,8 +63,8 @@ async function runWorktreeCleanup(): Promise<void> {
     }
 
     const issueIds = issueEntries
-      .filter((e) => e.isDirectory())
-      .map((e) => e.name)
+      .filter(e => e.isDirectory())
+      .map(e => e.name)
       .slice(0, MAX_BATCH)
 
     if (issueIds.length === 0) continue

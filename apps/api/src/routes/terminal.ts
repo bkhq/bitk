@@ -201,11 +201,11 @@ app.get(
         if (!entry?.subprocess?.terminal) return
 
         const raw =
-          evt.data instanceof ArrayBuffer
-            ? new Uint8Array(evt.data)
-            : typeof evt.data === 'string'
-              ? new TextEncoder().encode(evt.data)
-              : new Uint8Array(evt.data as ArrayBufferLike)
+          evt.data instanceof ArrayBuffer ?
+              new Uint8Array(evt.data) :
+            typeof evt.data === 'string' ?
+                new TextEncoder().encode(evt.data) :
+                new Uint8Array(evt.data as ArrayBufferLike)
 
         if (raw.length === 0) return
 

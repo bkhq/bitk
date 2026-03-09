@@ -86,9 +86,9 @@ export async function upsertPendingMessage(
     const existingDisplay = existingMeta.displayPrompt as string | undefined
     const newDisplay = metadata.displayPrompt as string | undefined
     const mergedDisplay =
-      existingDisplay && newDisplay
-        ? `${existingDisplay}\n\n${newDisplay}`
-        : newDisplay || existingDisplay
+      existingDisplay && newDisplay ?
+        `${existingDisplay}\n\n${newDisplay}` :
+        newDisplay || existingDisplay
 
     // Merge attachments arrays
     const existingAttachments = (existingMeta.attachments ?? []) as unknown[]
@@ -186,7 +186,7 @@ export async function deletePendingMessage(issueId: string): Promise<{
     id: pending.id,
     content: pending.content,
     metadata: meta,
-    attachments: attachmentRows.map((a) => ({
+    attachments: attachmentRows.map(a => ({
       id: a.id,
       originalName: a.originalName,
       mimeType: a.mimeType,
@@ -281,7 +281,7 @@ export function buildFileContextFromRows(
 ): string {
   if (rows.length === 0) return ''
   const parts = rows.map(
-    (f) => `[Attached file: ${f.originalName} at ${resolve(UPLOAD_DIR, f.storedName)}]`,
+    f => `[Attached file: ${f.originalName} at ${resolve(UPLOAD_DIR, f.storedName)}]`,
   )
   return `\n\n--- Attached files ---\n${parts.join('\n')}`
 }
@@ -319,16 +319,16 @@ export async function getAttachmentContextForLogIds(
  */
 export async function collectPendingWithAttachments(
   issueId: string,
-): Promise<{ prompt: string; pendingIds: string[] }> {
+): Promise<{ prompt: string, pendingIds: string[] }> {
   const pending = await getPendingMessages(issueId)
   if (pending.length === 0) return { prompt: '', pendingIds: [] }
-  const attachmentCtx = await getAttachmentContextForLogIds(pending.map((m) => m.id))
+  const attachmentCtx = await getAttachmentContextForLogIds(pending.map(m => m.id))
   const parts = pending.map((m) => {
     const fileCtx = attachmentCtx.get(m.id) ?? ''
     return (m.content + fileCtx).trim()
   })
   return {
     prompt: parts.filter(Boolean).join('\n\n'),
-    pendingIds: pending.map((m) => m.id),
+    pendingIds: pending.map(m => m.id),
   }
 }

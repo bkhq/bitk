@@ -134,7 +134,7 @@ webhooksRoute.post(
       return c.json(
         {
           success: false,
-          error: result.error.issues.map((i) => i.message).join(', '),
+          error: result.error.issues.map(i => i.message).join(', '),
         },
         400,
       )
@@ -166,7 +166,7 @@ webhooksRoute.patch(
       return c.json(
         {
           success: false,
-          error: result.error.issues.map((i) => i.message).join(', '),
+          error: result.error.issues.map(i => i.message).join(', '),
         },
         400,
       )
@@ -278,7 +278,7 @@ webhooksRoute.get('/webhooks/:id/deliveries', async (c) => {
 
   return c.json({
     success: true,
-    data: rows.map((r) => ({
+    data: rows.map(r => ({
       id: r.id,
       webhookId: r.webhookId,
       event: r.event,

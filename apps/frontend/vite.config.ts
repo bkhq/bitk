@@ -27,8 +27,9 @@ function shikiSlim(): Plugin {
           source === './langs.mjs' ||
           source.includes('langs-bundle-full') ||
           source.endsWith('/shiki/dist/langs.mjs')
-        )
+        ) {
           return slim.langs
+        }
         if (source === './themes.mjs' || source.endsWith('/shiki/dist/themes.mjs'))
           return slim.themes
       }

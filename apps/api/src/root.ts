@@ -18,11 +18,11 @@ const IS_PACKAGE_MODE: boolean =
  * - Compiled binary: `import.meta.dir` starts with `/$bunfs` (Bun virtual FS),
  *   fall back to `process.cwd()`.
  */
-export const ROOT_DIR = process.env.ROOT_DIR
-  ? resolve(process.env.ROOT_DIR)
-  : import.meta.dir.startsWith('/$bunfs')
-    ? process.cwd()
-    : resolve(import.meta.dir, '../../..')
+export const ROOT_DIR = process.env.ROOT_DIR ?
+    resolve(process.env.ROOT_DIR) :
+  import.meta.dir.startsWith('/$bunfs') ?
+      process.cwd() :
+      resolve(import.meta.dir, '../../..')
 
 /**
  * App package directory (package mode only).

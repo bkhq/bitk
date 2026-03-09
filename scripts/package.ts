@@ -23,8 +23,8 @@ import { Glob } from 'bun'
 
 const { values: args } = parseArgs({
   options: {
-    version: { type: 'string' },
-    outfile: { type: 'string' },
+    'version': { type: 'string' },
+    'outfile': { type: 'string' },
     'skip-frontend': { type: 'boolean', default: false },
   },
   strict: false,

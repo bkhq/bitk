@@ -35,7 +35,7 @@ export function NotesDrawer() {
     selectNote,
   } = useNotesStore()
   const isMobile = useIsMobile()
-  const dragRef = useRef<{ startX: number; startWidth: number } | null>(null)
+  const dragRef = useRef<{ startX: number, startWidth: number } | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
 
   const { data: notes, isLoading, isError } = useNotes()
@@ -43,19 +43,19 @@ export function NotesDrawer() {
   const updateNote = useUpdateNote()
   const deleteNote = useDeleteNote()
 
-  const selectedNote = notes?.find((n) => n.id === selectedNoteId) ?? null
+  const selectedNote = notes?.find(n => n.id === selectedNoteId) ?? null
 
   const filteredNotes = useMemo(() => {
     if (!notes) return []
     if (!searchQuery.trim()) return notes
     const q = searchQuery.toLowerCase()
     return notes.filter(
-      (n) => n.title.toLowerCase().includes(q) || n.content.toLowerCase().includes(q),
+      n => n.title.toLowerCase().includes(q) || n.content.toLowerCase().includes(q),
     )
   }, [notes, searchQuery])
 
-  const pinnedNotes = useMemo(() => filteredNotes.filter((n) => n.isPinned), [filteredNotes])
-  const unpinnedNotes = useMemo(() => filteredNotes.filter((n) => !n.isPinned), [filteredNotes])
+  const pinnedNotes = useMemo(() => filteredNotes.filter(n => n.isPinned), [filteredNotes])
+  const unpinnedNotes = useMemo(() => filteredNotes.filter(n => !n.isPinned), [filteredNotes])
 
   // Auto-select first note if none selected (desktop only)
   useEffect(() => {
@@ -66,13 +66,13 @@ export function NotesDrawer() {
 
   // Clear selection if selected note was deleted
   useEffect(() => {
-    if (selectedNoteId && notes && !notes.find((n) => n.id === selectedNoteId)) {
+    if (selectedNoteId && notes && !notes.some(n => n.id === selectedNoteId)) {
       selectNote(isMobile ? null : notes.length > 0 ? notes[0].id : null)
     }
   }, [isMobile, notes, selectedNoteId, selectNote])
 
   const handleCreate = useCallback(() => {
-    createNote.mutate({ title: '', content: '' }, { onSuccess: (note) => selectNote(note.id) })
+    createNote.mutate({ title: '', content: '' }, { onSuccess: note => selectNote(note.id) })
   }, [createNote, selectNote])
 
   const handleDelete = useCallback(
@@ -114,9 +114,11 @@ export function NotesDrawer() {
   return (
     <>
       {/* Backdrop overlay — hidden in fullscreen */}
-      {fullscreen ? null : (
-        <div aria-hidden="true" className="fixed inset-0 z-[39] bg-black/20" onClick={close} />
-      )}
+      {fullscreen ?
+        null :
+          (
+            <div aria-hidden="true" className="fixed inset-0 z-[39] bg-black/20" onClick={close} />
+          )}
       <div
         className={`fixed top-0 bottom-0 right-0 z-40 flex flex-col border-l border-border bg-background shadow-2xl ${
           fullscreen ? 'left-0' : ''
@@ -207,11 +209,13 @@ export function NotesDrawer() {
                 aria-label={t('notes.maximize')}
                 title={isFullscreen ? t('notes.restore') : t('notes.maximize')}
               >
-                {isFullscreen ? (
-                  <Minimize2 className="h-3.5 w-3.5" />
-                ) : (
-                  <Maximize2 className="h-3.5 w-3.5" />
-                )}
+                {isFullscreen ?
+                    (
+                      <Minimize2 className="h-3.5 w-3.5" />
+                    ) :
+                    (
+                      <Maximize2 className="h-3.5 w-3.5" />
+                    )}
               </button>
             )}
             <button
@@ -242,7 +246,7 @@ export function NotesDrawer() {
                 <input
                   type="text"
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={e => setSearchQuery(e.target.value)}
                   placeholder={t('notes.searchPlaceholder')}
                   className="flex-1 bg-transparent text-xs outline-none placeholder:text-muted-foreground"
                 />
@@ -251,80 +255,88 @@ export function NotesDrawer() {
 
             {/* List */}
             <div className="flex-1 overflow-y-auto">
-              {isLoading ? (
-                <div className="flex items-center justify-center p-6">
-                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground/40" />
-                </div>
-              ) : isError ? (
-                <div className="flex flex-col items-center p-6 text-muted-foreground">
-                  <TriangleAlert className="h-5 w-5 mb-1 opacity-40" />
-                  <p className="text-xs">{t('notes.loadError')}</p>
-                </div>
-              ) : filteredNotes.length > 0 ? (
-                <>
-                  {pinnedNotes.length > 0 && (
-                    <>
-                      <p className="text-[10px] font-medium text-muted-foreground/60 uppercase tracking-wider px-3 pt-2 pb-0.5">
-                        {t('notes.pinned')}
-                      </p>
-                      {pinnedNotes.map((note) => (
-                        <NoteListItem
-                          key={note.id}
-                          note={note}
-                          isActive={note.id === selectedNoteId}
-                          onClick={() => selectNote(note.id)}
-                          onDelete={() => handleDelete(note.id)}
-                          onPin={() => handlePin(note.id, false)}
-                        />
-                      ))}
-                    </>
-                  )}
-                  {unpinnedNotes.length > 0 && (
-                    <>
-                      {pinnedNotes.length > 0 && (
-                        <p className="text-[10px] font-medium text-muted-foreground/60 uppercase tracking-wider px-3 pt-2 pb-0.5">
-                          {t('notes.other')}
-                        </p>
+              {isLoading ?
+                  (
+                    <div className="flex items-center justify-center p-6">
+                      <Loader2 className="h-5 w-5 animate-spin text-muted-foreground/40" />
+                    </div>
+                  ) :
+                isError ?
+                    (
+                      <div className="flex flex-col items-center p-6 text-muted-foreground">
+                        <TriangleAlert className="h-5 w-5 mb-1 opacity-40" />
+                        <p className="text-xs">{t('notes.loadError')}</p>
+                      </div>
+                    ) :
+                  filteredNotes.length > 0 ?
+                      (
+                        <>
+                          {pinnedNotes.length > 0 && (
+                            <>
+                              <p className="text-[10px] font-medium text-muted-foreground/60 uppercase tracking-wider px-3 pt-2 pb-0.5">
+                                {t('notes.pinned')}
+                              </p>
+                              {pinnedNotes.map(note => (
+                                <NoteListItem
+                                  key={note.id}
+                                  note={note}
+                                  isActive={note.id === selectedNoteId}
+                                  onClick={() => selectNote(note.id)}
+                                  onDelete={() => handleDelete(note.id)}
+                                  onPin={() => handlePin(note.id, false)}
+                                />
+                              ))}
+                            </>
+                          )}
+                          {unpinnedNotes.length > 0 && (
+                            <>
+                              {pinnedNotes.length > 0 && (
+                                <p className="text-[10px] font-medium text-muted-foreground/60 uppercase tracking-wider px-3 pt-2 pb-0.5">
+                                  {t('notes.other')}
+                                </p>
+                              )}
+                              {unpinnedNotes.map(note => (
+                                <NoteListItem
+                                  key={note.id}
+                                  note={note}
+                                  isActive={note.id === selectedNoteId}
+                                  onClick={() => selectNote(note.id)}
+                                  onDelete={() => handleDelete(note.id)}
+                                  onPin={() => handlePin(note.id, true)}
+                                />
+                              ))}
+                            </>
+                          )}
+                        </>
+                      ) :
+                      (
+                        <div className="flex flex-col items-center justify-center p-6 text-muted-foreground">
+                          <StickyNote className="h-8 w-8 mb-2 opacity-20" />
+                          <p className="text-xs">{t('notes.empty')}</p>
+                        </div>
                       )}
-                      {unpinnedNotes.map((note) => (
-                        <NoteListItem
-                          key={note.id}
-                          note={note}
-                          isActive={note.id === selectedNoteId}
-                          onClick={() => selectNote(note.id)}
-                          onDelete={() => handleDelete(note.id)}
-                          onPin={() => handlePin(note.id, true)}
-                        />
-                      ))}
-                    </>
-                  )}
-                </>
-              ) : (
-                <div className="flex flex-col items-center justify-center p-6 text-muted-foreground">
-                  <StickyNote className="h-8 w-8 mb-2 opacity-20" />
-                  <p className="text-xs">{t('notes.empty')}</p>
-                </div>
-              )}
             </div>
           </div>
 
           {/* Editor — hidden on mobile (mobile uses fullscreen editor above) */}
           {!isMobile && (
             <div className="flex-1 min-w-0 flex flex-col">
-              {selectedNote ? (
-                <NoteEditor
-                  key={selectedNote.id}
-                  note={selectedNote}
-                  onUpdate={updateNote.mutate}
-                  onPin={() => handlePin(selectedNote.id, !selectedNote.isPinned)}
-                  onDelete={() => handleDelete(selectedNote.id)}
-                />
-              ) : (
-                <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground gap-2">
-                  <StickyNote className="h-8 w-8 opacity-20" />
-                  <p className="text-sm">{t('notes.selectOrCreate')}</p>
-                </div>
-              )}
+              {selectedNote ?
+                  (
+                    <NoteEditor
+                      key={selectedNote.id}
+                      note={selectedNote}
+                      onUpdate={updateNote.mutate}
+                      onPin={() => handlePin(selectedNote.id, !selectedNote.isPinned)}
+                      onDelete={() => handleDelete(selectedNote.id)}
+                    />
+                  ) :
+                  (
+                    <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground gap-2">
+                      <StickyNote className="h-8 w-8 opacity-20" />
+                      <p className="text-sm">{t('notes.selectOrCreate')}</p>
+                    </div>
+                  )}
             </div>
           )}
         </div>
@@ -399,9 +411,9 @@ function NoteListItem({
             }}
             className={cn(
               'p-0.5 rounded opacity-0 group-hover:opacity-100 transition-all',
-              note.isPinned
-                ? 'text-primary opacity-100'
-                : 'text-muted-foreground hover:text-primary',
+              note.isPinned ?
+                'text-primary opacity-100' :
+                'text-muted-foreground hover:text-primary',
             )}
             aria-label={note.isPinned ? t('notes.unpin') : t('notes.pin')}
             title={note.isPinned ? t('notes.unpin') : t('notes.pin')}
@@ -437,7 +449,7 @@ function NoteEditor({
   onDelete,
 }: {
   note: Note
-  onUpdate: (data: { id: string; title?: string; content?: string }) => void
+  onUpdate: (data: { id: string, title?: string, content?: string }) => void
   onPin: () => void
   onDelete: () => void
 }) {
@@ -445,7 +457,7 @@ function NoteEditor({
   const [title, setTitle] = useState(note.title)
   const [content, setContent] = useState(note.content)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const pendingRef = useRef<{ title?: string; content?: string } | null>(null)
+  const pendingRef = useRef<{ title?: string, content?: string } | null>(null)
   const noteIdRef = useRef(note.id)
   const onUpdateRef = useRef(onUpdate)
   onUpdateRef.current = onUpdate
@@ -457,7 +469,7 @@ function NoteEditor({
   }, [note.title, note.content])
 
   const scheduleUpdate = useCallback(
-    (data: { title?: string; content?: string }) => {
+    (data: { title?: string, content?: string }) => {
       pendingRef.current = data
       if (debounceRef.current) clearTimeout(debounceRef.current)
       debounceRef.current = setTimeout(() => {
@@ -508,7 +520,7 @@ function NoteEditor({
         <input
           type="text"
           value={title}
-          onChange={(e) => handleTitleChange(e.target.value)}
+          onChange={e => handleTitleChange(e.target.value)}
           placeholder={t('notes.titlePlaceholder')}
           className="flex-1 text-sm font-medium bg-transparent outline-none placeholder:text-muted-foreground mr-2"
         />
@@ -540,7 +552,7 @@ function NoteEditor({
       {/* Content */}
       <textarea
         value={content}
-        onChange={(e) => handleContentChange(e.target.value)}
+        onChange={e => handleContentChange(e.target.value)}
         placeholder={t('notes.contentPlaceholder')}
         className="flex-1 px-4 py-3 text-sm bg-transparent outline-none resize-none placeholder:text-muted-foreground"
       />
@@ -567,7 +579,7 @@ function MobileNoteEditor({
   onPin,
 }: {
   note: Note
-  onUpdate: (data: { id: string; title?: string; content?: string }) => void
+  onUpdate: (data: { id: string, title?: string, content?: string }) => void
   onBack: () => void
   onDelete: () => void
   onPin: () => void
@@ -576,7 +588,7 @@ function MobileNoteEditor({
   const [title, setTitle] = useState(note.title)
   const [content, setContent] = useState(note.content)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const pendingRef = useRef<{ title?: string; content?: string } | null>(null)
+  const pendingRef = useRef<{ title?: string, content?: string } | null>(null)
   const noteIdRef = useRef(note.id)
   const onUpdateRef = useRef(onUpdate)
   onUpdateRef.current = onUpdate
@@ -588,7 +600,7 @@ function MobileNoteEditor({
   }, [note.title, note.content])
 
   const scheduleUpdate = useCallback(
-    (data: { title?: string; content?: string }) => {
+    (data: { title?: string, content?: string }) => {
       pendingRef.current = data
       if (debounceRef.current) clearTimeout(debounceRef.current)
       debounceRef.current = setTimeout(() => {
@@ -670,13 +682,13 @@ function MobileNoteEditor({
         <input
           type="text"
           value={title}
-          onChange={(e) => handleTitleChange(e.target.value)}
+          onChange={e => handleTitleChange(e.target.value)}
           placeholder={t('notes.titlePlaceholder')}
           className="text-xl font-medium bg-transparent outline-none placeholder:text-muted-foreground py-2"
         />
         <textarea
           value={content}
-          onChange={(e) => handleContentChange(e.target.value)}
+          onChange={e => handleContentChange(e.target.value)}
           placeholder={t('notes.contentPlaceholder')}
           className="flex-1 text-sm bg-transparent outline-none resize-none placeholder:text-muted-foreground min-h-[200px]"
         />

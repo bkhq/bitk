@@ -147,10 +147,10 @@ export function getLogs(
 
   const persisted = result.entries
   const seen = new Set(
-    persisted.map((entry) =>
-      entry.messageId
-        ? `id:${entry.messageId}`
-        : `${entry.turnIndex ?? 0}:${entry.timestamp ?? ''}:${entry.entryType}:${entry.content}`,
+    persisted.map(entry =>
+      entry.messageId ?
+        `id:${entry.messageId}` :
+        `${entry.turnIndex ?? 0}:${entry.timestamp ?? ''}:${entry.entryType}:${entry.content}`,
     ),
   )
 
@@ -164,15 +164,15 @@ export function getLogs(
   //   cursor mode  → entries must be after the cursor (forward pagination)
   //   reverse mode → entries must be after the DB page's newest entry
   //   neither      → no bound (include all ring buffer entries)
-  const newestDbId = persisted.length > 0 ? persisted[persisted.length - 1].messageId : undefined
+  const newestDbId = persisted.length > 0 ? persisted.at(-1).messageId : undefined
   const lowerBound = opts?.cursor ?? newestDbId
 
   const merged = [...persisted]
   for (const entry of active.logs.toArray()) {
     if (!isVisibleForMode(entry, devMode)) continue
-    const key = entry.messageId
-      ? `id:${entry.messageId}`
-      : `${entry.turnIndex ?? 0}:${entry.timestamp ?? ''}:${entry.entryType}:${entry.content}`
+    const key = entry.messageId ?
+      `id:${entry.messageId}` :
+      `${entry.turnIndex ?? 0}:${entry.timestamp ?? ''}:${entry.entryType}:${entry.content}`
     if (seen.has(key)) continue
     // Skip entries at or below the lower bound — they are persisted but
     // outside the page window. Including them would break chronological order.
@@ -242,5 +242,5 @@ export function getSlashCommands(
 
 export async function cancelAll(ctx: EngineContext): Promise<void> {
   const active = getActiveProcesses(ctx)
-  await Promise.all(active.map((p) => cancel(ctx, p.executionId, { hard: true })))
+  await Promise.all(active.map(p => cancel(ctx, p.executionId, { hard: true })))
 }

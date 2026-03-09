@@ -134,7 +134,7 @@ async function runLiveProbe(): Promise<EngineDiscovery> {
 
   // Discover slash commands & agents for installed engines (fire-and-forget).
   // Uses a longer timeout since it spawns a real Claude process.
-  const installedEngines = engines.filter((e) => e.installed)
+  const installedEngines = engines.filter(e => e.installed)
   void discoverSlashCommands(installedEngines).catch((err: unknown) => {
     logger.warn({ error: err }, 'probe_slash_commands_discovery_failed')
   })
@@ -153,7 +153,7 @@ const CODEX_SLASH_COMMANDS = ['/compact', '/status', '/mcp']
  */
 async function discoverSlashCommands(installed: EngineAvailability[]): Promise<void> {
   // Register static Codex slash commands if installed
-  if (installed.some((e) => e.engineType === 'codex')) {
+  if (installed.some(e => e.engineType === 'codex')) {
     await setAppSetting(slashCommandsKey('codex'), JSON.stringify(CODEX_SLASH_COMMANDS))
     await refreshSlashCommandsCacheForEngine('codex')
   }

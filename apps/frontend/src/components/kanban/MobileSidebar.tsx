@@ -88,24 +88,26 @@ export function MobileSidebar({ activeProjectId }: { activeProjectId: string }) 
                       void navigate(mobileProjectPath(project.alias))
                     }}
                     className={`flex items-center gap-3 w-full px-2 min-h-[44px] rounded-md text-left transition-colors ${
-                      isActive
-                        ? 'bg-primary/10 text-foreground'
-                        : 'text-foreground/80 hover:bg-accent/50 active:bg-accent'
+                      isActive ?
+                        'bg-primary/10 text-foreground' :
+                        'text-foreground/80 hover:bg-accent/50 active:bg-accent'
                     }`}
                   >
                     <div
                       className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[11px] font-bold ${
-                        isActive
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-foreground/[0.07] text-foreground/60'
+                        isActive ?
+                          'bg-primary text-primary-foreground' :
+                          'bg-foreground/[0.07] text-foreground/60'
                       }`}
                     >
                       {getProjectInitials(project.name)}
                     </div>
                     <span className="text-sm truncate">{project.name}</span>
-                    {isActive ? (
-                      <ChevronRight className="h-3.5 w-3.5 ml-auto text-primary shrink-0" />
-                    ) : null}
+                    {isActive ?
+                        (
+                          <ChevronRight className="h-3.5 w-3.5 ml-auto text-primary shrink-0" />
+                        ) :
+                      null}
                   </button>
                 )
               })}

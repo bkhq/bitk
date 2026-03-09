@@ -41,7 +41,7 @@ function terminateAndSettle(
     // DB still shows running/pending but no other active process exists,
     // the status is stale from the process we killed — settle it.
     if (priorStatus === 'running' || priorStatus === 'pending') {
-      const hasActiveProcess = ctx.pm.getActive().some((e) => e.meta.issueId === issueId)
+      const hasActiveProcess = ctx.pm.getActive().some(e => e.meta.issueId === issueId)
       if (hasActiveProcess) {
         logger.debug({ issueId, priorStatus }, 'gc_settle_skipped_reactivated')
         return
@@ -95,7 +95,7 @@ export function gcSweep(ctx: EngineContext): void {
   // Note: issueOpLocks are NOT GC'd here — withIssueLock() self-cleans in its
   // finally block. Deleting them externally would break the per-issue mutex.
   // Clean orphaned userMessageIds entries for issues no longer tracked
-  const activeIssueIds = new Set(ctx.pm.getActive().map((e) => e.meta.issueId))
+  const activeIssueIds = new Set(ctx.pm.getActive().map(e => e.meta.issueId))
   for (const key of ctx.userMessageIds.keys()) {
     const issueId = key.split(':')[0] ?? key
     if (!activeIssueIds.has(issueId)) {

@@ -277,15 +277,15 @@ export class ClaudeLogNormalizer {
             toolName: info?.toolName,
             isResult: true,
           },
-          toolDetail: info
-            ? {
+          toolDetail: info ?
+              {
                 kind: classifyToolKind(info.toolName),
                 toolName: info.toolName,
                 toolCallId: toolUseId,
                 isResult: true,
                 raw: buildToolResultRaw(info, resultContent, tr.is_error),
-              }
-            : undefined,
+              } :
+            undefined,
         })
       }
 
@@ -361,15 +361,15 @@ export class ClaudeLogNormalizer {
         toolName: info?.toolName,
         isResult: true,
       },
-      toolDetail: info
-        ? {
+      toolDetail: info ?
+          {
             kind: classifyToolKind(info.toolName),
             toolName: info.toolName,
             toolCallId: toolUseId,
             isResult: true,
             raw: buildToolResultRaw(info, resultContent, data.is_error),
-          }
-        : undefined,
+          } :
+        undefined,
     }
   }
 

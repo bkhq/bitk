@@ -113,7 +113,7 @@ export function AppSettingsDialog({
       items={navItems}
       defaultItem="general"
     >
-      {(active) => (
+      {active => (
         <>
           {active === 'general' && <GeneralSection open={open} />}
           {active === 'models' && <ModelsSection open={open} />}
@@ -135,8 +135,8 @@ function GeneralSection({ open }: { open: boolean }) {
   const { data: wsData } = useWorkspacePath(open)
   const updateWsPath = useUpdateWorkspacePath()
   const [dirPickerOpen, setDirPickerOpen] = useState(false)
-  const fullWidthChat = useViewModeStore((s) => s.fullWidthChat)
-  const setFullWidthChat = useViewModeStore((s) => s.setFullWidthChat)
+  const fullWidthChat = useViewModeStore(s => s.fullWidthChat)
+  const setFullWidthChat = useViewModeStore(s => s.setFullWidthChat)
   const { data: logPageSizeData } = useLogPageSize(open)
   const setLogPageSize = useSetLogPageSize()
   const { data: serverData } = useServerInfo(open)
@@ -206,7 +206,7 @@ function GeneralSection({ open }: { open: boolean }) {
           <Label>{t('settings.serverName')}</Label>
           <Input
             value={serverName}
-            onChange={(e) => setServerName(e.target.value)}
+            onChange={e => setServerName(e.target.value)}
             placeholder="BKD"
           />
         </Field>
@@ -214,7 +214,7 @@ function GeneralSection({ open }: { open: boolean }) {
           <Label>{t('settings.serverUrl')}</Label>
           <Input
             value={serverUrl}
-            onChange={(e) => setServerUrl(e.target.value)}
+            onChange={e => setServerUrl(e.target.value)}
             placeholder="https://example.com"
           />
         </Field>
@@ -222,11 +222,13 @@ function GeneralSection({ open }: { open: boolean }) {
       {serverInfoDirty && (
         <div className="flex justify-end">
           <Button size="sm" onClick={handleSaveServerInfo} disabled={updateServerInfo.isPending}>
-            {updateServerInfo.isPending ? (
-              <Loader2 className="size-3 animate-spin mr-1" />
-            ) : (
-              <Check className="size-3 mr-1" />
-            )}
+            {updateServerInfo.isPending ?
+                (
+                  <Loader2 className="size-3 animate-spin mr-1" />
+                ) :
+                (
+                  <Check className="size-3 mr-1" />
+                )}
             {t('settings.saveServerInfo')}
           </Button>
         </div>
@@ -236,16 +238,16 @@ function GeneralSection({ open }: { open: boolean }) {
         <Field>
           <Label>{t('settings.language')}</Label>
           <Select
-            value={LANGUAGES.find((l) => i18n.language.startsWith(l.id))?.id ?? i18n.language}
-            onValueChange={(value) => i18n.changeLanguage(value ?? undefined)}
+            value={LANGUAGES.find(l => i18n.language.startsWith(l.id))?.id ?? i18n.language}
+            onValueChange={value => i18n.changeLanguage(value ?? undefined)}
           >
             <SelectTrigger>
               <SelectValue
-                placeholder={LANGUAGES.find((l) => i18n.language.startsWith(l.id))?.label}
+                placeholder={LANGUAGES.find(l => i18n.language.startsWith(l.id))?.label}
               />
             </SelectTrigger>
             <SelectContent>
-              {LANGUAGES.map((lang) => (
+              {LANGUAGES.map(lang => (
                 <SelectItem key={lang.id} value={lang.id}>
                   {lang.label}
                 </SelectItem>
@@ -257,13 +259,13 @@ function GeneralSection({ open }: { open: boolean }) {
           <Label>{t('settings.appearance')}</Label>
           <Select
             value={theme}
-            onValueChange={(value) => setTheme(value as 'system' | 'light' | 'dark')}
+            onValueChange={value => setTheme(value as 'system' | 'light' | 'dark')}
           >
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {THEME_OPTIONS.map((option) => (
+              {THEME_OPTIONS.map(option => (
                 <SelectItem key={option.id} value={option.id}>
                   {t(option.labelKey)}
                 </SelectItem>
@@ -285,13 +287,13 @@ function GeneralSection({ open }: { open: boolean }) {
         <Label>{t('settings.logPageSize')}</Label>
         <Select
           value={String(logPageSizeData?.size ?? 10)}
-          onValueChange={(value) => setLogPageSize.mutate(Number(value))}
+          onValueChange={value => setLogPageSize.mutate(Number(value))}
         >
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {[5, 10, 20, 50, 100, 200].map((n) => (
+            {[5, 10, 20, 50, 100, 200].map(n => (
               <SelectItem key={n} value={String(n)}>
                 {n}
               </SelectItem>
@@ -332,14 +334,16 @@ function CleanupItem({
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
           <span className="text-xs font-medium">{label}</span>
-          {count != null ? (
-            <Badge
-              variant={count > 0 ? 'secondary' : 'outline'}
-              className="text-[10px] px-1.5 py-0"
-            >
-              {count}
-            </Badge>
-          ) : null}
+          {count != null ?
+              (
+                <Badge
+                  variant={count > 0 ? 'secondary' : 'outline'}
+                  className="text-[10px] px-1.5 py-0"
+                >
+                  {count}
+                </Badge>
+              ) :
+            null}
         </div>
         {hint ? <p className="text-[10px] text-muted-foreground">{hint}</p> : null}
       </div>
@@ -429,17 +433,19 @@ function LogsSection({ open }: { open: boolean }) {
       {/* Top bar: stats + actions */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          {logsData ? (
-            <span className="text-[10px] text-muted-foreground">
-              {t('settings.logsFileSize', {
-                size: formatSize(logsData.fileSize),
-              })}
-              {' · '}
-              {t('settings.logsTotalLines', {
-                count: logsData.totalLines,
-              })}
-            </span>
-          ) : null}
+          {logsData ?
+              (
+                <span className="text-[10px] text-muted-foreground">
+                  {t('settings.logsFileSize', {
+                    size: formatSize(logsData.fileSize),
+                  })}
+                  {' · '}
+                  {t('settings.logsTotalLines', {
+                    count: logsData.totalLines,
+                  })}
+                </span>
+              ) :
+            null}
         </div>
         <div className="flex items-center gap-1">
           <Button variant="ghost" size="sm" onClick={() => refetch()}>
@@ -457,11 +463,13 @@ function LogsSection({ open }: { open: boolean }) {
             disabled={clearLogs.isPending || !logsData?.fileSize}
             className="text-destructive hover:text-destructive hover:bg-destructive/10"
           >
-            {clearLogs.isPending ? (
-              <Loader2 className="size-3 animate-spin" />
-            ) : (
-              <Trash2 className="size-3" />
-            )}
+            {clearLogs.isPending ?
+                (
+                  <Loader2 className="size-3 animate-spin" />
+                ) :
+                (
+                  <Trash2 className="size-3" />
+                )}
             {t('settings.logsClear')}
           </Button>
         </div>
@@ -471,16 +479,16 @@ function LogsSection({ open }: { open: boolean }) {
       <div className="flex items-center gap-2">
         <div className="flex items-center gap-0.5">
           <Filter className="size-3 text-muted-foreground mr-1" />
-          {LOG_LEVELS.map((l) => (
+          {LOG_LEVELS.map(l => (
             <button
               key={l.level}
               type="button"
               onClick={() => setLevelFilter(l.level)}
               className={cn(
                 'rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors',
-                levelFilter === l.level
-                  ? 'bg-primary/10 text-primary'
-                  : 'text-muted-foreground hover:bg-accent/50',
+                levelFilter === l.level ?
+                  'bg-primary/10 text-primary' :
+                  'text-muted-foreground hover:bg-accent/50',
               )}
             >
               {l.label}
@@ -492,47 +500,53 @@ function LogsSection({ open }: { open: boolean }) {
           <input
             type="text"
             value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
+            onChange={e => setKeyword(e.target.value)}
             placeholder={t('settings.logsSearchPlaceholder')}
             className="w-full rounded-md border bg-transparent py-1 pl-7 pr-2 text-[11px] outline-none focus:ring-1 focus:ring-ring"
           />
         </div>
-        {(levelFilter > 0 || keyword) && filteredLines.length !== logsData?.lines.length ? (
-          <span className="text-[10px] text-muted-foreground shrink-0">
-            {t('settings.logsFiltered', {
-              shown: filteredLines.length,
-              total: logsData?.lines.length ?? 0,
-            })}
-          </span>
-        ) : null}
+        {(levelFilter > 0 || keyword) && filteredLines.length !== logsData?.lines.length ?
+            (
+              <span className="text-[10px] text-muted-foreground shrink-0">
+                {t('settings.logsFiltered', {
+                  shown: filteredLines.length,
+                  total: logsData?.lines.length ?? 0,
+                })}
+              </span>
+            ) :
+          null}
       </div>
 
       {/* Log content */}
-      {isLoading ? (
-        <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
-          <Loader2 className="size-3.5 animate-spin" />
-          {t('settings.logsLoading')}
-        </div>
-      ) : !filteredLines.length ? (
-        <div className="py-4 text-center text-sm text-muted-foreground">
-          {t('settings.logsEmpty')}
-        </div>
-      ) : (
-        <div
-          ref={logContainerRef}
-          onScroll={handleScroll}
-          className="flex-1 min-h-0 max-h-[400px] overflow-auto rounded-md border bg-muted/30 p-2 font-mono text-[11px] leading-relaxed"
-        >
-          {filteredLines.map((line, i) => (
-            <LogLine key={i} line={line} highlight={keyword} />
-          ))}
-        </div>
-      )}
+      {isLoading ?
+          (
+            <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
+              <Loader2 className="size-3.5 animate-spin" />
+              {t('settings.logsLoading')}
+            </div>
+          ) :
+          !filteredLines.length ?
+              (
+                <div className="py-4 text-center text-sm text-muted-foreground">
+                  {t('settings.logsEmpty')}
+                </div>
+              ) :
+              (
+                <div
+                  ref={logContainerRef}
+                  onScroll={handleScroll}
+                  className="flex-1 min-h-0 max-h-[400px] overflow-auto rounded-md border bg-muted/30 p-2 font-mono text-[11px] leading-relaxed"
+                >
+                  {filteredLines.map((line, i) => (
+                    <LogLine key={i} line={line} highlight={keyword} />
+                  ))}
+                </div>
+              )}
     </div>
   )
 }
 
-function HighlightText({ text, highlight }: { text: string; highlight: string }) {
+function HighlightText({ text, highlight }: { text: string, highlight: string }) {
   if (!highlight) return <>{text}</>
   const parts = text.split(
     new RegExp(`(${highlight.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'),
@@ -553,8 +567,8 @@ function HighlightText({ text, highlight }: { text: string; highlight: string })
   return <>{elements}</>
 }
 
-function LogLine({ line, highlight = '' }: { line: string; highlight?: string }) {
-  let parsed: { level?: number; msg?: string; time?: number } | null = null
+function LogLine({ line, highlight = '' }: { line: string, highlight?: string }) {
+  let parsed: { level?: number, msg?: string, time?: number } | null = null
   try {
     parsed = JSON.parse(line)
   } catch {
@@ -570,34 +584,42 @@ function LogLine({ line, highlight = '' }: { line: string; highlight?: string })
   }
 
   const levelName =
-    parsed.level === 60
-      ? 'FATAL'
-      : parsed.level === 50
-        ? 'ERROR'
-        : parsed.level === 40
-          ? 'WARN'
-          : parsed.level === 30
-            ? 'INFO'
-            : parsed.level === 20
-              ? 'DEBUG'
-              : 'TRACE'
+    parsed.level === 60 ?
+      'FATAL' :
+      parsed.level === 50 ?
+        'ERROR' :
+        parsed.level === 40 ?
+          'WARN' :
+          parsed.level === 30 ?
+            'INFO' :
+            parsed.level === 20 ?
+              'DEBUG' :
+              'TRACE'
 
   const levelColor =
-    parsed.level === 60 || parsed.level === 50
-      ? 'text-red-500'
-      : parsed.level === 40
-        ? 'text-amber-500'
-        : parsed.level === 30
-          ? 'text-blue-500'
-          : 'text-muted-foreground'
+    parsed.level === 60 || parsed.level === 50 ?
+      'text-red-500' :
+      parsed.level === 40 ?
+        'text-amber-500' :
+        parsed.level === 30 ?
+          'text-blue-500' :
+          'text-muted-foreground'
 
   const time = parsed.time ? new Date(parsed.time).toLocaleTimeString() : ''
   const msg = parsed.msg ?? line
 
   return (
     <div className="whitespace-pre-wrap break-all py-px">
-      {time ? <span className="text-muted-foreground/60">{time} </span> : null}
-      <span className={levelColor}>{levelName}</span>{' '}
+      {time ?
+          (
+            <span className="text-muted-foreground/60">
+              {time}
+              {' '}
+            </span>
+          ) :
+        null}
+      <span className={levelColor}>{levelName}</span>
+      {' '}
       <span>
         <HighlightText text={msg} highlight={highlight} />
       </span>
@@ -624,7 +646,7 @@ function CleanupSection({ open }: { open: boolean }) {
         <Switch
           size="sm"
           checked={worktreeCleanupData?.enabled ?? false}
-          onCheckedChange={(checked) => setWorktreeAutoCleanup.mutate(checked)}
+          onCheckedChange={checked => setWorktreeAutoCleanup.mutate(checked)}
         />
       </div>
 
@@ -640,11 +662,11 @@ function CleanupSection({ open }: { open: boolean }) {
           label={t('settings.cleanupLogs')}
           count={cleanupStats?.logs.logCount}
           hint={
-            cleanupStats
-              ? t('settings.cleanupLogsHint', {
+            cleanupStats ?
+                t('settings.cleanupLogsHint', {
                   tools: cleanupStats.logs.toolCallCount,
-                })
-              : undefined
+                }) :
+              undefined
           }
           loading={runCleanup.isPending}
           onClean={() => runCleanup.mutate(['logs'])}
@@ -653,9 +675,9 @@ function CleanupSection({ open }: { open: boolean }) {
           label={t('settings.cleanupOldVersions')}
           count={cleanupStats?.oldVersions.items.length}
           hint={
-            cleanupStats?.oldVersions.totalSize
-              ? formatSize(cleanupStats.oldVersions.totalSize)
-              : undefined
+            cleanupStats?.oldVersions.totalSize ?
+                formatSize(cleanupStats.oldVersions.totalSize) :
+              undefined
           }
           disabled={!cleanupStats?.oldVersions.items.length}
           loading={runCleanup.isPending}
@@ -665,9 +687,9 @@ function CleanupSection({ open }: { open: boolean }) {
           label={t('settings.cleanupWorktrees')}
           count={cleanupStats?.worktrees.count}
           hint={
-            cleanupStats?.worktrees.totalSize
-              ? formatSize(cleanupStats.worktrees.totalSize)
-              : undefined
+            cleanupStats?.worktrees.totalSize ?
+                formatSize(cleanupStats.worktrees.totalSize) :
+              undefined
           }
           disabled={!cleanupStats?.worktrees.count}
           loading={runCleanup.isPending}
@@ -677,11 +699,11 @@ function CleanupSection({ open }: { open: boolean }) {
           label={t('settings.cleanupDeletedIssues')}
           count={cleanupStats?.deletedIssues.issueCount}
           hint={
-            cleanupStats?.deletedIssues.projectCount
-              ? t('settings.cleanupDeletedIssuesHint', {
+            cleanupStats?.deletedIssues.projectCount ?
+                t('settings.cleanupDeletedIssuesHint', {
                   projects: cleanupStats.deletedIssues.projectCount,
-                })
-              : undefined
+                }) :
+              undefined
           }
           disabled={
             !cleanupStats?.deletedIssues.issueCount && !cleanupStats?.deletedIssues.projectCount
@@ -712,44 +734,50 @@ function RecycleBinSection({ open }: { open: boolean }) {
     <div className="space-y-3">
       <p className="text-xs text-muted-foreground">{t('settings.recycleBinHint')}</p>
 
-      {isLoading ? (
-        <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
-          <Loader2 className="size-3.5 animate-spin" />
-          {t('settings.recycleBinLoading')}
-        </div>
-      ) : !deletedIssues?.length ? (
-        <div className="py-4 text-center text-sm text-muted-foreground">
-          {t('settings.recycleBinEmpty')}
-        </div>
-      ) : (
-        <div className="flex flex-col gap-1">
-          {deletedIssues.map((issue) => (
-            <div key={issue.id} className="flex items-center gap-3 rounded-md border px-3 py-2">
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-xs font-medium">{issue.title}</div>
-                <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-                  <span>{issue.projectName}</span>
-                  <span className="text-muted-foreground/50">·</span>
-                  <span>{formatDate(issue.deletedAt)}</span>
-                </div>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => restoreIssue.mutate(issue.id)}
-                disabled={restoreIssue.isPending}
-              >
-                {restoreIssue.isPending ? (
-                  <Loader2 className="size-3 animate-spin" />
-                ) : (
-                  <RotateCcw className="size-3" />
-                )}
-                {t('settings.recycleBinRestore')}
-              </Button>
+      {isLoading ?
+          (
+            <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
+              <Loader2 className="size-3.5 animate-spin" />
+              {t('settings.recycleBinLoading')}
             </div>
-          ))}
-        </div>
-      )}
+          ) :
+          !deletedIssues?.length ?
+              (
+                <div className="py-4 text-center text-sm text-muted-foreground">
+                  {t('settings.recycleBinEmpty')}
+                </div>
+              ) :
+              (
+                <div className="flex flex-col gap-1">
+                  {deletedIssues.map(issue => (
+                    <div key={issue.id} className="flex items-center gap-3 rounded-md border px-3 py-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-xs font-medium">{issue.title}</div>
+                        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                          <span>{issue.projectName}</span>
+                          <span className="text-muted-foreground/50">·</span>
+                          <span>{formatDate(issue.deletedAt)}</span>
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => restoreIssue.mutate(issue.id)}
+                        disabled={restoreIssue.isPending}
+                      >
+                        {restoreIssue.isPending ?
+                            (
+                              <Loader2 className="size-3 animate-spin" />
+                            ) :
+                            (
+                              <RotateCcw className="size-3" />
+                            )}
+                        {t('settings.recycleBinRestore')}
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
     </div>
   )
 }
@@ -760,7 +788,7 @@ function ModelsSection({ open }: { open: boolean }) {
   const engines = discovery?.engines
   const models = discovery?.models
   const availableEngines = useMemo(
-    () => engines?.filter((e) => e.installed && e.authStatus !== 'unauthenticated') ?? [],
+    () => engines?.filter(e => e.installed && e.authStatus !== 'unauthenticated') ?? [],
     [engines],
   )
   const { data: profiles } = useEngineProfiles(open)
@@ -772,37 +800,39 @@ function ModelsSection({ open }: { open: boolean }) {
 
   return (
     <div className="space-y-4">
-      {!enginesLoading && availableEngines.length > 0 ? (
-        <Field>
-          <Label>{t('settings.defaultEngine')}</Label>
-          <div className="mt-1.5 flex flex-wrap gap-1.5">
-            {availableEngines.map((eng) => {
-              const profile = profiles?.find((p) => p.engineType === eng.engineType)
-              const isSelected =
-                eng.engineType === engineSettings?.defaultEngine ||
-                (!engineSettings?.defaultEngine &&
-                  eng.engineType === availableEngines[0]?.engineType)
-              return (
-                <button
-                  key={eng.engineType}
-                  type="button"
-                  onClick={() => updateDefaultEngine.mutate(eng.engineType)}
-                  className={cn(
-                    'inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors',
-                    isSelected
-                      ? 'border-primary bg-primary/10 text-primary'
-                      : 'text-muted-foreground hover:bg-accent/50',
-                  )}
-                >
-                  <EngineIcon engineType={eng.engineType} className="h-3.5 w-3.5 shrink-0" />
-                  {profile?.name ?? eng.engineType}
-                </button>
-              )
-            })}
-          </div>
-          <p className="text-[11px] text-muted-foreground">{t('settings.defaultEngineHint')}</p>
-        </Field>
-      ) : null}
+      {!enginesLoading && availableEngines.length > 0 ?
+          (
+            <Field>
+              <Label>{t('settings.defaultEngine')}</Label>
+              <div className="mt-1.5 flex flex-wrap gap-1.5">
+                {availableEngines.map((eng) => {
+                  const profile = profiles?.find(p => p.engineType === eng.engineType)
+                  const isSelected =
+                    eng.engineType === engineSettings?.defaultEngine ||
+                    (!engineSettings?.defaultEngine &&
+                      eng.engineType === availableEngines[0]?.engineType)
+                  return (
+                    <button
+                      key={eng.engineType}
+                      type="button"
+                      onClick={() => updateDefaultEngine.mutate(eng.engineType)}
+                      className={cn(
+                        'inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors',
+                        isSelected ?
+                          'border-primary bg-primary/10 text-primary' :
+                          'text-muted-foreground hover:bg-accent/50',
+                      )}
+                    >
+                      <EngineIcon engineType={eng.engineType} className="h-3.5 w-3.5 shrink-0" />
+                      {profile?.name ?? eng.engineType}
+                    </button>
+                  )
+                })}
+              </div>
+              <p className="text-[11px] text-muted-foreground">{t('settings.defaultEngineHint')}</p>
+            </Field>
+          ) :
+        null}
 
       <div className="flex items-center justify-between">
         <Label>{t('settings.engines')}</Label>
@@ -813,37 +843,40 @@ function ModelsSection({ open }: { open: boolean }) {
       </div>
 
       <div className="flex flex-col gap-2">
-        {enginesLoading ? (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            {t('settings.detecting')}
-          </div>
-        ) : showNoAvailableEngines ? (
-          <div className="text-sm text-muted-foreground py-2">
-            {t('settings.noAvailableEngines')}
-          </div>
-        ) : (
-          availableEngines.map((engine) => {
-            const profile = profiles?.find((p) => p.engineType === engine.engineType)
-            const engineModels = models?.[engine.engineType] ?? []
-            const savedDefault = engineSettings?.engines[engine.engineType]?.defaultModel
-            return (
-              <EngineCard
-                key={engine.engineType}
-                engine={engine}
-                profile={profile}
-                models={engineModels}
-                savedDefault={savedDefault}
-                onChangeDefault={(modelId) =>
-                  updateModelSetting.mutate({
-                    engineType: engine.engineType,
-                    defaultModel: modelId,
-                  })
-                }
-              />
-            )
-          })
-        )}
+        {enginesLoading ?
+            (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                {t('settings.detecting')}
+              </div>
+            ) :
+          showNoAvailableEngines ?
+              (
+                <div className="text-sm text-muted-foreground py-2">
+                  {t('settings.noAvailableEngines')}
+                </div>
+              ) :
+              (
+                availableEngines.map((engine) => {
+                  const profile = profiles?.find(p => p.engineType === engine.engineType)
+                  const engineModels = models?.[engine.engineType] ?? []
+                  const savedDefault = engineSettings?.engines[engine.engineType]?.defaultModel
+                  return (
+                    <EngineCard
+                      key={engine.engineType}
+                      engine={engine}
+                      profile={profile}
+                      models={engineModels}
+                      savedDefault={savedDefault}
+                      onChangeDefault={modelId =>
+                        updateModelSetting.mutate({
+                          engineType: engine.engineType,
+                          defaultModel: modelId,
+                        })}
+                    />
+                  )
+                })
+              )}
       </div>
     </div>
   )
@@ -909,18 +942,20 @@ function AboutSection({ open }: { open: boolean }) {
         <div className="rounded-md border px-3 py-1 divide-y divide-border">
           <InfoRow
             label={t('settings.aboutVersion')}
-            value={
+            value={(
               <span className="flex items-center gap-1.5">
                 <Badge variant="outline" className="font-mono text-[10px] py-0">
                   {data.app.version === 'dev' ? 'dev' : `v${data.app.version}`}
                 </Badge>
-                {data.app.isPackageMode ? (
-                  <Badge variant="secondary" className="text-[10px] py-0">
-                    pkg
-                  </Badge>
-                ) : null}
+                {data.app.isPackageMode ?
+                    (
+                      <Badge variant="secondary" className="text-[10px] py-0">
+                        pkg
+                      </Badge>
+                    ) :
+                  null}
               </span>
-            }
+            )}
           />
           <InfoRow label={t('settings.aboutCommit')} value={data.app.commit} mono />
           <InfoRow label={t('settings.aboutUptime')} value={formatUptime(data.app.uptime)} />
@@ -998,15 +1033,17 @@ function UpgradeSection({ open }: { open: boolean }) {
         <div className="flex min-w-0 flex-wrap items-center gap-1.5">
           <span className="shrink-0 text-muted-foreground">{t('settings.currentVersion')}</span>
           <Badge variant="outline" className="shrink-0 font-mono">
-            {versionInfo?.version === 'dev'
-              ? t('settings.devBuild')
-              : `v${versionInfo?.version ?? '...'}`}
+            {versionInfo?.version === 'dev' ?
+                t('settings.devBuild') :
+              `v${versionInfo?.version ?? '...'}`}
           </Badge>
-          {versionInfo?.isPackageMode ? (
-            <Badge variant="secondary" className="shrink-0 text-[10px] py-0">
-              {t('settings.packageMode')}
-            </Badge>
-          ) : null}
+          {versionInfo?.isPackageMode ?
+              (
+                <Badge variant="secondary" className="shrink-0 text-[10px] py-0">
+                  {t('settings.packageMode')}
+                </Badge>
+              ) :
+            null}
         </div>
         <div className="flex min-w-0 items-center gap-1.5">
           <span className="shrink-0 text-muted-foreground">{t('settings.buildId')}</span>
@@ -1029,156 +1066,191 @@ function UpgradeSection({ open }: { open: boolean }) {
       </div>
 
       {/* Upgrade status */}
-      {isEnabled ? (
-        <div className="mt-3 rounded-lg border p-3">
-          {checkForUpdates.isPending ? (
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Loader2 className="h-3 w-3 animate-spin" />
-              {t('settings.upgradeChecking')}
-            </div>
-          ) : checkResult?.hasUpdate ? (
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center gap-2 text-xs">
-                <ArrowDownToLine className="h-3.5 w-3.5 text-blue-500" />
-                <span className="font-medium text-blue-600 dark:text-blue-400">
-                  {t('settings.upgradeAvailable', {
-                    version: checkResult.latestVersion,
-                  })}
-                </span>
-              </div>
-              {dlStatus?.status === 'downloading' ? (
-                <div className="flex flex-col gap-1.5">
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                    {t('settings.upgradeDownloading', {
-                      progress: dlStatus.progress,
-                    })}
-                  </div>
-                  <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-blue-500 transition-all duration-300"
-                      style={{ width: `${dlStatus.progress}%` }}
-                    />
-                  </div>
-                </div>
-              ) : dlStatus?.status === 'verifying' ? (
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                  {t('settings.upgradeVerifying')}
-                </div>
-              ) : dlStatus?.status === 'verified' ? (
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center gap-2 text-xs text-emerald-600 dark:text-emerald-400">
-                    <CircleCheck className="h-3 w-3" />
-                    {t('settings.upgradeVerified')}
-                    <Badge variant="outline" className="text-[10px] py-0">
-                      {t('settings.upgradeChecksumOk')}
-                    </Badge>
-                  </div>
-                  <Button
-                    variant="default"
-                    size="sm"
-                    onClick={handleRestart}
-                    disabled={restartWithUpgrade.isPending}
-                  >
-                    {restartWithUpgrade.isPending ? (
+      {isEnabled ?
+          (
+            <div className="mt-3 rounded-lg border p-3">
+              {checkForUpdates.isPending ?
+                  (
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <Loader2 className="h-3 w-3 animate-spin" />
-                    ) : (
-                      <RefreshCw className="h-3 w-3" />
-                    )}
-                    {restartWithUpgrade.isPending
-                      ? t('settings.upgradeRestarting')
-                      : t('settings.upgradeRestart')}
-                  </Button>
-                </div>
-              ) : dlStatus?.status === 'completed' ? (
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center gap-2 text-xs text-emerald-600 dark:text-emerald-400">
-                    <CircleCheck className="h-3 w-3" />
-                    {t('settings.upgradeDownloaded')}
-                    {dlStatus.fileName ? (
-                      <span
-                        className="min-w-0 truncate font-mono text-[10px] text-muted-foreground"
-                        title={dlStatus.fileName}
-                      >
-                        {dlStatus.fileName}
-                      </span>
-                    ) : null}
-                  </div>
-                  <Button
-                    variant="default"
-                    size="sm"
-                    onClick={handleRestart}
-                    disabled={restartWithUpgrade.isPending}
-                  >
-                    {restartWithUpgrade.isPending ? (
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                    ) : (
-                      <RefreshCw className="h-3 w-3" />
-                    )}
-                    {restartWithUpgrade.isPending
-                      ? t('settings.upgradeRestarting')
-                      : t('settings.upgradeRestart')}
-                  </Button>
-                </div>
-              ) : dlStatus?.status === 'failed' ? (
-                <div className="flex items-center gap-2 text-xs text-red-600 dark:text-red-400">
-                  <CircleAlert className="h-3 w-3" />
-                  {t('settings.upgradeDownloadFailed')}
-                  {dlStatus.checksumMatch === false ? (
-                    <Badge variant="destructive" className="text-[10px] py-0">
-                      {t('settings.upgradeChecksumFailed')}
-                    </Badge>
-                  ) : null}
-                </div>
-              ) : checkResult.downloadUrl ? (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleDownload}
-                  disabled={downloadUpdate.isPending}
-                >
-                  <ArrowDownToLine className="h-3 w-3" />
-                  {t('settings.upgradeDownload')}
-                  {checkResult.assetSize ? (
-                    <span className="text-muted-foreground ml-1">
-                      ({(checkResult.assetSize / 1024 / 1024).toFixed(1)} MB)
-                    </span>
-                  ) : null}
-                </Button>
-              ) : null}
-            </div>
-          ) : checkResult ? (
-            <div className="flex items-center gap-2 text-xs text-emerald-600 dark:text-emerald-400">
-              <CircleCheck className="h-3 w-3" />
-              {t('settings.upgradeUpToDate')}
-            </div>
-          ) : (
-            <div className="text-xs text-muted-foreground">{t('settings.upgradeNoRelease')}</div>
-          )}
+                      {t('settings.upgradeChecking')}
+                    </div>
+                  ) :
+                checkResult?.hasUpdate ?
+                    (
+                      <div className="flex flex-col gap-2">
+                        <div className="flex items-center gap-2 text-xs">
+                          <ArrowDownToLine className="h-3.5 w-3.5 text-blue-500" />
+                          <span className="font-medium text-blue-600 dark:text-blue-400">
+                            {t('settings.upgradeAvailable', {
+                              version: checkResult.latestVersion,
+                            })}
+                          </span>
+                        </div>
+                        {dlStatus?.status === 'downloading' ?
+                            (
+                              <div className="flex flex-col gap-1.5">
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                  {t('settings.upgradeDownloading', {
+                                    progress: dlStatus.progress,
+                                  })}
+                                </div>
+                                <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                                  <div
+                                    className="h-full rounded-full bg-blue-500 transition-all duration-300"
+                                    style={{ width: `${dlStatus.progress}%` }}
+                                  />
+                                </div>
+                              </div>
+                            ) :
+                          dlStatus?.status === 'verifying' ?
+                              (
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                  {t('settings.upgradeVerifying')}
+                                </div>
+                              ) :
+                            dlStatus?.status === 'verified' ?
+                                (
+                                  <div className="flex flex-col gap-2">
+                                    <div className="flex items-center gap-2 text-xs text-emerald-600 dark:text-emerald-400">
+                                      <CircleCheck className="h-3 w-3" />
+                                      {t('settings.upgradeVerified')}
+                                      <Badge variant="outline" className="text-[10px] py-0">
+                                        {t('settings.upgradeChecksumOk')}
+                                      </Badge>
+                                    </div>
+                                    <Button
+                                      variant="default"
+                                      size="sm"
+                                      onClick={handleRestart}
+                                      disabled={restartWithUpgrade.isPending}
+                                    >
+                                      {restartWithUpgrade.isPending ?
+                                          (
+                                            <Loader2 className="h-3 w-3 animate-spin" />
+                                          ) :
+                                          (
+                                            <RefreshCw className="h-3 w-3" />
+                                          )}
+                                      {restartWithUpgrade.isPending ?
+                                          t('settings.upgradeRestarting') :
+                                          t('settings.upgradeRestart')}
+                                    </Button>
+                                  </div>
+                                ) :
+                              dlStatus?.status === 'completed' ?
+                                  (
+                                    <div className="flex flex-col gap-2">
+                                      <div className="flex items-center gap-2 text-xs text-emerald-600 dark:text-emerald-400">
+                                        <CircleCheck className="h-3 w-3" />
+                                        {t('settings.upgradeDownloaded')}
+                                        {dlStatus.fileName ?
+                                            (
+                                              <span
+                                                className="min-w-0 truncate font-mono text-[10px] text-muted-foreground"
+                                                title={dlStatus.fileName}
+                                              >
+                                                {dlStatus.fileName}
+                                              </span>
+                                            ) :
+                                          null}
+                                      </div>
+                                      <Button
+                                        variant="default"
+                                        size="sm"
+                                        onClick={handleRestart}
+                                        disabled={restartWithUpgrade.isPending}
+                                      >
+                                        {restartWithUpgrade.isPending ?
+                                            (
+                                              <Loader2 className="h-3 w-3 animate-spin" />
+                                            ) :
+                                            (
+                                              <RefreshCw className="h-3 w-3" />
+                                            )}
+                                        {restartWithUpgrade.isPending ?
+                                            t('settings.upgradeRestarting') :
+                                            t('settings.upgradeRestart')}
+                                      </Button>
+                                    </div>
+                                  ) :
+                                dlStatus?.status === 'failed' ?
+                                    (
+                                      <div className="flex items-center gap-2 text-xs text-red-600 dark:text-red-400">
+                                        <CircleAlert className="h-3 w-3" />
+                                        {t('settings.upgradeDownloadFailed')}
+                                        {dlStatus.checksumMatch === false ?
+                                            (
+                                              <Badge variant="destructive" className="text-[10px] py-0">
+                                                {t('settings.upgradeChecksumFailed')}
+                                              </Badge>
+                                            ) :
+                                          null}
+                                      </div>
+                                    ) :
+                                  checkResult.downloadUrl ?
+                                      (
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={handleDownload}
+                                          disabled={downloadUpdate.isPending}
+                                        >
+                                          <ArrowDownToLine className="h-3 w-3" />
+                                          {t('settings.upgradeDownload')}
+                                          {checkResult.assetSize ?
+                                              (
+                                                <span className="text-muted-foreground ml-1">
+                                                  (
+                                                  {(checkResult.assetSize / 1024 / 1024).toFixed(1)}
+                                                  {' '}
+                                                  MB)
+                                                </span>
+                                              ) :
+                                            null}
+                                        </Button>
+                                      ) :
+                                    null}
+                      </div>
+                    ) :
+                  checkResult ?
+                      (
+                        <div className="flex items-center gap-2 text-xs text-emerald-600 dark:text-emerald-400">
+                          <CircleCheck className="h-3 w-3" />
+                          {t('settings.upgradeUpToDate')}
+                        </div>
+                      ) :
+                      (
+                        <div className="text-xs text-muted-foreground">{t('settings.upgradeNoRelease')}</div>
+                      )}
 
-          <div className="mt-2 flex items-center justify-between">
-            {checkResult?.checkedAt ? (
-              <span className="text-[10px] text-muted-foreground">
-                {t('settings.upgradeLastChecked', {
-                  time: formatTime(checkResult.checkedAt),
-                })}
-              </span>
-            ) : (
-              <span />
-            )}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleCheck}
-              disabled={checkForUpdates.isPending}
-            >
-              <RefreshCw className={cn('h-3 w-3', checkForUpdates.isPending && 'animate-spin')} />
-              {t('settings.upgradeCheckNow')}
-            </Button>
-          </div>
-        </div>
-      ) : null}
+              <div className="mt-2 flex items-center justify-between">
+                {checkResult?.checkedAt ?
+                    (
+                      <span className="text-[10px] text-muted-foreground">
+                        {t('settings.upgradeLastChecked', {
+                          time: formatTime(checkResult.checkedAt),
+                        })}
+                      </span>
+                    ) :
+                    (
+                      <span />
+                    )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleCheck}
+                  disabled={checkForUpdates.isPending}
+                >
+                  <RefreshCw className={cn('h-3 w-3', checkForUpdates.isPending && 'animate-spin')} />
+                  {t('settings.upgradeCheckNow')}
+                </Button>
+              </div>
+            </div>
+          ) :
+        null}
     </div>
   )
 }
@@ -1199,15 +1271,15 @@ function EngineCard({
   const { t } = useTranslation()
   const [expanded, setExpanded] = useState(false)
   const hasModels = models.length > 0
-  const builtInDefault = models.find((m) => m.isDefault)
+  const builtInDefault = models.find(m => m.isDefault)
   const selectedModel = savedDefault ?? builtInDefault?.id ?? ''
-  const selectedModelName = models.find((m) => m.id === selectedModel)?.name
+  const selectedModelName = models.find(m => m.id === selectedModel)?.name
 
   return (
     <div className="rounded-lg border overflow-hidden">
       <button
         type="button"
-        onClick={() => hasModels && setExpanded((v) => !v)}
+        onClick={() => hasModels && setExpanded(v => !v)}
         className={cn(
           'flex items-center gap-3 w-full px-3 py-2.5 text-left transition-colors',
           hasModels && 'hover:bg-accent/50 cursor-pointer',
@@ -1225,85 +1297,100 @@ function EngineCard({
             </span>
             {engine.version && (
               <Badge variant="outline" className="shrink-0">
-                v{engine.version}
+                v
+                {engine.version}
               </Badge>
             )}
           </div>
           <div className="flex items-center gap-1.5 mt-0.5 text-xs text-muted-foreground">
             {selectedModelName ? <span className="truncate">{selectedModelName}</span> : null}
-            {selectedModelName && hasModels ? (
-              <span className="text-muted-foreground/50">·</span>
-            ) : null}
-            {hasModels ? (
-              <span className="shrink-0">{t('settings.models', { count: models.length })}</span>
-            ) : null}
+            {selectedModelName && hasModels ?
+                (
+                  <span className="text-muted-foreground/50">·</span>
+                ) :
+              null}
+            {hasModels ?
+                (
+                  <span className="shrink-0">{t('settings.models', { count: models.length })}</span>
+                ) :
+              null}
           </div>
         </div>
         <div className="flex min-w-0 flex-wrap items-center justify-end gap-1.5">
-          {engine.installed ? (
-            <>
-              <StatusBadge ok label={t('settings.engineInstalled')} />
-              {engine.authStatus === 'authenticated' ? (
-                <StatusBadge ok label={t('settings.engineAuthenticated')} />
-              ) : engine.authStatus === 'unauthenticated' ? (
-                <StatusBadge ok={false} label={t('settings.engineUnauthenticated')} />
-              ) : null}
-            </>
-          ) : (
-            <StatusBadge ok={false} label={t('settings.engineNotInstalled')} />
-          )}
-          {hasModels ? (
-            <ChevronDown
-              className={cn(
-                'h-3.5 w-3.5 text-muted-foreground transition-transform',
-                expanded && 'rotate-180',
+          {engine.installed ?
+              (
+                <>
+                  <StatusBadge ok label={t('settings.engineInstalled')} />
+                  {engine.authStatus === 'authenticated' ?
+                      (
+                        <StatusBadge ok label={t('settings.engineAuthenticated')} />
+                      ) :
+                    engine.authStatus === 'unauthenticated' ?
+                        (
+                          <StatusBadge ok={false} label={t('settings.engineUnauthenticated')} />
+                        ) :
+                      null}
+                </>
+              ) :
+              (
+                <StatusBadge ok={false} label={t('settings.engineNotInstalled')} />
               )}
-            />
-          ) : null}
+          {hasModels ?
+              (
+                <ChevronDown
+                  className={cn(
+                    'h-3.5 w-3.5 text-muted-foreground transition-transform',
+                    expanded && 'rotate-180',
+                  )}
+                />
+              ) :
+            null}
         </div>
       </button>
 
-      {expanded && hasModels ? (
-        <div className="border-t px-3 py-2 flex flex-col gap-1">
-          <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-0.5">
-            {t('settings.defaultModel')}
-          </span>
-          {models.map((m) => {
-            const isSelected = m.id === selectedModel
-            return (
-              <button
-                key={m.id}
-                type="button"
-                onClick={() => onChangeDefault(m.id)}
-                className={cn(
-                  'flex items-center gap-2 rounded-md px-2.5 py-1.5 text-xs transition-colors text-left',
-                  isSelected
-                    ? 'bg-primary/10 text-primary font-medium'
-                    : 'text-foreground/80 hover:bg-accent/50',
-                )}
-              >
-                <span className="flex-1 truncate">
-                  {m.name}
-                  {m.isDefault ? ` (${t('createIssue.engineLabel.default')})` : ''}
-                </span>
-                {isSelected ? <Check className="h-3 w-3 shrink-0" /> : null}
-              </button>
-            )
-          })}
-        </div>
-      ) : null}
+      {expanded && hasModels ?
+          (
+            <div className="border-t px-3 py-2 flex flex-col gap-1">
+              <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-0.5">
+                {t('settings.defaultModel')}
+              </span>
+              {models.map((m) => {
+                const isSelected = m.id === selectedModel
+                return (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => onChangeDefault(m.id)}
+                    className={cn(
+                      'flex items-center gap-2 rounded-md px-2.5 py-1.5 text-xs transition-colors text-left',
+                      isSelected ?
+                        'bg-primary/10 text-primary font-medium' :
+                        'text-foreground/80 hover:bg-accent/50',
+                    )}
+                  >
+                    <span className="flex-1 truncate">
+                      {m.name}
+                      {m.isDefault ? ` (${t('createIssue.engineLabel.default')})` : ''}
+                    </span>
+                    {isSelected ? <Check className="h-3 w-3 shrink-0" /> : null}
+                  </button>
+                )
+              })}
+            </div>
+          ) :
+        null}
     </div>
   )
 }
 
-function StatusBadge({ ok, label }: { ok: boolean; label: string }) {
+function StatusBadge({ ok, label }: { ok: boolean, label: string }) {
   return (
     <span
       className={cn(
         'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium',
-        ok
-          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-          : 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+        ok ?
+          'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' :
+          'bg-amber-500/10 text-amber-600 dark:text-amber-400',
       )}
     >
       {ok ? <Check className="h-2.5 w-2.5" /> : <CircleAlert className="h-2.5 w-2.5" />}

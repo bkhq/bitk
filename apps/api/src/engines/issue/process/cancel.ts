@@ -12,7 +12,7 @@ import { logger } from '@/logger'
 export async function cancel(
   ctx: EngineContext,
   executionId: string,
-  opts: { emitCancelledState?: boolean; hard?: boolean } = {},
+  opts: { emitCancelledState?: boolean, hard?: boolean } = {},
 ): Promise<void> {
   const entry = ctx.pm.get(executionId)
   if (!entry) return
