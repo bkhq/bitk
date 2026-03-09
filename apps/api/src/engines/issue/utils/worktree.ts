@@ -32,18 +32,18 @@ export async function createWorktree(
   await mkdir(join(WORKTREE_BASE, projectId), { recursive: true })
 
   // Create worktree with a new branch off HEAD
-  const { code } = await runCommand(
+  const result = await runCommand(
     ['git', 'worktree', 'add', '-b', branchName, worktreeDir],
     { cwd: baseDir, stderr: 'pipe' },
   )
-  if (code !== 0) {
+  if (result.code !== 0) {
     // Branch may already exist from a previous run — try without -b
     const retry = await runCommand(
       ['git', 'worktree', 'add', worktreeDir, branchName],
       { cwd: baseDir, stderr: 'pipe' },
     )
     if (retry.code !== 0) {
-      throw new Error(`Failed to create worktree (exit ${code} / ${retry.code})`)
+      throw new Error(`Failed to create worktree: ${result.stderr.trim()} / ${retry.stderr.trim()}`)
     }
   }
   logger.debug({ issueId, worktreeDir, branchName }, 'worktree_created')

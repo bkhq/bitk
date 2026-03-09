@@ -25,7 +25,7 @@ async function extractArchive(archivePath: string, destDir: string): Promise<voi
   mkdirSync(tmpDir, { recursive: true })
 
   try {
-    const { code: exitCode, stdout: stderr } = await runCommand(
+    const { code: exitCode, stderr } = await runCommand(
       ['tar', '-xzf', archivePath, '-C', tmpDir, '--no-same-owner', '--no-overwrite-dir'],
       { stderr: 'pipe' },
     )

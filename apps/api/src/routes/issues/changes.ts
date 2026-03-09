@@ -70,9 +70,8 @@ async function resolveChangesDir(
 async function runGit(
   args: string[],
   cwd: string,
-): Promise<{ code: number, stdout: string, stderr: string }> {
-  const { code, stdout } = await runCommand(['git', ...args], { cwd })
-  return { code, stdout, stderr: '' }
+): Promise<{ code: number, stdout: string }> {
+  return runCommand(['git', ...args], { cwd })
 }
 
 async function isGitRepo(cwd: string): Promise<boolean> {

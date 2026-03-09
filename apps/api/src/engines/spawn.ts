@@ -194,10 +194,11 @@ export function spawnNodeSync(
 export interface CommandResult {
   code: number
   stdout: string
+  stderr: string
 }
 
 /**
- * Convenience wrapper: spawn, capture stdout, wait for exit.
+ * Convenience wrapper: spawn, capture stdout (and stderr when piped), wait for exit.
  * Replaces the common pattern:
  *   const proc = Bun.spawn([...], { stdout: 'pipe', stderr: 'ignore' })
  *   const stdout = await new Response(proc.stdout).text()
@@ -213,13 +214,14 @@ export async function runCommand(
   },
 ): Promise<CommandResult> {
   const [program, ...args] = cmd
+  const pipeStderr = options?.stderr === 'pipe'
   const child = nodeSpawn(program!, args, {
     cwd: options?.cwd,
-    stdio: ['ignore', 'pipe', options?.stderr ?? 'ignore'],
+    stdio: ['ignore', 'pipe', pipeStderr ? 'pipe' : 'ignore'],
     env: options?.env as NodeJS.ProcessEnv,
   })
 
-  // Set up timeout via AbortController pattern
+  // Kill the child if it exceeds the timeout deadline
   let killTimer: ReturnType<typeof setTimeout> | undefined
   if (options?.timeout) {
     killTimer = setTimeout(() => {
@@ -229,33 +231,45 @@ export async function runCommand(
     }, options.timeout)
   }
 
-  const chunks: Buffer[] = []
-  child.stdout?.on('data', (chunk: Buffer) => chunks.push(chunk))
+  const stdoutChunks: Buffer[] = []
+  const stderrChunks: Buffer[] = []
+  child.stdout?.on('data', (chunk: Buffer) => stdoutChunks.push(chunk))
+  if (pipeStderr) {
+    child.stderr?.on('data', (chunk: Buffer) => stderrChunks.push(chunk))
+  }
 
+  // Wait for 'close' (not 'exit') to ensure all stdio streams are fully drained
   const code = await new Promise<number>((resolve, reject) => {
-    child.on('exit', code => resolve(code ?? 1))
+    child.on('close', code => resolve(code ?? 1))
     child.on('error', reject)
   })
 
   if (killTimer) clearTimeout(killTimer)
 
-  return { code, stdout: Buffer.concat(chunks).toString('utf-8') }
+  return {
+    code,
+    stdout: Buffer.concat(stdoutChunks).toString('utf-8'),
+    stderr: Buffer.concat(stderrChunks).toString('utf-8'),
+  }
 }
 
 // ---------- resolveCommand ----------
 
+const resolveCache = new Map<string, string | null>()
+
 /**
  * Resolve a command name to its full path, replacing Bun.which().
+ * Results are cached per-process since PATH rarely changes at runtime.
  */
 export function resolveCommand(name: string): string | null {
+  if (resolveCache.has(name)) return resolveCache.get(name)!
   const result = nodeSpawnSync('which', [name], {
     stdio: ['pipe', 'pipe', 'pipe'],
     encoding: 'utf-8',
   })
-  if (result.status === 0 && result.stdout) {
-    return result.stdout.trim()
-  }
-  return null
+  const resolved = result.status === 0 && result.stdout ? result.stdout.trim() : null
+  resolveCache.set(name, resolved)
+  return resolved
 }
 
 // ---------- Internal helpers ----------
