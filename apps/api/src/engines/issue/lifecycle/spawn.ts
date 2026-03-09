@@ -221,10 +221,9 @@ export async function spawnRetry(
     false,
     () => handleTurnCompleted(ctx, issueId, executionId),
     worktreePath ? baseDir : undefined,
+    workingDir,
+    spawned.externalSessionId ?? issue.sessionFields.externalSessionId ?? undefined,
   )
-  retryManaged.spawnCwd = workingDir
-  retryManaged.externalSessionId =
-    spawned.externalSessionId ?? issue.sessionFields.externalSessionId ?? undefined
   monitorCompletion(ctx, executionId, issueId, engineType, true)
   logger.debug({ issueId, executionId, engineType, turnIndex }, 'issue_retry_spawned')
 }
@@ -369,10 +368,9 @@ export async function spawnFollowUpProcess(
     metadata?.type === 'system',
     () => handleTurnCompleted(ctx, issueId, executionId),
     worktreePath ? baseDir : undefined,
+    workingDir,
+    spawned.externalSessionId ?? issue.sessionFields.externalSessionId ?? undefined,
   )
-  followUpManaged.spawnCwd = workingDir
-  followUpManaged.externalSessionId =
-    spawned.externalSessionId ?? issue.sessionFields.externalSessionId ?? undefined
   // User message already persisted above (before spawn)
   monitorCompletion(ctx, executionId, issueId, engineType, false)
   const followUpPid = getPidFromSubprocess(spawned.subprocess)

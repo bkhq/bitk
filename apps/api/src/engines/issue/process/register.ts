@@ -1,3 +1,4 @@
+import { kill } from 'node:process'
 import {
   getTranscriptPath,
   runTranscriptFallback,
@@ -33,6 +34,8 @@ export function register(
   metaTurn: boolean,
   onTurnCompleted: () => void,
   worktreeBaseDir?: string,
+  spawnCwd?: string,
+  externalSessionId?: string,
 ): ManagedProcess {
   const managed: ManagedProcess = {
     executionId,
@@ -56,6 +59,8 @@ export function register(
     worktreeBaseDir,
     worktreePath,
     pendingInputs: [],
+    spawnCwd,
+    externalSessionId,
   }
 
   ctx.pm.register(executionId, process.subprocess, managed, {
@@ -130,7 +135,7 @@ export function register(
       if (!pid) return
       let alive = false
       try {
-        process.kill(pid, 0)
+        kill(pid, 0)
         alive = true
       } catch {
         // process already dead — normal exit path
@@ -161,6 +166,9 @@ export function register(
         return
       }
 
+      // When running in a worktree, Claude CLI records the transcript under
+      // the worktree path. Use spawnCwd (the actual working directory) for
+      // the transcript path, not worktreeBaseDir.
       const transcriptPath = getTranscriptPath(cwd, sessionId)
       const cutoffTimestamp = m.lastActivityAt.toISOString()
       debugLog.event(

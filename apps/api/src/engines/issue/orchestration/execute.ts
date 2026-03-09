@@ -149,9 +149,9 @@ export async function executeIssue(
       false,
       () => handleTurnCompleted(ctx, issueId, executionId),
       worktreePath ? baseDir : undefined,
+      workingDir,
+      finalExternalSessionId,
     )
-    execManaged.spawnCwd = workingDir
-    execManaged.externalSessionId = finalExternalSessionId
     emitDiagnosticLog(
       issueId,
       executionId,

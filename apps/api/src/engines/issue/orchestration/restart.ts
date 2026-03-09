@@ -127,10 +127,9 @@ export async function restartIssue(
       false,
       () => handleTurnCompleted(ctx, issueId, executionId),
       worktreePath ? baseDir : undefined,
+      workingDir,
+      spawned.externalSessionId ?? issue.sessionFields.externalSessionId ?? undefined,
     )
-    restartManaged.spawnCwd = workingDir
-    restartManaged.externalSessionId =
-      spawned.externalSessionId ?? issue.sessionFields.externalSessionId ?? undefined
     monitorCompletion(ctx, executionId, issueId, engineType, false)
 
     // Mark pending messages as dispatched after successful spawn

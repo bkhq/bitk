@@ -384,6 +384,7 @@ export interface ProcessInfo {
   spawnCommand: string | null
   lastIdleAt: string | null
   pid: number | null
+  transcriptPath: string | null
 }
 
 export interface ProjectProcessesResponse {
