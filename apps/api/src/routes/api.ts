@@ -16,7 +16,7 @@ const apiRoutes = new Hono()
 apiRoutes.route('/projects', projects)
 apiRoutes.route('/projects/:projectId/issues', issues)
 apiRoutes.route('/issues/review', reviewIssues)
-apiRoutes.route('/projects/:projectId/files', files)
+apiRoutes.route('/files', files)
 apiRoutes.route('/projects/:projectId/processes', processes)
 apiRoutes.route('/projects/:projectId/worktrees', worktrees)
 

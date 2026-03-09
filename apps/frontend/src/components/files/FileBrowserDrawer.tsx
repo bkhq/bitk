@@ -1,96 +1,32 @@
-import {
-  Check,
-  Copy,
-  Download,
-  Eye,
-  EyeOff,
-  FolderOpen,
-  Maximize2,
-  Minimize2,
-  Minus,
-  X,
-} from 'lucide-react'
-import { useCallback, useRef, useState } from 'react'
+import { Maximize2, Minimize2, Minus, X } from 'lucide-react'
+import { useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useProject, useProjectFiles } from '@/hooks/use-kanban'
 import { useIsMobile } from '@/hooks/use-mobile'
-import { kanbanApi } from '@/lib/kanban-api'
 import {
   FILE_BROWSER_MAX_WIDTH_RATIO,
   FILE_BROWSER_MIN_WIDTH,
   useFileBrowserStore,
 } from '@/stores/file-browser-store'
-import { FileBreadcrumb } from './FileBreadcrumb'
-import { FileList } from './FileList'
-import { FileViewer } from './FileViewer'
+import { FileBrowserContent } from './FileBrowserContent'
 
 export function FileBrowserDrawer() {
   const { t } = useTranslation()
   const {
     isOpen,
     isFullscreen,
+    inlineMode,
     width,
     projectId,
-    rootPath,
-    currentPath,
-    hideIgnored,
     close,
     minimize,
     toggleFullscreen,
     setWidth,
-    navigateTo,
-    toggleHideIgnored,
   } = useFileBrowserStore()
   const isMobile = useIsMobile()
   const dragRef = useRef<{ startX: number, startWidth: number } | null>(null)
 
-  const [copied, setCopied] = useState(false)
-
-  const handleToggleIgnored = useCallback(() => {
-    toggleHideIgnored()
-    // No invalidateQueries needed — hideIgnored is part of the query key,
-    // so the key change on re-render triggers a fresh fetch automatically.
-  }, [toggleHideIgnored])
-
-  const handleCopyPath = useCallback(() => {
-    navigator.clipboard.writeText(currentPath === '.' ? '/' : currentPath)
-    setCopied(true)
-    setTimeout(setCopied, 1500, false)
-  }, [currentPath])
-
-  const handleDownload = useCallback(() => {
-    if (!projectId || currentPath === '.') return
-    const url = kanbanApi.rawFileUrl(projectId, currentPath, rootPath)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = ''
-    a.click()
-  }, [projectId, currentPath, rootPath])
-
-  const { data: project } = useProject(projectId ?? '')
-  const {
-    data: listing,
-    isLoading,
-    isError,
-    error,
-  } = useProjectFiles(projectId ?? '', currentPath, !!projectId && isOpen)
-
-  const handleEntryClick = useCallback(
-    (name: string, _type: 'file' | 'directory') => {
-      const newPath = currentPath === '.' ? name : `${currentPath}/${name}`
-      navigateTo(newPath)
-    },
-    [currentPath, navigateTo],
-  )
-
-  const handleFileBack = useCallback(() => {
-    const parentPath = currentPath.includes('/') ?
-        currentPath.slice(0, currentPath.lastIndexOf('/')) :
-      '.'
-    navigateTo(parentPath)
-  }, [currentPath, navigateTo])
-
-  if (!isOpen || !projectId) return null
+  // Skip rendering when an inline panel handles the file browser (issue/review pages)
+  if (!isOpen || !projectId || inlineMode) return null
 
   const viewportWidth = typeof window === 'undefined' ? 1024 : window.innerWidth
   const maxWidth = Math.round(viewportWidth * FILE_BROWSER_MAX_WIDTH_RATIO)
@@ -100,9 +36,9 @@ export function FileBrowserDrawer() {
   return (
     <>
       {/* Backdrop overlay */}
-      {fullscreen ?
-        null :
-          (
+      {fullscreen
+        ? null
+        : (
             <div className="fixed inset-0 z-[39] bg-black/20" onClick={close} onKeyDown={undefined} />
           )}
       <div
@@ -152,133 +88,44 @@ export function FileBrowserDrawer() {
           </div>
         )}
 
-        {/* Header */}
-        <div className="flex items-center justify-between px-3 py-1.5 border-b border-border shrink-0">
-          <div className="flex items-center gap-2 min-w-0">
-            <FolderOpen className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-            <span className="text-xs font-medium text-muted-foreground truncate">
-              {project?.name ?? t('fileBrowser.title')}
-              {rootPath ? ` (${rootPath.split('/').pop()})` : ''}
-            </span>
-          </div>
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={handleCopyPath}
-              className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-              aria-label={t('fileBrowser.copyPath')}
-              title={t('fileBrowser.copyPath')}
-            >
-              {copied ?
-                  (
-                    <Check className="h-3.5 w-3.5 text-green-500" />
-                  ) :
-                  (
-                    <Copy className="h-3.5 w-3.5" />
-                  )}
-            </button>
-            {listing?.type === 'file' && (
+        <FileBrowserContent
+          enabled={isOpen}
+          headerActions={(
+            <>
               <button
                 type="button"
-                onClick={handleDownload}
+                onClick={minimize}
                 className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                aria-label={t('fileBrowser.download')}
-                title={t('fileBrowser.download')}
+                aria-label={t('terminal.minimize')}
+                title={t('terminal.minimize')}
               >
-                <Download className="h-3.5 w-3.5" />
+                <Minus className="h-3.5 w-3.5" />
               </button>
-            )}
-            <button
-              type="button"
-              onClick={handleToggleIgnored}
-              className={`p-1 rounded transition-colors ${
-                hideIgnored ?
-                  'text-foreground bg-accent' :
-                  'text-muted-foreground hover:text-foreground hover:bg-accent'
-              }`}
-              aria-label={t('fileBrowser.hideIgnored')}
-              title={hideIgnored ? t('fileBrowser.showIgnored') : t('fileBrowser.hideIgnored')}
-            >
-              {hideIgnored ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-            </button>
-            <button
-              type="button"
-              onClick={minimize}
-              className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-              aria-label={t('terminal.minimize')}
-              title={t('terminal.minimize')}
-            >
-              <Minus className="h-3.5 w-3.5" />
-            </button>
-            {!isMobile && (
+              {!isMobile && (
+                <button
+                  type="button"
+                  onClick={toggleFullscreen}
+                  className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                  aria-label={t('terminal.maximize')}
+                  title={isFullscreen ? t('terminal.back') : t('terminal.maximize')}
+                >
+                  {isFullscreen
+                    ? <Minimize2 className="h-3.5 w-3.5" />
+                    : <Maximize2 className="h-3.5 w-3.5" />}
+                </button>
+              )}
               <button
                 type="button"
-                onClick={toggleFullscreen}
-                className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                aria-label={t('terminal.maximize')}
-                title={isFullscreen ? t('terminal.back') : t('terminal.maximize')}
+                onClick={close}
+                className="p-1 rounded text-muted-foreground hover:text-destructive hover:bg-accent transition-colors"
+                aria-label={t('fileBrowser.close')}
+                title={t('fileBrowser.close')}
               >
-                {isFullscreen ?
-                    (
-                      <Minimize2 className="h-3.5 w-3.5" />
-                    ) :
-                    (
-                      <Maximize2 className="h-3.5 w-3.5" />
-                    )}
+                <X className="h-3.5 w-3.5" />
               </button>
-            )}
-            <button
-              type="button"
-              onClick={close}
-              className="p-1 rounded text-muted-foreground hover:text-destructive hover:bg-accent transition-colors"
-              aria-label={t('fileBrowser.close')}
-              title={t('fileBrowser.close')}
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        </div>
-
-        {/* Breadcrumb */}
-        <div className="px-3 py-2 border-b border-border shrink-0">
-          <FileBreadcrumb
-            projectName={project?.name ?? ''}
-            path={currentPath}
-            onNavigate={navigateTo}
-          />
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 overflow-auto min-h-0 p-4 flex flex-col">
-          {!project?.directory ?
-              (
-                <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
-                  <FolderOpen className="h-12 w-12" />
-                  <p className="text-sm">{t('fileBrowser.noDirectory')}</p>
-                </div>
-              ) :
-            isLoading ?
-                (
-                  <div className="flex items-center justify-center py-16">
-                    <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                  </div>
-                ) :
-              isError ?
-                  (
-                    <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">
-                      {(error as Error)?.message || t('fileBrowser.loadError')}
-                    </div>
-                  ) :
-                listing?.type === 'file' ?
-                    (
-                      <FileViewer file={listing} onBack={handleFileBack} />
-                    ) :
-                  listing?.type === 'directory' ?
-                      (
-                        <FileList entries={listing.entries} onNavigate={handleEntryClick} />
-                      ) :
-                    null}
-        </div>
+            </>
+          )}
+        />
       </div>
     </>
   )

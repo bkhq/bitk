@@ -2,8 +2,6 @@ import { readdir, stat } from 'node:fs/promises'
 import { basename, resolve } from 'node:path'
 import type { Context } from 'hono'
 import { Hono } from 'hono'
-import { findProject, getAppSetting } from '@/db/helpers'
-import { WORKTREE_BASE } from '@/engines/issue/utils/worktree'
 
 interface FileEntry {
   name: string
@@ -55,71 +53,21 @@ async function getGitIgnoredNames(dir: string, names: string[]): Promise<Set<str
   }
 }
 
-/** Check if `dir` is a valid worktree directory for the given project. */
-function isValidWorktreeRoot(dir: string, projectId: string): boolean {
-  const prefix = `${resolve(WORKTREE_BASE, projectId)}/`
-  return dir.startsWith(prefix)
-}
-
-/** Resolve project root + validate path is inside it. */
-async function resolveProjectPath(c: Context, relativePath: string) {
-  const projectId = c.req.param('projectId') as string
-  const project = await findProject(projectId)
-  if (!project) {
+/** Resolve root from query param + validate sub-path stays inside it. */
+function resolveRootPath(c: Context, relativePath: string) {
+  const rootParam = c.req.query('root')
+  if (!rootParam) {
     return {
-      error: c.json({ success: false, error: 'Project not found' }, 404),
-    }
-  }
-  if (!project.directory) {
-    return {
-      error: c.json({ success: false, error: 'Project has no directory configured' }, 400),
+      error: c.json({ success: false, error: 'Missing required query parameter: root' }, 400),
     }
   }
 
-  // Determine root: use `root` query param if it's a valid worktree for this project
-  const rootOverride = c.req.query('root')
-  let root: string
-
-  if (rootOverride) {
-    const resolvedOverride = resolve(rootOverride)
-    if (
-      resolvedOverride === resolve(project.directory) ||
-      isValidWorktreeRoot(resolvedOverride, projectId)
-    ) {
-      root = resolvedOverride
-    } else {
-      return {
-        error: c.json(
-          {
-            success: false,
-            error: 'Root is not a valid project or worktree directory',
-          },
-          403,
-        ),
-      }
-    }
-  } else {
-    root = resolve(project.directory)
-  }
-
-  // SEC: Validate project directory is within configured workspace root
-  if (!rootOverride) {
-    const workspaceRoot = await getAppSetting('workspace:defaultPath')
-    if (workspaceRoot && workspaceRoot !== '/') {
-      const resolvedWs = resolve(workspaceRoot)
-      if (!root.startsWith(`${resolvedWs}/`) && root !== resolvedWs) {
-        return {
-          error: c.json({ success: false, error: 'Project directory is outside workspace' }, 403),
-        }
-      }
-    }
-  }
-
+  const root = resolve(rootParam)
   const target = resolve(root, relativePath)
 
   if (!isInsideRoot(target, root)) {
     return {
-      error: c.json({ success: false, error: 'Path is outside project directory' }, 403),
+      error: c.json({ success: false, error: 'Path is outside root directory' }, 403),
     }
   }
 
@@ -133,13 +81,17 @@ function extractPathAfter(c: Context, marker: string): string {
   if (idx < 0) return '.'
   const raw = fullPath.slice(idx + marker.length)
   if (!raw) return '.'
-  return decodeURIComponent(raw)
+  try {
+    return decodeURIComponent(raw)
+  } catch {
+    return raw
+  }
 }
 
 // ── /files/show — JSON browse (directory listing + file preview) ──
 
 async function handleShow(c: Context, relativePath: string) {
-  const resolved = await resolveProjectPath(c, relativePath)
+  const resolved = resolveRootPath(c, relativePath)
   if ('error' in resolved) return resolved.error
   const { root, target } = resolved
 
@@ -150,7 +102,7 @@ async function handleShow(c: Context, relativePath: string) {
 
     // ── File: return content as JSON ──
     if (targetStat.isFile()) {
-      const relPath = target.slice(root.length + 1)
+      const relPath = target === root ? basename(target) : target.slice(root.length + 1)
       const isTruncated = targetStat.size > MAX_FILE_SIZE
       const buf = Buffer.alloc(Math.min(targetStat.size, MAX_FILE_SIZE))
 
@@ -190,9 +142,9 @@ async function handleShow(c: Context, relativePath: string) {
     const dirents = await readdir(target, { withFileTypes: true })
     const validNames = dirents.filter(d => d.isFile() || d.isDirectory()).map(d => d.name)
 
-    const ignoredNames = hideIgnored ?
-        await getGitIgnoredNames(target, validNames) :
-        new Set<string>()
+    const ignoredNames = hideIgnored
+      ? await getGitIgnoredNames(target, validNames)
+      : new Set<string>()
 
     const entries: FileEntry[] = []
 
@@ -242,7 +194,7 @@ async function handleShow(c: Context, relativePath: string) {
 // ── /files/raw — raw file download ──
 
 async function handleRaw(c: Context, relativePath: string) {
-  const resolved = await resolveProjectPath(c, relativePath)
+  const resolved = resolveRootPath(c, relativePath)
   if ('error' in resolved) return resolved.error
   const { target } = resolved
 
@@ -274,12 +226,12 @@ async function handleRaw(c: Context, relativePath: string) {
 
 const files = new Hono()
 
-// GET /files/show — root directory listing
+// GET /files/show?root=... — root directory listing
 files.get('/show', c => handleShow(c, '.'))
-// GET /files/show/* — browse any sub-path
+// GET /files/show/*?root=... — browse any sub-path
 files.get('/show/*', c => handleShow(c, extractPathAfter(c, '/show/')))
 
-// GET /files/raw/* — download raw file
+// GET /files/raw/*?root=... — download raw file
 files.get('/raw/*', c => handleRaw(c, extractPathAfter(c, '/raw/')))
 
 export default files

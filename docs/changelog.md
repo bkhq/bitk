@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-03-09 03:00 [BUG-P1]
+
+BUG-005: File browser rejects valid worktree root paths
+
+- Decoupled file browser API from project context: `/api/files/show?root=<path>` (was `/api/projects/:projectId/files/show`)
+- Removed project/worktree validation, only path traversal prevention remains
+- Frontend resolves root from `rootPath ?? project.directory`
+- Fixed `toggle()` leaking stale `rootPath` across projects
+
 ## 2026-03-09 00:05 [progress]
 
 FEAT-003：MAX_CONCURRENT_EXECUTIONS 可通过设置页面配置

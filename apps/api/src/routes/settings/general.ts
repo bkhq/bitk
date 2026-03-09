@@ -235,7 +235,7 @@ general.patch(
       return c.json(
         {
           success: false,
-          error: result.error.issues.map((i) => i.message).join(', '),
+          error: result.error.issues.map(i => i.message).join(', '),
         },
         400,
       )

@@ -401,14 +401,14 @@ export const kanbanApi = {
   restartWithUpgrade: () => post<{ status: string }>('/api/settings/upgrade/restart', {}),
 
   // File Browser
-  listFiles: (projectId: string, path?: string, hideIgnored?: boolean, root?: string | null) => {
+  listFiles: (root: string, path?: string, hideIgnored?: boolean) => {
     const encodedPath =
       path && path !== '.' ? `/${path.split('/').map(encodeURIComponent).join('/')}` : ''
     const params = new URLSearchParams()
+    params.set('root', root)
     if (hideIgnored) params.set('hideIgnored', 'true')
-    if (root) params.set('root', root)
-    const qs = params.toString() ? `?${params.toString()}` : ''
-    return get<FileListingResult>(`/api/projects/${projectId}/files/show${encodedPath}${qs}`)
+    const qs = `?${params.toString()}`
+    return get<FileListingResult>(`/api/files/show${encodedPath}${qs}`)
   },
 
   // Process Manager
@@ -421,10 +421,9 @@ export const kanbanApi = {
       {},
     ),
 
-  rawFileUrl: (projectId: string, path: string, root?: string | null) => {
+  rawFileUrl: (root: string, path: string) => {
     const encodedPath = path.split('/').map(encodeURIComponent).join('/')
-    const qs = root ? `?root=${encodeURIComponent(root)}` : ''
-    return `/api/projects/${projectId}/files/raw/${encodedPath}${qs}`
+    return `/api/files/raw/${encodedPath}?root=${encodeURIComponent(root)}`
   },
 
   // Webhooks

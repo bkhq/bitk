@@ -18,6 +18,8 @@ interface FileBrowserStore {
   isOpen: boolean
   isMinimized: boolean
   isFullscreen: boolean
+  /** When true, an inline panel handles rendering (suppresses the global drawer) */
+  inlineMode: boolean
   width: number
   projectId: string | null
   rootPath: string | null
@@ -31,6 +33,7 @@ interface FileBrowserStore {
   restore: () => void
   toggleFullscreen: () => void
   setWidth: (w: number) => void
+  setInlineMode: (inline: boolean) => void
   navigateTo: (path: string) => void
   toggleHideIgnored: () => void
 }
@@ -42,6 +45,7 @@ export const useFileBrowserStore = create<FileBrowserStore>(set => ({
   isOpen: false,
   isMinimized: false,
   isFullscreen: false,
+  inlineMode: false,
   width: Math.round(getViewportWidth() * DEFAULT_WIDTH_RATIO),
   projectId: null,
   rootPath: null,
@@ -75,6 +79,7 @@ export const useFileBrowserStore = create<FileBrowserStore>(set => ({
           isOpen: true,
           isMinimized: false,
           projectId,
+          rootPath: s.projectId === projectId ? s.rootPath : null,
           currentPath: s.projectId === projectId ? s.currentPath : '.',
         }
       }
@@ -84,6 +89,7 @@ export const useFileBrowserStore = create<FileBrowserStore>(set => ({
       return {
         isOpen: true,
         projectId,
+        rootPath: s.projectId === projectId ? s.rootPath : null,
         currentPath: s.projectId === projectId ? s.currentPath : '.',
       }
     }),
@@ -91,6 +97,7 @@ export const useFileBrowserStore = create<FileBrowserStore>(set => ({
   restore: () => set({ isOpen: true, isMinimized: false }),
   toggleFullscreen: () => set(s => ({ isFullscreen: !s.isFullscreen })),
   setWidth: w => set({ width: clampWidth(w) }),
+  setInlineMode: inline => set({ inlineMode: inline }),
   navigateTo: path => set({ currentPath: path }),
   toggleHideIgnored: () => set(s => ({ hideIgnored: !s.hideIgnored })),
 }))

@@ -38,14 +38,16 @@ export default function FileBrowserPage() {
     setTimeout(setCopied, 1500, false)
   }, [currentPath])
 
+  const effectiveRoot = project?.directory ?? null
+
   const handleDownload = useCallback(() => {
-    if (currentPath === '.') return
-    const url = kanbanApi.rawFileUrl(projectId, currentPath)
+    if (!effectiveRoot || currentPath === '.') return
+    const url = kanbanApi.rawFileUrl(effectiveRoot, currentPath)
     const a = document.createElement('a')
     a.href = url
     a.download = ''
     a.click()
-  }, [projectId, currentPath])
+  }, [effectiveRoot, currentPath])
 
   // Single request: returns { type: 'directory', entries } or { type: 'file', content, ... }
   const {
@@ -53,7 +55,7 @@ export default function FileBrowserPage() {
     isLoading: isListingLoading,
     isError: isListingError,
     error: listingError,
-  } = useProjectFiles(projectId, currentPath)
+  } = useProjectFiles(effectiveRoot, currentPath)
 
   // Redirect if project not found
   useEffect(() => {

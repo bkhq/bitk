@@ -5,11 +5,13 @@ import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { useAutoTitleIssue, useIssue, useUpdateIssue } from '@/hooks/use-kanban'
 import { useIsMobile } from '@/hooks/use-mobile'
+import { useFileBrowserStore } from '@/stores/file-browser-store'
 import { getIssueUrl } from '@/stores/server-store'
 import { ChatBody } from './ChatBody'
 import { SubIssueDialog } from './SubIssueDialog'
 
 const LazyDiffPanel = lazy(() => import('./DiffPanel').then(m => ({ default: m.DiffPanel })))
+const LazyFileBrowserPanel = lazy(() => import('../files/FileBrowserPanel').then(m => ({ default: m.FileBrowserPanel })))
 
 export function ChatArea({
   projectId,
@@ -19,6 +21,8 @@ export function ChatArea({
   onToggleDiff,
   onDiffWidthChange,
   onCloseDiff,
+  fileBrowserWidth,
+  onFileBrowserWidthChange,
   showBackToList,
   backPath,
 }: {
@@ -29,6 +33,8 @@ export function ChatArea({
   onToggleDiff: () => void
   onDiffWidthChange: (w: number) => void
   onCloseDiff: () => void
+  fileBrowserWidth: number
+  onFileBrowserWidthChange: (w: number) => void
   showBackToList?: boolean
   backPath?: string
 }) {
@@ -41,6 +47,16 @@ export function ChatArea({
   const [editingTitle, setEditingTitle] = useState(false)
   const [titleDraft, setTitleDraft] = useState('')
   const isMobile = useIsMobile()
+  const showFileBrowser = useFileBrowserStore(s => s.isOpen)
+  const closeFileBrowser = useFileBrowserStore(s => s.close)
+  const setInlineMode = useFileBrowserStore(s => s.setInlineMode)
+
+  // Suppress the global drawer while this inline panel is mounted
+  useEffect(() => {
+    setInlineMode(true)
+    return () => setInlineMode(false)
+  }, [setInlineMode])
+
   const updateIssue = useUpdateIssue(projectId)
   const autoTitle = useAutoTitleIssue(projectId)
   const [isAutoTitling, setIsAutoTitling] = useState(false)
@@ -295,6 +311,46 @@ export function ChatArea({
                 )
           ) :
         null}
+
+      {/* File browser panel — full-screen overlay on mobile, inline on desktop */}
+      {showFileBrowser
+        ? (
+            isMobile
+              ? (
+                  <div className="fixed inset-0 z-40 bg-background flex flex-col">
+                    <Suspense
+                      fallback={(
+                        <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+                          {t('common.loading')}
+                        </div>
+                      )}
+                    >
+                      <LazyFileBrowserPanel
+                        width={0}
+                        onWidthChange={onFileBrowserWidthChange}
+                        onClose={closeFileBrowser}
+                        fullScreen
+                      />
+                    </Suspense>
+                  </div>
+                )
+              : (
+                  <Suspense
+                    fallback={(
+                      <div className="flex w-[360px] shrink-0 items-center justify-center border-l border-border bg-background text-sm text-muted-foreground">
+                        {t('common.loading')}
+                      </div>
+                    )}
+                  >
+                    <LazyFileBrowserPanel
+                      width={fileBrowserWidth}
+                      onWidthChange={onFileBrowserWidthChange}
+                      onClose={closeFileBrowser}
+                    />
+                  </Suspense>
+                )
+          )
+        : null}
 
       {/* Sub-issue dialog */}
       <SubIssueDialog

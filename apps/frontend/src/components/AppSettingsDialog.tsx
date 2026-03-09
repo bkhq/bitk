@@ -327,7 +327,7 @@ function GeneralSection({ open }: { open: boolean }) {
           max={20}
           className="w-24"
           value={maxConcurrentInput}
-          onChange={(e) => setMaxConcurrentInput(e.target.value)}
+          onChange={e => setMaxConcurrentInput(e.target.value)}
           onBlur={() => {
             const v = Number.parseInt(maxConcurrentInput, 10)
             if (v >= 1 && v <= 20) {

@@ -8,10 +8,12 @@ import { AppSidebar } from '@/components/kanban/AppSidebar'
 import { MobileSidebar } from '@/components/kanban/MobileSidebar'
 import { useReviewIssues } from '@/hooks/use-kanban'
 import { useIsMobile } from '@/hooks/use-mobile'
+import { FILE_BROWSER_MIN_WIDTH, useFileBrowserStore } from '@/stores/file-browser-store'
 
 const SIDEBAR_WIDTH = 56
 const MIN_CHAT_WIDTH = 300
 const DEFAULT_DIFF_WIDTH = 360
+const DEFAULT_FILE_BROWSER_WIDTH = 360
 const DEFAULT_LIST_WIDTH = 232
 const MIN_LIST_WIDTH = 180
 const MAX_LIST_WIDTH = 400
@@ -31,6 +33,8 @@ export default function ReviewPage() {
 
   const [showDiff, setShowDiff] = useState(false)
   const [diffWidth, setDiffWidth] = useState(DEFAULT_DIFF_WIDTH)
+  const [fileBrowserWidth, setFileBrowserWidth] = useState(DEFAULT_FILE_BROWSER_WIDTH)
+  const showFileBrowser = useFileBrowserStore(s => s.isOpen)
   const [listWidth, setListWidth] = useState(DEFAULT_LIST_WIDTH)
   const isResizingList = useRef(false)
   const isMobile = useIsMobile()
@@ -74,14 +78,26 @@ export default function ReviewPage() {
   const availableWidth = typeof window !== 'undefined' ? window.innerWidth - SIDEBAR_WIDTH : 1200
   const hideListPanel = (isMobile && !!issueId) || (showDiff && diffWidth > availableWidth * 0.5)
 
+  const handleFileBrowserWidthChange = useCallback(
+    (w: number) => {
+      const viewport = typeof window !== 'undefined' ? window.innerWidth : 1600
+      const listSpace = hideListPanel ? 0 : listWidth
+      const diffSpace = showDiff ? diffWidth : 0
+      const maxWidth = viewport - SIDEBAR_WIDTH - listSpace - diffSpace - MIN_CHAT_WIDTH
+      setFileBrowserWidth(Math.min(Math.max(FILE_BROWSER_MIN_WIDTH, w), maxWidth))
+    },
+    [hideListPanel, listWidth, showDiff, diffWidth],
+  )
+
   const handleDiffWidthChange = useCallback(
     (w: number) => {
       const viewport = typeof window !== 'undefined' ? window.innerWidth : 1600
       const listSpace = hideListPanel ? 0 : listWidth
-      const maxWidth = viewport - SIDEBAR_WIDTH - listSpace - MIN_CHAT_WIDTH
+      const fbSpace = showFileBrowser ? fileBrowserWidth : 0
+      const maxWidth = viewport - SIDEBAR_WIDTH - listSpace - fbSpace - MIN_CHAT_WIDTH
       setDiffWidth(Math.min(Math.max(DIFF_MIN_WIDTH, w), maxWidth))
     },
-    [hideListPanel, listWidth],
+    [hideListPanel, listWidth, showFileBrowser, fileBrowserWidth],
   )
 
   useEffect(() => {
@@ -116,6 +132,8 @@ export default function ReviewPage() {
               onToggleDiff={() => setShowDiff(v => !v)}
               onDiffWidthChange={handleDiffWidthChange}
               onCloseDiff={() => setShowDiff(false)}
+              fileBrowserWidth={fileBrowserWidth}
+              onFileBrowserWidthChange={handleFileBrowserWidthChange}
               showBackToList
               backPath="/review"
             />
