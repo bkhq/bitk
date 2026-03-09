@@ -5,18 +5,17 @@
  * patch_apply_begin / apply_patch_approval_request / fileChange events.
  *
  * Usage:
- *   bun scripts/codex-probe.ts [--prompt "your prompt"] [--cwd /path] [--timeout 60]
+ *   bun tools/codex-probe.ts [--prompt "your prompt"] [--cwd /path] [--timeout 60]
  *
  * Environment:
  *   OPENAI_API_KEY or CODEX_API_KEY must be set.
  *
  * Output:
  *   Prints every stdout line with classification. Writes a JSON array of all
- *   file-edit related events to scripts/codex-probe-output.json for analysis.
+ *   file-edit related events to tools/codex-probe-output.json for analysis.
  */
 
 import { spawn } from 'node:child_process'
-import { Readable } from 'node:stream'
 import * as path from 'node:path'
 import * as fs from 'node:fs'
 
@@ -137,7 +136,9 @@ async function main() {
   // Timeout kill
   const killTimer = setTimeout(() => {
     log('WARN', `Timeout reached (${timeoutSec}s), killing process`)
-    try { child.kill() } catch { /* already dead */ }
+    try {
+      child.kill()
+    } catch { /* already dead */ }
   }, timeoutSec * 1000)
 
   // Collect stderr
@@ -187,7 +188,11 @@ async function main() {
     // Capture file-edit related events with FULL content
     if (isFileEditRelated(line)) {
       let parsed: unknown
-      try { parsed = JSON.parse(line) } catch { parsed = line }
+      try {
+        parsed = JSON.parse(line)
+      } catch {
+        parsed = line
+      }
       fileEditEvents.push({ raw: line, parsed, classification, timestamp: ts })
       log('FILE-EDIT', '>>> FILE EDIT EVENT CAPTURED <<<', parsed)
     }
@@ -275,7 +280,7 @@ async function main() {
           log('INFO', '=== TURN COMPLETED ===')
           state = 'done'
           // Give a brief moment for any trailing events
-          setTimeout(() => finish(), 2000)
+          setTimeout(finish, 2000)
         }
       } catch { /* ignore */ }
     }
@@ -283,10 +288,14 @@ async function main() {
 
   function finish() {
     clearTimeout(killTimer)
-    try { stdin.end() } catch { /* already closed */ }
-    try { child.kill() } catch { /* already dead */ }
+    try {
+      stdin.end()
+    } catch { /* already closed */ }
+    try {
+      child.kill()
+    } catch { /* already dead */ }
 
-    const outputPath = path.join(path.dirname(import.meta.dir || '.'), 'scripts', 'codex-probe-output.json')
+    const outputPath = path.join(import.meta.dir || '.', 'codex-probe-output.json')
     const output = {
       prompt,
       model,
@@ -304,7 +313,7 @@ async function main() {
 
     if (fileEditEvents.length === 0) {
       log('WARN', 'No file-edit events captured! Dumping all events...')
-      const allOutputPath = path.join(path.dirname(import.meta.dir || '.'), 'scripts', 'codex-probe-all-events.json')
+      const allOutputPath = path.join(import.meta.dir || '.', 'codex-probe-all-events.json')
       fs.writeFileSync(allOutputPath, JSON.stringify(allEvents, null, 2))
       log('INFO', `Wrote all events to ${allOutputPath}`)
     }
