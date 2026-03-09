@@ -1,5 +1,13 @@
 import type { ToolGroupChatMessage, ToolGroupItem } from '@bkd/shared'
-import { ChevronRight } from 'lucide-react'
+import {
+  ChevronRight,
+  FileEdit,
+  FileText,
+  Search,
+  Terminal,
+  Users,
+  Wrench,
+} from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { getCommandPreview } from '@/lib/command-preview'
 import { formatFileSize } from '@/lib/format'
@@ -14,8 +22,8 @@ import { MarkdownContent } from './MarkdownContent'
 
 function getItemToolName(item: ToolGroupItem): string | undefined {
   return (
-    item.action.toolDetail?.toolName ??
-    (typeof item.action.metadata?.toolName === 'string' ? item.action.metadata.toolName : undefined)
+    item.action.toolDetail?.toolName
+    ?? (typeof item.action.metadata?.toolName === 'string' ? item.action.metadata.toolName : undefined)
   )
 }
 
@@ -41,6 +49,24 @@ function diffStats(
   return null
 }
 
+// ── Shared components ────────────────────────────────────
+
+/** Check if an item result is an error */
+function isItemError(item: ToolGroupItem): boolean {
+  return item.result?.toolDetail?.raw?.isError === true
+    || item.result?.entryType === 'error-message'
+}
+
+/** Tool type icon + label */
+function ToolLabel({ label, icon: Icon }: { label: string, icon: React.ComponentType<{ className?: string }> }) {
+  return (
+    <span className="flex items-center gap-1 shrink-0 text-[11px] text-muted-foreground/70">
+      <Icon className="h-3 w-3" />
+      {label}
+    </span>
+  )
+}
+
 /** Badge component for file path */
 function PathBadge({ path }: { path: string }) {
   return (
@@ -52,24 +78,34 @@ function PathBadge({ path }: { path: string }) {
 function DiffStatsLabel({ added, removed }: { added: number, removed: number }) {
   return (
     <span className="flex items-center gap-1 text-[11px] shrink-0">
-      {added > 0 ?
-          (
+      {added > 0
+        ? (
             <span className="text-emerald-600 dark:text-emerald-400">
               +
               {added}
             </span>
-          ) :
-        null}
-      {removed > 0 ?
-          (
+          )
+        : null}
+      {removed > 0
+        ? (
             <span className="text-red-600 dark:text-red-400">
               -
               {removed}
             </span>
-          ) :
-        null}
+          )
+        : null}
     </span>
   )
+}
+
+/** Extract Bash tool description from input metadata */
+function getCommandDescription(item: ToolGroupItem): string | undefined {
+  const input = item.action.metadata?.input
+  if (input && typeof input === 'object' && 'description' in input) {
+    const desc = (input as Record<string, unknown>).description
+    return typeof desc === 'string' ? desc : undefined
+  }
+  return undefined
 }
 
 // ── Single tool item renderers ───────────────────────────
@@ -78,8 +114,8 @@ export function FileToolItem({ item }: { item: ToolGroupItem }) {
   const actionEntry = item.action
   const tool = actionEntry.toolAction
   const isEdit = tool?.kind === 'file-edit'
-  const toolName =
-    typeof actionEntry.metadata?.toolName === 'string' ? actionEntry.metadata.toolName : undefined
+  const toolName
+    = typeof actionEntry.metadata?.toolName === 'string' ? actionEntry.metadata.toolName : undefined
   const isWrite = toolName === 'Write'
   const filePath = tool && 'path' in tool ? tool.path : 'unknown'
   const codeLanguage = detectCodeLanguage(filePath)
@@ -90,45 +126,36 @@ export function FileToolItem({ item }: { item: ToolGroupItem }) {
 
   if (!isEdit) {
     const resultContent = item.result?.content
-    const isResultError =
-      item.result?.toolDetail?.raw?.isError === true || item.result?.entryType === 'error-message'
+    const hasError = isItemError(item)
     const lineCount = countLines(resultContent)
-    const showResultText = resultContent && isResultError
+    const showResultText = resultContent && hasError
 
     const summary = (
-      <div className="flex items-center gap-2 text-xs">
-        <span className="font-medium text-muted-foreground">Read</span>
+      <div className="flex items-center gap-2 min-w-0">
+        <ToolLabel label="Read" icon={FileText} />
         <PathBadge path={filePath} />
       </div>
     )
 
-    if (showResultText) {
-      return (
-        <ToolPanel collapsible summary={summary}>
-          <div
-            className={`text-[11px] font-mono whitespace-pre-wrap ${isResultError ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground/60'}`}
-          >
-            {resultContent}
-          </div>
-        </ToolPanel>
-      )
-    }
-
-    const sizeInfo = lineCount ?
-      `Read ${lineCount} lines` :
-      resultContent ?
-        `${formatFileSize(resultContent.length)}` :
-        null
+    const sizeInfo = lineCount
+      ? `${lineCount} lines`
+      : resultContent
+        ? formatFileSize(resultContent.length)
+        : null
 
     return (
-      <div className="py-0.5">
-        {summary}
-        {sizeInfo ?
-            (
-              <div className="ml-0.5 mt-0.5 text-[11px] text-muted-foreground/60">{sizeInfo}</div>
-            ) :
-          null}
-      </div>
+      <ToolPanel collapsible summary={summary}>
+        {sizeInfo
+          ? <div className="text-[11px] text-muted-foreground/50">{sizeInfo}</div>
+          : null}
+        {showResultText
+          ? (
+              <div className="text-[11px] font-mono whitespace-pre-wrap text-red-600 dark:text-red-400">
+                {resultContent}
+              </div>
+            )
+          : null}
+      </ToolPanel>
     )
   }
 
@@ -139,51 +166,45 @@ export function FileToolItem({ item }: { item: ToolGroupItem }) {
     <ToolPanel
       collapsible
       summary={(
-        <div className="flex items-center gap-2 text-xs">
-          <span className="font-medium text-muted-foreground">{isWrite ? 'Write' : 'Edit'}</span>
+        <div className="flex items-center gap-2 min-w-0">
+          <ToolLabel label={isWrite ? 'Write' : 'Edit'} icon={FileEdit} />
           <PathBadge path={filePath} />
           {stats ? <DiffStatsLabel added={stats.added} removed={stats.removed} /> : null}
         </div>
       )}
     >
       <div className="space-y-2">
-        {hasContent ?
-            (
-              <CodeBlock content={parsed.content!} language={codeLanguage} collapsible={false} />
-            ) :
-          null}
+        {hasContent
+          ? <CodeBlock content={parsed.content!} language={codeLanguage} collapsible={false} />
+          : null}
 
-        {hasOldString ?
-            (
-              hasNewString ?
-                  (
+        {hasOldString
+          ? (
+              hasNewString
+                ? (
                     <ShikiUnifiedDiff
                       original={parsed.oldString || ''}
                       modified={parsed.newString || ''}
                       filePath={filePath}
                     />
-                  ) :
-                  (
+                  )
+                : (
                     <CodeBlock
                       content={parsed.oldString || ''}
                       language={codeLanguage}
                       collapsible={false}
                     />
                   )
-            ) :
-          null}
+            )
+          : null}
 
-        {!hasOldString && hasNewString ?
-            (
-              <CodeBlock content={parsed.newString || ''} language={codeLanguage} collapsible={false} />
-            ) :
-          null}
+        {!hasOldString && hasNewString
+          ? <CodeBlock content={parsed.newString || ''} language={codeLanguage} collapsible={false} />
+          : null}
 
-        {!hasContent && !hasOldString && !hasNewString && !parsed.hasOnlyFilePath ?
-            (
-              <CodeBlock content={parsed.raw || '(empty)'} language="json" collapsible={false} />
-            ) :
-          null}
+        {!hasContent && !hasOldString && !hasNewString && !parsed.hasOnlyFilePath
+          ? <CodeBlock content={parsed.raw || '(empty)'} language="json" collapsible={false} />
+          : null}
       </div>
     </ToolPanel>
   )
@@ -191,36 +212,46 @@ export function FileToolItem({ item }: { item: ToolGroupItem }) {
 
 export function CommandToolItem({ item }: { item: ToolGroupItem }) {
   const { t } = useTranslation()
-  const fullCommand =
-    item.action.toolAction?.kind === 'command-run' ? item.action.toolAction.command : ''
+  const fullCommand
+    = item.action.toolAction?.kind === 'command-run' ? item.action.toolAction.command : ''
   const preview = getCommandPreview(fullCommand, 80)
+  const description = getCommandDescription(item)
+  const hasError = isItemError(item)
 
   return (
     <ToolPanel
       collapsible
       summary={(
-        <div className="flex items-center gap-2 text-xs">
-          <span className="font-medium text-muted-foreground">Bash</span>
+        <div className="flex items-center gap-2 min-w-0">
+          <ToolLabel label="Bash" icon={Terminal} />
           <code className="rounded bg-muted/50 px-1.5 py-0.5 text-[11px] font-mono truncate">
             {preview.summary}
           </code>
+          {description
+            ? (
+                <span className="text-[11px] text-muted-foreground/40 truncate hidden sm:inline">
+                  {description}
+                </span>
+              )
+            : null}
         </div>
       )}
     >
       <div className="space-y-2">
-        {preview.isTruncated || fullCommand.includes('\n') ?
-            (
+        {preview.isTruncated || fullCommand.includes('\n')
+          ? (
               <div className="rounded-md border border-border/30 bg-muted/10 p-2 space-y-1">
                 <div className="px-0.5 text-[11px] text-muted-foreground">
                   {t('session.tool.fullCommand')}
                 </div>
                 <CodeBlock content={fullCommand} language="shell" collapsible={false} />
               </div>
-            ) :
-          null}
+            )
+          : null}
         <CodeBlock
           content={item.result?.content || item.action.content || '(empty)'}
           collapsible={false}
+          language={hasError ? 'text' : undefined}
         />
       </div>
     </ToolPanel>
@@ -248,30 +279,29 @@ export function AgentToolItem({ item }: { item: ToolGroupItem }) {
   const description = input?.description || input?.prompt || 'Agent'
   const rawContent = item.result?.content || item.action.content || ''
   const resultContent = cleanAgentResult(rawContent)
-  const isResultError =
-    item.result?.toolDetail?.raw?.isError === true || item.result?.entryType === 'error-message'
+  const hasError = isItemError(item)
 
   return (
     <ToolPanel
       collapsible
       summary={(
-        <div className="flex items-center gap-2 text-xs">
-          <span className="font-medium text-muted-foreground">Agent</span>
+        <div className="flex items-center gap-2 min-w-0">
+          <ToolLabel label="Agent" icon={Users} />
           <code className="rounded bg-muted/50 px-1.5 py-0.5 text-[11px] font-mono truncate">
             {description}
           </code>
         </div>
       )}
     >
-      {resultContent ?
-          (
+      {resultContent
+        ? (
             <div
-              className={`overflow-y-auto max-h-96 ${isResultError ? 'text-red-600 dark:text-red-400' : ''}`}
+              className={`overflow-y-auto max-h-96 ${hasError ? 'text-red-600 dark:text-red-400' : ''}`}
             >
               <MarkdownContent content={resultContent} className="text-[12px] leading-[1.7]" />
             </div>
-          ) :
-        null}
+          )
+        : null}
     </ToolPanel>
   )
 }
@@ -285,8 +315,8 @@ export function SearchToolItem({ item }: { item: ToolGroupItem }) {
     <ToolPanel
       collapsible
       summary={(
-        <div className="flex items-center gap-2 text-xs">
-          <span className="font-medium text-muted-foreground">{toolName || 'Search'}</span>
+        <div className="flex items-center gap-2 min-w-0">
+          <ToolLabel label={toolName || 'Search'} icon={Search} />
           <code className="rounded bg-muted/50 px-1.5 py-0.5 text-[11px] font-mono truncate">
             {query}
           </code>
@@ -307,8 +337,8 @@ export function GenericToolItem({ item }: { item: ToolGroupItem }) {
     <ToolPanel
       collapsible
       summary={(
-        <div className="flex items-center gap-2 text-xs">
-          <span className="font-medium text-muted-foreground">{toolName || 'Tool'}</span>
+        <div className="flex items-center gap-2 min-w-0">
+          <ToolLabel label={toolName || 'Tool'} icon={Wrench} />
           <span className="text-[11px] text-muted-foreground/60 truncate">
             {item.action.content}
           </span>
@@ -365,20 +395,20 @@ export function ToolGroupMessage({ message }: { message: ToolGroupChatMessage })
   const statsLabel = getGroupSummaryLabel(stats, count, t)
 
   return (
-    <div className="py-0.5 animate-message-enter">
-      <details open className="border border-border/30 bg-card/50 group/tg">
-        <summary className="flex w-full items-center gap-2 px-3 py-2 text-xs text-muted-foreground cursor-pointer list-none select-none hover:bg-muted/10 transition-colors">
+    <div className="py-1.5 animate-message-enter">
+      <details open className="border border-border/60 bg-card/50 group/tg">
+        <summary className="flex w-full items-center gap-2 px-3 py-2 text-xs text-muted-foreground cursor-pointer list-none select-none bg-muted/60">
           <ChevronRight className="h-3 w-3 shrink-0 transition-transform group-open/tg:rotate-90" />
           <span className="truncate">{description || statsLabel}</span>
-          {description ?
-              (
+          {description
+            ? (
                 <span className="ml-auto shrink-0 text-[10px] text-muted-foreground/50">
                   {statsLabel}
                 </span>
-              ) :
-            null}
+              )
+            : null}
         </summary>
-        <div className="mx-3 mb-2 border-l border-border/40 pl-4 space-y-1">
+        <div className="divide-y divide-border/50">
           {items.map((item, idx) => (
             <ToolItemRenderer key={item.action.messageId ?? `ti-${idx}`} item={item} idx={idx} />
           ))}

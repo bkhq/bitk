@@ -58,7 +58,7 @@ function ChatMessageRow({ message }: { message: ChatMessage }) {
 
 function TaskPlanMessage({ message }: { message: TaskPlanChatMessage }) {
   const { t } = useTranslation()
-  const [expanded, setExpanded] = useState(false)
+  const [expanded, setExpanded] = useState(true)
   const { todos, completedCount } = message
 
   const inProgressItem = todos.find(it => it.status === 'in_progress')
@@ -66,7 +66,7 @@ function TaskPlanMessage({ message }: { message: TaskPlanChatMessage }) {
 
   return (
     <div className="animate-message-enter">
-      <div className="rounded-lg border border-border/40 bg-background/95 shadow-sm">
+      <div className="border border-border/60 bg-background/95">
         {/* Compact status bar */}
         <button
           type="button"

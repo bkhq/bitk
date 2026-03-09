@@ -1,4 +1,5 @@
 import DOMPurify from 'dompurify'
+import { ChevronRight } from 'lucide-react'
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useTheme } from '@/hooks/use-theme'
@@ -96,7 +97,7 @@ export function ShikiCodeBlock({
   if (!html) {
     return (
       <pre
-        className={`code-surface ${maxHeightClass} overflow-auto rounded-md p-2 text-[12px] leading-[1.45] font-mono`}
+        className={`code-surface ${maxHeightClass} overflow-auto p-2 text-[12px] leading-[1.45] font-mono`}
       >
         {content}
       </pre>
@@ -105,7 +106,7 @@ export function ShikiCodeBlock({
 
   return (
     <div
-      className={`code-surface shiki-block ${maxHeightClass} overflow-auto rounded-md`}
+      className={`code-surface shiki-block ${maxHeightClass} overflow-auto`}
       dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(html) }}
     />
   )
@@ -181,17 +182,18 @@ export function ToolPanel({
   if (collapsible) {
     return (
       <details className="group/panel transition-all duration-200">
-        <summary className="cursor-pointer list-none py-0.5 transition-colors hover:bg-muted/10 rounded">
-          {summary}
+        <summary className="flex items-center cursor-pointer list-none px-3 py-1.5 transition-colors hover:bg-muted/10">
+          <div className="flex-1 min-w-0">{summary}</div>
+          <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground/40 transition-transform group-open/panel:rotate-90 ml-1" />
         </summary>
-        <div className="pt-1 pb-0.5 pl-5">{children}</div>
+        <div className="border-t border-border">{children}</div>
       </details>
     )
   }
   return (
     <div>
-      <div className="py-0.5">{summary}</div>
-      <div className="pt-1 pb-0.5 pl-5">{children}</div>
+      <div className="px-3 py-1.5">{summary}</div>
+      <div className="border-t border-border">{children}</div>
     </div>
   )
 }
