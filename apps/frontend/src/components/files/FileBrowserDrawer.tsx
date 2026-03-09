@@ -15,6 +15,7 @@ export function FileBrowserDrawer() {
     isOpen,
     isFullscreen,
     inlineMode,
+    forceDrawer,
     width,
     projectId,
     close,
@@ -25,8 +26,9 @@ export function FileBrowserDrawer() {
   const isMobile = useIsMobile()
   const dragRef = useRef<{ startX: number, startWidth: number } | null>(null)
 
-  // Skip rendering when an inline panel handles the file browser (issue/review pages)
-  if (!isOpen || !projectId || inlineMode) return null
+  // Skip rendering when an inline panel handles the file browser,
+  // unless forceDrawer is set (opened explicitly from header)
+  if (!isOpen || !projectId || (inlineMode && !forceDrawer)) return null
 
   const viewportWidth = typeof window === 'undefined' ? 1024 : window.innerWidth
   const maxWidth = Math.round(viewportWidth * FILE_BROWSER_MAX_WIDTH_RATIO)

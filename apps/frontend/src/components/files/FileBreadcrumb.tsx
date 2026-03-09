@@ -3,13 +3,15 @@ import { useTranslation } from 'react-i18next'
 
 interface FileBreadcrumbProps {
   projectName: string
+  rootPath?: string
   path: string
   onNavigate: (path: string) => void
 }
 
-export function FileBreadcrumb({ projectName, path, onNavigate }: FileBreadcrumbProps) {
+export function FileBreadcrumb({ projectName, rootPath, path, onNavigate }: FileBreadcrumbProps) {
   const { t } = useTranslation()
   const segments = path && path !== '.' ? path.split('/') : []
+  const displayRoot = rootPath ?? projectName
 
   return (
     <nav
@@ -22,7 +24,7 @@ export function FileBreadcrumb({ projectName, path, onNavigate }: FileBreadcrumb
         className="flex items-center gap-1 px-1.5 py-0.5 rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors shrink-0"
       >
         <Home className="h-3.5 w-3.5" />
-        <span className="font-medium">{projectName}</span>
+        <span className="font-medium font-mono text-xs">{displayRoot}</span>
       </button>
 
       {segments.map((segment, i) => {

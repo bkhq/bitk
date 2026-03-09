@@ -175,7 +175,7 @@ export function SessionMessages({
 
   const initialScrollDone = useRef(false)
   useEffect(() => {
-    if (initialScrollDone.current || messages.length === 0) return
+    if (initialScrollDone.current || (messages.length === 0 && pendingMessages.length === 0)) return
     const el = scrollRef?.current
     if (!el) return
     // Double-rAF ensures the lazy-loaded content has been painted before
@@ -187,7 +187,7 @@ export function SessionMessages({
         initialScrollDone.current = true
       })
     })
-  }, [messages.length, scrollRef])
+  }, [messages.length, pendingMessages.length, scrollRef])
 
   const prevLenRef = useRef(messages.length)
   const prevFirstIdRef = useRef(messages[0]?.id)
@@ -215,7 +215,7 @@ export function SessionMessages({
     prevFirstIdRef.current = firstId
   }, [messages.length, isRunning, scrollRef])
 
-  if (messages.length === 0 && !isRunning) return null
+  if (messages.length === 0 && pendingMessages.length === 0 && !isRunning) return null
 
   return (
     <div className={`flex flex-col py-2 px-5${fullWidthChat ? '' : ' max-w-4xl'}`}>

@@ -39,10 +39,11 @@ export function FileBrowserContent({
   const effectiveRoot = rootPath ?? project?.directory ?? null
 
   const handleCopyPath = useCallback(() => {
-    navigator.clipboard.writeText(currentPath === '.' ? '/' : currentPath)
+    const fullPath = currentPath === '.' ? (effectiveRoot ?? '/') : (effectiveRoot ? `${effectiveRoot}/${currentPath}` : currentPath)
+    navigator.clipboard.writeText(fullPath)
     setCopied(true)
     setTimeout(setCopied, 1500, false)
-  }, [currentPath])
+  }, [currentPath, effectiveRoot])
 
   const handleDownload = useCallback(() => {
     if (!effectiveRoot || currentPath === '.') return
@@ -81,9 +82,8 @@ export function FileBrowserContent({
       <div className="flex items-center justify-between px-3 py-1.5 border-b border-border shrink-0">
         <div className="flex items-center gap-2 min-w-0">
           <FolderOpen className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-          <span className="text-xs font-medium text-muted-foreground truncate">
-            {project?.name ?? t('fileBrowser.title')}
-            {rootPath ? ` (${rootPath.split('/').pop()})` : ''}
+          <span className="text-xs font-medium text-muted-foreground truncate font-mono">
+            {effectiveRoot ?? project?.name ?? t('fileBrowser.title')}
           </span>
         </div>
         <div className="flex items-center gap-1">
@@ -130,6 +130,7 @@ export function FileBrowserContent({
       <div className="px-3 py-2 border-b border-border shrink-0">
         <FileBreadcrumb
           projectName={project?.name ?? ''}
+          rootPath={effectiveRoot ?? undefined}
           path={currentPath}
           onNavigate={navigateTo}
         />

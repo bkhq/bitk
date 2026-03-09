@@ -178,8 +178,10 @@ export function LogEntry({
       const isPending = entry.metadata?.type === 'pending'
       const isDone = entry.metadata?.type === 'done'
       const messageAttachments = (entry.metadata?.attachments ?? []) as AttachmentMeta[]
+      // Strip "--- Attached files ---" block from display (already shown as chips)
+      const displayContent = entry.content.replace(/\n*--- Attached files ---\n(?:\[Attached file:.*\]\n?)*/g, '').trim()
       // Skip empty user messages (no text, no attachments, not pending/done)
-      if (!entry.content.trim() && messageAttachments.length === 0 && !isPending && !isDone)
+      if (!displayContent && messageAttachments.length === 0 && !isPending && !isDone)
         return null
       const barColor = isPending ?
         'border-amber-400 bg-amber-500/[0.06]' :
@@ -189,10 +191,10 @@ export function LogEntry({
       return (
         <div className="group py-2 animate-message-enter">
           <div className={`bg-muted/70 px-3 py-2.5 border border-l-[3px] ${barColor}`}>
-            {entry.content.trim() ?
+            {displayContent ?
                 (
                   <div className="text-[15px] whitespace-pre-wrap break-words text-foreground leading-[1.75]">
-                    {entry.content}
+                    {displayContent}
                   </div>
                 ) :
               null}

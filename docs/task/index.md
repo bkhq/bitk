@@ -92,3 +92,4 @@
 - [x] **BUG-003 升级不要自动下载，只提示新版本** `P1` - file: `docs/task/BUG-003.md`
 - [x] **BUG-004 非 dev 模式不应返回 tool-use 消息** `P1` - owner: claude - file: `docs/task/BUG-004.md`
 - [x] **BUG-005 File browser rejects valid worktree root paths** `P1` - owner: claude - file: `docs/task/BUG-005.md`
+- [x] **BUG-006 Pending messages not displayed for todo issues** `P1` - owner: claude - file: `docs/task/BUG-006.md`

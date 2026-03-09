@@ -25,7 +25,7 @@ export function KanbanHeader({
 }) {
   const { t } = useTranslation()
   const openCreateDialog = usePanelStore(s => s.openCreateDialog)
-  const toggleFileBrowser = useFileBrowserStore(s => s.toggle)
+  const toggleFileBrowser = useFileBrowserStore(s => s.toggleDrawer)
   const toggleProcessManager = useProcessManagerStore(s => s.toggle)
   const [showSettings, setShowSettings] = useState(false)
 
@@ -48,7 +48,7 @@ export function KanbanHeader({
           {project.directory && (
             <button
               type="button"
-              onClick={() => toggleFileBrowser(project.alias)}
+              onClick={() => toggleFileBrowser(project.alias, project.directory ?? undefined)}
               className="rounded-md p-1 text-muted-foreground hover:text-foreground hover:bg-foreground/[0.07] transition-colors shrink-0"
               aria-label={t('viewMode.files')}
               title={t('viewMode.files')}
