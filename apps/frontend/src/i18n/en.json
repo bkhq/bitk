@@ -99,8 +99,6 @@
     "clickToEdit": "Click to edit",
     "tag": "Tags",
     "tagPlaceholder": "bug, feature, docs",
-    "devMode": "Dev Mode",
-    "dev": "Dev",
     "autoTitle": "Auto-generate title",
     "delete": "Delete",
     "deleteConfirm": "Are you sure you want to delete this issue? This action cannot be undone.",

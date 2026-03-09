@@ -3,27 +3,26 @@ import type { NormalizedLogEntry } from '@/engines/types'
 // ---------- Log visibility ----------
 
 /**
- * Single visibility filter — everything is stored in DB, this controls display.
- * devMode=true shows all entries; devMode=false shows only user-facing entries.
+ * Visibility filter — everything is stored in DB, this controls display.
+ *
+ * Used at two boundaries:
+ *  - SSE gate (events.ts) — prevents noise from reaching the client
+ *  - DB post-filter (queries.ts) — trims paginated results
  */
-export function isVisibleForMode(entry: NormalizedLogEntry, devMode: boolean): boolean {
-  if (devMode) return true
-
+export function isVisible(entry: NormalizedLogEntry): boolean {
   // Meta-turn entries (auto-title etc.) are always hidden
   if (entry.metadata?.type === 'system') return false
 
-  // Non-dev mode: only user and assistant messages are visible
-  return entry.entryType === 'user-message' || entry.entryType === 'assistant-message'
-}
+  // Entry types with no user-facing value — suppress at SSE + DB boundary
+  if (entry.entryType === 'token-usage' || entry.entryType === 'loading') return false
 
-// ---------- Dev mode cache ----------
+  // System-message subtypes that are internal noise
+  if (entry.entryType === 'system-message') {
+    const subtype = entry.metadata?.subtype as string | undefined
+    if (subtype === 'init' || subtype === 'hook_response' || subtype === 'stop_hook_summary') return false
+  }
 
-const devModeCache = new Map<string, boolean>()
-
-export function getIssueDevMode(issueId: string): boolean {
-  return devModeCache.get(issueId) ?? false
-}
-
-export function setIssueDevMode(issueId: string, devMode: boolean): void {
-  devModeCache.set(issueId, devMode)
+  // All other types pass through: user-message, assistant-message, tool-use,
+  // thinking, error-message, system-message (compact_boundary, status, etc.)
+  return true
 }

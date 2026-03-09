@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { streamSSE } from 'hono/streaming'
-import { getIssueDevMode, isVisibleForMode } from '@/engines/issue/utils/visibility'
+import { isVisible } from '@/engines/issue/utils/visibility'
 import { appEvents } from '@/events'
 import { logger } from '@/logger'
 
@@ -43,14 +43,14 @@ events.get('/', async (c) => {
         'log',
         (data) => {
           if (data.streaming) return
-          if (!isVisibleForMode(data.entry, getIssueDevMode(data.issueId))) return
+          if (!isVisible(data.entry)) return
           writeEvent('log', { issueId: data.issueId, entry: data.entry })
         },
         { order: 100 },
       )
 
       const unsubLogUpdated = appEvents.on('log-updated', (data) => {
-        if (!isVisibleForMode(data.entry, getIssueDevMode(data.issueId))) return
+        if (!isVisible(data.entry)) return
         writeEvent('log-updated', data)
       })
 

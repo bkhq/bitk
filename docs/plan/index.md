@@ -9,3 +9,4 @@
 - [x] **PLAN-005 Pending 消息改造** - task: `FEAT-002` - file: `docs/plan/PLAN-005.md`
 - [x] **PLAN-006 Migrate from Biome to ESLint + Prettier** - task: `LINT-001` - owner: claude - file: `docs/plan/PLAN-006.md`
 - [x] **PLAN-006b stdout 断裂后 fallback 到 transcript JSONL** - task: `STALL-001` - owner: claude - file: `docs/plan/PLAN-006.md`
+- [x] **PLAN-007 Fix tool group grouping + visibility + collapsible UI** - task: `UI-001` - owner: claude - file: `docs/plan/PLAN-007.md`

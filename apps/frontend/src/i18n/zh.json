@@ -99,8 +99,6 @@
     "clickToEdit": "点击编辑",
     "tag": "标签",
     "tagPlaceholder": "bug, feature, docs",
-    "devMode": "开发模式",
-    "dev": "Dev",
     "autoTitle": "自动生成标题",
     "delete": "删除",
     "deleteConfirm": "确定要删除此任务吗？此操作无法撤销。",

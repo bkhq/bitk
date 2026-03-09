@@ -20,7 +20,7 @@ export function persistUserMessage(
 ): string | null {
   const turnIdx = ctx.turnIndexes.get(executionId) ?? 0
   // When displayPrompt is provided on a meta turn, the user wants this message visible.
-  // Strip type:'system' so isVisibleForMode() won't hide it.
+  // Strip type:'system' so isVisible() won't hide it.
   let entryMeta = metadata
   if (displayPrompt && metadata?.type === 'system') {
     const { type: _type, ...rest } = metadata

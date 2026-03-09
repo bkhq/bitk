@@ -19,7 +19,6 @@ import {
 } from '@/engines/issue/utils/helpers'
 import { createLogNormalizer } from '@/engines/issue/utils/normalizer'
 import { getPidFromSubprocess } from '@/engines/issue/utils/pid'
-import { setIssueDevMode } from '@/engines/issue/utils/visibility'
 import {
   createWorktree,
   isWorktreeRegistered,
@@ -246,7 +245,6 @@ export async function spawnFollowUpProcess(
   )
   const issue = await getIssueWithSession(issueId)
   if (!issue) throw new Error(`Issue not found: ${issueId}`)
-  setIssueDevMode(issueId, issue.devMode)
   if (!issue.sessionFields.externalSessionId)
     throw new Error('No external session ID for follow-up')
   if (!issue.sessionFields.engineType) throw new Error('No engine type set on issue')

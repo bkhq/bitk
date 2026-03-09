@@ -64,6 +64,13 @@
       "when": 1772924689533,
       "tag": "0008_glorious_leader",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1773243600000,
+      "tag": "0009_remove_dev_mode",
+      "breakpoints": true
     }
   ]
 }

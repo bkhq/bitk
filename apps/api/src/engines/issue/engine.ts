@@ -150,14 +150,13 @@ export class IssueEngine {
 
   getLogs(
     issueId: string,
-    devMode = false,
     opts?: {
       cursor?: string // ULID id — fetch entries after this
       before?: string // ULID id — fetch entries before this
       limit?: number
     },
   ): PaginatedLogResult {
-    return getLogs(this.ctx, issueId, devMode, opts)
+    return getLogs(this.ctx, issueId, opts)
   }
 
   getProcess(executionId: string): ManagedProcess | undefined {

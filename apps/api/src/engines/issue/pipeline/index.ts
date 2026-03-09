@@ -17,9 +17,9 @@ import { registerTokenUsageStage } from './token-usage'
  *   order 40   — logical failure detection              (failure-detect.ts)
  *   order 100  — SSE broadcast (registered by routes/events.ts)
  *
- * DevMode visibility filtering is NOT a pipeline stage — it only applies
+ * Visibility filtering is NOT a pipeline stage — it only applies
  * at the SSE boundary (order 100) so that DB persistence and failure
- * detection always process all entries regardless of devMode setting.
+ * detection always process all entries.
  *
  * Stages are isolated: a failure in one does not block subsequent stages.
  * In particular, DB persistence failure no longer prevents SSE delivery.

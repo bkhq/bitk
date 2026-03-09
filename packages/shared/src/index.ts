@@ -47,7 +47,6 @@ export interface Issue {
   totalInputTokens: number
   totalOutputTokens: number
   totalCostUsd: string
-  devMode: boolean
   statusUpdatedAt: string
   createdAt: string
   updatedAt: string

@@ -16,8 +16,6 @@ import { isToolFiltered } from '@/engines/write-filter'
 // ---------- Options ----------
 
 export interface RebuildOptions {
-  /** When true, show all entries including filtered tools */
-  devMode: boolean
   /** Write filter rules (default: Read/Glob/Grep filtered) */
   filterRules: WriteFilterRule[]
 }
@@ -71,17 +69,12 @@ function buildToolGroup(
   let visibleItems: ToolGroupItem[]
   let hiddenCount = 0
 
-  if (options.devMode) {
-    // devMode: show everything
-    visibleItems = items
-  } else {
-    visibleItems = []
-    for (const item of items) {
-      if (isFilteredTool(item.action, options.filterRules)) {
-        hiddenCount++
-      } else {
-        visibleItems.push(item)
-      }
+  visibleItems = []
+  for (const item of items) {
+    if (isFilteredTool(item.action, options.filterRules)) {
+      hiddenCount++
+    } else {
+      visibleItems.push(item)
     }
   }
 

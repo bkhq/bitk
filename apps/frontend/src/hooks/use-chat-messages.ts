@@ -215,16 +215,12 @@ function rebuildMessages(entries: NormalizedLogEntry[]): ChatMessage[] {
 
     // ── Inline entries that do NOT break the current tool group ──
 
-    // task_progress: flush buffered tools first to preserve chronology,
-    // then display as inline system message
-    if (entry.entryType === 'system-message' && entry.metadata?.subtype === 'task_progress') {
-      flushToolBuffer()
-      messages.push({
-        type: 'system',
-        id: entryId(entry, nextId('sys')),
-        entry,
-        subtype: 'task_progress',
-      } satisfies SystemChatMessage)
+    // task_progress / stop_hook_summary: skip — no user-facing value, must not break tool groups
+    if (
+      entry.entryType === 'system-message'
+      && (entry.metadata?.subtype === 'task_progress'
+        || entry.metadata?.subtype === 'stop_hook_summary')
+    ) {
       continue
     }
 
@@ -252,7 +248,7 @@ function rebuildMessages(entries: NormalizedLogEntry[]): ChatMessage[] {
       continue
     }
 
-    // system-message (non-task_progress): display inline, never breaks tool groups
+    // system-message: display inline, never breaks tool groups
     if (entry.entryType === 'system-message') {
       if (consumedOutputIdx.has(i)) continue
       flushPendingThinking()

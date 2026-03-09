@@ -5,7 +5,7 @@ import { cacheDel, cacheDelByPrefix } from '@/cache'
 import { db } from '@/db'
 import { findProject } from '@/db/helpers'
 import { issues as issuesTable } from '@/db/schema'
-import { issueEngine, setIssueDevMode } from '@/engines/issue'
+import { issueEngine } from '@/engines/issue'
 import { emitIssueUpdated } from '@/events/issue-events'
 import { logger } from '@/logger'
 import {
@@ -226,10 +226,6 @@ update.patch(
       }
     }
     if (body.sortOrder !== undefined) updates.sortOrder = body.sortOrder
-    if (body.devMode !== undefined) {
-      updates.devMode = body.devMode
-      setIssueDevMode(issueId, body.devMode)
-    }
     if (body.parentIssueId !== undefined) {
       if (body.parentIssueId === null) {
         updates.parentIssueId = null

@@ -74,6 +74,11 @@ export class ClaudeLogNormalizer {
         return this.parseStreamEvent(data)
       case 'rate_limit':
         return this.parseRateLimit(data)
+      // Internal lifecycle types — no user-facing value
+      case 'queue-operation':
+      case 'progress':
+      case 'last-prompt':
+        return null
       default:
         return this.parseUnknown(data as Record<string, unknown>)
     }
@@ -109,6 +114,8 @@ export class ClaudeLogNormalizer {
           },
         }
       case 'task_started':
+      case 'task_progress':
+      case 'stop_hook_summary':
         // Suppress — no user-facing value
         return null
       case 'status':

@@ -13,7 +13,6 @@ import { persistUserMessage } from '@/engines/issue/user-message'
 import { getPermissionOptions } from '@/engines/issue/utils/helpers'
 import { createLogNormalizer } from '@/engines/issue/utils/normalizer'
 import { getPidFromSubprocess } from '@/engines/issue/utils/pid'
-import { setIssueDevMode } from '@/engines/issue/utils/visibility'
 import { createWorktree } from '@/engines/issue/utils/worktree'
 import type { EngineType, PermissionPolicy, SpawnedProcess } from '@/engines/types'
 import { logger } from '@/logger'
@@ -43,8 +42,6 @@ export async function executeIssue(
     )
     const issue = await getIssueWithSession(issueId)
     if (!issue) throw new Error(`Issue not found: ${issueId}`)
-    setIssueDevMode(issueId, issue.devMode)
-
     ensureNoActiveProcess(ctx, issueId)
 
     const executor = engineRegistry.get(opts.engineType)

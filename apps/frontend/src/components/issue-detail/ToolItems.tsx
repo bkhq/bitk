@@ -1,4 +1,5 @@
 import type { ToolGroupChatMessage, ToolGroupItem } from '@bkd/shared'
+import { ChevronRight } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { getCommandPreview } from '@/lib/command-preview'
 import { formatFileSize } from '@/lib/format'
@@ -364,9 +365,9 @@ export function ToolGroupMessage({ message }: { message: ToolGroupChatMessage })
 
   return (
     <div className="py-0.5 animate-message-enter">
-      <div className="rounded-lg border border-border/30 bg-card/50">
-        {/* Header */}
-        <div className="flex w-full items-center gap-2 px-3 py-2 text-xs text-muted-foreground">
+      <details open className="rounded-lg border border-border/30 bg-card/50 group/tg">
+        <summary className="flex w-full items-center gap-2 px-3 py-2 text-xs text-muted-foreground cursor-pointer list-none select-none hover:bg-muted/10 transition-colors rounded-lg">
+          <ChevronRight className="h-3 w-3 shrink-0 transition-transform group-open/tg:rotate-90" />
           <span className="truncate">{description || statsLabel}</span>
           {description ?
               (
@@ -375,15 +376,13 @@ export function ToolGroupMessage({ message }: { message: ToolGroupChatMessage })
                 </span>
               ) :
             null}
-        </div>
-
-        {/* Tree items */}
+        </summary>
         <div className="mx-3 mb-2 border-l border-border/40 pl-4 space-y-1">
           {items.map((item, idx) => (
             <ToolItemRenderer key={item.action.messageId ?? `ti-${idx}`} item={item} idx={idx} />
           ))}
         </div>
-      </div>
+      </details>
     </div>
   )
 }
