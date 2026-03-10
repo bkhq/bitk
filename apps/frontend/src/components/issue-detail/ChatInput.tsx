@@ -1,5 +1,4 @@
 import {
-  Bot,
   FileText,
   FolderOpen,
   Image as ImageIcon,
@@ -63,7 +62,6 @@ export function ChatInput({
   isThinking = false,
   onMessageSent,
   slashCommands = [],
-  agentCommands = [],
   pluginCommands = [],
   onRefreshLogs,
   pendingEditContent,
@@ -81,7 +79,6 @@ export function ChatInput({
   isThinking?: boolean
   onMessageSent?: (messageId: string, prompt: string, metadata?: Record<string, unknown>) => void
   slashCommands?: string[]
-  agentCommands?: string[]
   pluginCommands?: Array<{ name: string, path: string }>
   onRefreshLogs?: () => void
   pendingEditContent?: string | null
@@ -198,16 +195,15 @@ export function ChatInput({
   // Build tagged command list with category labels (for inline menu)
   interface TaggedCommand {
     value: string
-    category: 'command' | 'agent' | 'plugin'
+    category: 'command' | 'plugin'
   }
   const allCommands: TaggedCommand[] = useMemo(() => {
     const norm = (cmd: string) => (cmd.startsWith('/') ? cmd : `/${cmd}`)
     const items: TaggedCommand[] = []
     for (const cmd of slashCommands) items.push({ value: norm(cmd), category: 'command' })
-    for (const a of agentCommands) items.push({ value: norm(a), category: 'agent' })
     for (const p of pluginCommands) items.push({ value: norm(p.name), category: 'plugin' })
     return items
-  }, [slashCommands, agentCommands, pluginCommands])
+  }, [slashCommands, pluginCommands])
 
   // All command values for command detection in handleSend
   const normalizedCommands = useMemo(() => allCommands.map(c => c.value), [allCommands])
@@ -382,10 +378,6 @@ export function ChatInput({
 
   /** Resolve the text to insert for a tagged command item. */
   const resolveCommandInput = useCallback((item: TaggedCommand): string => {
-    if (item.category === 'agent') {
-      const name = item.value.startsWith('/') ? item.value.slice(1) : item.value
-      return `use agent ${name} `
-    }
     return `${item.value} `
   }, [])
 
@@ -614,10 +606,10 @@ export function ChatInput({
                       }`}
                     >
                       <code className="font-mono">{item.value}</code>
-                      {item.category !== 'command' ?
+                      {item.category === 'plugin' ?
                           (
                             <span className="ml-auto text-[10px] text-muted-foreground/60 uppercase tracking-wider">
-                              {t(`chat.${item.category === 'agent' ? 'agents' : 'plugins'}`)}
+                              {t('chat.plugins')}
                             </span>
                           ) :
                         null}
@@ -704,18 +696,6 @@ export function ChatInput({
                   <CommandPicker
                     commands={normalizedSlashCommands}
                     onSelect={cmd => selectSlashCommand(cmd)}
-                  />
-                ) :
-              null}
-            {agentCommands.length > 0 ?
-                (
-                  <AgentPicker
-                    agents={agentCommands}
-                    onSelect={(a) => {
-                      const name = a.startsWith('/') ? a.slice(1) : a
-                      setInput(`use agent ${name} `)
-                      textareaRef.current?.focus()
-                    }}
                   />
                 ) :
               null}
@@ -958,50 +938,6 @@ function CommandPicker({
                 className="text-xs px-3 py-1.5"
               >
                 <code className="font-mono text-foreground/80">{cmd}</code>
-              </CommandItem>
-            ))}
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
-  )
-}
-
-// ─── AgentPicker ─────────────────────────────────────────────────────────────
-
-function AgentPicker({
-  agents,
-  onSelect,
-}: {
-  agents: string[]
-  onSelect: (agent: string) => void
-}) {
-  const { t } = useTranslation()
-  const [open, setOpen] = useState(false)
-
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger render={<Button variant="ghost" size="icon" title={t('chat.agents')} />}>
-        <Bot className="size-4" />
-      </PopoverTrigger>
-      <PopoverContent side="top" align="start" className="w-[260px] p-0">
-        <Command>
-          <CommandInput placeholder={t('chat.agentSearch')} className="text-xs h-8" />
-          <CommandList className="max-h-[240px]">
-            <CommandEmpty className="text-xs text-muted-foreground/50 px-3 py-2">
-              {t('chat.noAgents')}
-            </CommandEmpty>
-            {agents.map(agent => (
-              <CommandItem
-                key={agent}
-                value={agent}
-                onSelect={() => {
-                  onSelect(agent)
-                  setOpen(false)
-                }}
-                className="text-xs px-3 py-1.5"
-              >
-                <code className="font-mono text-foreground/80">{agent}</code>
               </CommandItem>
             ))}
           </CommandList>
