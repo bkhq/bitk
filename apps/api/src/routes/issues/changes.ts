@@ -2,9 +2,9 @@ import { stat } from 'node:fs/promises'
 import { resolve, sep } from 'node:path'
 import { runCommand } from '@/engines/spawn'
 import { Hono } from 'hono'
-import { cacheGetOrSet } from '@/cache'
 import { findProject } from '@/db/helpers'
 import { resolveWorktreePath } from '@/engines/issue/utils/worktree'
+import { isGitRepo } from '@/utils/git'
 import { getProjectOwnedIssue } from './_shared'
 
 // ---------- Types ----------
@@ -72,13 +72,6 @@ async function runGit(
   cwd: string,
 ): Promise<{ code: number, stdout: string }> {
   return runCommand(['git', ...args], { cwd })
-}
-
-async function isGitRepo(cwd: string): Promise<boolean> {
-  return cacheGetOrSet(`gitRepo:${cwd}`, 120, async () => {
-    const { code, stdout } = await runGit(['rev-parse', '--is-inside-work-tree'], cwd)
-    return code === 0 && stdout.trim() === 'true'
-  })
 }
 
 function parsePorcelainLine(line: string): GitChangedFile | null {
