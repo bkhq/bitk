@@ -150,7 +150,8 @@ projects.patch(
     await db
       .update(projectsTable)
       .set({ sortOrder })
-      .where(eq(projectsTable.id, id))
+      .where(eq(projectsTable.id, existing.id))
+    await invalidateProjectCache(existing.id, existing.alias)
     return c.json({ success: true, data: null })
   },
 )
