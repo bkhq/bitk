@@ -396,6 +396,13 @@ function EngineSelect({
                 className="h-3.5 w-3.5 text-muted-foreground shrink-0"
               />
               <span className="font-medium">{profile?.name ?? a.engineType}</span>
+              {t(`createIssue.engineDesc.${a.engineType}`, '') ?
+                  (
+                    <span className="text-[10px] text-muted-foreground ml-1">
+                      {t(`createIssue.engineDesc.${a.engineType}`)}
+                    </span>
+                  ) :
+                null}
             </DropdownMenuItem>
           )
         })}

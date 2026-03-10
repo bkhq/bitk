@@ -31,33 +31,38 @@ const ISSUE_LOG_DIR = join(ROOT_DIR, 'data', 'logs', 'issues')
  * Falls back to npx for environments without a standalone binary.
  * Result is cached after first call.
  */
-let _cachedBaseCommand: string | undefined
-function getBaseCommand(): string {
-  if (_cachedBaseCommand) return _cachedBaseCommand
-  // 1. Check PATH
+let _cachedBaseCmd: string | undefined
+function resolveBaseCmd(): string {
+  if (_cachedBaseCmd) return _cachedBaseCmd
+  // 1. Check /work/bin first (container / custom deploy)
+  if (existsSync('/work/bin/claude')) {
+    _cachedBaseCmd = '/work/bin/claude'
+    return _cachedBaseCmd
+  }
+  // 2. Check PATH
   const fromPath = resolveCommand('claude')
   if (fromPath) {
-    _cachedBaseCommand = fromPath
-    return _cachedBaseCommand
+    _cachedBaseCmd = fromPath
+    return _cachedBaseCmd
   }
-  // 2. Check HOME-relative install locations
+  // 3. Check HOME-relative install locations
   const home = process.env.HOME ?? ''
   if (home) {
     const homeCandidates = [join(home, '.local/bin/claude'), join(home, '.bun/bin/claude')]
     const found = homeCandidates.find(p => existsSync(p))
     if (found) {
-      _cachedBaseCommand = found
-      return _cachedBaseCommand
+      _cachedBaseCmd = found
+      return _cachedBaseCmd
     }
   }
-  // 3. Check absolute paths independent of HOME
+  // 4. Check absolute paths independent of HOME
   if (existsSync('/usr/local/bin/claude')) {
-    _cachedBaseCommand = '/usr/local/bin/claude'
-    return _cachedBaseCommand
+    _cachedBaseCmd = '/usr/local/bin/claude'
+    return _cachedBaseCmd
   }
-  // 4. Fall back to npx
-  _cachedBaseCommand = NPX_FALLBACK
-  return _cachedBaseCommand
+  // 5. Fall back to npx
+  _cachedBaseCmd = NPX_FALLBACK
+  return _cachedBaseCmd
 }
 
 // Known Claude models — Claude Code CLI has no `models` subcommand
@@ -125,7 +130,7 @@ export class ClaudeCodeExecutor implements EngineExecutor {
 
   async getAvailability(): Promise<EngineAvailability> {
     try {
-      const resolved = await CommandBuilder.create(getBaseCommand())
+      const resolved = await CommandBuilder.create(resolveBaseCmd())
         .param('--version')
         .env('NPM_CONFIG_LOGLEVEL', 'error')
         .resolve()
@@ -208,7 +213,7 @@ export class ClaudeCodeExecutor implements EngineExecutor {
    * `discover_available_command_and_plugins`.
    */
   async discoverSlashCommandsAndAgents(workingDir: string): Promise<DiscoveryResult> {
-    const resolved = await CommandBuilder.create(getBaseCommand())
+    const resolved = await CommandBuilder.create(resolveBaseCmd())
       .params(['-p', '--verbose', '--output-format=stream-json'])
       .param('--max-turns', '1')
       .params(['--', '/'])
@@ -330,7 +335,7 @@ export class ClaudeCodeExecutor implements EngineExecutor {
     const permissionMode = options.permissionMode ?? 'auto'
     const isPlanMode = permissionMode === 'plan'
 
-    const builder = CommandBuilder.create(getBaseCommand())
+    const builder = CommandBuilder.create(resolveBaseCmd())
       .params(['-p', '--output-format=stream-json', '--verbose', '--no-chrome'])
       .param('--input-format', 'stream-json')
       // Enable SDK-based permission handling via stdin/stdout control protocol

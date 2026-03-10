@@ -242,7 +242,7 @@ export const BUILT_IN_PROFILES: Record<EngineType, EngineProfile> = {
   },
   'echo': {
     engineType: 'echo',
-    name: 'Echo',
+    name: 'Echo (Mock)',
     baseCommand: 'echo',
     protocol: 'stream-json',
     capabilities: ['session-fork'],

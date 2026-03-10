@@ -1332,6 +1332,14 @@ function EngineCard({
             )}
           </div>
           <div className="flex items-center gap-1.5 mt-0.5 text-xs text-muted-foreground">
+            {t(`createIssue.engineDesc.${engine.engineType}`, '') ?
+                (
+                  <>
+                    <span className="truncate">{t(`createIssue.engineDesc.${engine.engineType}`)}</span>
+                    {(selectedModelName || hasModels) && <span className="text-muted-foreground/50">·</span>}
+                  </>
+                ) :
+              null}
             {selectedModelName ? <span className="truncate">{selectedModelName}</span> : null}
             {selectedModelName && hasModels ?
                 (
@@ -1344,6 +1352,11 @@ function EngineCard({
                 ) :
               null}
           </div>
+          {engine.binaryPath && (
+            <div className="mt-0.5 truncate text-[11px] font-mono text-muted-foreground/60">
+              {engine.binaryPath}
+            </div>
+          )}
         </div>
         <div className="flex min-w-0 flex-wrap items-center justify-end gap-1.5">
           {engine.installed ?
@@ -1405,6 +1418,11 @@ function EngineCard({
                   </button>
                 )
               })}
+              {engine.binaryPath && (
+                <div className="mt-1 truncate border-t pt-1.5 text-[10px] font-mono text-muted-foreground/50">
+                  {engine.binaryPath}
+                </div>
+              )}
             </div>
           ) :
         null}

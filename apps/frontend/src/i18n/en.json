@@ -132,7 +132,7 @@
       "planner": "Plan tasks",
       "reviewer": "Review code",
       "researcher": "Research",
-      "echo": "Mock engine"
+      "echo": "Mock engine, does nothing"
     },
     "modelDesc": {
       "opus": "Most capable",

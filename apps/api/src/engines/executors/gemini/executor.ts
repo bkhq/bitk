@@ -92,6 +92,7 @@ export class GeminiExecutor implements EngineExecutor {
         installed: true,
         executable: false, // spawn not yet implemented
         version,
+        binaryPath: 'npx -y @google/gemini-cli',
         authStatus,
       }
     } catch (error) {

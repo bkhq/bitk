@@ -9,8 +9,6 @@ import {
   Clock,
   FileText,
   Loader2,
-  RotateCcw,
-  Skull,
   Square,
   Terminal,
 } from 'lucide-react'
@@ -19,7 +17,7 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { useCancelIssue, useRestartIssue, useTerminateProcess } from '@/hooks/use-kanban'
+import { useTerminateProcess } from '@/hooks/use-kanban'
 import type { ProcessInfo } from '@/types/kanban'
 
 function StatusIcon({ status }: { status: string | null }) {
@@ -72,8 +70,6 @@ function isIdle(proc: ProcessInfo): boolean {
 function ProcessCard({ proc, projectId }: { proc: ProcessInfo, projectId: string }) {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const cancelMutation = useCancelIssue(projectId)
-  const restartMutation = useRestartIssue(projectId)
   const terminateMutation = useTerminateProcess(projectId)
   const [showCommand, setShowCommand] = useState(false)
   const idle = isIdle(proc)
@@ -178,44 +174,15 @@ function ProcessCard({ proc, projectId }: { proc: ProcessInfo, projectId: string
 
       {/* Actions */}
       <div className="flex items-center gap-1.5 pt-1">
-        {(proc.processState === 'running' || proc.processState === 'spawning') && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-6 text-[10px] gap-1"
-            disabled={cancelMutation.isPending}
-            onClick={() => cancelMutation.mutate(proc.issueId)}
-          >
-            <Square className="h-3 w-3" />
-            {cancelMutation.isPending ? t('processManager.cancelling') : t('processManager.cancel')}
-          </Button>
-        )}
-        {(proc.processState === 'failed' || proc.processState === 'cancelled') && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-6 text-[10px] gap-1"
-            disabled={restartMutation.isPending}
-            onClick={() => restartMutation.mutate(proc.issueId)}
-          >
-            <RotateCcw className="h-3 w-3" />
-            {restartMutation.isPending ?
-                t('processManager.restarting') :
-                t('processManager.restart')}
-          </Button>
-        )}
-        {/* Terminate — always available, force-kills process regardless of state */}
         <Button
           variant="outline"
           size="sm"
-          className="h-6 text-[10px] gap-1 text-destructive hover:text-destructive"
+          className="h-6 text-[10px] gap-1"
           disabled={terminateMutation.isPending}
           onClick={() => terminateMutation.mutate(proc.issueId)}
         >
-          <Skull className="h-3 w-3" />
-          {terminateMutation.isPending ?
-              t('processManager.terminating') :
-              t('processManager.terminate')}
+          <Square className="h-3 w-3" />
+          {terminateMutation.isPending ? t('processManager.terminating') : t('processManager.terminate')}
         </Button>
       </div>
     </div>

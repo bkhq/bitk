@@ -132,7 +132,7 @@
       "planner": "规划任务",
       "reviewer": "审查代码",
       "researcher": "调研分析",
-      "echo": "模拟引擎"
+      "echo": "模拟模型，不做任何工作"
     },
     "modelDesc": {
       "opus": "最强大",
