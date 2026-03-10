@@ -455,7 +455,7 @@ export function initWebhookDispatcher() {
               timestamp: new Date().toISOString(),
               ...(meta ? buildMetadataPayload(meta) : { issueId: data.issueId }),
               changes,
-            }, `issue.updated:${data.issueId}:${Object.keys(changes).sort().join(',')}`)
+            })
           } catch (err) {
             logger.warn({ err, issueId: data.issueId }, 'webhook_updated_failed')
           }
