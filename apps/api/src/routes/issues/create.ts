@@ -147,7 +147,7 @@ create.post(
       if (serverUrl) {
         webhookPayload.issueUrl = buildIssueUrl(serverUrl, project.id, newIssue!.id)
       }
-      void webhookDispatch('issue.created', webhookPayload)
+      void webhookDispatch('issue.created', webhookPayload, `issue.created:${newIssue!.id}`)
 
       // Only auto-execute when created directly in working
       if (shouldExecute) {

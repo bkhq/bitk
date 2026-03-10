@@ -166,6 +166,7 @@ export const webhookDeliveries = sqliteTable(
       .notNull()
       .references(() => webhooks.id),
     event: text('event').notNull(),
+    dedupKey: text('dedup_key'), // e.g. "issue.status.review:issueId" — for skipping duplicates
     payload: text('payload').notNull(),
     statusCode: integer('status_code'),
     response: text('response'),
@@ -178,6 +179,7 @@ export const webhookDeliveries = sqliteTable(
   table => [
     index('webhook_deliveries_webhook_id_idx').on(table.webhookId),
     index('webhook_deliveries_created_at_idx').on(table.createdAt),
+    index('webhook_deliveries_dedup_idx').on(table.webhookId, table.dedupKey, table.createdAt),
   ],
 )
 
