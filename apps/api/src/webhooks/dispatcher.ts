@@ -1,5 +1,5 @@
 import type { WebhookEventType } from '@bkd/shared'
-import { and, desc, eq, inArray } from 'drizzle-orm'
+import { and, desc, eq, gte, inArray } from 'drizzle-orm'
 import { db } from '@/db'
 import { getServerUrl } from '@/db/helpers'
 import {
@@ -293,6 +293,7 @@ export async function deliver(
   webhook: WebhookRow,
   event: WebhookEventType,
   payload: Record<string, unknown>,
+  dedupKey?: string,
 ) {
   const start = Date.now()
   let result: {
@@ -320,6 +321,7 @@ export async function deliver(
     await db.insert(webhookDeliveries).values({
       webhookId: webhook.id,
       event,
+      dedupKey: dedupKey ?? null,
       payload: JSON.stringify(payload),
       statusCode: result.statusCode,
       response: result.response,
@@ -331,7 +333,14 @@ export async function deliver(
   }
 }
 
-export async function dispatch(event: WebhookEventType, payload: Record<string, unknown>) {
+/** Dedup window — skip delivery if the same dedupKey was sent within this period. */
+const DEDUP_WINDOW_MS = 30_000
+
+export async function dispatch(
+  event: WebhookEventType,
+  payload: Record<string, unknown>,
+  dedupKey?: string,
+) {
   let rows: WebhookRow[]
   try {
     rows = await db
@@ -362,8 +371,34 @@ export async function dispatch(event: WebhookEventType, payload: Record<string, 
       || (event.startsWith('issue.status.') && subscribed.includes('issue.status_changed'))
     if (!matches) continue
 
+    // Dedup: skip if an identical delivery was already sent recently
+    if (dedupKey) {
+      try {
+        const cutoff = new Date(Date.now() - DEDUP_WINDOW_MS)
+        const [existing] = await db
+          .select({ id: webhookDeliveries.id })
+          .from(webhookDeliveries)
+          .where(
+            and(
+              eq(webhookDeliveries.webhookId, row.id),
+              eq(webhookDeliveries.dedupKey, dedupKey),
+              eq(webhookDeliveries.success, true),
+              gte(webhookDeliveries.createdAt, cutoff),
+            ),
+          )
+          .limit(1)
+        if (existing) {
+          logger.debug({ webhookId: row.id, event, dedupKey }, 'webhook_dedup_skipped')
+          continue
+        }
+      } catch (err) {
+        logger.warn({ err, webhookId: row.id, event }, 'webhook_dedup_check_failed')
+        // On check failure, proceed with delivery to avoid losing events
+      }
+    }
+
     // Fire and forget — don't block the event bus
-    void deliver(row, event, payload).catch((err) => {
+    void deliver(row, event, payload, dedupKey).catch((err) => {
       logger.warn({ err, webhookId: row.id, event }, 'webhook_deliver_error')
     })
   }
@@ -406,7 +441,7 @@ export function initWebhookDispatcher() {
               if (convo?.agentReply) payload.agentReply = convo.agentReply
             }
 
-            await dispatch(eventType, payload)
+            await dispatch(eventType, payload, `${eventType}:${data.issueId}`)
           } catch (err) {
             logger.warn({ err, issueId: data.issueId }, 'webhook_status_changed_failed')
           }
@@ -420,7 +455,7 @@ export function initWebhookDispatcher() {
               timestamp: new Date().toISOString(),
               ...(meta ? buildMetadataPayload(meta) : { issueId: data.issueId }),
               changes,
-            })
+            }, `issue.updated:${data.issueId}:${Object.keys(changes).sort().join(',')}`)
           } catch (err) {
             logger.warn({ err, issueId: data.issueId }, 'webhook_updated_failed')
           }
@@ -462,7 +497,7 @@ export function initWebhookDispatcher() {
             if (lastLog) payload.lastLog = lastLog
           }
 
-          await dispatch(eventType, payload)
+          await dispatch(eventType, payload, `${eventType}:${data.issueId}:${data.executionId}`)
         } catch (err) {
           logger.warn({ err, issueId: data.issueId }, 'webhook_done_failed')
         }
@@ -488,7 +523,7 @@ export function initWebhookDispatcher() {
             if (meta?.engineType) payload.engineType = meta.engineType
             if (meta?.model) payload.model = meta.model
 
-            await dispatch('session.started', payload)
+            await dispatch('session.started', payload, `session.started:${data.issueId}:${data.executionId}`)
           } catch (err) {
             logger.warn({ err, issueId: data.issueId }, 'webhook_state_failed')
           }

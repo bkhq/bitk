@@ -97,7 +97,7 @@ del.delete('/:id', async (c) => {
   if (serverUrl) {
     webhookPayload.issueUrl = buildIssueUrl(serverUrl, project.id, issueId)
   }
-  void webhookDispatch('issue.deleted', webhookPayload)
+  void webhookDispatch('issue.deleted', webhookPayload, `issue.deleted:${issueId}`)
 
   return c.json({ success: true, data: { id: issueId } })
 })

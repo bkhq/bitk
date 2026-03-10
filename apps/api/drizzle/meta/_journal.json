@@ -71,6 +71,13 @@
       "when": 1773243600000,
       "tag": "0009_remove_dev_mode",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1773115168976,
+      "tag": "0010_yielding_red_ghost",
+      "breakpoints": true
     }
   ]
 }
