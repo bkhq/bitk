@@ -324,13 +324,13 @@ function GeneralSection({ open }: { open: boolean }) {
         <Input
           type="number"
           min={1}
-          max={20}
+          max={50}
           className="w-24"
           value={maxConcurrentInput}
           onChange={e => setMaxConcurrentInput(e.target.value)}
           onBlur={() => {
             const v = Number.parseInt(maxConcurrentInput, 10)
-            if (v >= 1 && v <= 20) {
+            if (v >= 1 && v <= 50) {
               setMaxConcurrent.mutate(v)
             } else {
               setMaxConcurrentInput(String(maxConcurrentData?.value ?? 5))

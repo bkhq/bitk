@@ -12,9 +12,12 @@ BKD 是 CLI 编程代理的统一前端 —— 支持 [Claude Code](https://gith
 - **多代理** — 支持 Claude Code、OpenAI Codex、Gemini CLI 作为执行引擎
 - **实时对话** — 流式输出代理运行结果；运行中可发送追加消息
 - **Diff 查看器** — GitHub 风格的差异面板，查看代理所做的文件改动
+- **文件浏览器** — 浏览、查看项目文件，支持语法高亮
 - **Web 终端** — 内置 xterm.js 终端，直接访问 Shell
 - **文件上传** — 上传文件作为代理的上下文
+- **Webhooks** — 可配置的事件通知，支持 Issue 状态变更推送
 - **多轮会话** — 保持完整会话历史，支持连续对话
+- **自动升级** — 自动检查新版本，设置界面一键升级
 - **国际化** — 中文 / 英文界面
 - **暗色模式** — 浅色 / 深色 / 跟随系统
 - **移动端适配** — 响应式布局，支持触控
@@ -36,6 +39,7 @@ chmod +x bkd-launcher-linux-x64
 ```bash
 curl -LO https://github.com/bkhq/bkd/releases/download/launcher-v1/bkd-launcher-darwin-arm64
 chmod +x bkd-launcher-darwin-arm64
+xattr -cr bkd-launcher-darwin-arm64
 ./bkd-launcher-darwin-arm64
 ```
 
@@ -43,7 +47,7 @@ chmod +x bkd-launcher-darwin-arm64
 
 ## 系统要求
 
-BitK 以子进程方式启动 AI 编程代理，使用前请至少安装其中一个：
+BKD 以子进程方式启动 AI 编程代理，使用前请至少安装其中一个：
 
 ### Claude Code（推荐）
 
@@ -59,7 +63,7 @@ npm install -g @anthropic-ai/claude-code
 npm install -g @openai/codex
 ```
 
-需要 `OPENAI_API_KEY` 或 `CODEX_API_KEY`。
+需要 `OPENAI_API_KEY` 或 `CODEX_API_KEY`，或通过 `codex` CLI 完成认证。
 
 ### Gemini CLI
 
@@ -67,9 +71,9 @@ npm install -g @openai/codex
 npm install -g @google/gemini-cli
 ```
 
-需要 `GOOGLE_API_KEY` 或 `GEMINI_API_KEY`。
+需要 `GOOGLE_API_KEY` 或 `GEMINI_API_KEY`，或通过 `gemini` CLI 完成认证。
 
-> BitK 启动时会自动检测已安装的代理，可以任意组合使用。
+> BKD 启动时会自动检测已安装的代理，可以任意组合使用。
 
 ## 使用方法
 
@@ -92,13 +96,14 @@ npm install -g @google/gemini-cli
 | `LOG_LEVEL`                 | 日志级别（`trace` / `debug` / `info` / `warn` / `error`） | `info`           |
 | `SERVICE_NAME`              | 日志名称前缀                                              | `bkd`            |
 | `LOG_EXECUTOR_IO`           | 记录执行器 stdin/stdout（`1` = 开启，`0` = 关闭）         | `1`              |
-| `MAX_CONCURRENT_EXECUTIONS` | 最大并行代理会话数                                        | `5`              |
 | `ANTHROPIC_API_KEY`         | Claude API 密钥                                           | —                |
 | `OPENAI_API_KEY`            | OpenAI / Codex API 密钥                                   | —                |
 | `CODEX_API_KEY`             | Codex 专用 API 密钥（备选）                               | —                |
 | `GOOGLE_API_KEY`            | Google Gemini API 密钥                                    | —                |
 | `GEMINI_API_KEY`            | Gemini 专用 API 密钥（备选）                              | —                |
 | `ENABLE_RUNTIME_ENDPOINT`   | 启用 `/api/runtime` 调试端点                              | 禁用             |
+
+服务器名称、服务器 URL、Webhooks、最大并发数等运行时设置在设置界面中管理，持久化存储在数据库中。环境变量 `SERVER_NAME` 和 `SERVER_URL` 仅作为初始种子值 —— 一旦在界面中设置，数据库中的值优先。
 
 ## 开发
 

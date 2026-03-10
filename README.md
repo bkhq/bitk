@@ -2,7 +2,7 @@
 
 AI-powered project management board. Create issues, assign them to AI coding agents, and watch them work in real time.
 
-BitK is a unified frontend for CLI-based coding agents — [Claude Code](https://github.com/anthropics/claude-code), [Codex](https://github.com/openai/codex), and [Gemini CLI](https://github.com/google-gemini/gemini-cli). You manage a Kanban board; the agents write the code.
+BKD is a unified frontend for CLI-based coding agents — [Claude Code](https://github.com/anthropics/claude-code), [Codex](https://github.com/openai/codex), and [Gemini CLI](https://github.com/google-gemini/gemini-cli). You manage a Kanban board; the agents write the code.
 
 [中文说明](README.zh-CN.md)
 
@@ -12,9 +12,12 @@ BitK is a unified frontend for CLI-based coding agents — [Claude Code](https:/
 - **Multi-Agent** — Supports Claude Code, OpenAI Codex, and Gemini CLI as execution engines
 - **Real-time Chat** — Stream agent output as it runs; send follow-up messages mid-session
 - **Diff Viewer** — See file changes made by the agent in a GitHub-style diff panel
+- **File Browser** — Browse, view, and navigate project files with syntax highlighting
 - **Web Terminal** — Built-in xterm.js terminal for direct shell access
 - **File Upload** — Attach files to issues as context for the agent
+- **Webhooks** — Configurable event notifications for issue status changes
 - **Multi-turn Sessions** — Continue conversations with full session history
+- **Auto-Upgrade** — Automatic version checking and one-click upgrade from the settings UI
 - **i18n** — Chinese and English UI
 - **Dark Mode** — Light / Dark / System theme
 - **Mobile Friendly** — Responsive layout with touch support
@@ -36,6 +39,7 @@ chmod +x bkd-launcher-linux-x64
 ```bash
 curl -LO https://github.com/bkhq/bkd/releases/download/launcher-v1/bkd-launcher-darwin-arm64
 chmod +x bkd-launcher-darwin-arm64
+xattr -cr bkd-launcher-darwin-arm64
 ./bkd-launcher-darwin-arm64
 ```
 
@@ -43,7 +47,7 @@ The launcher stays fixed across versions — only the lightweight app package ge
 
 ## System Requirements
 
-BitK spawns AI coding agents as child processes. Install at least one before using:
+BKD spawns AI coding agents as child processes. Install at least one before using:
 
 ### Claude Code (Recommended)
 
@@ -59,7 +63,7 @@ Requires `ANTHROPIC_API_KEY` in your environment or configured via `claude` CLI.
 npm install -g @openai/codex
 ```
 
-Requires `OPENAI_API_KEY` or `CODEX_API_KEY`.
+Requires `OPENAI_API_KEY` or `CODEX_API_KEY`, or authenticate via `codex` CLI.
 
 ### Gemini CLI
 
@@ -67,9 +71,9 @@ Requires `OPENAI_API_KEY` or `CODEX_API_KEY`.
 npm install -g @google/gemini-cli
 ```
 
-Requires `GOOGLE_API_KEY` or `GEMINI_API_KEY`.
+Requires `GOOGLE_API_KEY` or `GEMINI_API_KEY`, or authenticate via `gemini` CLI.
 
-> BitK auto-detects which agents are installed at startup. You can use any combination.
+> BKD auto-detects which agents are installed at startup. You can use any combination.
 
 ## Usage
 
@@ -92,13 +96,14 @@ All configuration is done via environment variables. Create a `.env` file in `ap
 | `LOG_LEVEL`                 | Log level (`trace` / `debug` / `info` / `warn` / `error`) | `info`           |
 | `SERVICE_NAME`              | Logger name prefix                                        | `bkd`            |
 | `LOG_EXECUTOR_IO`           | Log executor stdin/stdout (`1` = on, `0` = off)           | `1`              |
-| `MAX_CONCURRENT_EXECUTIONS` | Max parallel agent sessions                               | `5`              |
 | `ANTHROPIC_API_KEY`         | Claude API key                                            | —                |
 | `OPENAI_API_KEY`            | OpenAI / Codex API key                                    | —                |
 | `CODEX_API_KEY`             | Codex-specific API key (fallback)                         | —                |
 | `GOOGLE_API_KEY`            | Google Gemini API key                                     | —                |
 | `GEMINI_API_KEY`            | Gemini-specific API key (fallback)                        | —                |
 | `ENABLE_RUNTIME_ENDPOINT`   | Enable `/api/runtime` debug endpoint                      | disabled         |
+
+Server name, server URL, webhooks, max concurrency, and other runtime settings are managed in the Settings UI and persisted in the database. Environment variables `SERVER_NAME` and `SERVER_URL` are used as initial seed values only — once set in the UI, database values take precedence.
 
 ## Development
 

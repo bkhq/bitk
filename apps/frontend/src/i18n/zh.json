@@ -311,7 +311,7 @@
     "logPageSize": "消息加载数量",
     "logPageSizeHint": "每次加载的对话消息数量（用户和助手消息）",
     "maxConcurrentExecutions": "最大并发会话数",
-    "maxConcurrentExecutionsHint": "允许同时运行的 AI 代理会话最大数量（1–20）",
+    "maxConcurrentExecutionsHint": "允许同时运行的 AI 代理会话最大数量（1–50）",
     "worktreeAutoCleanup": "自动清理工作区",
     "worktreeAutoCleanupHint": "自动清理已完成超过 1 天的工作区",
     "upgradeEnabled": "自动检查更新",
