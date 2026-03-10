@@ -1,7 +1,8 @@
 import { existsSync } from 'node:fs'
+import { join } from 'node:path'
 import { safeEnv } from '@/engines/safe-env'
 import type { StdinWriter, Subprocess } from '@/engines/spawn'
-import { runCommand, spawnNode } from '@/engines/spawn'
+import { resolveCommand, runCommand, spawnNode } from '@/engines/spawn'
 import type {
   EngineAvailability,
   EngineCapability,
@@ -19,7 +20,38 @@ import { CodexLogNormalizer } from './normalizer'
 import type { ThreadStartParams } from './protocol'
 import { CodexProtocolHandler } from './protocol'
 
-const CODEX_CMD = ['npx', '-y', '@openai/codex']
+const NPX_FALLBACK = ['npx', '-y', '@openai/codex']
+
+/**
+ * Find the `codex` binary, checking PATH and common install locations.
+ * Falls back to npx for environments without a standalone binary.
+ * Result is cached after first call.
+ */
+let _cachedCodexCmd: string[] | undefined
+function getCodexCmd(): string[] {
+  if (_cachedCodexCmd) return _cachedCodexCmd
+  // 1. Check PATH
+  const fromPath = resolveCommand('codex')
+  if (fromPath) {
+    _cachedCodexCmd = [fromPath]
+    return _cachedCodexCmd
+  }
+  // 2. Check common install locations
+  const home = process.env.HOME ?? ''
+  const candidates = [
+    ...(home ? [join(home, '.local/bin/codex'), join(home, '.bun/bin/codex')] : []),
+    '/usr/local/bin/codex',
+    '/work/bin/codex',
+  ]
+  const found = candidates.find(p => existsSync(p))
+  if (found) {
+    _cachedCodexCmd = [found]
+    return _cachedCodexCmd
+  }
+  // 3. Fall back to npx
+  _cachedCodexCmd = NPX_FALLBACK
+  return _cachedCodexCmd
+}
 const JSONRPC_TIMEOUT = 15000
 
 /**
@@ -176,9 +208,9 @@ interface CodexModelListResponse {
  * then paginate through model/list. Returns flattened EngineModel[].
  */
 async function queryCodexModels(): Promise<EngineModel[]> {
-  logger.debug({ cmd: [...CODEX_CMD, 'app-server'].join(' ') }, 'codex_models_start')
+  logger.debug({ cmd: [...getCodexCmd(), 'app-server'].join(' ') }, 'codex_models_start')
 
-  const proc = spawnNode([...CODEX_CMD, 'app-server'], {
+  const proc = spawnNode([...getCodexCmd(), 'app-server'], {
     stdin: 'pipe',
     stdout: 'pipe',
     stderr: 'pipe',
@@ -284,7 +316,7 @@ export class CodexExecutor implements EngineExecutor {
   ]
 
   async spawn(options: SpawnOptions, env: ExecutionEnv): Promise<SpawnedProcess> {
-    const cmd = [...CODEX_CMD, 'app-server']
+    const cmd = [...getCodexCmd(), 'app-server']
 
     const proc = spawnNode(cmd, {
       cwd: options.workingDir,
@@ -358,7 +390,7 @@ export class CodexExecutor implements EngineExecutor {
   }
 
   async spawnFollowUp(options: FollowUpOptions, env: ExecutionEnv): Promise<SpawnedProcess> {
-    const cmd = [...CODEX_CMD, 'app-server']
+    const cmd = [...getCodexCmd(), 'app-server']
 
     const proc = spawnNode(cmd, {
       cwd: options.workingDir,
@@ -450,7 +482,7 @@ export class CodexExecutor implements EngineExecutor {
 
   async getAvailability(): Promise<EngineAvailability> {
     try {
-      const { code: exitCode, stdout } = await runCommand([...CODEX_CMD, '--version'], {
+      const { code: exitCode, stdout } = await runCommand([...getCodexCmd(), '--version'], {
         timeout: 10000,
         stderr: 'pipe',
       })
