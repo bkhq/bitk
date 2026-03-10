@@ -88,4 +88,4 @@ jobs:
           \`\`\`
           NOTES
           )" \
-            --prerelease
+            --latest=false
