@@ -41,9 +41,9 @@ export function FileList({ entries, onNavigate, breadcrumb }: FileListProps) {
 
   if (entries.length === 0) {
     return (
-      <div className="border border-border rounded-lg overflow-auto flex-1 min-h-0">
+      <div className="overflow-auto flex-1 min-h-0">
         {breadcrumb && (
-          <div className="sticky top-0 z-[2] bg-muted/50 border-b border-border px-4 py-1.5">
+          <div className="sticky top-0 z-[2] bg-muted/50 px-4 py-1.5">
             {breadcrumb}
           </div>
         )}
@@ -55,14 +55,16 @@ export function FileList({ entries, onNavigate, breadcrumb }: FileListProps) {
   }
 
   return (
-    <div className="border border-border rounded-lg overflow-auto flex-1 min-h-0">
-      {breadcrumb && (
-        <div className="sticky top-0 z-[2] bg-muted/50 border-b border-border px-4 py-1.5">
-          {breadcrumb}
-        </div>
-      )}
+    <div className="overflow-auto flex-1 min-h-0">
       <table className="w-full text-sm">
-        <thead className={`sticky ${breadcrumb ? 'top-[33px]' : 'top-0'} z-[1]`}>
+        <thead className="sticky top-0 z-[1]">
+          {breadcrumb && (
+            <tr className="bg-muted/50 border-b border-border">
+              <th colSpan={3} className="text-left px-4 py-1.5 font-normal">
+                {breadcrumb}
+              </th>
+            </tr>
+          )}
           <tr className="bg-muted/50 border-b border-border">
             <th className="text-left font-medium text-muted-foreground px-4 py-2">
               {t('fileBrowser.name')}

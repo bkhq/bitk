@@ -1,5 +1,5 @@
 import DOMPurify from 'dompurify'
-import { ArrowLeft, Code, Eye, FileWarning } from 'lucide-react'
+import { Code, Eye, FileWarning } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { codeToHtml } from '@/lib/shiki'
@@ -55,11 +55,11 @@ function formatSize(bytes: number): string {
 
 interface FileViewerProps {
   file: FileContent
-  onBack: () => void
+  onBack?: () => void
   breadcrumb?: React.ReactNode
 }
 
-export function FileViewer({ file, onBack, breadcrumb }: FileViewerProps) {
+export function FileViewer({ file, breadcrumb }: FileViewerProps) {
   const { t } = useTranslation()
   const [html, setHtml] = useState<string>('')
   const [loading, setLoading] = useState(true)
@@ -104,25 +104,15 @@ export function FileViewer({ file, onBack, breadcrumb }: FileViewerProps) {
 
   if (file.isBinary) {
     return (
-      <div className="border border-border rounded-lg overflow-hidden">
+      <div className="overflow-hidden">
         {breadcrumb && (
           <div className="bg-muted/50 border-b border-border px-4 py-1.5">
             {breadcrumb}
           </div>
         )}
         <div className="flex items-center justify-between px-4 py-2 bg-muted/50 border-b border-border">
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={onBack}
-              className="p-1 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
-              aria-label={t('fileBrowser.back')}
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </button>
-            <span className="font-medium text-sm">{fileName}</span>
-          </div>
-          <span className="text-xs text-muted-foreground">{formatSize(file.size)}</span>
+          <span className="font-medium text-sm truncate">{fileName}</span>
+          <span className="text-xs text-muted-foreground shrink-0">{formatSize(file.size)}</span>
         </div>
         <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
           <FileWarning className="h-10 w-10" />
@@ -133,25 +123,15 @@ export function FileViewer({ file, onBack, breadcrumb }: FileViewerProps) {
   }
 
   return (
-    <div className="flex flex-col h-full border border-border rounded-lg overflow-hidden">
+    <div className="flex flex-col h-full overflow-hidden">
       {breadcrumb && (
         <div className="bg-muted/50 border-b border-border px-4 py-1.5 shrink-0">
           {breadcrumb}
         </div>
       )}
       <div className="flex items-center justify-between px-4 py-2 bg-muted/50 border-b border-border shrink-0">
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={onBack}
-            className="p-1 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
-            aria-label={t('fileBrowser.back')}
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </button>
-          <span className="font-medium text-sm">{fileName}</span>
-        </div>
-        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+        <span className="font-medium text-sm truncate">{fileName}</span>
+        <div className="flex items-center gap-3 text-xs text-muted-foreground shrink-0">
           {isMd ?
               (
                 <button

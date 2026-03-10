@@ -13,7 +13,7 @@ export function FileBreadcrumb({ path, onNavigate }: FileBreadcrumbProps) {
   return (
     <nav
       aria-label={t('fileBrowser.breadcrumb')}
-      className="flex items-center gap-1.5 text-sm overflow-x-auto"
+      className="flex items-center gap-1.5 text-sm overflow-x-auto h-5"
     >
       <button
         type="button"
