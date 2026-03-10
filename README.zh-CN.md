@@ -43,6 +43,14 @@ xattr -cr bkd-launcher-darwin-arm64
 ./bkd-launcher-darwin-arm64
 ```
 
+**macOS (Intel)**
+
+```bash
+curl -LO https://github.com/bkhq/bkd/releases/download/launcher-v1/bkd-launcher-darwin-x64
+chmod +x bkd-launcher-darwin-x64
+./bkd-launcher-darwin-x64
+```
+
 启动器跨版本保持不变，只有轻量级的应用包会被更新。启动后打开 http://localhost:3000。
 
 ## 系统要求

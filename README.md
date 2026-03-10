@@ -43,6 +43,14 @@ xattr -cr bkd-launcher-darwin-arm64
 ./bkd-launcher-darwin-arm64
 ```
 
+**macOS (Intel)**
+
+```bash
+curl -LO https://github.com/bkhq/bkd/releases/download/launcher-v1/bkd-launcher-darwin-x64
+chmod +x bkd-launcher-darwin-x64
+./bkd-launcher-darwin-x64
+```
+
 The launcher stays fixed across versions — only the lightweight app package gets updated. Open http://localhost:3000 after starting.
 
 ## System Requirements

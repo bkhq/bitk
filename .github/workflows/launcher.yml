@@ -31,6 +31,10 @@ jobs:
             runner: macos-latest
             label: darwin-arm64
             suffix: darwin-arm64
+          - target: bun-darwin-x64
+            runner: macos-13
+            label: darwin-x64
+            suffix: darwin-x64
 
     steps:
       - uses: actions/checkout@v4
@@ -81,6 +85,7 @@ jobs:
           cp artifacts/bkd-launcher-linux-x64/bkd-* release/
           cp artifacts/bkd-launcher-linux-arm64/bkd-* release/
           cp artifacts/bkd-launcher-darwin-arm64/bkd-* release/
+          cp artifacts/bkd-launcher-darwin-x64/bkd-* release/
           for f in release/bkd-launcher-*; do
             chmod +x "$f"
           done
