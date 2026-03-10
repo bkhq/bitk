@@ -1,10 +1,12 @@
 import DOMPurify from 'dompurify'
 import { Code, Eye, FileWarning } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { codeToHtml } from '@/lib/shiki'
 import type { FileContent } from '@/types/kanban'
 import { MarkdownRenderer } from './MarkdownRenderer'
+
+const CodeEditor = lazy(() => import('./CodeEditor').then(m => ({ default: m.CodeEditor })))
 
 /** Infer language from file extension for Shiki syntax highlighting. */
 function inferLang(path: string): string {
@@ -55,23 +57,47 @@ function formatSize(bytes: number): string {
 
 interface FileViewerProps {
   file: FileContent
-  onBack?: () => void
   breadcrumb?: React.ReactNode
+  isEditing?: boolean
+  onStartEdit?: () => void
+  onCancelEdit?: () => void
+  onSave?: (content: string) => void
+  isSaving?: boolean
 }
 
-export function FileViewer({ file, breadcrumb }: FileViewerProps) {
+export function FileViewer({
+  file,
+  breadcrumb,
+  isEditing,
+  onStartEdit,
+  onCancelEdit,
+  onSave,
+  isSaving,
+}: FileViewerProps) {
   const { t } = useTranslation()
   const [html, setHtml] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const isMd = isMarkdownFile(file.path)
   const [showRendered, setShowRendered] = useState(isMd)
   const prevPath = useRef(file.path)
+  const [editContent, setEditContent] = useState(file.content)
 
   // Reset view mode when navigating to a different file
   if (prevPath.current !== file.path) {
     prevPath.current = file.path
     setShowRendered(isMarkdownFile(file.path))
   }
+
+  // Sync edit content when entering edit mode or file changes
+  useEffect(() => {
+    if (isEditing) {
+      setEditContent(file.content)
+    }
+  }, [isEditing, file.content])
+
+  const handleEditorSave = useCallback(() => {
+    onSave?.(editContent)
+  }, [onSave, editContent])
 
   const lineCount = file.content ? file.content.split('\n').length : 0
   const fileName = file.path.split('/').pop() ?? file.path
@@ -82,8 +108,8 @@ export function FileViewer({ file, breadcrumb }: FileViewerProps) {
       return
     }
 
-    // Skip Shiki highlighting when showing rendered markdown
-    if (isMd && showRendered) {
+    // Skip Shiki highlighting when showing rendered markdown or editing
+    if ((isMd && showRendered) || isEditing) {
       setLoading(false)
       return
     }
@@ -100,7 +126,7 @@ export function FileViewer({ file, breadcrumb }: FileViewerProps) {
     return () => {
       cancelled = true
     }
-  }, [file.content, file.path, file.isBinary, isMd, showRendered])
+  }, [file.content, file.path, file.isBinary, isMd, showRendered, isEditing])
 
   if (file.isBinary) {
     return (
@@ -132,53 +158,108 @@ export function FileViewer({ file, breadcrumb }: FileViewerProps) {
       <div className="flex items-center justify-between px-4 py-2 bg-muted/50 border-b border-border shrink-0">
         <span className="font-medium text-sm truncate">{fileName}</span>
         <div className="flex items-center gap-3 text-xs text-muted-foreground shrink-0">
-          {isMd ?
-              (
-                <button
-                  type="button"
-                  onClick={() => setShowRendered(v => !v)}
-                  className="flex items-center gap-1 rounded px-1.5 py-0.5 hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
-                  title={showRendered ? t('fileBrowser.viewSource') : t('fileBrowser.viewRendered')}
-                >
-                  {showRendered ? <Code className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                  <span>
-                    {showRendered ? t('fileBrowser.viewSource') : t('fileBrowser.viewRendered')}
+          {isEditing
+            ? (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-amber-600 dark:text-amber-400 font-medium">
+                    {t('fileBrowser.editing')}
                   </span>
-                </button>
-              ) :
-            null}
-          <span>
-            {lineCount}
-            {' '}
-            {t('fileBrowser.lines')}
-          </span>
-          <span>{formatSize(file.size)}</span>
-          {file.isTruncated ?
-              (
-                <span className="text-yellow-600 dark:text-yellow-400">
-                  {t('fileBrowser.truncated')}
-                </span>
-              ) :
-            null}
+                  <button
+                    type="button"
+                    onClick={onCancelEdit}
+                    className="rounded px-2 py-0.5 hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
+                  >
+                    {t('fileBrowser.cancel')}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isSaving}
+                    onClick={() => onSave?.(editContent)}
+                    className="rounded px-2 py-0.5 bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
+                  >
+                    {isSaving ? t('fileBrowser.saving') : t('fileBrowser.save')}
+                  </button>
+                </div>
+              )
+            : (
+                <>
+                  {isMd
+                    ? (
+                        <button
+                          type="button"
+                          onClick={() => setShowRendered(v => !v)}
+                          className="flex items-center gap-1 rounded px-1.5 py-0.5 hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
+                          title={showRendered ? t('fileBrowser.viewSource') : t('fileBrowser.viewRendered')}
+                        >
+                          {showRendered ? <Code className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                          <span>
+                            {showRendered ? t('fileBrowser.viewSource') : t('fileBrowser.viewRendered')}
+                          </span>
+                        </button>
+                      )
+                    : null}
+                  {onStartEdit && !file.isTruncated && (
+                    <button
+                      type="button"
+                      onClick={onStartEdit}
+                      className="flex items-center gap-1 rounded px-1.5 py-0.5 hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
+                      title={t('fileBrowser.edit')}
+                    >
+                      <Code className="h-3.5 w-3.5" />
+                      <span>{t('fileBrowser.edit')}</span>
+                    </button>
+                  )}
+                  <span>
+                    {lineCount}
+                    {' '}
+                    {t('fileBrowser.lines')}
+                  </span>
+                  <span>{formatSize(file.size)}</span>
+                  {file.isTruncated
+                    ? (
+                        <span className="text-yellow-600 dark:text-yellow-400">
+                          {t('fileBrowser.truncated')}
+                        </span>
+                      )
+                    : null}
+                </>
+              )}
         </div>
       </div>
       <div className="flex-1 overflow-auto min-h-0">
-        {loading ?
-            (
-              <div className="flex items-center justify-center py-16">
-                <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-              </div>
-            ) :
-          isMd && showRendered ?
-              (
-                <MarkdownRenderer content={file.content} />
-              ) :
-              (
-                <div
-                  className="shiki-line-numbers text-xs [&_pre]:!bg-transparent [&_pre]:px-2 [&_pre]:py-1.5 [&_pre]:overflow-x-auto [&_code]:leading-snug"
-                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(html) }}
-                />
+        {isEditing
+          ? (
+              <Suspense fallback={(
+                <div className="flex items-center justify-center py-16">
+                  <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                </div>
               )}
+              >
+                <CodeEditor
+                  value={editContent}
+                  filePath={file.path}
+                  onChange={setEditContent}
+                  onSave={handleEditorSave}
+                  onCancel={onCancelEdit}
+                />
+              </Suspense>
+            )
+          : loading
+            ? (
+                <div className="flex items-center justify-center py-16">
+                  <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                </div>
+              )
+            : isMd && showRendered
+              ? (
+                  <MarkdownRenderer content={file.content} />
+                )
+              : (
+                  <div
+                    className="shiki-line-numbers text-xs [&_pre]:!bg-transparent [&_pre]:px-2 [&_pre]:py-1.5 [&_pre]:overflow-x-auto [&_code]:leading-snug"
+                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(html) }}
+                  />
+                )}
       </div>
     </div>
   )

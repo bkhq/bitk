@@ -1,4 +1,4 @@
-import { readdir, stat } from 'node:fs/promises'
+import { readdir, realpath, rm, stat, writeFile } from 'node:fs/promises'
 import { basename, resolve } from 'node:path'
 import { runCommand } from '@/engines/spawn'
 import type { Context } from 'hono'
@@ -70,6 +70,28 @@ function resolveRootPath(c: Context, relativePath: string) {
   }
 
   return { root, target }
+}
+
+/**
+ * Resolve the real on-disk path (following symlinks) and verify it stays inside root.
+ * This prevents symlink traversal attacks on write operations.
+ */
+async function verifyRealPath(target: string, root: string): Promise<boolean> {
+  try {
+    const realTarget = await realpath(target)
+    const realRoot = await realpath(root)
+    return isInsideRoot(realTarget, realRoot)
+  } catch {
+    // If target doesn't exist yet (new file), check parent directory
+    const parent = resolve(target, '..')
+    try {
+      const realParent = await realpath(parent)
+      const realRoot = await realpath(root)
+      return isInsideRoot(realParent, realRoot)
+    } catch {
+      return false
+    }
+  }
 }
 
 /** Extract relative path from the URL after the given marker segment. */
@@ -222,6 +244,79 @@ async function handleRaw(c: Context, relativePath: string) {
   }
 }
 
+// ── /files/delete — delete file or directory ──
+
+async function handleDelete(c: Context, relativePath: string) {
+  const resolved = resolveRootPath(c, relativePath)
+  if ('error' in resolved) return resolved.error
+  const { target, root } = resolved
+
+  // Prevent deleting the root directory itself
+  if (target === root) {
+    return c.json({ success: false, error: 'Cannot delete root directory' }, 400)
+  }
+
+  // SEC: Verify real path after symlink resolution stays inside root
+  if (!await verifyRealPath(target, root)) {
+    return c.json({ success: false, error: 'Path escapes root via symlink' }, 403)
+  }
+
+  try {
+    const targetStat = await stat(target)
+    const isDir = targetStat.isDirectory()
+    await rm(target, { recursive: isDir })
+
+    return c.json({ success: true, data: { deleted: true } })
+  } catch (err: unknown) {
+    const code = (err as NodeJS.ErrnoException).code
+    if (code === 'ENOENT') {
+      return c.json({ success: false, error: 'Path not found' }, 404)
+    }
+    return c.json({ success: false, error: 'Failed to delete' }, 500)
+  }
+}
+
+// ── /files/save — save text file content ──
+
+const MAX_SAVE_SIZE = 5 * 1024 * 1024 // 5 MB
+
+async function handleSave(c: Context, relativePath: string) {
+  const resolved = resolveRootPath(c, relativePath)
+  if ('error' in resolved) return resolved.error
+  const { target, root } = resolved
+
+  // SEC: Verify real path after symlink resolution stays inside root
+  if (!await verifyRealPath(target, root)) {
+    return c.json({ success: false, error: 'Path escapes root via symlink' }, 403)
+  }
+
+  try {
+    const body = await c.req.json<{ content: string }>()
+    if (typeof body.content !== 'string') {
+      return c.json({ success: false, error: 'Missing required field: content' }, 400)
+    }
+
+    // SEC: Limit content size to prevent memory/disk abuse
+    if (Buffer.byteLength(body.content, 'utf-8') > MAX_SAVE_SIZE) {
+      return c.json({ success: false, error: `Content exceeds maximum size of ${MAX_SAVE_SIZE / 1024 / 1024} MB` }, 400)
+    }
+
+    await writeFile(target, body.content, 'utf-8')
+
+    const fileStat = await stat(target)
+    return c.json({
+      success: true,
+      data: { size: fileStat.size, modifiedAt: fileStat.mtime.toISOString() },
+    })
+  } catch (err: unknown) {
+    const code = (err as NodeJS.ErrnoException).code
+    if (code === 'ENOENT') {
+      return c.json({ success: false, error: 'Path not found' }, 404)
+    }
+    return c.json({ success: false, error: 'Failed to save file' }, 500)
+  }
+}
+
 const files = new Hono()
 
 // GET /files/show?root=... — root directory listing
@@ -231,5 +326,11 @@ files.get('/show/*', c => handleShow(c, extractPathAfter(c, '/show/')))
 
 // GET /files/raw/*?root=... — download raw file
 files.get('/raw/*', c => handleRaw(c, extractPathAfter(c, '/raw/')))
+
+// DELETE /files/delete/*?root=... — delete file or directory
+files.delete('/delete/*', c => handleDelete(c, extractPathAfter(c, '/delete/')))
+
+// PUT /files/save/*?root=... — save text file content
+files.put('/save/*', c => handleSave(c, extractPathAfter(c, '/save/')))
 
 export default files

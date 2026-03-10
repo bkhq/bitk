@@ -755,6 +755,28 @@ export function useProjectFiles(root: string | null | undefined, path: string, e
   })
 }
 
+export function useDeleteFile() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ root, path }: { root: string, path: string }) =>
+      kanbanApi.deleteFile(root, path),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['files'] })
+    },
+  })
+}
+
+export function useSaveFile() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ root, path, content }: { root: string, path: string, content: string }) =>
+      kanbanApi.saveFile(root, path, content),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['files'] })
+    },
+  })
+}
+
 // --- Process Manager hooks ---
 
 export function useProjectProcesses(projectId: string, enabled = true) {

@@ -448,7 +448,18 @@
     "showIgnored": "Show gitignored files",
     "hideIgnored": "Hide gitignored files",
     "copyPath": "Copy path",
-    "download": "Download"
+    "download": "Download",
+    "delete": "Delete",
+    "deleteConfirmTitle": "Delete file",
+    "deleteConfirmDesc": "Are you sure you want to delete \"{{name}}\"? This action cannot be undone.",
+    "deleteConfirmDirDesc": "Are you sure you want to delete directory \"{{name}}\" and all its contents? This action cannot be undone.",
+    "deleting": "Deleting...",
+    "edit": "Edit",
+    "editing": "Editing",
+    "save": "Save",
+    "saving": "Saving...",
+    "cancel": "Cancel",
+    "editNotSupported": "Binary files cannot be edited"
   },
   "processManager": {
     "title": "Processes",

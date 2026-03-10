@@ -426,6 +426,19 @@ export const kanbanApi = {
     return `/api/files/raw/${encodedPath}?root=${encodeURIComponent(root)}`
   },
 
+  deleteFile: (root: string, path: string) => {
+    const encodedPath = path.split('/').map(encodeURIComponent).join('/')
+    return del<{ deleted: boolean }>(`/api/files/delete/${encodedPath}?root=${encodeURIComponent(root)}`)
+  },
+
+  saveFile: (root: string, path: string, content: string) => {
+    const encodedPath = path.split('/').map(encodeURIComponent).join('/')
+    return request<{ size: number, modifiedAt: string }>(
+      `/api/files/save/${encodedPath}?root=${encodeURIComponent(root)}`,
+      { method: 'PUT', body: JSON.stringify({ content }) },
+    )
+  },
+
   // Webhooks
   getWebhooks: () => get<Webhook[]>('/api/settings/webhooks'),
   createWebhook: (data: {

@@ -5,11 +5,22 @@ import {
   Eye,
   EyeOff,
   FolderOpen,
+  Trash2,
 } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useProject, useProjectFiles } from '@/hooks/use-kanban'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { useDeleteFile, useProject, useProjectFiles, useSaveFile } from '@/hooks/use-kanban'
 import { kanbanApi } from '@/lib/kanban-api'
 import { useFileBrowserStore } from '@/stores/file-browser-store'
 import { FileBreadcrumb } from './FileBreadcrumb'
@@ -34,9 +45,14 @@ export function FileBrowserContent({
   } = useFileBrowserStore()
 
   const [copied, setCopied] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
+  const [deleteFileConfirm, setDeleteFileConfirm] = useState(false)
 
   const { data: project } = useProject(projectId ?? '')
   const effectiveRoot = rootPath ?? project?.directory ?? null
+
+  const deleteFileMutation = useDeleteFile()
+  const saveFileMutation = useSaveFile()
 
   const handleCopyPath = useCallback(() => {
     const fullPath = currentPath === '.' ? (effectiveRoot ?? '/') : (effectiveRoot ? `${effectiveRoot}/${currentPath}` : currentPath)
@@ -63,6 +79,7 @@ export function FileBrowserContent({
 
   const handleEntryClick = useCallback(
     (name: string, _type: 'file' | 'directory') => {
+      setIsEditing(false)
       const newPath = currentPath === '.' ? name : `${currentPath}/${name}`
       navigateTo(newPath)
     },
@@ -70,11 +87,37 @@ export function FileBrowserContent({
   )
 
   const handleFileBack = useCallback(() => {
+    setIsEditing(false)
     const parentPath = currentPath.includes('/')
       ? currentPath.slice(0, currentPath.lastIndexOf('/'))
       : '.'
     navigateTo(parentPath)
   }, [currentPath, navigateTo])
+
+  const handleDeleteEntry = useCallback((name: string, _type: 'file' | 'directory') => {
+    if (!effectiveRoot) return
+    const targetPath = currentPath === '.' ? name : `${currentPath}/${name}`
+    deleteFileMutation.mutate({ root: effectiveRoot, path: targetPath })
+  }, [effectiveRoot, currentPath, deleteFileMutation])
+
+  const handleDeleteCurrentFile = useCallback(() => {
+    if (!effectiveRoot || currentPath === '.') return
+    deleteFileMutation.mutate(
+      { root: effectiveRoot, path: currentPath },
+      { onSuccess: () => handleFileBack() },
+    )
+    setDeleteFileConfirm(false)
+  }, [effectiveRoot, currentPath, deleteFileMutation, handleFileBack])
+
+  const handleSave = useCallback((content: string) => {
+    if (!effectiveRoot || currentPath === '.') return
+    saveFileMutation.mutate(
+      { root: effectiveRoot, path: currentPath, content },
+      { onSuccess: () => setIsEditing(false) },
+    )
+  }, [effectiveRoot, currentPath, saveFileMutation])
+
+  const currentFileName = currentPath.split('/').pop() ?? currentPath
 
   return (
     <>
@@ -100,15 +143,26 @@ export function FileBrowserContent({
               : <Copy className="h-3.5 w-3.5" />}
           </button>
           {listing?.type === 'file' && (
-            <button
-              type="button"
-              onClick={handleDownload}
-              className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-              aria-label={t('fileBrowser.download')}
-              title={t('fileBrowser.download')}
-            >
-              <Download className="h-3.5 w-3.5" />
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={handleDownload}
+                className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                aria-label={t('fileBrowser.download')}
+                title={t('fileBrowser.download')}
+              >
+                <Download className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setDeleteFileConfirm(true)}
+                className="p-1 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                aria-label={t('fileBrowser.delete')}
+                title={t('fileBrowser.delete')}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </>
           )}
           <button
             type="button"
@@ -152,8 +206,12 @@ export function FileBrowserContent({
                 ? (
                     <FileViewer
                       file={listing}
-                      onBack={handleFileBack}
                       breadcrumb={<FileBreadcrumb path={currentPath} onNavigate={navigateTo} />}
+                      isEditing={isEditing}
+                      onStartEdit={() => setIsEditing(true)}
+                      onCancelEdit={() => setIsEditing(false)}
+                      onSave={handleSave}
+                      isSaving={saveFileMutation.isPending}
                     />
                   )
                 : listing?.type === 'directory'
@@ -161,11 +219,35 @@ export function FileBrowserContent({
                       <FileList
                         entries={listing.entries}
                         onNavigate={handleEntryClick}
+                        onDelete={handleDeleteEntry}
+                        isDeleting={deleteFileMutation.isPending}
                         breadcrumb={<FileBreadcrumb path={currentPath} onNavigate={navigateTo} />}
                       />
                     )
                   : null}
       </div>
+
+      {/* Delete confirmation for current file */}
+      <AlertDialog open={deleteFileConfirm} onOpenChange={setDeleteFileConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('fileBrowser.deleteConfirmTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('fileBrowser.deleteConfirmDesc', { name: currentFileName })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('fileBrowser.cancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              disabled={deleteFileMutation.isPending}
+              onClick={handleDeleteCurrentFile}
+            >
+              {deleteFileMutation.isPending ? t('fileBrowser.deleting') : t('fileBrowser.delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }

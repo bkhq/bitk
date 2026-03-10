@@ -448,7 +448,18 @@
     "showIgnored": "显示被 Git 忽略的文件",
     "hideIgnored": "隐藏被 Git 忽略的文件",
     "copyPath": "复制路径",
-    "download": "下载"
+    "download": "下载",
+    "delete": "删除",
+    "deleteConfirmTitle": "删除文件",
+    "deleteConfirmDesc": "确定要删除 \"{{name}}\" 吗？此操作无法撤销。",
+    "deleteConfirmDirDesc": "确定要删除目录 \"{{name}}\" 及其所有内容吗？此操作无法撤销。",
+    "deleting": "删除中...",
+    "edit": "编辑",
+    "editing": "编辑中",
+    "save": "保存",
+    "saving": "保存中...",
+    "cancel": "取消",
+    "editNotSupported": "二进制文件无法编辑"
   },
   "processManager": {
     "title": "进程",

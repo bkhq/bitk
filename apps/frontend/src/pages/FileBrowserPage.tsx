@@ -85,13 +85,6 @@ export default function FileBrowserPage() {
     [currentPath, navigate, basePath],
   )
 
-  const handleFileBack = useCallback(() => {
-    const parentPath = currentPath.includes('/') ?
-        currentPath.slice(0, currentPath.lastIndexOf('/')) :
-      '.'
-    navigateToPath(parentPath)
-  }, [currentPath, navigateToPath])
-
   if (isLoading) {
     return (
       <div className="flex h-full items-center justify-center bg-background text-foreground">
@@ -182,7 +175,7 @@ export default function FileBrowserPage() {
                 ) :
               listing?.type === 'file' ?
                   (
-                    <FileViewer file={listing} onBack={handleFileBack} />
+                    <FileViewer file={listing} />
                   ) :
                 listing?.type === 'directory' ?
                     (
