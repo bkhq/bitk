@@ -28,11 +28,11 @@ jobs:
             label: linux-arm64
             suffix: linux-arm64
           - target: bun-darwin-arm64
-            runner: macos-latest
+            runner: ubuntu-latest
             label: darwin-arm64
             suffix: darwin-arm64
           - target: bun-darwin-x64
-            runner: macos-latest
+            runner: ubuntu-latest
             label: darwin-x64
             suffix: darwin-x64
 
