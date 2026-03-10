@@ -12,6 +12,7 @@ type DragEndEvent = Parameters<NonNullable<Parameters<typeof DragDropProvider>[0
 
 interface BoardState {
   groupedItems: Record<string, Issue[]>
+  preDragItems: Record<string, Issue[]> | null
   isDragging: boolean
 
   syncFromServer: (issues: Issue[]) => void
@@ -22,6 +23,7 @@ interface BoardState {
 
 export const useBoardStore = create<BoardState>((set, get) => ({
   groupedItems: {},
+  preDragItems: null,
   isDragging: false,
 
   syncFromServer: (issues) => {
@@ -43,8 +45,10 @@ export const useBoardStore = create<BoardState>((set, get) => ({
   },
 
   applyDragOver: (event) => {
-    const next = move(get().groupedItems, event)
-    set({ groupedItems: next, isDragging: true })
+    const state = get()
+    const preDragItems = state.preDragItems ?? state.groupedItems
+    const next = move(state.groupedItems, event)
+    set({ groupedItems: next, preDragItems, isDragging: true })
   },
 
   applyDragEnd: (event) => {
@@ -67,8 +71,9 @@ export const useBoardStore = create<BoardState>((set, get) => ({
 
       const item = items[idx]!
 
-      // Skip if item didn't actually move (same column, same neighbors)
-      const oldItems = current[statusId] ?? []
+      // Skip if item didn't actually move (compare against pre-drag snapshot)
+      const preDrag = get().preDragItems ?? current
+      const oldItems = preDrag[item.statusId] ?? []
       const oldIdx = oldItems.findIndex(i => i.id === draggedId)
       if (item.statusId === statusId && oldIdx === idx) return []
 
@@ -83,6 +88,6 @@ export const useBoardStore = create<BoardState>((set, get) => ({
   },
 
   resetDragging: () => {
-    set({ isDragging: false })
+    set({ isDragging: false, preDragItems: null })
   },
 }))
