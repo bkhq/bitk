@@ -11,6 +11,7 @@ export interface Project {
   systemPrompt?: string
   envVars?: Record<string, string>
   sortOrder: number
+  isGitRepo: boolean
   createdAt: string
   updatedAt: string
 }

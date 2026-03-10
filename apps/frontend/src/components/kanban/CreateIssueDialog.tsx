@@ -18,6 +18,7 @@ import {
   useEngineAvailability,
   useEngineProfiles,
   useEngineSettings,
+  useProject,
 } from '@/hooks/use-kanban'
 import { tStatus } from '@/lib/i18n-utils'
 import type { StatusDefinition } from '@/lib/statuses'
@@ -52,6 +53,8 @@ export function CreateIssueForm({
 }) {
   const { t } = useTranslation()
   const createIssue = useCreateIssue(projectId)
+  const { data: project } = useProject(projectId)
+  const projectIsGitRepo = project?.isGitRepo ?? false
 
   // Engine discovery data
   const { data: discovery } = useEngineAvailability(true)
@@ -74,6 +77,11 @@ export function CreateIssueForm({
   const [modelId, setModelId] = useState('')
   const [permission, setPermission] = useState<PermissionId>('auto')
   const [useWorktree, setUseWorktree] = useState(true)
+
+  // Sync worktree toggle with project git repo status
+  useEffect(() => {
+    setUseWorktree(projectIsGitRepo)
+  }, [projectIsGitRepo])
 
   // Resolve the effective engine type ('' means use system default)
   const resolvedEngineType = useMemo(() => {
@@ -136,7 +144,7 @@ export function CreateIssueForm({
           setEngineType('')
           setModelId('')
           setPermission('auto')
-          setUseWorktree(true)
+          setUseWorktree(projectIsGitRepo)
           onCreated?.()
         },
       },
@@ -147,6 +155,7 @@ export function CreateIssueForm({
     statusId,
     permission,
     useWorktree,
+    projectIsGitRepo,
     parentIssueId,
     resolvedEngineType,
     modelId,
@@ -208,7 +217,7 @@ export function CreateIssueForm({
             <StatusSelect statuses={STATUSES} value={statusId} onChange={setStatusId} />
           </PropertyRow>
           <PropertyRow label={t('createIssue.worktree')}>
-            <WorktreeToggle value={useWorktree} onChange={setUseWorktree} />
+            <WorktreeToggle value={useWorktree} onChange={setUseWorktree} disabled={!projectIsGitRepo} />
           </PropertyRow>
           <PropertyRow label={t('createIssue.engine')}>
             <EngineSelect
@@ -407,10 +416,10 @@ function EngineSelect({
 // ── WorktreeToggle ────────────────────────────────────
 // Replaced manual button with shadcn Switch for better semantics & accessibility
 
-function WorktreeToggle({ value, onChange }: { value: boolean, onChange: (v: boolean) => void }) {
+function WorktreeToggle({ value, onChange, disabled }: { value: boolean, onChange: (v: boolean) => void, disabled?: boolean }) {
   return (
     <div className="flex items-center w-full">
-      <Switch checked={value} onCheckedChange={onChange} className="shrink-0" />
+      <Switch checked={value} onCheckedChange={onChange} disabled={disabled} className="shrink-0" />
     </div>
   )
 }

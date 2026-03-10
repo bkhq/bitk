@@ -1,3 +1,4 @@
+import { stat } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { zValidator } from '@hono/zod-validator'
 import { and, asc, desc, eq, inArray, ne } from 'drizzle-orm'
@@ -10,8 +11,8 @@ import { findProject, invalidateProjectCache } from '@/db/helpers'
 import { issues as issuesTable, projects as projectsTable } from '@/db/schema'
 import { issueEngine } from '@/engines/issue'
 import { logger } from '@/logger'
-
 import { toISO } from '@/utils/date'
+import { isGitRepoFresh } from '@/utils/git'
 
 const aliasId = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 8)
 
@@ -55,6 +56,18 @@ function serializeProject(row: ProjectRow) {
     sortOrder: row.sortOrder,
     createdAt: toISO(row.createdAt),
     updatedAt: toISO(row.updatedAt),
+  }
+}
+
+async function checkProjectGitRepo(directory: string | null | undefined): Promise<boolean> {
+  if (!directory) return false
+  const dir = resolve(directory)
+  try {
+    const s = await stat(dir)
+    if (!s.isDirectory()) return false
+    return await isGitRepoFresh(dir)
+  } catch {
+    return false
   }
 }
 
@@ -106,7 +119,13 @@ projects.get('/', async (c) => {
     .from(projectsTable)
     .where(eq(projectsTable.isDeleted, 0))
     .orderBy(asc(projectsTable.sortOrder), desc(projectsTable.updatedAt))
-  return c.json({ success: true, data: rows.map(serializeProject) })
+  const data = await Promise.all(
+    rows.map(async (row) => {
+      const gitRepo = await checkProjectGitRepo(row.directory)
+      return { ...serializeProject(row), isGitRepo: gitRepo }
+    }),
+  )
+  return c.json({ success: true, data })
 })
 
 const sortProjectsSchema = z.object({
@@ -181,7 +200,8 @@ projects.get('/:projectId', async (c) => {
   if (!row) {
     return c.json({ success: false, error: 'Project not found' }, 404)
   }
-  return c.json({ success: true, data: serializeProject(row) })
+  const gitRepo = await checkProjectGitRepo(row.directory)
+  return c.json({ success: true, data: { ...serializeProject(row), isGitRepo: gitRepo } })
 })
 
 projects.patch(

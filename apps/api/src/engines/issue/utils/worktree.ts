@@ -4,6 +4,7 @@ import { WORKTREE_DIR } from '@/engines/issue/constants'
 import { runCommand } from '@/engines/spawn'
 import { logger } from '@/logger'
 import { ROOT_DIR } from '@/root'
+import { isGitRepoFresh } from '@/utils/git'
 
 /** Resolve WORKTREE_DIR — absolute paths used as-is, relative resolved from ROOT_DIR */
 export const WORKTREE_BASE = WORKTREE_DIR.startsWith('/') ?
@@ -22,18 +23,45 @@ export function resolveWorktreePath(projectId: string, issueId: string): string 
   return join(WORKTREE_BASE, projectId, issueId)
 }
 
+/**
+ * Resolve the main branch start point for worktree creation.
+ * Priority: origin/main > origin/master > local main > local master.
+ * Throws if no main branch is found — refuses to use HEAD which may
+ * point to an arbitrary feature branch with uncommitted state.
+ */
+async function resolveMainBranch(baseDir: string): Promise<string> {
+  const candidates = ['origin/main', 'origin/master', 'main', 'master']
+  for (const ref of candidates) {
+    const { code } = await runCommand(
+      ['git', 'rev-parse', '--verify', '--quiet', ref],
+      { cwd: baseDir, stderr: 'pipe' },
+    )
+    if (code === 0) return ref
+  }
+  throw new Error(
+    `Cannot resolve main branch in ${baseDir}: none of ${candidates.join(', ')} exist`,
+  )
+}
+
 export async function createWorktree(
   baseDir: string,
   projectId: string,
   issueId: string,
 ): Promise<string> {
+  // Guard: baseDir must be inside a git work tree
+  if (!(await isGitRepoFresh(baseDir))) {
+    throw new Error(`Cannot create worktree: ${baseDir} is not a git repository`)
+  }
+
   const branchName = `bkd/${issueId}`
   const worktreeDir = resolveWorktreePath(projectId, issueId)
   await mkdir(join(WORKTREE_BASE, projectId), { recursive: true })
 
-  // Create worktree with a new branch off HEAD
+  const startPoint = await resolveMainBranch(baseDir)
+
+  // Create worktree with a new branch off the resolved main branch
   const result = await runCommand(
-    ['git', 'worktree', 'add', '-b', branchName, worktreeDir],
+    ['git', 'worktree', 'add', '-b', branchName, worktreeDir, startPoint],
     { cwd: baseDir, stderr: 'pipe' },
   )
   if (result.code !== 0) {
@@ -46,7 +74,7 @@ export async function createWorktree(
       throw new Error(`Failed to create worktree: ${result.stderr.trim()} / ${retry.stderr.trim()}`)
     }
   }
-  logger.debug({ issueId, worktreeDir, branchName }, 'worktree_created')
+  logger.debug({ issueId, worktreeDir, branchName, startPoint }, 'worktree_created')
   return worktreeDir
 }
 
