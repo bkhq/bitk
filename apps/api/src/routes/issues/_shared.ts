@@ -18,6 +18,8 @@ import { emitIssueLogRemoved, emitIssueUpdated } from '@/events/issue-events'
 import { logger } from '@/logger'
 import { toISO } from '@/utils/date'
 
+const fractionalKeyRegex = /^[a-z0-9]+$/i
+
 export const createIssueSchema = z.object({
   title: z.string().min(1).max(500),
   tags: z.array(z.string().max(50)).max(10).optional(),
@@ -38,7 +40,7 @@ export const bulkUpdateSchema = z.object({
       z.object({
         id: z.string(),
         statusId: z.enum(STATUS_IDS).optional(),
-        sortOrder: z.number().optional(),
+        sortOrder: z.string().min(1).max(50).regex(fractionalKeyRegex).optional(),
       }),
     )
     .max(1000),
@@ -48,7 +50,7 @@ export const updateIssueSchema = z.object({
   title: z.string().min(1).max(500).optional(),
   tags: z.array(z.string().max(50)).max(10).nullable().optional(),
   statusId: z.enum(STATUS_IDS).optional(),
-  sortOrder: z.number().optional(),
+  sortOrder: z.string().min(1).max(50).regex(fractionalKeyRegex).optional(),
   parentIssueId: z.string().nullable().optional(),
 })
 

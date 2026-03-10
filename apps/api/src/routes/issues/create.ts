@@ -1,6 +1,7 @@
 import { zValidator } from '@hono/zod-validator'
-import { and, eq, max } from 'drizzle-orm'
+import { and, desc, eq, max } from 'drizzle-orm'
 import { Hono } from 'hono'
+import { generateKeyBetween } from 'jittered-fractional-indexing'
 import { cacheDel, cacheDelByPrefix } from '@/cache'
 import { db } from '@/db'
 import { findProject, getDefaultEngine, getEngineDefaultModel, getServerUrl } from '@/db/helpers'
@@ -95,9 +96,9 @@ create.post(
           .where(eq(issuesTable.projectId, project.id))
         const issueNumber = (maxNumRow?.maxNum ?? 0) + 1
 
-        // Compute max sortOrder within the target status column
-        const [maxOrderRow] = await tx
-          .select({ maxOrder: max(issuesTable.sortOrder) })
+        // Compute sortOrder: place after the last item in the target status column
+        const [lastItem] = await tx
+          .select({ sortOrder: issuesTable.sortOrder })
           .from(issuesTable)
           .where(
             and(
@@ -106,7 +107,9 @@ create.post(
               eq(issuesTable.isDeleted, 0),
             ),
           )
-        const sortOrder = (maxOrderRow?.maxOrder ?? -1) + 1
+          .orderBy(desc(issuesTable.sortOrder))
+          .limit(1)
+        const sortOrder = generateKeyBetween(lastItem?.sortOrder ?? null, null)
 
         return tx
           .insert(issuesTable)

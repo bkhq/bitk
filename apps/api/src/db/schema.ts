@@ -37,7 +37,7 @@ export const projects = sqliteTable('projects', {
   repositoryUrl: text('repository_url'),
   systemPrompt: text('system_prompt'),
   envVars: text('env_vars'), // JSON: Record<string, string>
-  sortOrder: integer('sort_order').notNull().default(0),
+  sortOrder: text('sort_order').notNull().default('a0'),
   ...commonFields,
 })
 
@@ -52,7 +52,7 @@ export const issues = sqliteTable(
     issueNumber: integer('issue_number').notNull(),
     title: text('title').notNull(),
     tag: text('tag'),
-    sortOrder: integer('sort_order').notNull().default(0),
+    sortOrder: text('sort_order').notNull().default('a0'),
     parentIssueId: text('parent_issue_id').references((): any => issues.id),
     useWorktree: integer('use_worktree', { mode: 'boolean' }).notNull().default(false),
     // Session fields (null = no engine session started)

@@ -10,7 +10,7 @@ export interface Project {
   repositoryUrl?: string
   systemPrompt?: string
   envVars?: Record<string, string>
-  sortOrder: number
+  sortOrder: string
   isGitRepo: boolean
   createdAt: string
   updatedAt: string
@@ -36,7 +36,7 @@ export interface Issue {
   issueNumber: number
   title: string
   tags: string[] | null
-  sortOrder: number
+  sortOrder: string
   parentIssueId: string | null
   useWorktree: boolean
   childCount?: number

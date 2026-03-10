@@ -98,11 +98,11 @@ export function useUpdateProject() {
   })
 }
 
-export function useSortProjects() {
+export function useSortProject() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (order: Array<{ id: string, sortOrder: number }>) =>
-      kanbanApi.sortProjects(order),
+    mutationFn: ({ id, sortOrder }: { id: string, sortOrder: string }) =>
+      kanbanApi.sortProject(id, sortOrder),
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.projects() })
     },
@@ -243,7 +243,7 @@ export function useBulkUpdateIssues(projectId: string) {
       updates: Array<{
         id: string
         statusId?: string
-        sortOrder?: number
+        sortOrder?: string
       }>,
     ) => kanbanApi.bulkUpdateIssues(projectId, updates),
     onMutate: async (updates) => {

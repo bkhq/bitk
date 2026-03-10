@@ -13,7 +13,7 @@ interface Issue {
   title: string
   tags: string[] | null
   description: string | null
-  sortOrder: number
+  sortOrder: string
   parentIssueId: string | null
   useWorktree: boolean
   childCount?: number
@@ -291,8 +291,8 @@ describe('PATCH /api/projects/:projectId/issues/bulk', () => {
     )
     const result = await patch<Issue[]>(`/api/projects/${projectId}/issues/bulk`, {
       updates: [
-        { id: i1.id, statusId: 'working', sortOrder: 0 },
-        { id: i2.id, statusId: 'done', sortOrder: 1 },
+        { id: i1.id, statusId: 'working', sortOrder: 'a0' },
+        { id: i2.id, statusId: 'done', sortOrder: 'a1' },
       ],
     })
     expect(result.status).toBe(200)

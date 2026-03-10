@@ -99,8 +99,8 @@ export const kanbanApi = {
     },
   ) => patch<Project>(`/api/projects/${id}`, data),
   deleteProject: (id: string) => del<{ id: string }>(`/api/projects/${id}`),
-  sortProjects: (order: Array<{ id: string, sortOrder: number }>) =>
-    patch<null>('/api/projects/sort', { order }),
+  sortProject: (id: string, sortOrder: string) =>
+    patch<null>('/api/projects/sort', { id, sortOrder }),
 
   // Worktrees
   getWorktrees: (projectId: string) =>
@@ -136,7 +136,7 @@ export const kanbanApi = {
     updates: Array<{
       id: string
       statusId?: string
-      sortOrder?: number
+      sortOrder?: string
     }>,
   ) => patch<Issue[]>(`/api/projects/${projectId}/issues/bulk`, { updates }),
 

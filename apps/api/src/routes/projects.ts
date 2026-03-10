@@ -17,6 +17,7 @@ import { isGitRepoFresh } from '@/utils/git'
 const aliasId = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 8)
 
 const aliasRegex = /^[a-z0-9]+$/
+const fractionalKeyRegex = /^[a-z0-9]+$/i
 
 const envVarsSchema = z.record(z.string().max(10000)).optional()
 
@@ -38,7 +39,7 @@ const updateProjectSchema = z.object({
   repositoryUrl: z.string().url().optional().or(z.literal('')),
   systemPrompt: z.string().max(32768).optional(),
   envVars: envVarsSchema,
-  sortOrder: z.number().int().min(0).optional(),
+  sortOrder: z.string().min(1).max(50).regex(fractionalKeyRegex).optional(),
 })
 
 type ProjectRow = typeof projectsTable.$inferSelect
@@ -128,30 +129,28 @@ projects.get('/', async (c) => {
   return c.json({ success: true, data })
 })
 
-const sortProjectsSchema = z.object({
-  order: z.array(z.object({
-    id: z.string(),
-    sortOrder: z.number().int().min(0),
-  })).min(1).max(200),
+const sortProjectSchema = z.object({
+  id: z.string(),
+  sortOrder: z.string().min(1).max(50).regex(fractionalKeyRegex),
 })
 
 projects.patch(
   '/sort',
-  zValidator('json', sortProjectsSchema, (result, c) => {
+  zValidator('json', sortProjectSchema, (result, c) => {
     if (!result.success) {
       return c.json({ success: false, error: result.error.issues.map(i => i.message).join(', ') }, 400)
     }
   }),
   async (c) => {
-    const { order } = c.req.valid('json')
-    await db.transaction(async (tx) => {
-      for (const item of order) {
-        await tx
-          .update(projectsTable)
-          .set({ sortOrder: item.sortOrder })
-          .where(eq(projectsTable.id, item.id))
-      }
-    })
+    const { id, sortOrder } = c.req.valid('json')
+    const existing = await findProject(id)
+    if (!existing) {
+      return c.json({ success: false, error: 'Project not found' }, 404)
+    }
+    await db
+      .update(projectsTable)
+      .set({ sortOrder })
+      .where(eq(projectsTable.id, id))
     return c.json({ success: true, data: null })
   },
 )

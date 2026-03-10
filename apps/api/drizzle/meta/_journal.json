@@ -85,6 +85,13 @@
       "when": 1773177234278,
       "tag": "0011_quiet_gideon",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1773181694648,
+      "tag": "0012_chemical_spot",
+      "breakpoints": true
     }
   ]
 }

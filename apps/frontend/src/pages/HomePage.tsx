@@ -1,5 +1,6 @@
 import { DragDropProvider } from '@dnd-kit/react'
 import { useSortable } from '@dnd-kit/react/sortable'
+import { generateKeyBetween } from 'jittered-fractional-indexing'
 import {
   Check,
   Copy,
@@ -24,7 +25,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
-import { useProjects, useSortProjects } from '@/hooks/use-kanban'
+import { useProjects, useSortProject } from '@/hooks/use-kanban'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { useProjectStats } from '@/hooks/use-project-stats'
 import { getProjectInitials } from '@/lib/format'
@@ -315,10 +316,11 @@ export default function HomePage() {
   const [showSettings, setShowSettings] = useState(false)
   const isMobile = useIsMobile()
   const globalProjectPath = useViewModeStore(s => s.projectPath)
-  const sortProjects = useSortProjects()
+  const sortProject = useSortProject()
 
   // Track local order during drag for optimistic UI
   const [localOrder, setLocalOrder] = useState<Project[] | null>(null)
+  const draggedIdRef = useRef<string | null>(null)
   const displayProjects = localOrder ?? projects
 
   // Keep a ref to the latest projects for the drag callbacks
@@ -392,10 +394,15 @@ export default function HomePage() {
                 onDragOver={(event) => {
                   const source = projectsRef.current
                   if (!source) return
-                  const { dragOperation } = event.operation
-                  if (!dragOperation.source || dragOperation.source.sortable == null) return
-                  const fromIdx = dragOperation.source.sortable.index
-                  const toIdx = (event.operation.target as any)?.sortable?.index
+                  const op = event.operation as any
+                  const dragSource = op.dragOperation?.source ?? op.source
+                  if (!dragSource || dragSource.sortable == null) return
+                  // Track which item is being dragged
+                  if (!draggedIdRef.current) {
+                    draggedIdRef.current = dragSource.data?.project?.id ?? null
+                  }
+                  const fromIdx = dragSource.sortable.index
+                  const toIdx = op.target?.sortable?.index
                   if (toIdx == null || fromIdx === toIdx) return
                   const reordered = [...(localOrder ?? source)]
                   const [moved] = reordered.splice(fromIdx, 1)
@@ -403,9 +410,21 @@ export default function HomePage() {
                   setLocalOrder(reordered)
                 }}
                 onDragEnd={() => {
-                  if (!localOrder) return
-                  const order = localOrder.map((p, i) => ({ id: p.id, sortOrder: i }))
-                  sortProjects.mutate(order)
+                  const draggedId = draggedIdRef.current
+                  draggedIdRef.current = null
+                  if (!localOrder || !draggedId) {
+                    setLocalOrder(null)
+                    return
+                  }
+                  const newIdx = localOrder.findIndex(p => p.id === draggedId)
+                  if (newIdx === -1) {
+                    setLocalOrder(null)
+                    return
+                  }
+                  const prev = newIdx > 0 ? localOrder[newIdx - 1]!.sortOrder : null
+                  const next = newIdx < localOrder.length - 1 ? localOrder[newIdx + 1]!.sortOrder : null
+                  const newKey = generateKeyBetween(prev, next)
+                  sortProject.mutate({ id: draggedId, sortOrder: newKey })
                   setLocalOrder(null)
                 }}
               >

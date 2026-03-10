@@ -4,6 +4,9 @@
   "workspaces": {
     "": {
       "name": "@bkd/root",
+      "dependencies": {
+        "jittered-fractional-indexing": "^1.0.1",
+      },
       "devDependencies": {
         "@antfu/eslint-config": "^7.7.0",
         "@bkd/tsconfig": "workspace:*",
@@ -1174,6 +1177,8 @@
 
     "forwarded": ["forwarded@0.2.0", "", {}, "sha512-buRG0fpBtRHSTCOASe6hD258tEubFoRLb4ZNA6NxMVHNw2gOcwHo9wyablzMzOA5z9xA9L1KNjk/Nt6MT9aYow=="],
 
+    "fractional-indexing": ["fractional-indexing@3.2.0", "", {}, "sha512-PcOxmqwYCW7O2ovKRU8OoQQj2yqTfEB/yeTYk4gPid6dN5ODRfU1hXd9tTVZzax/0NkO7AxpHykvZnT1aYp/BQ=="],
+
     "fresh": ["fresh@2.0.0", "", {}, "sha512-Rx/WycZ60HOaqLKAi6cHRKKI7zxWbJ31MhntmtwMoaTeF7XFH9hhBp8vITaMidfljRQ6eYWCKkaTK+ykVJHP2A=="],
 
     "fs-extra": ["fs-extra@11.3.4", "", { "dependencies": { "graceful-fs": "^4.2.0", "jsonfile": "^6.0.1", "universalify": "^2.0.0" } }, "sha512-CTXd6rk/M3/ULNQj8FBqBWHYBVYybQ3VPBw0xGKFe3tuH7ytT6ACnvzpIQ3UZtB8yvUKC2cXn1a+x+5EVQLovA=="],
@@ -1327,6 +1332,8 @@
     "isexe": ["isexe@2.0.0", "", {}, "sha512-RHxMLp9lnKHGHRng9QFhRCMbYAcVpn69smSGcq3f36xjgVVWThj4qqLbTLlq7Ssj8B+fIQ1EuCEGI2lKsyQeIw=="],
 
     "jiti": ["jiti@2.6.1", "", { "bin": { "jiti": "lib/jiti-cli.mjs" } }, "sha512-ekilCSN1jwRvIbgeg/57YFh8qQDNbwDb9xT/qu2DAHbFFZUicIl4ygVaAvzveMhMVr3LnpSKTNnwt8PoOfmKhQ=="],
+
+    "jittered-fractional-indexing": ["jittered-fractional-indexing@1.0.1", "", { "dependencies": { "fractional-indexing": "^3.2.0" } }, "sha512-OpKFkVr4hU5ivd1ZCjZfHvVpWekraJvcePcMusBmgBmCVQK5JiRCA+4TT1vAUTLqGD9MkhqFwO0l3QspvlZgzw=="],
 
     "jose": ["jose@6.2.0", "", {}, "sha512-xsfE1TcSCbUdo6U07tR0mvhg0flGxU8tPLbF03mirl2ukGQENhUg4ubGYQnhVH0b5stLlPM+WOqDkEl1R1y5sQ=="],
 

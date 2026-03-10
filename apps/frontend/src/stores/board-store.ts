@@ -1,5 +1,6 @@
 import { move } from '@dnd-kit/helpers'
 import type { DragDropProvider } from '@dnd-kit/react'
+import { generateKeyBetween } from 'jittered-fractional-indexing'
 import { create } from 'zustand'
 import { STATUSES } from '@/lib/statuses'
 import type { Issue } from '@/types/kanban'
@@ -15,7 +16,7 @@ interface BoardState {
 
   syncFromServer: (issues: Issue[]) => void
   applyDragOver: (event: DragOverEvent) => void
-  applyDragEnd: (event: DragEndEvent) => Array<{ id: string, statusId: string, sortOrder: number }>
+  applyDragEnd: (event: DragEndEvent) => Array<{ id: string, statusId: string, sortOrder: string }>
   resetDragging: () => void
 }
 
@@ -35,7 +36,7 @@ export const useBoardStore = create<BoardState>((set, get) => ({
             new Date(b.statusUpdatedAt).getTime() - new Date(a.statusUpdatedAt).getTime()
           if (timeDiff !== 0) return timeDiff
           // Tiebreaker: sortOrder ASC (preserves drag reorder)
-          return a.sortOrder - b.sortOrder
+          return a.sortOrder.localeCompare(b.sortOrder)
         })
     }
     set({ groupedItems: groups })
@@ -51,21 +52,34 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     const updated = move(current, event)
     set({ groupedItems: updated })
 
-    const updates: Array<{
-      id: string
-      statusId: string
-      sortOrder: number
-    }> = []
+    // Find the dragged item via the event source
+    const op = event.operation as any
+    const draggedId: string | undefined =
+      op.dragOperation?.source?.data?.issue?.id
+      ?? op.source?.data?.issue?.id
+
+    if (!draggedId) return []
+
+    // Find the dragged item's new position across all columns
     for (const [statusId, items] of Object.entries(updated)) {
-      for (let i = 0; i < items.length; i++) {
-        const item = items[i]
-        if (item.statusId !== statusId || item.sortOrder !== i) {
-          updates.push({ id: item.id, statusId, sortOrder: i })
-        }
-      }
+      const idx = items.findIndex(i => i.id === draggedId)
+      if (idx === -1) continue
+
+      const item = items[idx]!
+
+      // Skip if item didn't actually move (same column, same neighbors)
+      const oldItems = current[statusId] ?? []
+      const oldIdx = oldItems.findIndex(i => i.id === draggedId)
+      if (item.statusId === statusId && oldIdx === idx) return []
+
+      const prev = idx > 0 ? items[idx - 1]!.sortOrder : null
+      const next = idx < items.length - 1 ? items[idx + 1]!.sortOrder : null
+      const newKey = generateKeyBetween(prev, next)
+
+      return [{ id: draggedId, statusId, sortOrder: newKey }]
     }
 
-    return updates
+    return []
   },
 
   resetDragging: () => {
