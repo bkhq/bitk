@@ -1,6 +1,6 @@
-import { CollisionPriority } from '@dnd-kit/abstract'
-import { useDroppable } from '@dnd-kit/react'
+import { dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
 import { Plus } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -24,11 +24,21 @@ export function KanbanColumn({
 }) {
   const { t } = useTranslation()
   const openCreateDialog = usePanelStore(s => s.openCreateDialog)
+  const columnRef = useRef<HTMLDivElement>(null)
+  const [isDropTarget, setIsDropTarget] = useState(false)
 
-  const { ref, isDropTarget } = useDroppable({
-    id: status.id,
-    collisionPriority: CollisionPriority.Normal,
-  })
+  useEffect(() => {
+    const el = columnRef.current
+    if (!el) return
+    return dropTargetForElements({
+      element: el,
+      canDrop: ({ source }) => source.data.type === 'card',
+      getData: () => ({ type: 'column', columnId: status.id }),
+      onDragEnter: () => setIsDropTarget(true),
+      onDragLeave: () => setIsDropTarget(false),
+      onDrop: () => setIsDropTarget(false),
+    })
+  }, [status.id])
 
   return (
     <div
@@ -60,7 +70,7 @@ export function KanbanColumn({
       <Separator />
 
       {/* Cards */}
-      <div ref={ref} className="flex flex-1 flex-col gap-1.5 overflow-y-auto p-1.5">
+      <div ref={columnRef} className="flex flex-1 flex-col gap-1.5 overflow-y-auto p-1.5">
         {issues.map((issue, index) => (
           <KanbanCard
             key={issue.id}

@@ -1,5 +1,13 @@
-import { DragDropProvider } from '@dnd-kit/react'
-import { useSortable } from '@dnd-kit/react/sortable'
+import {
+  attachClosestEdge,
+  extractClosestEdge,
+} from '@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge'
+import { combine } from '@atlaskit/pragmatic-drag-and-drop/combine'
+import {
+  draggable,
+  dropTargetForElements,
+  monitorForElements,
+} from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
 import { generateKeyBetween } from 'jittered-fractional-indexing'
 import {
   Check,
@@ -13,7 +21,7 @@ import {
   StickyNote,
   TerminalSquare,
 } from 'lucide-react'
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { AppLogo } from '@/components/AppLogo'
@@ -47,14 +55,35 @@ function SortableProjectCard({
   const stats = useProjectStats(project.id)
   const [showSettings, setShowSettings] = useState(false)
   const [copied, setCopied] = useState(false)
+  const cardRef = useRef<HTMLDivElement>(null)
+  const [isDragging, setIsDragging] = useState(false)
+  const [closestEdge, setClosestEdge] = useState<import('@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge').Edge | null>(null)
 
-  const { ref, isDragging } = useSortable({
-    id: project.id,
-    index,
-    group: 'projects',
-    type: 'item',
-    data: { project },
-  })
+  useEffect(() => {
+    const el = cardRef.current
+    if (!el) return
+    return combine(
+      draggable({
+        element: el,
+        getInitialData: () => ({ type: 'project', projectId: project.id, index }),
+        onDragStart: () => setIsDragging(true),
+        onDrop: () => setIsDragging(false),
+      }),
+      dropTargetForElements({
+        element: el,
+        canDrop: ({ source }) => source.data.type === 'project' && source.data.projectId !== project.id,
+        getData: ({ input, element }) =>
+          attachClosestEdge(
+            { type: 'project', projectId: project.id, index },
+            { input, element, allowedEdges: ['left', 'right'] },
+          ),
+        onDrag: ({ self }) => setClosestEdge(extractClosestEdge(self.data)),
+        onDragEnter: ({ self }) => setClosestEdge(extractClosestEdge(self.data)),
+        onDragLeave: () => setClosestEdge(null),
+        onDrop: () => setClosestEdge(null),
+      }),
+    )
+  }, [project.id, index])
 
   const handleCopyPath = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -68,10 +97,13 @@ function SortableProjectCard({
   return (
     <>
       <div
-        ref={ref}
-        className={`animate-card-enter ${isDragging ? 'opacity-50 scale-105 shadow-xl z-10 rotate-1' : ''}`}
+        ref={cardRef}
+        className={`relative animate-card-enter ${isDragging ? 'opacity-50 scale-105 shadow-xl z-10 rotate-1' : ''}`}
         style={{ animationDelay: `${index * 60}ms` }}
       >
+        {closestEdge === 'left' && (
+          <div className="absolute -left-[3px] top-1 bottom-1 w-[2px] rounded-full bg-primary z-10" />
+        )}
         <Card
           className="h-full bg-card/70 hover:bg-card cursor-pointer transition-all hover:shadow-md hover:border-primary/20 group"
           onClick={onClick}
@@ -137,6 +169,9 @@ function SortableProjectCard({
             </div>
           </CardContent>
         </Card>
+        {closestEdge === 'right' && (
+          <div className="absolute -right-[3px] top-1 bottom-1 w-[2px] rounded-full bg-primary z-10" />
+        )}
       </div>
       <ProjectSettingsDialog open={showSettings} onOpenChange={setShowSettings} project={project} />
     </>
@@ -318,14 +353,49 @@ export default function HomePage() {
   const globalProjectPath = useViewModeStore(s => s.projectPath)
   const sortProject = useSortProject()
 
-  // Track local order during drag for optimistic UI
-  const [localOrder, setLocalOrder] = useState<Project[] | null>(null)
-  const draggedIdRef = useRef<string | null>(null)
-  const displayProjects = localOrder ?? projects
-
-  // Keep a ref to the latest projects for the drag callbacks
+  // Keep refs for monitor callback access
   const projectsRef = useRef(projects)
   projectsRef.current = projects
+  const sortProjectRef = useRef(sortProject)
+  sortProjectRef.current = sortProject
+
+  // Monitor for project card drops
+  useEffect(() => {
+    return monitorForElements({
+      canMonitor: ({ source }) => source.data.type === 'project',
+      onDrop: ({ source, location }) => {
+        const targets = location.current.dropTargets
+        const cardTarget = targets.find((t: any) => t.data.type === 'project')
+        if (!cardTarget) return
+
+        const list = projectsRef.current
+        if (!list) return
+
+        const draggedId = source.data.projectId as string
+        const fromIndex = list.findIndex(p => p.id === draggedId)
+        if (fromIndex === -1) return
+
+        let toIndex = cardTarget.data.index as number
+        const edge = extractClosestEdge(cardTarget.data)
+        if (edge === 'right') toIndex += 1
+        // Adjust for same-list downward movement
+        if (fromIndex < toIndex) toIndex -= 1
+        if (fromIndex === toIndex) return
+
+        // Compute fractional sort order from the reordered list
+        const reordered = [...list]
+        const [moved] = reordered.splice(fromIndex, 1)
+        if (!moved) return
+        reordered.splice(toIndex, 0, moved)
+
+        const newIdx = reordered.findIndex(p => p.id === draggedId)
+        const prev = newIdx > 0 ? reordered[newIdx - 1]!.sortOrder : null
+        const next = newIdx < reordered.length - 1 ? reordered[newIdx + 1]!.sortOrder : null
+        const newKey = generateKeyBetween(prev, next)
+        sortProjectRef.current.mutate({ id: draggedId, sortOrder: newKey })
+      },
+    })
+  }, [])
 
   // Mobile always uses list mode
   const projectPath = useCallback(
@@ -390,55 +460,16 @@ export default function HomePage() {
               </div>
             ) :
             (
-              <DragDropProvider
-                onDragOver={(event) => {
-                  const source = projectsRef.current
-                  if (!source) return
-                  const op = event.operation as any
-                  const dragSource = op.dragOperation?.source ?? op.source
-                  if (!dragSource || dragSource.sortable == null) return
-                  // Track which item is being dragged
-                  if (!draggedIdRef.current) {
-                    draggedIdRef.current = dragSource.data?.project?.id ?? null
-                  }
-                  const fromIdx = dragSource.sortable.index
-                  const toIdx = op.target?.sortable?.index
-                  if (toIdx == null || fromIdx === toIdx) return
-                  const reordered = [...(localOrder ?? source)]
-                  const [moved] = reordered.splice(fromIdx, 1)
-                  if (moved) reordered.splice(toIdx, 0, moved)
-                  setLocalOrder(reordered)
-                }}
-                onDragEnd={() => {
-                  const draggedId = draggedIdRef.current
-                  draggedIdRef.current = null
-                  if (!localOrder || !draggedId) {
-                    setLocalOrder(null)
-                    return
-                  }
-                  const newIdx = localOrder.findIndex(p => p.id === draggedId)
-                  if (newIdx === -1) {
-                    setLocalOrder(null)
-                    return
-                  }
-                  const prev = newIdx > 0 ? localOrder[newIdx - 1]!.sortOrder : null
-                  const next = newIdx < localOrder.length - 1 ? localOrder[newIdx + 1]!.sortOrder : null
-                  const newKey = generateKeyBetween(prev, next)
-                  sortProject.mutate({ id: draggedId, sortOrder: newKey })
-                  setLocalOrder(null)
-                }}
-              >
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {displayProjects?.map((project, index) => (
-                    <SortableProjectCard
-                      key={project.id}
-                      project={project}
-                      index={index}
-                      onClick={() => navigate(projectPath(project.alias))}
-                    />
-                  ))}
-                </div>
-              </DragDropProvider>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {projects?.map((project, index) => (
+                  <SortableProjectCard
+                    key={project.id}
+                    project={project}
+                    index={index}
+                    onClick={() => navigate(projectPath(project.alias))}
+                  />
+                ))}
+              </div>
             )}
       </section>
 
