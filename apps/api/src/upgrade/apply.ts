@@ -132,7 +132,7 @@ export async function applyUpgradeAndRestart(): Promise<void> {
 
       // Re-exec the launcher binary (process.execPath is the launcher)
       const child = spawnNode([process.execPath], {
-        env: { ...process.env } as Record<string, string>,
+        env: { ...process.env, BKD_UPGRADE_FROM_PID: String(process.pid) } as Record<string, string>,
         stdin: 'ignore',
         stdout: 'ignore',
         stderr: 'ignore',
@@ -161,7 +161,7 @@ export async function applyUpgradeAndRestart(): Promise<void> {
 
       // Spawn the new binary as a detached process after port is released
       const child = spawnNode([upgradeBinary], {
-        env: { ...process.env } as Record<string, string>,
+        env: { ...process.env, BKD_UPGRADE_FROM_PID: String(process.pid) } as Record<string, string>,
         stdin: 'ignore',
         stdout: 'ignore',
         stderr: 'ignore',

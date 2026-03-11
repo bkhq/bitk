@@ -88,4 +88,10 @@ export interface ManagedProcess {
   spawnCwd?: string
   /** External session ID (Claude CLI session UUID). */
   externalSessionId?: string
+  /**
+   * Promise that resolves when the stdout stream consumer finishes draining
+   * all buffered data. monitorCompletion awaits this before settling the issue
+   * to prevent the race where status moves to "review" while logs are still streaming.
+   */
+  stdoutDone?: Promise<void>
 }

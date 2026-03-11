@@ -18,6 +18,11 @@ export function handleTurnCompleted(
 ): void {
   const managed = ctx.pm.get(executionId)?.meta
   if (!managed || managed.state !== 'running') return
+  // Guard: if turnInFlight is already false, this is a duplicate turn-completion
+  // entry from the stream (e.g. Claude emits a result entry followed by a system
+  // stop entry, or the stream continues producing result entries after settlement).
+  // Without this guard, each entry would trigger a new settlement cycle.
+  if (!managed.turnInFlight) return
   dispatch(managed, { type: 'TURN_COMPLETED' })
   logger.debug(
     { issueId, executionId, queued: managed.pendingInputs.length },

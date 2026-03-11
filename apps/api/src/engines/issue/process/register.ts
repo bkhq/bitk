@@ -123,7 +123,7 @@ export function register(
   const stdoutStream = teeStreamToDebug(process.stdout, debugLog, 'stdout')
   const stderrStream = teeStreamToDebug(process.stderr, debugLog, 'stderr')
 
-  void consumeStream(executionId, issueId, stdoutStream, logParser, stdoutCallbacks)
+  managed.stdoutDone = consumeStream(executionId, issueId, stdoutStream, logParser, stdoutCallbacks)
     .then(() => {
       debugLog.event('stdout_stream_ended')
       logger.debug({ issueId, executionId }, 'consume_stream_promise_resolved')

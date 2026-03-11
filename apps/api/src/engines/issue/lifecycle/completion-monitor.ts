@@ -79,6 +79,19 @@ export function monitorCompletion(
         { event: 'process_exited', pid, exitCode, signal },
       )
 
+      // Wait for stdout stream to finish draining all buffered data before
+      // settling. Without this, subprocess.exited resolves while consumeStream
+      // is still processing remaining output, causing the status to move to
+      // "review" while logs are still being emitted to the frontend.
+      if (managed.stdoutDone) {
+        try {
+          await managed.stdoutDone
+        } catch {
+          // Stream error already handled by consumeStream's catch handler
+        }
+        managed.debugLog?.event('stdout_drained_before_settle')
+      }
+
       // If the issue was already settled by handleTurnCompleted (conversational
       // engines where the process stays alive between turns), just clean up.
       if (managed.turnSettled) {

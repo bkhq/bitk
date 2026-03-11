@@ -62,10 +62,23 @@ export async function reconcileStaleWorkingIssues(): Promise<number> {
 
   if (reconciledIssues.length === 0) return 0
 
+  // Re-check hasActiveProcess right before UPDATE to close the TOCTOU race:
+  // between the SELECT above and now, executeIssue may have registered a new
+  // process. Without this re-check, the reconciler would overwrite the freshly
+  // set sessionStatus='running' back to 'failed', causing the issue to flip
+  // between working and review while the process is actively executing.
+  const stillNeedsSessionFix = needsSessionFix.filter(id => !hasActiveProcess(id))
+  const stillNeedsStatusOnly = needsStatusOnly.filter(id => !hasActiveProcess(id))
+  const stillReconciledIssues = reconciledIssues.filter(
+    issue => stillNeedsSessionFix.includes(issue.id) || stillNeedsStatusOnly.includes(issue.id),
+  )
+
+  if (stillReconciledIssues.length === 0) return 0
+
   // Batch update in a single transaction
   const now = new Date()
   await db.transaction(async (tx) => {
-    if (needsSessionFix.length > 0) {
+    if (stillNeedsSessionFix.length > 0) {
       await tx
         .update(issuesTable)
         .set({
@@ -73,18 +86,18 @@ export async function reconcileStaleWorkingIssues(): Promise<number> {
           statusId: 'review',
           statusUpdatedAt: now,
         })
-        .where(inArray(issuesTable.id, needsSessionFix))
+        .where(inArray(issuesTable.id, stillNeedsSessionFix))
     }
-    if (needsStatusOnly.length > 0) {
+    if (stillNeedsStatusOnly.length > 0) {
       await tx
         .update(issuesTable)
         .set({ statusId: 'review', statusUpdatedAt: now })
-        .where(inArray(issuesTable.id, needsStatusOnly))
+        .where(inArray(issuesTable.id, stillNeedsStatusOnly))
     }
   })
 
   // Post-commit: invalidate caches and emit events
-  for (const issue of reconciledIssues) {
+  for (const issue of stillReconciledIssues) {
     await cacheDel(`issue:${issue.projectId}:${issue.id}`)
     emitIssueUpdated(issue.id, { statusId: 'review' })
     logger.info(
@@ -93,7 +106,7 @@ export async function reconcileStaleWorkingIssues(): Promise<number> {
     )
   }
 
-  return reconciledIssues.length
+  return stillReconciledIssues.length
 }
 
 // ---------- Active process check ----------

@@ -15,6 +15,7 @@ import { startChangesSummaryWatcher, stopChangesSummaryWatcher } from './events/
 import { startUploadCleanup } from './jobs/upload-cleanup'
 import { startWorktreeCleanup } from './jobs/worktree-cleanup'
 import { logger } from './logger'
+import { acquirePidLock, releasePidLock } from './pid-lock'
 import { APP_DIR, ROOT_DIR } from './root'
 import { printStartupBanner } from './startup-banner'
 import { staticAssets } from './static-assets'
@@ -35,6 +36,18 @@ process.on('uncaughtException', (err, origin) => {
   logger.fatal({ err, origin }, 'uncaught_exception')
   // Give pino time to flush the log entry before exiting
   setTimeout(() => process.exit(1), 200)
+})
+
+// ---------- PID lock ----------
+// Prevent multiple BKD instances from running simultaneously against the
+// same data directory. Must run before any DB writes or Bun.serve().
+acquirePidLock()
+
+// Safety net: release the PID lock on any exit path (uncaughtException,
+// process.exit, SIGKILL is not catchable but stale-lock detection handles it).
+// `process.on('exit')` only allows synchronous work — releasePidLock is sync.
+process.on('exit', () => {
+  releasePidLock()
 })
 
 // Migrate legacy global slash commands key to per-engine format, then load cache
@@ -145,6 +158,7 @@ registerShutdownForUpgrade(async () => {
   stopDeliveryCleanup()
   await issueEngine.cancelAll()
   http.stop()
+  releasePidLock()
   logger.info('server_stopped_for_upgrade')
 })
 
@@ -157,8 +171,9 @@ let isShuttingDown = false
 
 async function shutdown(signal: string) {
   if (isShuttingDown) {
-    logger.warn({ signal }, 'server_shutdown_duplicate_signal_ignored')
-    return
+    // Second signal → force-exit immediately (e.g. double Ctrl+C)
+    logger.warn({ signal }, 'server_shutdown_forced')
+    process.exit(1)
   }
   isShuttingDown = true
 
@@ -186,6 +201,7 @@ async function shutdown(signal: string) {
   await issueEngine.cancelAll()
 
   http.stop()
+  releasePidLock()
   logger.info('server_stopped')
   process.exit(0)
 }
