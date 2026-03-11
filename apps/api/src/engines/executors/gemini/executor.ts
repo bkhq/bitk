@@ -1,6 +1,7 @@
 import { existsSync } from 'node:fs'
+import { join } from 'node:path'
 import { safeEnv } from '@/engines/safe-env'
-import { runCommand } from '@/engines/spawn'
+import { resolveCommand, runCommand } from '@/engines/spawn'
 import type {
   EngineAvailability,
   EngineCapability,
@@ -14,9 +15,33 @@ import type {
 } from '@/engines/types'
 
 /**
+ * Find the `gemini` binary in well-known locations WITHOUT falling back to npx.
+ * Used by getAvailability() to determine if the engine is truly installed.
+ * Returns null if no binary is found.
+ */
+function resolveBinaryOnly(): string | null {
+  // 1. Check /work/bin first (container / custom deploy)
+  if (existsSync('/work/bin/gemini')) return '/work/bin/gemini'
+  // 2. Check PATH
+  const fromPath = resolveCommand('gemini')
+  if (fromPath) return fromPath
+  // 3. Check HOME-relative install locations
+  const home = process.env.HOME ?? ''
+  if (home) {
+    const candidates = [join(home, '.local/bin/gemini'), join(home, '.bun/bin/gemini')]
+    const found = candidates.find(p => existsSync(p))
+    if (found) return found
+  }
+  // 4. Check absolute paths independent of HOME
+  if (existsSync('/usr/local/bin/gemini')) return '/usr/local/bin/gemini'
+  // No npx fallback — not installed
+  return null
+}
+
+/**
  * Gemini CLI executor — uses ACP (Agent Communication Protocol).
  *
- * Launch: `npx -y @google/gemini-cli`
+ * Launch: `gemini` (or `npx -y @google/gemini-cli` for execution fallback)
  * Communication: ACP over stdin/stdout
  *
  * TODO: Implement spawn/follow-up when Gemini CLI protocol stabilizes.
@@ -58,8 +83,14 @@ export class GeminiExecutor implements EngineExecutor {
 
   async getAvailability(): Promise<EngineAvailability> {
     try {
+      // Only check real binary paths — do not fall back to npx
+      const binaryPath = resolveBinaryOnly()
+      if (!binaryPath) {
+        return { engineType: 'gemini', installed: false, executable: false, authStatus: 'unknown' }
+      }
+
       const { code: exitCode, stdout } = await runCommand(
-        ['npx', '-y', '@google/gemini-cli', '--version'],
+        [binaryPath, '--version'],
         {
           env: safeEnv({ NPM_CONFIG_LOGLEVEL: 'error' }),
           stderr: 'pipe',
@@ -68,7 +99,7 @@ export class GeminiExecutor implements EngineExecutor {
       )
 
       if (exitCode !== 0) {
-        return { engineType: 'gemini', installed: false, authStatus: 'unknown' }
+        return { engineType: 'gemini', installed: false, executable: false, authStatus: 'unknown' }
       }
 
       const versionMatch = stdout.match(/(\d+\.\d+\.\d[\w.-]*)/)
@@ -92,7 +123,7 @@ export class GeminiExecutor implements EngineExecutor {
         installed: true,
         executable: false, // spawn not yet implemented
         version,
-        binaryPath: 'npx -y @google/gemini-cli',
+        binaryPath,
         authStatus,
       }
     } catch (error) {
@@ -108,8 +139,11 @@ export class GeminiExecutor implements EngineExecutor {
 
   async getModels(): Promise<EngineModel[]> {
     try {
+      const binaryPath = resolveBinaryOnly()
+      if (!binaryPath) return []
+
       const { code: exitCode, stdout } = await runCommand(
-        ['npx', '-y', '@google/gemini-cli', '--list-models'],
+        [binaryPath, '--list-models'],
         {
           env: safeEnv({ NPM_CONFIG_LOGLEVEL: 'error' }),
           stderr: 'pipe',

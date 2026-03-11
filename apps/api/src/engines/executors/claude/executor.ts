@@ -26,6 +26,33 @@ const NPX_FALLBACK = 'npx -y @anthropic-ai/claude-code'
 /** Base directory for per-issue debug logs */
 const ISSUE_LOG_DIR = join(ROOT_DIR, 'data', 'logs', 'issues')
 
+/** Timeout for the lightweight auth verification probe */
+const AUTH_VERIFY_TIMEOUT_MS = 15_000
+
+/**
+ * Find the `claude` binary in well-known locations WITHOUT falling back to npx.
+ * Used by getAvailability() to determine if the engine is truly installed.
+ * Returns null if no binary is found.
+ */
+function resolveBinaryOnly(): string | null {
+  // 1. Check /work/bin first (container / custom deploy)
+  if (existsSync('/work/bin/claude')) return '/work/bin/claude'
+  // 2. Check PATH
+  const fromPath = resolveCommand('claude')
+  if (fromPath) return fromPath
+  // 3. Check HOME-relative install locations
+  const home = process.env.HOME ?? ''
+  if (home) {
+    const homeCandidates = [join(home, '.local/bin/claude'), join(home, '.bun/bin/claude')]
+    const found = homeCandidates.find(p => existsSync(p))
+    if (found) return found
+  }
+  // 4. Check absolute paths independent of HOME
+  if (existsSync('/usr/local/bin/claude')) return '/usr/local/bin/claude'
+  // No npx fallback — not installed
+  return null
+}
+
 /**
  * Find the `claude` binary, checking PATH and common install locations.
  * Falls back to npx for environments without a standalone binary.
@@ -34,33 +61,12 @@ const ISSUE_LOG_DIR = join(ROOT_DIR, 'data', 'logs', 'issues')
 let _cachedBaseCmd: string | undefined
 function resolveBaseCmd(): string {
   if (_cachedBaseCmd) return _cachedBaseCmd
-  // 1. Check /work/bin first (container / custom deploy)
-  if (existsSync('/work/bin/claude')) {
-    _cachedBaseCmd = '/work/bin/claude'
+  const binary = resolveBinaryOnly()
+  if (binary) {
+    _cachedBaseCmd = binary
     return _cachedBaseCmd
   }
-  // 2. Check PATH
-  const fromPath = resolveCommand('claude')
-  if (fromPath) {
-    _cachedBaseCmd = fromPath
-    return _cachedBaseCmd
-  }
-  // 3. Check HOME-relative install locations
-  const home = process.env.HOME ?? ''
-  if (home) {
-    const homeCandidates = [join(home, '.local/bin/claude'), join(home, '.bun/bin/claude')]
-    const found = homeCandidates.find(p => existsSync(p))
-    if (found) {
-      _cachedBaseCmd = found
-      return _cachedBaseCmd
-    }
-  }
-  // 4. Check absolute paths independent of HOME
-  if (existsSync('/usr/local/bin/claude')) {
-    _cachedBaseCmd = '/usr/local/bin/claude'
-    return _cachedBaseCmd
-  }
-  // 5. Fall back to npx
+  // Fall back to npx (for execution only, not availability detection)
   _cachedBaseCmd = NPX_FALLBACK
   return _cachedBaseCmd
 }
@@ -130,7 +136,17 @@ export class ClaudeCodeExecutor implements EngineExecutor {
 
   async getAvailability(): Promise<EngineAvailability> {
     try {
-      const resolved = await CommandBuilder.create(resolveBaseCmd())
+      // Only check real binary paths — do not fall back to npx
+      const binaryPath = resolveBinaryOnly()
+      if (!binaryPath) {
+        return {
+          engineType: 'claude-code',
+          installed: false,
+          authStatus: 'unknown',
+        }
+      }
+
+      const resolved = await CommandBuilder.create(binaryPath)
         .param('--version')
         .env('NPM_CONFIG_LOGLEVEL', 'error')
         .resolve()
@@ -158,25 +174,14 @@ export class ClaudeCodeExecutor implements EngineExecutor {
       const versionMatch = stdout.match(/(\d+\.\d+\.\d[\w.-]*)/)
       const version = versionMatch?.[1]
 
-      // Check auth - look for ANTHROPIC_API_KEY or ~/.claude.json
-      let authStatus: EngineAvailability['authStatus'] = 'unknown'
-      if (process.env.ANTHROPIC_API_KEY) {
-        authStatus = 'authenticated'
-      } else {
-        const home = process.env.HOME ?? '/root'
-        const configFile = Bun.file(`${home}/.claude.json`)
-        if (await configFile.exists()) {
-          authStatus = 'authenticated'
-        } else {
-          authStatus = 'unauthenticated'
-        }
-      }
+      // Verify auth by running a minimal test session
+      const authStatus = await this.verifyAuth(binaryPath)
 
       return {
         engineType: 'claude-code',
         installed: true,
         version,
-        binaryPath: resolved.resolvedPath,
+        binaryPath,
         authStatus,
       }
     } catch (error) {
@@ -325,6 +330,55 @@ export class ClaudeCodeExecutor implements EngineExecutor {
   }
 
   // ---------- Private ----------
+
+  /**
+   * Verify authentication by running a minimal test session.
+   * Spawns `claude -p "hi" --max-turns 1 --output-format text` and checks
+   * if the process succeeds (authenticated) or prints a login prompt.
+   */
+  private async verifyAuth(binaryPath: string): Promise<EngineAvailability['authStatus']> {
+    try {
+      const resolved = await CommandBuilder.create(binaryPath)
+        .params(['-p', '--output-format', 'text', '--max-turns', '1', '--no-chrome'])
+        .params(['--', 'hi'])
+        .env('NPM_CONFIG_LOGLEVEL', 'error')
+        .resolve()
+
+      const proc = spawnNode([resolved.resolvedPath, ...resolved.args], {
+        stdin: 'ignore',
+        stdout: 'pipe',
+        stderr: 'pipe',
+        env: safeEnv(resolved.env),
+      })
+
+      const timer = setTimeout(() => proc.kill(), AUTH_VERIFY_TIMEOUT_MS)
+
+      const [stdoutText, stderrText] = await Promise.all([
+        new Response(proc.stdout).text(),
+        new Response(proc.stderr).text(),
+      ])
+      const exitCode = await proc.exited
+      clearTimeout(timer)
+
+      // Claude prints login prompts as plain text on stdout/stderr and exits non-zero
+      const combined = `${stdoutText}\n${stderrText}`
+      if (/not logged in|please run \/login|login required/i.test(combined)) {
+        return 'unauthenticated'
+      }
+      if (/auth|unauthorized|401|forbidden|403|invalid.*key/i.test(combined)) {
+        return 'unauthenticated'
+      }
+
+      // Exit 0 with any text output → auth works
+      return exitCode === 0 ? 'authenticated' : 'unauthenticated'
+    } catch (err) {
+      logger.debug(
+        { error: err instanceof Error ? err.message : String(err) },
+        'claude_auth_verify_failed',
+      )
+      return 'unknown'
+    }
+  }
 
   /**
    * Build the common CommandBuilder shared by spawn and spawnFollowUp.
