@@ -42,6 +42,7 @@
     "typescript": "catalog:"
   },
   "dependencies": {
+    "cleye": "^2.3.0",
     "jittered-fractional-indexing": "^1.0.1"
   }
 }

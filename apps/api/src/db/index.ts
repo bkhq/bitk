@@ -70,6 +70,62 @@ if (existsSync(journalPath)) {
   throw new Error('No migrations available (missing drizzle/ folder and no embedded migrations)')
 }
 
+// --- Post-migration schema verification ---
+// After migrations run, verify that the DB schema matches what the code expects.
+// This catches partial migrations, stale binaries, or DB/code version mismatches.
+// On failure the process exits with a clear message so a process manager can restart it.
+
+function verifySchema() {
+  // Build expected columns from Drizzle schema definitions.
+  // Each entry: [tableName, [...columnNames]]
+  const expectedTables: Array<[string, string[]]> = []
+  for (const [key, value] of Object.entries(schema)) {
+    // Drizzle table objects have a Symbol-keyed property; the simplest
+    // reliable check is that the value has a `._.name` (table name) and
+    // `._.columns` (column map).
+    const meta = (value as any)?._
+    if (!meta?.name || !meta?.columns) continue
+    const tableName: string = meta.name
+    const cols = Object.values(meta.columns).map((c: any) => c.name as string)
+    expectedTables.push([tableName, cols])
+  }
+
+  const missing: string[] = []
+  for (const [table, expectedCols] of expectedTables) {
+    let rows: Array<{ name: string }>
+    try {
+      rows = sqlite.query(`PRAGMA table_info('${table}')`).all() as Array<{ name: string }>
+    } catch {
+      missing.push(`table '${table}' (query failed)`)
+      continue
+    }
+    if (rows.length === 0) {
+      missing.push(`table '${table}'`)
+      continue
+    }
+    const actualCols = new Set(rows.map(r => r.name))
+    for (const col of expectedCols) {
+      if (!actualCols.has(col)) {
+        missing.push(`${table}.${col}`)
+      }
+    }
+  }
+
+  if (missing.length > 0) {
+    logger.fatal(
+      { missing },
+      'schema_verification_failed: database schema does not match code. '
+      + 'This usually means migrations did not complete. '
+      + 'Run `bun run db:migrate` manually or restart the service.',
+    )
+    process.exit(1)
+  }
+
+  logger.info('schema_verification_passed')
+}
+
+verifySchema()
+
 export async function checkDbHealth() {
   // Use native sqlite check for predictable health signal in Bun runtime.
   const result = sqlite.query('select 1 as ok').get() as { ok?: number } | null

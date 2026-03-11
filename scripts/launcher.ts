@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * Minimal launcher entry point for package mode.
+ * Launcher entry point for package mode.
  *
  * Compiled into a standalone Bun binary, this launcher:
  * 1. Reads `data/app/version.json` to determine the active version
@@ -14,28 +14,44 @@
  *   data/app/version.json   — {"version":"0.0.6","updatedAt":"..."}
  *   data/app/v0.0.5/        — server.js, public/, migrations/, version.json
  *   data/app/v0.0.6/        — newer version
- *
- * Usage:
- *   ./bkd-launcher              # run from binary location
- *   BKD_ROOT=/opt/bkd ./bkd   # override root directory
  */
-import { existsSync, mkdirSync, readdirSync, rmSync } from 'node:fs'
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync } from 'node:fs'
 import { rename } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
+import { cli } from 'cleye'
 
 // --- Constants ---
 
-const ROOT_DIR = process.env.BKD_ROOT ? resolve(process.env.BKD_ROOT) : dirname(process.execPath)
+declare const __BKD_COMMIT__: string | undefined
+const LAUNCHER_COMMIT = typeof __BKD_COMMIT__ !== 'undefined' ? __BKD_COMMIT__ : 'dev'
 
-const APP_BASE = resolve(ROOT_DIR, 'data/app')
-const VERSION_FILE = resolve(APP_BASE, 'version.json')
+function resolveAppVersion(): string {
+  const rootDir = process.env.BKD_ROOT ? resolve(process.env.BKD_ROOT) : dirname(process.execPath)
+  const vf = resolve(rootDir, 'data/app/version.json')
+  if (existsSync(vf)) {
+    try {
+      const data = JSON.parse(readFileSync(vf, 'utf8'))
+      if (typeof data.version === 'string') return data.version
+    } catch {}
+  }
+  return 'unknown'
+}
+
+function getVersionString(): string {
+  const appVersion = resolveAppVersion()
+  const app = appVersion !== 'unknown' ? appVersion : 'dev'
+  return `${app} (launcher:v1 ${LAUNCHER_COMMIT})`
+}
+
 const SEMVER_RE = /^\d+\.\d+\.\d+$/
 const SHA256_RE = /^[a-f0-9]{64}$/
 const GITHUB_REPO = 'bkhq/bkd'
 const APP_PKG_RE = /^bkd-app-v(\d+\.\d+\.\d+)\.tar\.gz$/
 const MAX_DOWNLOAD_BYTES = 50 * 1024 * 1024 // 50 MB
-
 const ALLOWED_HOSTS = new Set(['github.com', 'objects.githubusercontent.com'])
+const LOG_LEVELS = ['trace', 'debug', 'info', 'warn', 'error', 'fatal'] as const
+const MAX_RETRIES = 3
+const BASE_DELAY_MS = 2_000
 
 // --- Types ---
 
@@ -60,31 +76,6 @@ function compareSemver(a: string, b: string): number {
     if (diff !== 0) return diff
   }
   return 0
-}
-
-async function writeVersionFile(ver: string): Promise<void> {
-  mkdirSync(APP_BASE, { recursive: true })
-  await Bun.write(
-    VERSION_FILE,
-    JSON.stringify({ version: ver, updatedAt: new Date().toISOString() }),
-  )
-}
-
-function detectLatestVersion(): string | null {
-  if (!existsSync(APP_BASE)) return null
-  try {
-    const versions = readdirSync(APP_BASE, { withFileTypes: true })
-      .filter(d => d.isDirectory() && /^v\d+\.\d+\.\d+$/.test(d.name))
-      .map(d => d.name.slice(1))
-      .sort(compareSemver)
-    return versions.length > 0 ? versions.at(-1) : null
-  } catch (err) {
-    console.error(
-      `[launcher] Failed to scan ${APP_BASE}:`,
-      err instanceof Error ? err.message : err,
-    )
-    return null
-  }
 }
 
 function isAllowedHost(url: string): boolean {
@@ -287,8 +278,12 @@ async function verifyChecksum(
 
 // --- Auto-download: extract and install ---
 
-async function extractAndInstall(tmpFile: string, versionDir: string): Promise<boolean> {
-  const tmpExtractDir = resolve(APP_BASE, `${versionDir}.tmp.${Date.now()}`)
+async function extractAndInstall(
+  tmpFile: string,
+  versionDir: string,
+  appBase: string,
+): Promise<boolean> {
+  const tmpExtractDir = resolve(appBase, `${versionDir}.tmp.${Date.now()}`)
   mkdirSync(tmpExtractDir, { recursive: true })
 
   try {
@@ -317,7 +312,11 @@ async function extractAndInstall(tmpFile: string, versionDir: string): Promise<b
 
 // --- Auto-download: orchestrator ---
 
-async function downloadAndExtract(info: AppPackageInfo): Promise<boolean> {
+async function downloadAndExtract(
+  info: AppPackageInfo,
+  dataDir: string,
+  appBase: string,
+): Promise<boolean> {
   // Re-validate inputs from API response
   if (!APP_PKG_RE.test(info.asset.name)) {
     console.error(`[launcher] Invalid asset name: ${info.asset.name}`)
@@ -328,16 +327,15 @@ async function downloadAndExtract(info: AppPackageInfo): Promise<boolean> {
     return false
   }
 
-  const dataDir = resolve(ROOT_DIR, 'data')
   const tmpFile = resolve(dataDir, `${info.asset.name}.tmp`)
-  const versionDir = resolve(APP_BASE, `v${info.version}`)
+  const versionDir = resolve(appBase, `v${info.version}`)
 
   // Verify paths stay within expected directories
   if (!tmpFile.startsWith(`${dataDir}/`)) {
     console.error('[launcher] Temp file path escapes data directory')
     return false
   }
-  if (!versionDir.startsWith(`${APP_BASE}/`)) {
+  if (!versionDir.startsWith(`${appBase}/`)) {
     console.error('[launcher] Version dir escapes app directory')
     return false
   }
@@ -367,7 +365,7 @@ async function downloadAndExtract(info: AppPackageInfo): Promise<boolean> {
     }
 
     console.log(`[launcher] Extracting to v${info.version}...`)
-    const ok = await extractAndInstall(tmpFile, versionDir)
+    const ok = await extractAndInstall(tmpFile, versionDir, appBase)
     if (!ok) {
       rmSync(tmpFile, { force: true })
       return false
@@ -382,7 +380,6 @@ async function downloadAndExtract(info: AppPackageInfo): Promise<boolean> {
       return false
     }
 
-    await writeVersionFile(info.version)
     rmSync(tmpFile, { force: true })
     console.log(`[launcher] Version ${info.version} installed successfully`)
     return true
@@ -393,15 +390,145 @@ async function downloadAndExtract(info: AppPackageInfo): Promise<boolean> {
   }
 }
 
+// --- DB repair (--fix-db) ---
+
+async function repairDatabase(dbPath: string, migrationsDir: string) {
+  console.log('[launcher] Running database repair (re-applying migrations)...')
+
+  if (!existsSync(dbPath)) {
+    console.log('[launcher] No database file found, nothing to repair.')
+    return
+  }
+
+  const journalFile = resolve(migrationsDir, 'meta/_journal.json')
+  if (!existsSync(journalFile)) {
+    console.error(`[launcher] Migrations not found at: ${migrationsDir}`)
+    process.exit(1)
+  }
+
+  // Use Bun's subprocess to run drizzle migrate against the DB.
+  // We spawn a small inline script so that the import of drizzle
+  // does not pollute the launcher's module cache.
+  const script = `
+    import { Database } from 'bun:sqlite';
+    import { drizzle } from 'drizzle-orm/bun-sqlite';
+    import { migrate } from 'drizzle-orm/bun-sqlite/migrator';
+    const sqlite = new Database(${JSON.stringify(dbPath)});
+    sqlite.run('PRAGMA journal_mode = WAL');
+    sqlite.run('PRAGMA foreign_keys = OFF');
+    const db = drizzle({ client: sqlite });
+    migrate(db, { migrationsFolder: ${JSON.stringify(migrationsDir)} });
+    sqlite.run('PRAGMA foreign_keys = ON');
+    console.log('[repair] Migrations applied successfully.');
+  `
+  const proc = Bun.spawn(['bun', 'eval', script], {
+    stdout: 'inherit',
+    stderr: 'inherit',
+    env: process.env as Record<string, string>,
+  })
+  const exitCode = await proc.exited
+  if (exitCode !== 0) {
+    console.error('[launcher] Database repair failed.')
+    process.exit(1)
+  }
+  console.log('[launcher] Database repair complete.')
+}
+
+// --- CLI parsing ---
+
+const versionStr = getVersionString()
+
+const argv = cli({
+  name: 'bkd',
+  version: versionStr,
+  flags: {
+    port: {
+      type: String,
+      alias: 'p',
+      description: 'Listen port (env: PORT)',
+      default: process.env.PORT ?? '3000',
+    },
+    host: {
+      type: String,
+      description: 'Listen host (env: HOST)',
+      default: process.env.HOST ?? '0.0.0.0',
+    },
+    dataDir: {
+      type: String,
+      alias: 'd',
+      description: 'Data directory (env: BKD_DATA_DIR)',
+    },
+    logLevel: {
+      type: String,
+      alias: 'l',
+      description: `Log level: ${LOG_LEVELS.join('|')} (env: LOG_LEVEL)`,
+      default: process.env.LOG_LEVEL ?? 'info',
+    },
+    fixDb: {
+      type: Boolean,
+      description: 'Re-apply database migrations before starting',
+      default: false,
+    },
+  },
+  help: {
+    description: 'Kanban board for AI coding agents',
+    examples: [
+      'bkd',
+      'bkd --port 8080 --host 0.0.0.0',
+      'bkd --data-dir /opt/bkd/data',
+      'bkd --fix-db',
+    ],
+  },
+})
+
 // --- Main ---
 
 async function main() {
+  const { flags } = argv
+
+  // Validate log level
+  if (!LOG_LEVELS.includes(flags.logLevel as typeof LOG_LEVELS[number])) {
+    console.error(`[launcher] Invalid log level: ${flags.logLevel}`)
+    console.error(`[launcher] Valid levels: ${LOG_LEVELS.join(', ')}`)
+    process.exit(1)
+  }
+
+  // Apply CLI args to environment (CLI takes precedence)
+  process.env.PORT = flags.port
+  process.env.HOST = flags.host
+  process.env.LOG_LEVEL = flags.logLevel
+
+  // Resolve directories
+  const rootDir = process.env.BKD_ROOT
+    ? resolve(process.env.BKD_ROOT)
+    : dirname(process.execPath)
+
+  const dataDir = flags.dataDir
+    ? resolve(flags.dataDir)
+    : process.env.BKD_DATA_DIR
+      ? resolve(process.env.BKD_DATA_DIR)
+      : resolve(rootDir, 'data')
+
+  if (flags.dataDir) {
+    process.env.BKD_DATA_DIR = dataDir
+  }
+
+  const appBase = resolve(dataDir, 'app')
+  const versionFile = resolve(appBase, 'version.json')
+
+  // Set DB_PATH if not already set
+  if (!process.env.DB_PATH) {
+    process.env.DB_PATH = resolve(dataDir, 'db/bkd.db')
+  }
+
+  // --- Resolve version ---
+
   let version: string | null = null
 
   // 1. Read version.json
-  if (existsSync(VERSION_FILE)) {
+  if (existsSync(versionFile)) {
     try {
-      const data = JSON.parse(await Bun.file(VERSION_FILE).text())
+      const data = JSON.parse(await Bun.file(versionFile).text())
       version = typeof data.version === 'string' ? data.version : null
     } catch {
       console.error('[launcher] Failed to parse data/app/version.json')
@@ -410,10 +537,27 @@ async function main() {
 
   // 2. Auto-detect from v* directories
   if (!version) {
-    version = detectLatestVersion()
+    if (existsSync(appBase)) {
+      try {
+        const versions = readdirSync(appBase, { withFileTypes: true })
+          .filter(d => d.isDirectory() && /^v\d+\.\d+\.\d+$/.test(d.name))
+          .map(d => d.name.slice(1))
+          .sort(compareSemver)
+        version = versions.length > 0 ? versions.at(-1) ?? null : null
+      } catch (err) {
+        console.error(
+          `[launcher] Failed to scan ${appBase}:`,
+          err instanceof Error ? err.message : err,
+        )
+      }
+    }
     if (version) {
       console.log(`[launcher] No version.json, auto-detected version: ${version}`)
-      await writeVersionFile(version)
+      mkdirSync(appBase, { recursive: true })
+      await Bun.write(
+        versionFile,
+        JSON.stringify({ version, updatedAt: new Date().toISOString() }),
+      )
     }
   }
 
@@ -432,46 +576,73 @@ async function main() {
       console.error('')
       console.error('Manual setup:')
       console.error('  1. Download the app package from GitHub releases')
-      console.error(`  2. mkdir -p ${APP_BASE}/v<VERSION>`)
-      console.error(`  3. tar -xzf bkd-app-v<VERSION>.tar.gz -C ${APP_BASE}/v<VERSION>`)
-      console.error(`  4. echo '{"version":"<VERSION>"}' > ${VERSION_FILE}`)
+      console.error(`  2. mkdir -p ${appBase}/v<VERSION>`)
+      console.error(`  3. tar -xzf bkd-app-v<VERSION>.tar.gz -C ${appBase}/v<VERSION>`)
+      console.error(`  4. echo '{"version":"<VERSION>"}' > ${versionFile}`)
       console.error('  5. Run this launcher again')
-      mkdirSync(resolve(ROOT_DIR, 'data'), { recursive: true })
+      mkdirSync(dataDir, { recursive: true })
       process.exit(1)
     }
 
-    const ok = await downloadAndExtract(latest)
+    const ok = await downloadAndExtract(latest, dataDir, appBase)
     if (!ok) {
       process.exit(1)
     }
+
+    mkdirSync(appBase, { recursive: true })
+    await Bun.write(
+      versionFile,
+      JSON.stringify({ version: latest.version, updatedAt: new Date().toISOString() }),
+    )
     version = latest.version
   }
 
   // 4. Verify server exists
-  const appDir = resolve(APP_BASE, `v${version}`)
+  const appDir = resolve(appBase, `v${version}`)
   const serverPath = resolve(appDir, 'server.js')
 
   if (!existsSync(serverPath)) {
     console.error(`[launcher] Version ${version} not found: ${serverPath}`)
-    const latest = detectLatestVersion()
-    if (latest && latest !== version) {
-      console.error(`[launcher] Available version: ${latest}`)
-    }
     process.exit(1)
+  }
+
+  // 5. Run DB repair if requested
+  if (flags.fixDb) {
+    const migrationsDir = resolve(appDir, 'migrations')
+    await repairDatabase(process.env.DB_PATH!, migrationsDir)
   }
 
   console.log(`[launcher] Starting version ${version}`)
 
-  // 5. Start server
-  try {
-    await import(serverPath)
-  } catch (err) {
-    console.error('[launcher] Failed to start server:', err)
-    process.exit(1)
+  // 6. Start server
+  await import(serverPath)
+}
+
+// --- Retry wrapper ---
+
+async function mainWithRetry() {
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      await main()
+      return
+    } catch (err) {
+      const isLast = attempt >= MAX_RETRIES
+      console.error(
+        `[launcher] Startup failed (attempt ${attempt}/${MAX_RETRIES}):`,
+        err instanceof Error ? err.message : err,
+      )
+      if (isLast) {
+        console.error('[launcher] All retry attempts exhausted, exiting.')
+        process.exit(1)
+      }
+      const delay = BASE_DELAY_MS * (2 ** (attempt - 1))
+      console.log(`[launcher] Retrying in ${delay / 1000}s...`)
+      await new Promise(r => setTimeout(r, delay))
+    }
   }
 }
 
-main().catch((err) => {
+mainWithRetry().catch((err) => {
   console.error('[launcher] Fatal error:', err)
   process.exit(1)
 })
