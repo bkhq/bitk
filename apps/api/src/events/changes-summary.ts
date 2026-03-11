@@ -1,13 +1,13 @@
 import { stat } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { runCommand } from '@/engines/spawn'
-import { resolveWorktreePath } from '@/engines/issue/utils/worktree'
 import { eq } from 'drizzle-orm'
 import { db } from '@/db'
 import { findProject } from '@/db/helpers'
 import { issues as issuesTable } from '@/db/schema'
 import { appEvents } from '@/events'
 import { logger } from '@/logger'
+import { countTextLines, isPathInsideRoot, resolveIssueDir } from '@/utils/changes'
 
 export type { ChangesSummary } from '@bkd/shared'
 
@@ -17,6 +17,7 @@ async function runGit(args: string[], cwd: string): Promise<{ code: number, stdo
   return runCommand(['git', ...args], { cwd, timeout: 10_000 })
 }
 
+/** Parse `git diff --numstat` output. Binary files emit `-\t-` which NaN-guards skip. */
 function parseNumstat(stdout: string): { additions: number, deletions: number } {
   let additions = 0
   let deletions = 0
@@ -28,26 +29,6 @@ function parseNumstat(stdout: string): { additions: number, deletions: number } 
     if (!Number.isNaN(del)) deletions += del
   }
   return { additions, deletions }
-}
-
-/**
- * Resolve the correct working directory for an issue, respecting worktrees.
- */
-async function resolveIssueDir(
-  projectId: string,
-  issueId: string,
-  useWorktree: boolean,
-  projectRoot: string,
-): Promise<string> {
-  if (!useWorktree) return projectRoot
-  const wtPath = resolveWorktreePath(projectId, issueId)
-  try {
-    const s = await stat(wtPath)
-    if (s.isDirectory()) return wtPath
-  } catch {
-    // worktree dir doesn't exist — fall back
-  }
-  return projectRoot
 }
 
 async function computeAndEmit(issueId: string): Promise<void> {
@@ -131,13 +112,10 @@ async function computeAndEmit(issueId: string): Promise<void> {
       // Untracked files — count lines manually
       for (const { path, isUntracked } of statusLines) {
         if (!isUntracked) continue
+        if (!isPathInsideRoot(root, path)) continue
         try {
           const content = await Bun.file(resolve(root, path)).text()
-          if (content) {
-            const normalized = content.replace(/\r\n/g, '\n')
-            const trimmed = normalized.endsWith('\n') ? normalized.slice(0, -1) : normalized
-            additions += trimmed ? trimmed.split('\n').length : 0
-          }
+          additions += countTextLines(content)
         } catch {
           // skip unreadable files
         }
