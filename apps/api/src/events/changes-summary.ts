@@ -91,7 +91,7 @@ async function computeAndEmit(issueId: string): Promise<void> {
     // Count changed files (working tree + staged)
     const statusLines: { path: string, isUntracked: boolean }[] = []
 
-    const { code: statusCode, stdout: statusOut } = await runGit(['status', '--porcelain=v1'], root)
+    const { code: statusCode, stdout: statusOut } = await runGit(['status', '--porcelain=v1', '-uall'], root)
     if (statusCode === 0) {
       for (const raw of statusOut.split('\n')) {
         const line = raw.trimEnd()

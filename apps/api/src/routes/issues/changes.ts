@@ -123,26 +123,33 @@ async function summarizeFileLines(
     }
   }
 
-  try {
-    const { code, stdout } = await runGit(
-      ['diff', '--numstat', '--no-color', '--no-ext-diff', '--', file.path],
-      cwd,
-    )
-    if (code !== 0) return { additions: 0, deletions: 0 }
+  // Combine unstaged + staged stats for this file
+  let additions = 0
+  let deletions = 0
 
-    const firstLine = stdout
-      .split('\n')
-      .map(line => line.trim())
-      .find(Boolean)
-    if (!firstLine) return { additions: 0, deletions: 0 }
+  for (const extraArgs of [[], ['--cached']]) {
+    try {
+      const { code, stdout } = await runGit(
+        ['diff', ...extraArgs, '--numstat', '--no-color', '--no-ext-diff', '--', file.path],
+        cwd,
+      )
+      if (code !== 0) continue
 
-    const [addRaw, delRaw] = firstLine.split('\t')
-    const additions = Number.isNaN(Number(addRaw)) ? 0 : Number(addRaw)
-    const deletions = Number.isNaN(Number(delRaw)) ? 0 : Number(delRaw)
-    return { additions, deletions }
-  } catch {
-    return { additions: 0, deletions: 0 }
+      const firstLine = stdout
+        .split('\n')
+        .map(line => line.trim())
+        .find(Boolean)
+      if (!firstLine) continue
+
+      const [addRaw, delRaw] = firstLine.split('\t')
+      if (!Number.isNaN(Number(addRaw))) additions += Number(addRaw)
+      if (!Number.isNaN(Number(delRaw))) deletions += Number(delRaw)
+    } catch {
+      // continue to next variant
+    }
   }
+
+  return { additions, deletions }
 }
 
 // ---------- Routes ----------
