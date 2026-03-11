@@ -1,4 +1,5 @@
-import { closeSync, mkdirSync, openSync, readFileSync, unlinkSync, writeSync } from 'node:fs'
+import { closeSync, mkdirSync, openSync, readFileSync, unlinkSync, writeFileSync, writeSync } from 'node:fs'
+import { randomBytes } from 'node:crypto'
 import { dirname, resolve } from 'node:path'
 import { logger } from './logger'
 import { ROOT_DIR } from './root'
@@ -6,6 +7,7 @@ import { ROOT_DIR } from './root'
 // ---------- Constants ----------
 
 const PID_FILE_NAME = 'bkd.pid'
+const UPGRADE_TOKEN_FILE_NAME = 'bkd.upgrade-token'
 
 /**
  * Derive the PID lock file path from the same source as the SQLite DB,
@@ -16,19 +18,25 @@ const PID_FILE_NAME = 'bkd.pid'
  *   2. BKD_DATA_DIR/bkd.pid
  *   3. <ROOT_DIR>/data/bkd.pid
  */
-function getPidFilePath(): string {
+function getLockDir(): string {
   if (process.env.DB_PATH) {
-    const dbDir = dirname(
+    return dirname(
       process.env.DB_PATH.startsWith('/')
         ? process.env.DB_PATH
         : resolve(ROOT_DIR, process.env.DB_PATH),
     )
-    return resolve(dbDir, PID_FILE_NAME)
   }
-  const dataDir = process.env.BKD_DATA_DIR
+  return process.env.BKD_DATA_DIR
     ? resolve(process.env.BKD_DATA_DIR)
     : resolve(ROOT_DIR, 'data')
-  return resolve(dataDir, PID_FILE_NAME)
+}
+
+function getPidFilePath(): string {
+  return resolve(getLockDir(), PID_FILE_NAME)
+}
+
+function getUpgradeTokenPath(): string {
+  return resolve(getLockDir(), UPGRADE_TOKEN_FILE_NAME)
 }
 
 // ---------- Helpers ----------
@@ -66,7 +74,49 @@ function tryCreateExclusive(filePath: string, content: string): boolean {
   }
 }
 
+/**
+ * Verify upgrade token: the upgrading process writes a file containing
+ * its PID and a random nonce. The new process reads and validates both,
+ * then deletes the token file. This prevents external spoofing — unlike
+ * environment variables, the token file is protected by filesystem permissions.
+ */
+function isValidUpgradeToken(existingPid: number): boolean {
+  const tokenPath = getUpgradeTokenPath()
+  try {
+    const content = readFileSync(tokenPath, 'utf8').trim()
+    const [pidStr, nonce] = content.split(':')
+    const tokenPid = Number.parseInt(pidStr ?? '', 10)
+
+    if (tokenPid !== existingPid || !nonce || nonce.length < 16) {
+      return false
+    }
+
+    // Token is valid — consume it (one-time use)
+    try {
+      unlinkSync(tokenPath)
+    } catch { /* best effort */ }
+
+    return true
+  } catch {
+    return false
+  }
+}
+
 // ---------- Public API ----------
+
+/**
+ * Write an upgrade token file that authorises the new process to take
+ * over the PID lock from this process. Called by the upgrade system
+ * just before spawning the replacement process.
+ */
+export function writeUpgradeToken(): void {
+  const tokenPath = getUpgradeTokenPath()
+  const nonce = randomBytes(16).toString('hex')
+  const content = `${process.pid}:${nonce}`
+  mkdirSync(dirname(tokenPath), { recursive: true })
+  writeFileSync(tokenPath, content, 'utf8')
+  logger.debug({ tokenPath }, 'upgrade_token_written')
+}
 
 /**
  * Acquire a PID lock. If another BKD instance is already running,
@@ -109,17 +159,14 @@ export function acquirePidLock(): void {
   }
 
   if (!Number.isNaN(existingPid) && existingPid > 0 && isProcessAlive(existingPid)) {
-    // Allow takeover when this process was spawned by an upgrade restart.
-    // The parent set BKD_UPGRADE_FROM_PID to its own PID before spawning us;
-    // if the lock belongs to that parent, it is about to exit — safe to take over.
-    const upgradeFromPid = Number.parseInt(process.env.BKD_UPGRADE_FROM_PID ?? '', 10)
-    if (existingPid === upgradeFromPid) {
+    // Allow takeover when the upgrading process left a valid token file.
+    // The token contains the parent's PID + a random nonce, so it cannot
+    // be forged via environment variables or command-line arguments.
+    if (isValidUpgradeToken(existingPid)) {
       logger.info(
         { existingPid, pidFile },
         'pid_lock_takeover_from_upgrade_parent',
       )
-      // Clear the env var so it doesn't leak to future child processes
-      delete process.env.BKD_UPGRADE_FROM_PID
     } else {
       exitDuplicateInstance(pidFile, existingPid)
     }
