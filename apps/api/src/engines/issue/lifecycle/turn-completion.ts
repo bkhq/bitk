@@ -129,8 +129,10 @@ export function handleTurnCompleted(
         // follow-up within SETTLE_GRACE_MS, the START_TURN dispatch clears
         // this timer and the issue stays in 'working'.
         if (managed.settleTimer) clearTimeout(managed.settleTimer)
+        managed.settleTimerStatus = finalStatus
         managed.settleTimer = setTimeout(() => {
           managed.settleTimer = undefined
+          managed.settleTimerStatus = undefined
           void settleAfterGrace(ctx, issueId, executionId, managed, finalStatus)
         }, SETTLE_GRACE_MS)
       }
@@ -139,6 +141,7 @@ export function handleTurnCompleted(
       if (managed.settleTimer) {
         clearTimeout(managed.settleTimer)
         managed.settleTimer = undefined
+        managed.settleTimerStatus = undefined
       }
       logger.error({ issueId, executionId, error }, 'issue_turn_settle_failed')
       // Safety net: ensure frontend is always notified even if settlement
@@ -242,8 +245,10 @@ export function flushSettleTimer(
 ): void {
   if (!managed.settleTimer) return
   clearTimeout(managed.settleTimer)
+  const finalStatus = managed.settleTimerStatus ?? (managed.logicalFailure ? 'failed' : 'completed')
   managed.settleTimer = undefined
-  void settleAfterGrace(ctx, managed.issueId, managed.executionId, managed, managed.logicalFailure ? 'failed' : 'completed')
+  managed.settleTimerStatus = undefined
+  void settleAfterGrace(ctx, managed.issueId, managed.executionId, managed, finalStatus)
 }
 
 export async function flushQueuedInputs(

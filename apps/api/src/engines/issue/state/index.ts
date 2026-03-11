@@ -24,6 +24,7 @@ export function dispatch(managed: ManagedProcess, action: ManagedAction): void {
       if (managed.settleTimer) {
         clearTimeout(managed.settleTimer)
         managed.settleTimer = undefined
+        managed.settleTimerStatus = undefined
       }
       break
     case 'TURN_COMPLETED':

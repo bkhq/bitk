@@ -100,4 +100,10 @@ export interface ManagedProcess {
    * within the grace period prevent the premature review transition.
    */
   settleTimer?: ReturnType<typeof setTimeout>
+  /**
+   * The finalStatus ('completed' | 'failed') captured at turn-completion time.
+   * Stored so that flushSettleTimer uses the same value that was persisted to
+   * the DB in Phase 1, avoiding a mismatch if logicalFailure changes later.
+   */
+  settleTimerStatus?: string
 }
