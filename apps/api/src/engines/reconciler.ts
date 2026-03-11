@@ -2,6 +2,7 @@ import { and, eq, inArray } from 'drizzle-orm'
 import { cacheDel } from '@/cache'
 import { db } from '@/db'
 import {
+  backfillSortOrders,
   ensureDefaultFilterRules,
   ensureServerInfoDefaults,
   ensureWorktreeAutoCleanupDefault,
@@ -116,6 +117,7 @@ export async function startupReconciliation(): Promise<void> {
   await ensureDefaultFilterRules()
   await ensureWorktreeAutoCleanupDefault()
   await ensureServerInfoDefaults()
+  await backfillSortOrders()
 
   // First, mark stale sessions (running/pending sessionStatus) as failed.
   // This was previously done by cleanupStaleSessions in db/helpers.

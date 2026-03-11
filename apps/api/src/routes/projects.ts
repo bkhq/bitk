@@ -3,6 +3,7 @@ import { resolve } from 'node:path'
 import { zValidator } from '@hono/zod-validator'
 import { and, asc, desc, eq, inArray, ne } from 'drizzle-orm'
 import { Hono } from 'hono'
+import { generateKeyBetween } from 'jittered-fractional-indexing'
 import { customAlphabet } from 'nanoid'
 import * as z from 'zod'
 import { cacheDelByPrefix } from '@/cache'
@@ -178,6 +179,17 @@ projects.post(
     }
 
     const alias = await uniqueAlias(body.alias ?? generateAlias(body.name))
+
+    // Compute sortOrder: place after the last project
+    const lastProject = await db
+      .select({ sortOrder: projectsTable.sortOrder })
+      .from(projectsTable)
+      .where(eq(projectsTable.isDeleted, false))
+      .orderBy(desc(projectsTable.sortOrder))
+      .limit(1)
+      .then(rows => rows[0])
+    const sortOrder = generateKeyBetween(lastProject?.sortOrder ?? null, null)
+
     const [row] = await db
       .insert(projectsTable)
       .values({
@@ -188,6 +200,7 @@ projects.post(
         repositoryUrl: body.repositoryUrl || null,
         systemPrompt: body.systemPrompt ?? null,
         envVars: body.envVars ? JSON.stringify(body.envVars) : null,
+        sortOrder,
       })
       .returning()
 

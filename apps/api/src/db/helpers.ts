@@ -1,4 +1,5 @@
-import { and, eq, inArray, sql } from 'drizzle-orm'
+import { and, asc, eq, inArray, sql } from 'drizzle-orm'
+import { generateKeyBetween } from 'jittered-fractional-indexing'
 import { cacheDel, cacheGet, cacheGetOrSet, cacheSet } from '@/cache'
 import { db } from '.'
 import {
@@ -222,6 +223,69 @@ export async function ensureServerInfoDefaults(): Promise<void> {
     const existing = await getAppSetting(SERVER_URL_KEY)
     if (!existing) {
       await setAppSetting(SERVER_URL_KEY, envUrl)
+    }
+  }
+}
+
+// --- Sort order backfill ---
+
+/**
+ * On startup: assign sequential sortOrders to projects and issues
+ * that still have the default 'a0', preserving their current DB order
+ * (createdAt ASC). Only runs once — skips if any row already has a
+ * non-default sortOrder.
+ */
+export async function backfillSortOrders(): Promise<void> {
+  // Backfill projects
+  const allProjects = await db
+    .select({ id: projectsTable.id, sortOrder: projectsTable.sortOrder })
+    .from(projectsTable)
+    .where(eq(projectsTable.isDeleted, false))
+    .orderBy(asc(projectsTable.createdAt))
+
+  const projectsNeedBackfill = allProjects.length > 1
+    && allProjects.every(p => p.sortOrder === 'a0')
+
+  if (projectsNeedBackfill) {
+    let cursor: string | null = null
+    for (const project of allProjects) {
+      const key = generateKeyBetween(cursor, null)
+      cursor = key
+      await db.update(projectsTable)
+        .set({ sortOrder: key })
+        .where(eq(projectsTable.id, project.id))
+    }
+  }
+
+  // Backfill issues per project
+  const projectIds = allProjects.map(p => p.id)
+  for (const projectId of projectIds) {
+    const issues = await db
+      .select({ id: issuesTable.id, sortOrder: issuesTable.sortOrder, statusId: issuesTable.statusId })
+      .from(issuesTable)
+      .where(and(eq(issuesTable.projectId, projectId), eq(issuesTable.isDeleted, false)))
+      .orderBy(asc(issuesTable.createdAt))
+
+    const needsBackfill = issues.length > 1
+      && issues.every(i => i.sortOrder === 'a0')
+
+    if (!needsBackfill) continue
+
+    // Group by status column, assign within each group
+    const byStatus: Record<string, typeof issues> = {}
+    for (const issue of issues) {
+      ;(byStatus[issue.statusId] ??= []).push(issue)
+    }
+
+    for (const group of Object.values(byStatus)) {
+      let cursor: string | null = null
+      for (const issue of group) {
+        const key = generateKeyBetween(cursor, null)
+        cursor = key
+        await db.update(issuesTable)
+          .set({ sortOrder: key })
+          .where(eq(issuesTable.id, issue.id))
+      }
     }
   }
 }

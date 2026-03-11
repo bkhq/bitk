@@ -389,10 +389,22 @@ export default function HomePage() {
         reordered.splice(toIndex, 0, moved)
 
         const newIdx = reordered.findIndex(p => p.id === draggedId)
-        const prev = newIdx > 0 ? reordered[newIdx - 1]!.sortOrder : null
-        const next = newIdx < reordered.length - 1 ? reordered[newIdx + 1]!.sortOrder : null
-        const newKey = generateKeyBetween(prev, next)
-        sortProjectRef.current.mutate({ id: draggedId, sortOrder: newKey })
+        const prevKey = newIdx > 0 ? (reordered[newIdx - 1]!.sortOrder || null) : null
+        const nextKey = newIdx < reordered.length - 1 ? (reordered[newIdx + 1]!.sortOrder || null) : null
+
+        // Happy path: neighbors are in proper order
+        if (prevKey === null || nextKey === null || prevKey < nextKey) {
+          const newKey = generateKeyBetween(prevKey, nextKey)
+          sortProjectRef.current.mutate({ id: draggedId, sortOrder: newKey })
+        } else {
+          // Collision: reassign all projects with sequential sort orders
+          let cursor: string | null = null
+          for (const project of reordered) {
+            const key = generateKeyBetween(cursor, null)
+            cursor = key
+            sortProjectRef.current.mutate({ id: project.id, sortOrder: key })
+          }
+        }
       },
     })
   }, [])
