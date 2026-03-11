@@ -59,7 +59,12 @@
     "systemPromptHint": "This prompt will be automatically prepended when starting a new session for any issue in this project.",
     "envVars": "Environment Variables",
     "envVarsHint": "One variable per line in KEY=VALUE format. Lines starting with # are ignored.",
-    "envVarsPlaceholder": "API_KEY=your-key\nNODE_ENV=production\n# Comments are ignored"
+    "envVarsPlaceholder": "API_KEY=your-key\nNODE_ENV=production\n# Comments are ignored",
+    "archive": "Archive",
+    "archiving": "Archiving...",
+    "unarchive": "Unarchive",
+    "archivedProjects": "Archived Projects",
+    "noArchivedProjects": "No archived projects."
   },
   "kanban": {
     "newIssue": "New Issue",

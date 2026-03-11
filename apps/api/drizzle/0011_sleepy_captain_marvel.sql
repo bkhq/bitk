@@ -1,0 +1,1 @@
+ALTER TABLE `projects` ADD `is_archived` integer DEFAULT 0 NOT NULL;

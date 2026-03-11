@@ -56,6 +56,7 @@ function serializeProject(row: ProjectRow) {
     systemPrompt: row.systemPrompt ?? undefined,
     envVars: row.envVars ? (JSON.parse(row.envVars) as Record<string, string>) : undefined,
     sortOrder: row.sortOrder,
+    isArchived: row.isArchived === 1,
     createdAt: toISO(row.createdAt),
     updatedAt: toISO(row.updatedAt),
   }
@@ -116,10 +117,11 @@ async function isDirectoryTaken(directory: string, excludeId?: string): Promise<
 const projects = new Hono()
 
 projects.get('/', async (c) => {
+  const archived = c.req.query('archived') === 'true'
   const rows = await db
     .select()
     .from(projectsTable)
-    .where(eq(projectsTable.isDeleted, 0))
+    .where(and(eq(projectsTable.isDeleted, 0), eq(projectsTable.isArchived, archived ? 1 : 0)))
     .orderBy(asc(projectsTable.sortOrder), desc(projectsTable.updatedAt))
   const data = await Promise.all(
     rows.map(async (row) => {
@@ -353,6 +355,42 @@ projects.delete('/:projectId', async (c) => {
   logger.info({ projectId: existing.id }, 'project_deleted')
 
   return c.json({ success: true, data: { id: existing.id } })
+})
+
+projects.post('/:projectId/archive', async (c) => {
+  const existing = await findProject(c.req.param('projectId'))
+  if (!existing) {
+    return c.json({ success: false, error: 'Project not found' }, 404)
+  }
+  if (existing.isArchived === 1) {
+    return c.json({ success: true, data: serializeProject(existing) })
+  }
+  const [row] = await db
+    .update(projectsTable)
+    .set({ isArchived: 1 })
+    .where(eq(projectsTable.id, existing.id))
+    .returning()
+  await invalidateProjectCache(existing.id, existing.alias)
+  logger.info({ projectId: existing.id }, 'project_archived')
+  return c.json({ success: true, data: serializeProject(row!) })
+})
+
+projects.post('/:projectId/unarchive', async (c) => {
+  const existing = await findProject(c.req.param('projectId'))
+  if (!existing) {
+    return c.json({ success: false, error: 'Project not found' }, 404)
+  }
+  if (existing.isArchived === 0) {
+    return c.json({ success: true, data: serializeProject(existing) })
+  }
+  const [row] = await db
+    .update(projectsTable)
+    .set({ isArchived: 0 })
+    .where(eq(projectsTable.id, existing.id))
+    .returning()
+  await invalidateProjectCache(existing.id, existing.alias)
+  logger.info({ projectId: existing.id }, 'project_unarchived')
+  return c.json({ success: true, data: serializeProject(row!) })
 })
 
 export default projects

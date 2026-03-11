@@ -38,6 +38,7 @@ export const projects = sqliteTable('projects', {
   systemPrompt: text('system_prompt'),
   envVars: text('env_vars'), // JSON: Record<string, string>
   sortOrder: text('sort_order').notNull().default('a0'),
+  isArchived: integer('is_archived').notNull().default(0),
   ...commonFields,
 })
 

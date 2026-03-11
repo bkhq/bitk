@@ -1,4 +1,5 @@
 import {
+  Archive,
   Check,
   Copy,
   FileText,
@@ -40,6 +41,7 @@ import type { SettingsNavItem } from '@/components/ui/settings-layout'
 import { SettingsLayout } from '@/components/ui/settings-layout'
 import { Textarea } from '@/components/ui/textarea'
 import {
+  useArchiveProject,
   useDeleteProject,
   useDeleteWorktree,
   useProjectWorktrees,
@@ -255,6 +257,7 @@ export function ProjectSettingsDialog({
   const [error, setError] = useState('')
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const updateProject = useUpdateProject()
+  const archiveProject = useArchiveProject()
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -335,9 +338,27 @@ export function ProjectSettingsDialog({
           active !== 'worktrees' ?
               (
                 <div className="flex items-center justify-between border-t px-5 py-3">
-                  <Button variant="destructive" size="sm" onClick={() => setDeleteDialogOpen(true)}>
-                    {t('project.delete')}
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button variant="destructive" size="sm" onClick={() => setDeleteDialogOpen(true)}>
+                      {t('project.delete')}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        archiveProject.mutate(project.id, {
+                          onSuccess: () => {
+                            onOpenChange(false)
+                            void navigate('/')
+                          },
+                        })
+                      }}
+                      disabled={archiveProject.isPending}
+                    >
+                      <Archive className="size-4" />
+                      {archiveProject.isPending ? t('project.archiving') : t('project.archive')}
+                    </Button>
+                  </div>
                   <div className="flex gap-2">
                     <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
                       {t('common.cancel')}

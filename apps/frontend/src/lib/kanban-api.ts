@@ -75,7 +75,8 @@ export const kanbanApi = {
     post<{ path: string }>('/api/filesystem/dirs', { path, name }),
 
   // Projects
-  getProjects: () => get<Project[]>('/api/projects'),
+  getProjects: (opts?: { archived?: boolean }) =>
+    get<Project[]>(`/api/projects${opts?.archived ? '?archived=true' : ''}`),
   getProject: (id: string) => get<Project>(`/api/projects/${id}`),
   createProject: (data: {
     name: string
@@ -99,6 +100,8 @@ export const kanbanApi = {
     },
   ) => patch<Project>(`/api/projects/${id}`, data),
   deleteProject: (id: string) => del<{ id: string }>(`/api/projects/${id}`),
+  archiveProject: (id: string) => post<Project>(`/api/projects/${id}/archive`, {}),
+  unarchiveProject: (id: string) => post<Project>(`/api/projects/${id}/unarchive`, {}),
   sortProject: (id: string, sortOrder: string) =>
     patch<null>('/api/projects/sort', { id, sortOrder }),
 

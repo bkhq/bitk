@@ -10,7 +10,10 @@ import {
 } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
 import { generateKeyBetween } from 'jittered-fractional-indexing'
 import {
+  Archive,
+  ArchiveRestore,
   Check,
+  ChevronDown,
   Copy,
   Eye,
   FolderOpen,
@@ -33,7 +36,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
-import { useProjects, useSortProject } from '@/hooks/use-kanban'
+import { useArchivedProjects, useProjects, useSortProject, useUnarchiveProject } from '@/hooks/use-kanban'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { useProjectStats } from '@/hooks/use-project-stats'
 import { getProjectInitials } from '@/lib/format'
@@ -175,6 +178,120 @@ function SortableProjectCard({
       </div>
       <ProjectSettingsDialog open={showSettings} onOpenChange={setShowSettings} project={project} />
     </>
+  )
+}
+
+/* -- Archived projects section ------------------------- */
+
+function ArchivedProjectsSection({ projectPath }: { projectPath: (alias: string) => string }) {
+  const { t } = useTranslation()
+  const navigate = useNavigate()
+  const [expanded, setExpanded] = useState(false)
+  const { data: archived } = useArchivedProjects(expanded)
+  const unarchive = useUnarchiveProject()
+
+  if (!expanded) {
+    return (
+      <button
+        type="button"
+        onClick={() => setExpanded(true)}
+        className="mt-6 flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+      >
+        <Archive className="h-4 w-4" />
+        {t('project.archivedProjects')}
+        <ChevronDown className="h-3.5 w-3.5" />
+      </button>
+    )
+  }
+
+  if (!archived || archived.length === 0) {
+    return (
+      <div className="mt-6">
+        <button
+          type="button"
+          onClick={() => setExpanded(false)}
+          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <Archive className="h-4 w-4" />
+          {t('project.archivedProjects')}
+          <ChevronDown className="h-3.5 w-3.5 rotate-180 transition-transform" />
+        </button>
+        <p className="mt-3 text-sm text-muted-foreground">{t('project.noArchivedProjects')}</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="mt-6">
+      <button
+        type="button"
+        onClick={() => setExpanded(false)}
+        className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4"
+      >
+        <Archive className="h-4 w-4" />
+        {t('project.archivedProjects')}
+        <Badge variant="secondary" className="ml-0.5">{archived.length}</Badge>
+        <ChevronDown className="h-3.5 w-3.5 rotate-180 transition-transform" />
+      </button>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {archived.map((project, index) => (
+          <div
+            key={project.id}
+            className="animate-card-enter"
+            style={{ animationDelay: `${index * 60}ms` }}
+          >
+            <Card
+              className="h-full bg-card/40 hover:bg-card/60 cursor-pointer transition-all hover:shadow-md group opacity-70 hover:opacity-100"
+              onClick={() => navigate(projectPath(project.alias))}
+            >
+              <CardHeader>
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-xs font-bold bg-muted text-muted-foreground">
+                    {getProjectInitials(project.name)}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <CardTitle className="flex items-baseline gap-1.5 text-base group-hover:text-primary transition-colors">
+                      <span className="truncate">{project.name}</span>
+                      <span className="shrink-0 text-[10px] font-normal font-mono text-muted-foreground/60">
+                        {project.id}
+                      </span>
+                    </CardTitle>
+                    {project.description && (
+                      <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">
+                        {project.description}
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      unarchive.mutate(project.id)
+                    }}
+                    className="rounded-md p-1 text-muted-foreground hover:text-foreground hover:bg-foreground/[0.07] transition-colors"
+                    aria-label={t('project.unarchive')}
+                    title={t('project.unarchive')}
+                    disabled={unarchive.isPending}
+                  >
+                    <ArchiveRestore className="h-4 w-4" />
+                  </button>
+                </div>
+              </CardHeader>
+              <CardContent className="mt-auto">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  {project.directory && (
+                    <span className="flex min-w-0 items-center gap-1">
+                      <FolderOpen className="h-3 w-3 shrink-0" />
+                      <span className="truncate font-mono">{project.directory}</span>
+                    </span>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        ))}
+      </div>
+    </div>
   )
 }
 
@@ -483,6 +600,8 @@ export default function HomePage() {
                 ))}
               </div>
             )}
+
+        <ArchivedProjectsSection projectPath={projectPath} />
       </section>
 
       <CreateProjectDialog open={showCreate} onOpenChange={setShowCreate} />

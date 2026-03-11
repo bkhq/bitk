@@ -59,7 +59,12 @@
     "systemPromptHint": "此提示词将在项目中任何任务启动新会话时自动添加到用户提示词之前。",
     "envVars": "环境变量",
     "envVarsHint": "每行一个变量，格式为 KEY=VALUE。以 # 开头的行会被忽略。",
-    "envVarsPlaceholder": "API_KEY=your-key\nNODE_ENV=production\n# 注释会被忽略"
+    "envVarsPlaceholder": "API_KEY=your-key\nNODE_ENV=production\n# 注释会被忽略",
+    "archive": "归档",
+    "archiving": "归档中...",
+    "unarchive": "取消归档",
+    "archivedProjects": "已归档项目",
+    "noArchivedProjects": "暂无已归档项目。"
   },
   "kanban": {
     "newIssue": "新建任务",

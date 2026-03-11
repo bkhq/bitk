@@ -10,6 +10,7 @@ export const queryKeys = {
   engineProfiles: () => ['engines', 'profiles'] as const,
   engineSettings: () => ['engines', 'settings'] as const,
   projects: () => ['projects'] as const,
+  archivedProjects: () => ['projects', 'archived'] as const,
   project: (id: string) => ['projects', id] as const,
   issues: (projectId: string) => ['projects', projectId, 'issues'] as const,
   issue: (projectId: string, issueId: string) =>
@@ -47,6 +48,14 @@ export function useProjects() {
   return useQuery({
     queryKey: queryKeys.projects(),
     queryFn: () => kanbanApi.getProjects(),
+  })
+}
+
+export function useArchivedProjects(enabled = false) {
+  return useQuery({
+    queryKey: queryKeys.archivedProjects(),
+    queryFn: () => kanbanApi.getProjects({ archived: true }),
+    enabled,
   })
 }
 
@@ -115,6 +124,28 @@ export function useDeleteProject() {
     mutationFn: (id: string) => kanbanApi.deleteProject(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.projects() })
+    },
+  })
+}
+
+export function useArchiveProject() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => kanbanApi.archiveProject(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects() })
+      queryClient.invalidateQueries({ queryKey: queryKeys.archivedProjects() })
+    },
+  })
+}
+
+export function useUnarchiveProject() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => kanbanApi.unarchiveProject(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects() })
+      queryClient.invalidateQueries({ queryKey: queryKeys.archivedProjects() })
     },
   })
 }
