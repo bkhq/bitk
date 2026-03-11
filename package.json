@@ -42,7 +42,6 @@
     "typescript": "catalog:"
   },
   "dependencies": {
-    "cleye": "^2.3.0",
-    "jittered-fractional-indexing": "^1.0.1"
+    "cleye": "^2.3.0"
   }
 }

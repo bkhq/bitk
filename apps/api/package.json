@@ -24,6 +24,7 @@
     "consola": "^3.4.2",
     "drizzle-orm": "^0.45.1",
     "hono": "^4.12.1",
+    "jittered-fractional-indexing": "^1.0.1",
     "nanoid": "^5.1.6",
     "pino": "^10.3.1",
     "ulid": "^3.0.2",

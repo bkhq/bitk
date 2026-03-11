@@ -1,29 +1,24 @@
-import { move } from '@dnd-kit/helpers'
-import type { DragDropProvider } from '@dnd-kit/react'
 import { generateKeyBetween } from 'jittered-fractional-indexing'
 import { create } from 'zustand'
 import { STATUSES } from '@/lib/statuses'
 import type { Issue } from '@/types/kanban'
 
-type DragOverEvent = Parameters<
-  NonNullable<Parameters<typeof DragDropProvider>[0]['onDragOver']>
->[0]
-type DragEndEvent = Parameters<NonNullable<Parameters<typeof DragDropProvider>[0]['onDragEnd']>>[0]
-
 interface BoardState {
   groupedItems: Record<string, Issue[]>
-  preDragItems: Record<string, Issue[]> | null
   isDragging: boolean
 
   syncFromServer: (issues: Issue[]) => void
-  applyDragOver: (event: DragOverEvent) => void
-  applyDragEnd: (event: DragEndEvent) => Array<{ id: string, statusId: string, sortOrder: string }>
+  startDragging: () => void
+  commitDrag: (args: {
+    cardId: string
+    toColumnId: string
+    toIndex: number
+  }) => Array<{ id: string, statusId: string, sortOrder: string }>
   resetDragging: () => void
 }
 
 export const useBoardStore = create<BoardState>((set, get) => ({
   groupedItems: {},
-  preDragItems: null,
   isDragging: false,
 
   syncFromServer: (issues) => {
@@ -33,61 +28,92 @@ export const useBoardStore = create<BoardState>((set, get) => ({
       groups[status.id] = issues
         .filter(i => i.statusId === status.id)
         .sort((a, b) => {
-          // Primary: statusUpdatedAt DESC (most recently changed first)
-          const timeDiff =
-            new Date(b.statusUpdatedAt).getTime() - new Date(a.statusUpdatedAt).getTime()
-          if (timeDiff !== 0) return timeDiff
-          // Tiebreaker: sortOrder ASC (preserves drag reorder)
-          return a.sortOrder.localeCompare(b.sortOrder)
+          // Primary: sortOrder ASC — use plain comparison to match fractional-indexing's
+          // character-code ordering (0-9 A-Z a-z). localeCompare can break this.
+          const aKey = a.sortOrder || 'a0'
+          const bKey = b.sortOrder || 'a0'
+          if (aKey < bKey) return -1
+          if (aKey > bKey) return 1
+          // Tiebreaker: statusUpdatedAt DESC (most recently changed first)
+          return new Date(b.statusUpdatedAt).getTime() - new Date(a.statusUpdatedAt).getTime()
         })
     }
     set({ groupedItems: groups })
   },
 
-  applyDragOver: (event) => {
-    const state = get()
-    const preDragItems = state.preDragItems ?? state.groupedItems
-    const next = move(state.groupedItems, event)
-    set({ groupedItems: next, preDragItems, isDragging: true })
+  startDragging: () => {
+    set({ isDragging: true })
   },
 
-  applyDragEnd: (event) => {
+  commitDrag: ({ cardId, toColumnId, toIndex }) => {
     const current = get().groupedItems
-    const updated = move(current, event)
-    set({ groupedItems: updated })
 
-    // Find the dragged item via the event source
-    const op = event.operation as any
-    const draggedId: string | undefined =
-      op.dragOperation?.source?.data?.issue?.id
-      ?? op.source?.data?.issue?.id
+    // Find which column the card is currently in
+    let fromColumnId: string | null = null
+    let fromIndex = -1
+    for (const [colId, items] of Object.entries(current)) {
+      const idx = items.findIndex(i => i.id === cardId)
+      if (idx !== -1) {
+        fromColumnId = colId
+        fromIndex = idx
+        break
+      }
+    }
+    if (fromColumnId === null) return []
 
-    if (!draggedId) return []
+    // No-op: same column, same position
+    if (fromColumnId === toColumnId && fromIndex === toIndex) return []
+    // No-op: same column, dropping right below current position
+    if (fromColumnId === toColumnId && fromIndex + 1 === toIndex) return []
 
-    // Find the dragged item's new position across all columns
-    for (const [statusId, items] of Object.entries(updated)) {
-      const idx = items.findIndex(i => i.id === draggedId)
-      if (idx === -1) continue
+    // Build the target column's item list with the card inserted
+    const sourceItems = [...(current[fromColumnId] ?? [])]
+    const [moved] = sourceItems.splice(fromIndex, 1)
+    if (!moved) return []
 
-      const item = items[idx]!
+    const destItems = fromColumnId === toColumnId
+      ? sourceItems
+      : [...(current[toColumnId] ?? [])]
 
-      // Skip if item didn't actually move (compare against pre-drag snapshot)
-      const preDrag = get().preDragItems ?? current
-      const oldItems = preDrag[item.statusId] ?? []
-      const oldIdx = oldItems.findIndex(i => i.id === draggedId)
-      if (item.statusId === statusId && oldIdx === idx) return []
+    // Adjust index when moving within same column downward
+    const adjustedIndex = fromColumnId === toColumnId && fromIndex < toIndex
+      ? toIndex - 1
+      : toIndex
+    const clampedIndex = Math.min(adjustedIndex, destItems.length)
+    destItems.splice(clampedIndex, 0, moved)
 
-      const prev = idx > 0 ? items[idx - 1]!.sortOrder : null
-      const next = idx < items.length - 1 ? items[idx + 1]!.sortOrder : null
-      const newKey = generateKeyBetween(prev, next)
+    // Update grouped items optimistically
+    const next = { ...current, [fromColumnId]: sourceItems }
+    if (fromColumnId !== toColumnId) {
+      next[toColumnId] = destItems
+    } else {
+      next[fromColumnId] = destItems
+    }
+    set({ groupedItems: next })
 
-      return [{ id: draggedId, statusId, sortOrder: newKey }]
+    // Compute fractional sort order from neighbors
+    const prevKey = clampedIndex > 0 ? (destItems[clampedIndex - 1]!.sortOrder || null) : null
+    const afterKey = clampedIndex < destItems.length - 1 ? (destItems[clampedIndex + 1]!.sortOrder || null) : null
+
+    // Happy path: neighbors have distinct, properly ordered sortOrders
+    if (prevKey === null || afterKey === null || prevKey < afterKey) {
+      const newKey = generateKeyBetween(prevKey, afterKey)
+      return [{ id: cardId, statusId: toColumnId, sortOrder: newKey }]
     }
 
-    return []
+    // Collision: adjacent sortOrders are equal or out of order (e.g. all 'a0').
+    // Reassign sequential sortOrders to the entire column to establish order.
+    const updates: Array<{ id: string, statusId: string, sortOrder: string }> = []
+    let cursor: string | null = null
+    for (const item of destItems) {
+      const key = generateKeyBetween(cursor, null)
+      cursor = key
+      updates.push({ id: item.id, statusId: toColumnId, sortOrder: key })
+    }
+    return updates
   },
 
   resetDragging: () => {
-    set({ isDragging: false, preDragItems: null })
+    set({ isDragging: false })
   },
 }))
