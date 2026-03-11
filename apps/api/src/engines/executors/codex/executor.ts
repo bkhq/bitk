@@ -23,6 +23,26 @@ import { CodexProtocolHandler } from './protocol'
 const NPX_FALLBACK = ['npx', '-y', '@openai/codex']
 
 /**
+ * Find the `codex` binary in well-known locations WITHOUT falling back to npx.
+ * Used by getAvailability() to determine if the engine is truly installed.
+ * Returns null if no binary is found.
+ */
+function resolveBinaryOnly(): string | null {
+  // 1. Check /work/bin first (container / custom deploy)
+  if (existsSync('/work/bin/codex')) return '/work/bin/codex'
+  // 2. Check PATH
+  const fromPath = resolveCommand('codex')
+  if (fromPath) return fromPath
+  // 3. Check common install locations
+  const home = process.env.HOME ?? ''
+  const candidates = [
+    ...(home ? [join(home, '.local/bin/codex'), join(home, '.bun/bin/codex')] : []),
+    '/usr/local/bin/codex',
+  ]
+  return candidates.find(p => existsSync(p)) ?? null
+}
+
+/**
  * Find the `codex` binary, checking PATH and common install locations.
  * Falls back to npx for environments without a standalone binary.
  * Result is cached after first call.
@@ -30,29 +50,12 @@ const NPX_FALLBACK = ['npx', '-y', '@openai/codex']
 let _cachedBaseCmd: string[] | undefined
 function resolveBaseCmd(): string[] {
   if (_cachedBaseCmd) return _cachedBaseCmd
-  // 1. Check /work/bin first (container / custom deploy)
-  if (existsSync('/work/bin/codex')) {
-    _cachedBaseCmd = ['/work/bin/codex']
+  const binary = resolveBinaryOnly()
+  if (binary) {
+    _cachedBaseCmd = [binary]
     return _cachedBaseCmd
   }
-  // 2. Check PATH
-  const fromPath = resolveCommand('codex')
-  if (fromPath) {
-    _cachedBaseCmd = [fromPath]
-    return _cachedBaseCmd
-  }
-  // 3. Check common install locations
-  const home = process.env.HOME ?? ''
-  const candidates = [
-    ...(home ? [join(home, '.local/bin/codex'), join(home, '.bun/bin/codex')] : []),
-    '/usr/local/bin/codex',
-  ]
-  const found = candidates.find(p => existsSync(p))
-  if (found) {
-    _cachedBaseCmd = [found]
-    return _cachedBaseCmd
-  }
-  // 4. Fall back to npx
+  // Fall back to npx (for execution only, not availability detection)
   _cachedBaseCmd = NPX_FALLBACK
   return _cachedBaseCmd
 }
@@ -486,7 +489,13 @@ export class CodexExecutor implements EngineExecutor {
 
   async getAvailability(): Promise<EngineAvailability> {
     try {
-      const { code: exitCode, stdout } = await runCommand([...resolveBaseCmd(), '--version'], {
+      // Only check real binary paths — do not fall back to npx
+      const binaryPath = resolveBinaryOnly()
+      if (!binaryPath) {
+        return { engineType: 'codex', installed: false, authStatus: 'unknown' }
+      }
+
+      const { code: exitCode, stdout } = await runCommand([binaryPath, '--version'], {
         timeout: 10000,
         stderr: 'pipe',
       })
@@ -498,24 +507,14 @@ export class CodexExecutor implements EngineExecutor {
       const versionMatch = stdout.match(/(\d+\.\d+\.\d[\w.-]*)/)
       const version = versionMatch?.[1]
 
-      let authStatus: EngineAvailability['authStatus'] = 'unknown'
-      if (process.env.OPENAI_API_KEY || process.env.CODEX_API_KEY) {
-        authStatus = 'authenticated'
-      } else {
-        const home = process.env.HOME ?? '/root'
-        if (existsSync(`${home}/.codex/config.toml`)) {
-          authStatus = 'authenticated'
-        } else {
-          authStatus = 'unauthenticated'
-        }
-      }
+      // Verify auth via app-server account/read RPC
+      const authStatus = await this.verifyAuth(binaryPath)
 
-      const cmd = resolveBaseCmd()
       return {
         engineType: 'codex',
         installed: true,
         version,
-        binaryPath: cmd.join(' '),
+        binaryPath,
         authStatus,
       }
     } catch (error) {
@@ -525,6 +524,64 @@ export class CodexExecutor implements EngineExecutor {
         authStatus: 'unknown',
         error: error instanceof Error ? error.message : 'Unknown error',
       }
+    }
+  }
+
+  /**
+   * Verify authentication by starting a short-lived app-server and calling
+   * account/read. This checks if the API key / OAuth session is valid.
+   */
+  private async verifyAuth(binaryPath: string): Promise<EngineAvailability['authStatus']> {
+    const proc = spawnNode([binaryPath, 'app-server'], {
+      stdin: 'pipe',
+      stdout: 'pipe',
+      stderr: 'pipe',
+      env: safeEnv({ NPM_CONFIG_LOGLEVEL: 'error' }),
+      detached: false,
+    })
+
+    const killTimer = setTimeout(() => proc.kill(), JSONRPC_TIMEOUT + 5000)
+    const session = new JsonRpcSession(proc)
+
+    try {
+      await session.call(
+        'initialize',
+        {
+          clientInfo: { name: 'bkd', title: 'BKD', version: '0.1.0' },
+          capabilities: { experimental_api: true },
+        },
+        0,
+      )
+      session.notify('initialized', {})
+
+      const account = (await session.call('account/read', {}, 1)) as Record<string, unknown>
+
+      // Handle both camelCase and snake_case response shapes
+      const requiresAuth = account.requiresOpenaiAuth ?? account.requires_openai_auth
+      if (requiresAuth && !account.account) {
+        return 'unauthenticated'
+      }
+      return 'authenticated'
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      logger.debug({ error: msg }, 'codex_auth_verify_failed')
+      // Only fall back to env/config heuristics if the method is unsupported
+      // (i.e. older Codex version). For other errors (auth failure, timeout)
+      // report unknown rather than masking the real status.
+      if (/method not found|not supported|unknown method/i.test(msg)) {
+        if (process.env.OPENAI_API_KEY || process.env.CODEX_API_KEY) {
+          return 'authenticated'
+        }
+        const home = process.env.HOME ?? '/root'
+        if (existsSync(`${home}/.codex/config.toml`)) {
+          return 'authenticated'
+        }
+      }
+      return 'unknown'
+    } finally {
+      session.destroy()
+      clearTimeout(killTimer)
+      proc.kill()
     }
   }
 
