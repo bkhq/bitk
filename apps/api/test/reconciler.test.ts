@@ -109,6 +109,20 @@ describe('reconcileStaleWorkingIssues', () => {
   })
 
   test('marks non-terminal sessionStatus as failed when moving to review', async () => {
+    // Use 'running' — reconciler should treat this as stale (no active process)
+    const issue = await createDirectIssue({
+      statusId: 'working',
+      sessionStatus: 'running',
+    })
+
+    await reconcileStaleWorkingIssues()
+
+    const updated = await getIssue(issue.id)
+    expect(updated!.statusId).toBe('review')
+    expect(updated!.sessionStatus).toBe('failed')
+  })
+
+  test('skips issues with pending sessionStatus (spawn in progress)', async () => {
     const issue = await createDirectIssue({
       statusId: 'working',
       sessionStatus: 'pending',
@@ -117,8 +131,9 @@ describe('reconcileStaleWorkingIssues', () => {
     await reconcileStaleWorkingIssues()
 
     const updated = await getIssue(issue.id)
-    expect(updated!.statusId).toBe('review')
-    expect(updated!.sessionStatus).toBe('failed')
+    // Should remain working — pending means spawn is in progress
+    expect(updated!.statusId).toBe('working')
+    expect(updated!.sessionStatus).toBe('pending')
   })
 
   test('does not touch non-working issues', async () => {
@@ -154,13 +169,19 @@ describe('reconcileStaleWorkingIssues', () => {
     })
     const issue2 = await createDirectIssue({
       statusId: 'working',
-      sessionStatus: 'pending',
+      sessionStatus: 'completed',
       title: 'Multi Stale 2',
     })
     const issue3 = await createDirectIssue({
       statusId: 'working',
-      sessionStatus: 'completed',
+      sessionStatus: 'failed',
       title: 'Multi Stale 3',
+    })
+    // pending should NOT be reconciled (spawn in progress)
+    const pendingIssue = await createDirectIssue({
+      statusId: 'working',
+      sessionStatus: 'pending',
+      title: 'Multi Stale Pending',
     })
 
     const count = await reconcileStaleWorkingIssues()
@@ -170,6 +191,10 @@ describe('reconcileStaleWorkingIssues', () => {
       const updated = await getIssue(id)
       expect(updated!.statusId).toBe('review')
     }
+
+    // Pending issue should remain untouched
+    const pending = await getIssue(pendingIssue.id)
+    expect(pending!.statusId).toBe('working')
   })
 
   test('ignores soft-deleted working issues', async () => {

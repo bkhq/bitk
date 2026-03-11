@@ -47,6 +47,12 @@ export async function reconcileStaleWorkingIssues(): Promise<number> {
   for (const issue of staleIssues) {
     if (hasActiveProcess(issue.id)) continue
 
+    // Skip issues that are still being spawned. The 'pending' status means
+    // executeIssue has been triggered but the process hasn't registered in
+    // ProcessManager yet (worktree creation can take 3-7 seconds). Moving
+    // these to review would race with the spawn pipeline.
+    if (issue.sessionStatus === 'pending') continue
+
     const isTerminal =
       issue.sessionStatus === 'completed' ||
       issue.sessionStatus === 'failed' ||

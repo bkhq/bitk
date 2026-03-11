@@ -94,4 +94,10 @@ export interface ManagedProcess {
    * to prevent the race where status moves to "review" while logs are still streaming.
    */
   stdoutDone?: Promise<void>
+  /**
+   * Timer handle for the delayed autoMoveToReview after a turn completes.
+   * Cleared when a new turn starts (START_TURN) so that follow-ups sent
+   * within the grace period prevent the premature review transition.
+   */
+  settleTimer?: ReturnType<typeof setTimeout>
 }

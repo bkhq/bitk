@@ -9,6 +9,11 @@ import type { ProcessStatus } from '@/engines/types'
 import { emitIssueLogRemoved } from '@/events/issue-events'
 import { logger } from '@/logger'
 
+// Grace period before moving a conversational issue to 'review' after a turn
+// completes. If the user sends a follow-up within this window, the
+// START_TURN dispatch clears the settle timer and the issue stays in 'working'.
+const SETTLE_GRACE_MS = 3_000
+
 // ---------- Turn completion ----------
 
 export function handleTurnCompleted(
@@ -36,8 +41,7 @@ export function handleTurnCompleted(
 
   // No queued inputs — the AI turn is done and the process is idle.
   // For conversational engines the subprocess stays alive, so monitorCompletion
-  // (which awaits subprocess.exited) will not fire yet. Settle the issue now:
-  // update DB session status and auto-move to review.
+  // (which awaits subprocess.exited) will not fire yet.
   //
   // IMPORTANT: Do NOT change managed.state here. The subprocess is still alive
   // and can receive follow-up input. Keeping state as 'running' ensures
@@ -50,6 +54,10 @@ export function handleTurnCompleted(
   const finalStatus = managed.logicalFailure ? 'failed' : 'completed'
   emitStateChange(issueId, executionId, finalStatus as ProcessStatus)
 
+  // Phase 1: Immediately update sessionStatus + handle session errors + pending
+  // DB messages. The statusId change (working → review) and the frontend
+  // settlement event are deferred to Phase 2 so that follow-ups sent within
+  // SETTLE_GRACE_MS keep the issue in 'working'.
   void (async () => {
     try {
       // Detect session ID error: the CLI couldn't find the session
@@ -110,28 +118,28 @@ export function handleTurnCompleted(
         }
       }
 
-      // Guard: if a follow-up reactivated the issue while this async block
-      // was running, the DB sessionStatus will no longer match finalStatus.
-      // Emitting a stale settled event would cause the frontend to block
-      // live log events for the new active execution.
-      const freshIssue = await getIssueWithSession(issueId)
-      if (freshIssue && freshIssue.sessionFields.sessionStatus !== finalStatus) {
-        logger.debug(
-          {
-            issueId,
-            executionId,
-            finalStatus,
-            currentStatus: freshIssue.sessionFields.sessionStatus,
-          },
-          'issue_turn_settle_skipped_reactivated',
-        )
-        return
+      // Phase 2: Move to review.
+      // If the process already exited (non-conversational engines like echo
+      // or claude-code one-shot), settle immediately — the grace period is
+      // only useful while the process is still alive and can accept follow-ups.
+      if (managed.exitCode !== undefined) {
+        await settleAfterGrace(ctx, issueId, executionId, managed, finalStatus)
+      } else {
+        // Process still alive — schedule delayed settle. If the user sends a
+        // follow-up within SETTLE_GRACE_MS, the START_TURN dispatch clears
+        // this timer and the issue stays in 'working'.
+        if (managed.settleTimer) clearTimeout(managed.settleTimer)
+        managed.settleTimer = setTimeout(() => {
+          managed.settleTimer = undefined
+          void settleAfterGrace(ctx, issueId, executionId, managed, finalStatus)
+        }, SETTLE_GRACE_MS)
       }
-
-      await autoMoveToReview(issueId)
-      emitIssueSettled(issueId, executionId, finalStatus)
-      logger.info({ issueId, executionId, finalStatus }, 'issue_turn_settled')
     } catch (error) {
+      // Cancel any pending delayed settle — the fallback below will handle it.
+      if (managed.settleTimer) {
+        clearTimeout(managed.settleTimer)
+        managed.settleTimer = undefined
+      }
       logger.error({ issueId, executionId, error }, 'issue_turn_settle_failed')
       // Safety net: ensure frontend is always notified even if settlement
       // partially failed. Without this, the frontend never receives the
@@ -173,6 +181,69 @@ export function handleTurnCompleted(
       emitIssueSettled(issueId, executionId, finalStatus)
     }
   })()
+}
+
+/**
+ * Phase 2 of turn settlement: runs after SETTLE_GRACE_MS.
+ * Moves the issue to 'review' and emits the settled event, unless a new
+ * turn started during the grace period (turnSettled would be false).
+ */
+async function settleAfterGrace(
+  ctx: EngineContext,
+  issueId: string,
+  executionId: string,
+  managed: ManagedProcess,
+  finalStatus: string,
+): Promise<void> {
+  try {
+    // Guard: if a new turn started during the grace period, skip
+    if (!managed.turnSettled) {
+      logger.debug({ issueId, executionId }, 'issue_turn_settle_cancelled_new_turn')
+      return
+    }
+
+    // Guard: if a follow-up reactivated the issue while we waited, the DB
+    // sessionStatus will no longer match finalStatus.
+    const freshIssue = await getIssueWithSession(issueId)
+    if (freshIssue && freshIssue.sessionFields.sessionStatus !== finalStatus) {
+      logger.debug(
+        {
+          issueId,
+          executionId,
+          finalStatus,
+          currentStatus: freshIssue.sessionFields.sessionStatus,
+        },
+        'issue_turn_settle_skipped_reactivated',
+      )
+      return
+    }
+
+    await autoMoveToReview(issueId)
+    emitIssueSettled(issueId, executionId, finalStatus)
+    logger.info({ issueId, executionId, finalStatus }, 'issue_turn_settled')
+  } catch (err) {
+    logger.error({ issueId, executionId, err }, 'issue_turn_delayed_settle_failed')
+    // Safety net: always notify frontend even on error
+    if (managed.turnSettled) {
+      emitIssueSettled(issueId, executionId, finalStatus)
+    }
+  }
+}
+
+/**
+ * Flush a pending settle timer immediately (e.g. when the process exits).
+ * This avoids waiting the full SETTLE_GRACE_MS for engines where the process
+ * exits after each turn — the grace period is only useful while the process
+ * is still alive and can receive follow-up input.
+ */
+export function flushSettleTimer(
+  ctx: EngineContext,
+  managed: ManagedProcess,
+): void {
+  if (!managed.settleTimer) return
+  clearTimeout(managed.settleTimer)
+  managed.settleTimer = undefined
+  void settleAfterGrace(ctx, managed.issueId, managed.executionId, managed, managed.logicalFailure ? 'failed' : 'completed')
 }
 
 export async function flushQueuedInputs(

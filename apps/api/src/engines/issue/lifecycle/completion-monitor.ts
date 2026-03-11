@@ -12,6 +12,7 @@ import type { EngineType, ProcessStatus } from '@/engines/types'
 import { logger } from '@/logger'
 import { settleIssue } from './settle'
 import { spawnFollowUpProcess, spawnRetry } from './spawn'
+import { flushSettleTimer } from './turn-completion'
 
 // ---------- Helpers ----------
 
@@ -94,7 +95,11 @@ export function monitorCompletion(
 
       // If the issue was already settled by handleTurnCompleted (conversational
       // engines where the process stays alive between turns), just clean up.
+      // If a delayed settle timer is still pending, flush it now — the process
+      // has exited so there's no reason to wait for the grace period.
       if (managed.turnSettled) {
+        flushSettleTimer(ctx, managed)
+
         const finalState = (managed.logicalFailure ? 'failed' : 'completed') as ProcessStatus
         if (finalState === 'completed') dispatch(managed, { type: 'MARK_COMPLETED' })
         else dispatch(managed, { type: 'MARK_FAILED' })

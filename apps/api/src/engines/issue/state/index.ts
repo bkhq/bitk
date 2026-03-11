@@ -19,6 +19,12 @@ export function dispatch(managed: ManagedProcess, action: ManagedAction): void {
       managed.stallDetectedAt = undefined
       managed.stallProbeAt = undefined
       managed.metaTurn = action.metaTurn
+      // Cancel any pending settle timer — a new turn started before the
+      // grace period expired, so the issue should stay in 'working'.
+      if (managed.settleTimer) {
+        clearTimeout(managed.settleTimer)
+        managed.settleTimer = undefined
+      }
       break
     case 'TURN_COMPLETED':
       managed.turnInFlight = false
