@@ -102,12 +102,19 @@ async function computeAndEmit(issueId: string): Promise<void> {
         deletions += stats.deletions
       }
 
-      // Untracked files — count lines manually (git diff HEAD ignores them)
+      // Untracked files — count lines manually (git diff HEAD ignores them).
+      // `-uall` ensures individual files are listed, but guard against
+      // directory entries and binary/unreadable files defensively.
       for (const { path, isUntracked } of statusLines) {
         if (!isUntracked) continue
         if (!isPathInsideRoot(root, path)) continue
         try {
-          const content = await Bun.file(resolve(root, path)).text()
+          const fullPath = resolve(root, path)
+          const s = await stat(fullPath)
+          if (!s.isFile()) continue
+          // Skip large files (>1 MB) — likely binary or generated
+          if (s.size > 1_048_576) continue
+          const content = await Bun.file(fullPath).text()
           additions += countTextLines(content)
         } catch {
           // skip unreadable files
