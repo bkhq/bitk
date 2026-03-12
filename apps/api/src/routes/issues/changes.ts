@@ -1,9 +1,9 @@
 import { stat } from 'node:fs/promises'
-import { resolve, sep } from 'node:path'
+import { resolve } from 'node:path'
 import { runCommand } from '@/engines/spawn'
 import { Hono } from 'hono'
 import { findProject } from '@/db/helpers'
-import { resolveWorktreePath } from '@/engines/issue/utils/worktree'
+import { countTextLines, isPathInsideRoot, resolveIssueDir } from '@/utils/changes'
 import { isGitRepo } from '@/utils/git'
 import { getProjectOwnedIssue } from './_shared'
 
@@ -24,47 +24,17 @@ interface GitChangedFile {
 
 // ---------- Git helpers ----------
 
-function isPathInsideRoot(root: string, path: string): boolean {
-  const abs = resolve(root, path)
-  const rootPrefix = root.endsWith(sep) ? root : `${root}${sep}`
-  return abs === root || abs.startsWith(rootPrefix)
-}
-
-function countTextLines(content: string): number {
-  if (!content) return 0
-  const normalized = content.replace(/\r\n/g, '\n')
-  const trimmed = normalized.endsWith('\n') ? normalized.slice(0, -1) : normalized
-  return trimmed ? trimmed.split('\n').length : 0
-}
-
 async function resolveProjectDir(projectId: string): Promise<string | null> {
   const project = await findProject(projectId)
   if (!project?.directory) return null
   const root = resolve(project.directory)
-  const s = await stat(root)
-  if (!s.isDirectory()) throw new Error(`Project directory is not a directory: ${root}`)
-  return root
-}
-
-/**
- * If the issue has a worktree and its directory exists, use it.
- * Otherwise fall back to the project root.
- */
-async function resolveChangesDir(
-  projectId: string,
-  issueId: string,
-  useWorktree: boolean,
-  projectRoot: string,
-): Promise<string> {
-  if (!useWorktree) return projectRoot
-  const wtPath = resolveWorktreePath(projectId, issueId)
   try {
-    const s = await stat(wtPath)
-    if (s.isDirectory()) return wtPath
+    const s = await stat(root)
+    if (!s.isDirectory()) return null
   } catch {
-    // worktree dir doesn't exist — fall back
+    return null
   }
-  return projectRoot
+  return root
 }
 
 async function runGit(
@@ -123,26 +93,30 @@ async function summarizeFileLines(
     }
   }
 
+  // Single diff against HEAD: covers both staged and unstaged changes,
+  // avoids double-counting partially staged hunks, handles renames with -M
   try {
     const { code, stdout } = await runGit(
-      ['diff', '--numstat', '--no-color', '--no-ext-diff', '--', file.path],
+      ['diff', 'HEAD', '-M', '--numstat', '--no-color', '--no-ext-diff', '--', file.path],
       cwd,
     )
-    if (code !== 0) return { additions: 0, deletions: 0 }
-
-    const firstLine = stdout
-      .split('\n')
-      .map(line => line.trim())
-      .find(Boolean)
-    if (!firstLine) return { additions: 0, deletions: 0 }
-
-    const [addRaw, delRaw] = firstLine.split('\t')
-    const additions = Number.isNaN(Number(addRaw)) ? 0 : Number(addRaw)
-    const deletions = Number.isNaN(Number(delRaw)) ? 0 : Number(delRaw)
-    return { additions, deletions }
+    if (code === 0) {
+      const firstLine = stdout
+        .split('\n')
+        .map(line => line.trim())
+        .find(Boolean)
+      if (firstLine) {
+        const [addRaw, delRaw] = firstLine.split('\t')
+        const additions = Number.isNaN(Number(addRaw)) ? 0 : Number(addRaw)
+        const deletions = Number.isNaN(Number(delRaw)) ? 0 : Number(delRaw)
+        return { additions, deletions }
+      }
+    }
   } catch {
-    return { additions: 0, deletions: 0 }
+    // fall through
   }
+
+  return { additions: 0, deletions: 0 }
 }
 
 // ---------- Routes ----------
@@ -163,7 +137,7 @@ changes.get('/:id/changes', async (c) => {
   if (!projectRoot) {
     return c.json({ success: false, error: 'Project directory is not configured' }, 400)
   }
-  const root = await resolveChangesDir(project.id, issueId, issue.useWorktree, projectRoot)
+  const root = await resolveIssueDir(project.id, issueId, issue.useWorktree, projectRoot)
   const gitRepo = await isGitRepo(root)
   if (!gitRepo) {
     return c.json({
@@ -213,7 +187,7 @@ changes.get('/:id/changes/file', async (c) => {
   if (!projectRoot) {
     return c.json({ success: false, error: 'Project directory is not configured' }, 400)
   }
-  const root = await resolveChangesDir(project.id, issueId, issue.useWorktree, projectRoot)
+  const root = await resolveIssueDir(project.id, issueId, issue.useWorktree, projectRoot)
 
   // SEC-019: Validate path is inside working directory on ALL code paths
   if (!isPathInsideRoot(root, path)) {
@@ -255,8 +229,13 @@ changes.get('/:id/changes/file', async (c) => {
     oldText = ''
     newText = content
   } else {
-    const { stdout } = await runGit(['diff', '--no-color', '--no-ext-diff', '--', path], root)
-    patch = stdout
+    // Try unstaged diff first; fall back to staged diff if empty (fully staged files)
+    const unstaged = await runGit(['diff', '--no-color', '--no-ext-diff', '--', path], root)
+    patch = unstaged.stdout
+    if (!patch.trim()) {
+      const staged = await runGit(['diff', '--cached', '--no-color', '--no-ext-diff', '--', path], root)
+      patch = staged.stdout
+    }
 
     const oldPath = file.previousPath ?? path
     // SEC-019: Validate previousPath too
