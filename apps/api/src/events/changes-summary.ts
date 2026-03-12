@@ -112,8 +112,6 @@ async function computeAndEmit(issueId: string): Promise<void> {
           const fullPath = resolve(root, path)
           const s = await stat(fullPath)
           if (!s.isFile()) continue
-          // Skip large files (>1 MB) — likely binary or generated
-          if (s.size > 1_048_576) continue
           const content = await Bun.file(fullPath).text()
           additions += countTextLines(content)
         } catch {
