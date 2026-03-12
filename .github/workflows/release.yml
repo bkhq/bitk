@@ -2,11 +2,11 @@ name: Release
 
 on:
   push:
-    tags: ['v*']
+    tags: ["v*"]
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Release tag (e.g. v1.0.0). Leave empty for dry-run (artifacts only).'
+        description: "Release tag (e.g. v1.0.0). Leave empty for dry-run (artifacts only)."
         required: false
 
 permissions:
@@ -55,7 +55,7 @@ jobs:
           bun scripts/package.ts --version "${VERSION_NUM}"
           ls -lh dist/bkd-app-v${VERSION_NUM}.tar.gz && cat dist/checksums.txt
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: bkd-app-package
           path: |
@@ -72,7 +72,7 @@ jobs:
       contents: write
     if: startsWith(github.ref, 'refs/tags/v') || github.event.inputs.tag != ''
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           path: artifacts/
 

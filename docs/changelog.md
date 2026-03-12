@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-03-12 12:20 [progress]
+
+PIPE-002: Update release workflow for GitHub Actions Node 24 migration
+
+- Upgraded `actions/upload-artifact` from `v4` to `v7`
+- Upgraded `actions/download-artifact` from `v4` to `v8`
+- Kept `softprops/action-gh-release@v2` in place without enabling the temporary Node 24 force flag
+- Scope limited to release workflow compatibility; no release behavior changes requested
 ## 2026-03-09 06:00 [progress]
 
 SPAWN-001: Replace all remaining Bun.spawn with node:child_process

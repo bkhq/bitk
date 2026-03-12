@@ -84,6 +84,7 @@
 ## Pipe Reliability
 
 - [x] **PIPE-001 Claude executor 替换 Bun.spawn 为 node:child_process** `P0` - owner: claude - file: `docs/task/PIPE-001.md`
+- [x] **PIPE-002 Release workflow 升级到 Node 24 兼容 actions** `P1` - owner: local - file: `docs/task/PIPE-002.md`
 
 ## Spawn Migration
 
