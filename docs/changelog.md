@@ -262,6 +262,12 @@ CHAT-001 Phase 1 完成：聊天界面 UI 优化后端基础设施
 - fix: ChatInput 刷新按钮不触发日志重新拉取，补充 `_refreshCounter` 到 effect 依赖数组（BUG-002）
 - fix: 升级系统移除自动下载，改为仅检查并提示新版本（BUG-003）
 
+## 2026-03-12 06:45 [BUG-P0]
+
+- 修复 `apps/api/drizzle/meta/_journal.json` 中 `0011_sleepy_captain_marvel` 的 `when` 倒序问题
+- 原值早于 `0010_smart_bullseye`，会被 Drizzle 迁移器按 `created_at` 过滤逻辑永久跳过
+- 修复后自动迁移可继续在升级时补上 `projects.is_archived` 列
+
 ## 2026-03-08 10:30 [progress]
 
 **CRASH-002**: 修复永久卡死根本原因 + Issue 级别诊断日志
