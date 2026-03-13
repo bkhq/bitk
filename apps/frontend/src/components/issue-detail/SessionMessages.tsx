@@ -140,7 +140,7 @@ export function SessionMessages(props: {
   isRunning?: boolean
   workingStep?: string | null
   onCancel?: () => void
-  onEditPending?: () => void
+  onEditPending?: (messageId: string) => void
   isCancelling?: boolean
   hasOlderLogs?: boolean
   isLoadingOlder?: boolean
@@ -172,7 +172,7 @@ function LegacySessionMessages({
   isRunning?: boolean
   workingStep?: string | null
   onCancel?: () => void
-  onEditPending?: () => void
+  onEditPending?: (messageId: string) => void
   isCancelling?: boolean
   hasOlderLogs?: boolean
   isLoadingOlder?: boolean
@@ -214,14 +214,19 @@ function LegacySessionMessages({
 
   const prevLenRef = useRef(messages.length)
   const prevFirstIdRef = useRef(messages[0]?.id)
+  const firstMessageId = messages[0]?.id
+  // Track last message content length so streaming updates trigger auto-scroll
+  const lastMsg = messages.at(-1)
+  const lastContentLen = lastMsg?.type === 'assistant'
+    ? (lastMsg.entry.content?.length ?? 0)
+    : 0
 
   useEffect(() => {
     if (!initialScrollDone.current) return
-    const firstId = messages[0]?.id
     const wasOlderPrepend =
       messages.length > prevLenRef.current &&
       prevFirstIdRef.current &&
-      firstId !== prevFirstIdRef.current
+      firstMessageId !== prevFirstIdRef.current
 
     if (
       !wasOlderPrepend &&
@@ -235,8 +240,8 @@ function LegacySessionMessages({
       })
     }
     prevLenRef.current = messages.length
-    prevFirstIdRef.current = firstId
-  }, [messages, isRunning, scrollRef])
+    prevFirstIdRef.current = firstMessageId
+  }, [firstMessageId, isRunning, lastContentLen, messages.length, scrollRef])
 
   if (messages.length === 0 && pendingMessages.length === 0 && !isRunning) return null
 
@@ -298,11 +303,11 @@ function LegacySessionMessages({
               {pendingMessages.map(msg => (
                 <div key={msg.id} className="group relative">
                   <ChatMessageRow message={msg} />
-                  {onEditPending ?
+                  {onEditPending && (msg.status === 'pending' || msg.status === 'done') ?
                       (
                         <button
                           type="button"
-                          onClick={onEditPending}
+                          onClick={() => onEditPending(msg.entry.messageId ?? msg.id)}
                           className="absolute right-2 top-2 hidden rounded-md border border-border/40 bg-background/90 px-2 py-0.5 text-[11px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground group-hover:inline-flex"
                         >
                           {t('common.edit')}

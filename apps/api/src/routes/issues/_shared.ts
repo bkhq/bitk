@@ -7,7 +7,6 @@ import { STATUS_IDS } from '@/config'
 import { db } from '@/db'
 import { getAppSetting } from '@/db/helpers'
 import {
-  collectPendingWithAttachments,
   relocatePendingForProcessing,
   restorePendingVisibility,
 } from '@/db/pending-messages'
@@ -77,8 +76,6 @@ export const followUpSchema = z.object({
 })
 
 export type IssueRow = typeof issuesTable.$inferSelect
-
-export { getPendingMessages, markPendingMessagesDispatched } from '@/db/pending-messages'
 
 export function serializeIssue(row: IssueRow, childCount?: number) {
   return {
@@ -202,23 +199,6 @@ export function flushPendingAsFollowUp(issueId: string, issue: { model: string |
 
 export function normalizePrompt(input: string): string {
   return input.replace(/^(?:\\n|\s)+/g, '').replace(/(?:\\n|\s)+$/g, '')
-}
-
-/**
- * Collect any queued pending messages, merge them into the prompt.
- * Includes attachment file context so the AI engine sees uploaded files.
- * Returns the effective prompt and pending IDs for deferred deletion.
- * Callers MUST delete pending messages only AFTER the engine call succeeds
- * to prevent message loss on failure.
- */
-export async function collectPendingMessages(
-  issueId: string,
-  basePrompt: string,
-): Promise<{ prompt: string, pendingIds: string[] }> {
-  const { prompt: pendingPrompt, pendingIds } = await collectPendingWithAttachments(issueId)
-  if (pendingIds.length === 0) return { prompt: basePrompt, pendingIds: [] }
-  const prompt = [basePrompt, pendingPrompt].filter(Boolean).join('\n\n')
-  return { prompt, pendingIds }
 }
 
 /**

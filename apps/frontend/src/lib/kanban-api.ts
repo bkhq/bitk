@@ -199,7 +199,7 @@ export const kanbanApi = {
   restartIssue: (projectId: string, issueId: string) =>
     post<ExecuteIssueResponse>(`/api/projects/${projectId}/issues/${issueId}/restart`, {}),
 
-  deletePendingMessage: (projectId: string, issueId: string) =>
+  deletePendingMessage: (projectId: string, issueId: string, messageId: string) =>
     del<{
       id: string
       content: string
@@ -210,7 +210,9 @@ export const kanbanApi = {
         mimeType: string
         size: number
       }>
-    }>(`/api/projects/${projectId}/issues/${issueId}/pending`),
+    }>(
+      `/api/projects/${projectId}/issues/${issueId}/pending?messageId=${encodeURIComponent(messageId)}`,
+    ),
 
   autoTitleIssue: async (projectId: string, issueId: string) => {
     const res = await fetch(`/api/projects/${projectId}/issues/${issueId}/auto-title`, {

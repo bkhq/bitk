@@ -1,19 +1,18 @@
 import { Hono } from 'hono'
 import { db } from '@/db'
 import { findProject } from '@/db/helpers'
-import { getPendingMessage, upsertPendingMessage } from '@/db/pending-messages'
+import { getPendingMessages, upsertPendingMessage } from '@/db/pending-messages'
 import { attachments } from '@/db/schema'
 import { issueEngine } from '@/engines/issue'
-import { emitIssueLogRemoved, emitIssueLogUpdated } from '@/events/issue-events'
+import { emitIssueLogRemoved } from '@/events/issue-events'
 import { logger } from '@/logger'
 import type { SavedFile } from '@/uploads'
 import { saveUploadedFile, validateFiles } from '@/uploads'
 import {
-  collectPendingMessages,
   ensureWorking,
+  flushPendingAsFollowUp,
   followUpSchema,
   getProjectOwnedIssue,
-  markPendingMessagesDispatched,
   normalizePrompt,
 } from './_shared'
 
@@ -139,9 +138,8 @@ async function insertAttachmentRecords(
 }
 
 /**
- * Upsert a pending message and notify frontend via SSE.
- * If merging into existing, emit log-removed for old + log-updated for merged.
- * If inserting new, emit log (new entry).
+ * Insert a pending message and attach uploaded files to that specific row.
+ * The frontend already adds the optimistic log entry with the returned messageId.
  */
 async function upsertAndNotify(
   issueId: string,
@@ -149,36 +147,11 @@ async function upsertAndNotify(
   meta: Record<string, unknown>,
   savedFiles: SavedFile[],
 ): Promise<string> {
-  // Check if there's an existing pending to detect merge vs insert
-  const existingPending = await getPendingMessage(issueId)
-
   const messageId = await upsertPendingMessage(issueId, prompt, meta)
 
   if (savedFiles.length > 0) {
     await insertAttachmentRecords(issueId, messageId, savedFiles)
   }
-
-  if (existingPending) {
-    // Merged into existing — emit log-updated with the new merged content
-    const updated = await getPendingMessage(issueId)
-    if (updated) {
-      let parsedMeta: Record<string, unknown> | undefined
-      try {
-        parsedMeta = updated.metadata ? JSON.parse(updated.metadata) : undefined
-      } catch {
-        // ignore
-      }
-      emitIssueLogUpdated(issueId, {
-        messageId: updated.id,
-        entryType: 'user-message',
-        content: updated.content,
-        turnIndex: updated.turnIndex,
-        timestamp: updated.timestamp ?? undefined,
-        ...(parsedMeta ? { metadata: parsedMeta } : {}),
-      })
-    }
-  }
-  // For new inserts, the frontend already handles optimistic append via appendServerMessage
 
   return messageId
 }
@@ -239,6 +212,8 @@ message.post('/:id/follow-up', async (c) => {
     )
   }
 
+  const pendingBefore = await getPendingMessages(issueId)
+
   // Save uploaded files and insert attachment records
   let savedFiles: SavedFile[] = []
   if (files.length > 0) {
@@ -278,15 +253,21 @@ message.post('/:id/follow-up', async (c) => {
     return c.json({ success: true, data: { issueId, messageId, queued: true } })
   }
 
+  if (issue.statusId === 'working' && pendingBefore.length > 0) {
+    const messageId = await upsertAndNotify(issueId, prompt, pendingMeta('pending'), savedFiles)
+    flushPendingAsFollowUp(issueId, { model: issue.model })
+    logger.debug(
+      { issueId, pendingCount: pendingBefore.length + 1 },
+      'followup_queued_behind_existing_pending',
+    )
+    return c.json({ success: true, data: { issueId, messageId, queued: true } })
+  }
+
   try {
     const guard = await ensureWorking(issue)
     if (!guard.ok) {
       return c.json({ success: false, error: guard.reason! }, 400)
     }
-    const { prompt: effectivePrompt, pendingIds } = await collectPendingMessages(
-      issueId,
-      fullPrompt,
-    )
     const firstWord = prompt.split(/\s/)[0] ?? ''
     const categorized = issueEngine.getCategorizedCommands(
       issueId,
@@ -305,19 +286,13 @@ message.post('/:id/follow-up', async (c) => {
     const hasFollowUpMeta = Object.keys(followUpMeta).length > 0
     const result = await issueEngine.followUpIssue(
       issueId,
-      effectivePrompt,
+      fullPrompt,
       parsed.model,
       parsed.permissionMode as 'auto' | 'supervised' | 'plan' | undefined,
       parsed.busyAction as 'queue' | 'cancel' | undefined,
       parsed.displayPrompt ?? (savedFiles.length > 0 ? prompt || undefined : undefined),
       hasFollowUpMeta ? followUpMeta : undefined,
     )
-    // Hide old pending messages and notify frontend
-    if (pendingIds.length > 0) {
-      await markPendingMessagesDispatched(pendingIds)
-      emitIssueLogRemoved(issueId, pendingIds)
-    }
-
     // Link attachments to the server-assigned message log
     if (savedFiles.length > 0 && result.messageId) {
       await insertAttachmentRecords(issueId, result.messageId, savedFiles)
@@ -361,7 +336,7 @@ message.post('/:id/follow-up', async (c) => {
   }
 })
 
-// DELETE /api/projects/:projectId/issues/:id/pending — Recall pending message
+// DELETE /api/projects/:projectId/issues/:id/pending?messageId=... — Recall pending message
 message.delete('/:id/pending', async (c) => {
   const projectId = c.req.param('projectId')!
   const project = await findProject(projectId)
@@ -375,8 +350,13 @@ message.delete('/:id/pending', async (c) => {
     return c.json({ success: false, error: 'Issue not found' }, 404)
   }
 
+  const messageId = c.req.query('messageId')?.trim()
+  if (!messageId || messageId.length > 26 || !/^[0-9A-Z]{26}$/.test(messageId)) {
+    return c.json({ success: false, error: 'messageId must be a valid ULID' }, 400)
+  }
+
   const { deletePendingMessage } = await import('@/db/pending-messages')
-  const result = await deletePendingMessage(issueId)
+  const result = await deletePendingMessage(issueId, messageId)
   if (!result) {
     return c.json({ success: false, error: 'No pending message found' }, 404)
   }

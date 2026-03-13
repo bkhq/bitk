@@ -352,7 +352,7 @@ function rebuildMessages(entries: NormalizedLogEntry[]): ChatMessage[] {
 
 interface ChatMessagesResult {
   messages: ChatMessage[]
-  pendingMessages: ChatMessage[]
+  pendingMessages: UserChatMessage[]
 }
 
 /**
@@ -364,7 +364,7 @@ export function useChatMessages(logs: NormalizedLogEntry[]): ChatMessagesResult 
   return useMemo(() => {
     const all = rebuildMessages(logs)
     const messages: ChatMessage[] = []
-    const pendingMessages: ChatMessage[] = []
+    const pendingMessages: UserChatMessage[] = []
     for (const msg of all) {
       if (msg.type === 'user' && (msg.status === 'pending' || msg.status === 'done')) {
         pendingMessages.push(msg)

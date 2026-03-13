@@ -332,23 +332,19 @@ export function ChatInput({
         const isCommand =
           firstWord.startsWith('/') &&
           (normalizedCommands.length === 0 || normalizedCommands.includes(firstWord))
-        const metadata: Record<string, unknown> | undefined = isTodo ?
+        const isQueued = result.queued === true
+        const metadata: Record<string, unknown> | undefined = isTodo || (isWorking && isQueued) ?
             {
               type: 'pending',
               ...(filesMeta ? { attachments: filesMeta } : {}),
             } :
           isDone ?
               { type: 'done', ...(filesMeta ? { attachments: filesMeta } : {}) } :
-            isWorking && isThinking ?
-                {
-                  type: 'pending',
-                  ...(filesMeta ? { attachments: filesMeta } : {}),
-                } :
-              isCommand ?
-                  { type: 'command' } :
-                filesMeta ?
-                    { attachments: filesMeta } :
-                  undefined
+            isCommand ?
+                { type: 'command' } :
+              filesMeta ?
+                  { attachments: filesMeta } :
+                undefined
         onMessageSent?.(result.messageId, prompt, metadata)
       }
       // Auto-scroll to bottom after sending

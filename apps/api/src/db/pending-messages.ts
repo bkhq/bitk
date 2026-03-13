@@ -4,10 +4,12 @@ import { UPLOAD_DIR } from '@/uploads'
 import { db } from '.'
 import { attachments as attachmentsTable, issueLogs } from './schema'
 
+function isQueuedMessageType(type: unknown): boolean {
+  return type === 'pending' || type === 'done'
+}
+
 /**
- * Retrieve the single pending user message for a given issue (if any).
- * A pending message is a user-message log entry with metadata.type === 'pending'.
- * After the upsert merge model there should be at most one per issue.
+ * Retrieve the oldest visible queued user message for a given issue (if any).
  */
 export async function getPendingMessage(issueId: string) {
   const rows = await db
@@ -25,7 +27,7 @@ export async function getPendingMessage(issueId: string) {
   return (
     rows.find((row) => {
       try {
-        return JSON.parse(row.metadata!).type === 'pending'
+        return isQueuedMessageType(JSON.parse(row.metadata!).type)
       } catch {
         return false
       }
@@ -33,7 +35,6 @@ export async function getPendingMessage(issueId: string) {
   )
 }
 
-/** @deprecated Use getPendingMessage (returns single). Kept for migration. */
 export async function getPendingMessages(issueId: string) {
   const rows = await db
     .select()
@@ -49,7 +50,7 @@ export async function getPendingMessages(issueId: string) {
     .orderBy(asc(issueLogs.turnIndex), asc(issueLogs.entryIndex))
   return rows.filter((row) => {
     try {
-      return JSON.parse(row.metadata!).type === 'pending'
+      return isQueuedMessageType(JSON.parse(row.metadata!).type)
     } catch {
       return false
     }
@@ -57,10 +58,33 @@ export async function getPendingMessages(issueId: string) {
 }
 
 /**
- * Upsert a pending message for an issue.
- * If a pending row already exists: append content with \n\n separator, merge metadata.
- * If no pending row exists: insert a new one.
- * Returns the messageId (ULID) of the pending row.
+ * Retrieve a specific queued user message by messageId.
+ * Returns null when the row does not exist, is not visible, or is not queueable.
+ */
+export async function getPendingMessageById(issueId: string, messageId: string) {
+  const [row] = await db
+    .select()
+    .from(issueLogs)
+    .where(
+      and(
+        eq(issueLogs.id, messageId),
+        eq(issueLogs.issueId, issueId),
+        eq(issueLogs.entryType, 'user-message'),
+        eq(issueLogs.visible, 1),
+        isNotNull(issueLogs.metadata),
+      ),
+    )
+  if (!row) return null
+  try {
+    return isQueuedMessageType(JSON.parse(row.metadata!).type) ? row : null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Insert a new queued message for an issue.
+ * Each queued input is persisted as its own user-message row.
  */
 export async function upsertPendingMessage(
   issueId: string,
@@ -68,53 +92,6 @@ export async function upsertPendingMessage(
   metadata: Record<string, unknown> = { type: 'pending' },
 ): Promise<string> {
   const { ulid } = await import('ulid')
-  const existing = await getPendingMessage(issueId)
-
-  if (existing) {
-    // Merge content
-    const mergedContent = [existing.content, content.trim()].filter(Boolean).join('\n\n')
-
-    // Merge metadata
-    let existingMeta: Record<string, unknown> = {}
-    try {
-      existingMeta = existing.metadata ? JSON.parse(existing.metadata) : {}
-    } catch {
-      // ignore
-    }
-
-    // Merge displayPrompt: append if both have it
-    const existingDisplay = existingMeta.displayPrompt as string | undefined
-    const newDisplay = metadata.displayPrompt as string | undefined
-    const mergedDisplay =
-      existingDisplay && newDisplay ?
-        `${existingDisplay}\n\n${newDisplay}` :
-        newDisplay || existingDisplay
-
-    // Merge attachments arrays
-    const existingAttachments = (existingMeta.attachments ?? []) as unknown[]
-    const newAttachments = (metadata.attachments ?? []) as unknown[]
-    const mergedAttachments = [...existingAttachments, ...newAttachments]
-
-    const mergedMeta: Record<string, unknown> = {
-      ...existingMeta,
-      ...metadata,
-      type: 'pending',
-      ...(mergedDisplay ? { displayPrompt: mergedDisplay } : {}),
-      ...(mergedAttachments.length > 0 ? { attachments: mergedAttachments } : {}),
-    }
-
-    await db
-      .update(issueLogs)
-      .set({
-        content: mergedContent,
-        metadata: JSON.stringify(mergedMeta),
-      })
-      .where(eq(issueLogs.id, existing.id))
-
-    return existing.id
-  }
-
-  // Insert new pending row
   const messageId = ulid()
   await db.transaction(async (tx) => {
     const [maxRow] = await tx
@@ -135,7 +112,7 @@ export async function upsertPendingMessage(
       entryIndex,
       entryType: 'user-message',
       content: (displayPrompt ?? content).trim(),
-      metadata: JSON.stringify({ ...metadata, type: 'pending' }),
+      metadata: JSON.stringify(metadata),
       timestamp: new Date().toISOString(),
       visible: 1,
     })
@@ -144,11 +121,11 @@ export async function upsertPendingMessage(
 }
 
 /**
- * Delete the pending message for an issue (user recall/edit).
+ * Delete a specific queued message for an issue (user recall/edit).
  * Returns the deleted row's content, metadata, and attachment info
  * so the frontend can fill the input box.
  */
-export async function deletePendingMessage(issueId: string): Promise<{
+export async function deletePendingMessage(issueId: string, messageId: string): Promise<{
   id: string
   content: string
   metadata: Record<string, unknown>
@@ -159,7 +136,7 @@ export async function deletePendingMessage(issueId: string): Promise<{
     size: number
   }>
 } | null> {
-  const pending = await getPendingMessage(issueId)
+  const pending = await getPendingMessageById(issueId, messageId)
   if (!pending) return null
 
   let meta: Record<string, unknown> = {}
@@ -196,7 +173,7 @@ export async function deletePendingMessage(issueId: string): Promise<{
 }
 
 /**
- * Relocate pending messages for AI processing:
+ * Relocate one queued message for AI processing:
  * 1. Atomically mark pending as visible=0 (optimistic lock)
  * 2. Return the content + metadata for caller to create a new entry at current position
  *
@@ -210,7 +187,14 @@ export async function relocatePendingForProcessing(issueId: string): Promise<{
   displayPrompt: string | undefined
   metadata: Record<string, unknown>
 } | null> {
-  const pending = await getPendingMessage(issueId)
+  const all = await getPendingMessages(issueId)
+  const pending = all.find((row) => {
+    try {
+      return JSON.parse(row.metadata!).type === 'pending'
+    } catch {
+      return false
+    }
+  }) ?? null
   if (!pending) return null
 
   // Optimistic lock: only hide if still visible
@@ -310,25 +294,4 @@ export async function getAttachmentContextForLogIds(
     result.set(logId, buildFileContextFromRows(attachmentRows))
   }
   return result
-}
-
-/**
- * Collect all pending messages for an issue and merge them into a single
- * prompt string, including attachment file context. Returns the merged prompt
- * and the IDs of consumed pending messages.
- */
-export async function collectPendingWithAttachments(
-  issueId: string,
-): Promise<{ prompt: string, pendingIds: string[] }> {
-  const pending = await getPendingMessages(issueId)
-  if (pending.length === 0) return { prompt: '', pendingIds: [] }
-  const attachmentCtx = await getAttachmentContextForLogIds(pending.map(m => m.id))
-  const parts = pending.map((m) => {
-    const fileCtx = attachmentCtx.get(m.id) ?? ''
-    return (m.content + fileCtx).trim()
-  })
-  return {
-    prompt: parts.filter(Boolean).join('\n\n'),
-    pendingIds: pending.map(m => m.id),
-  }
 }

@@ -183,9 +183,9 @@ export function ChatBody({
     appendServerMessage,
   } = useSessionState(projectId, issueId, issue)
 
-  const handleEditPending = useCallback(async () => {
+  const handleEditPending = useCallback(async (messageId: string) => {
     try {
-      const result = await kanbanApi.deletePendingMessage(projectId, issueId)
+      const result = await kanbanApi.deletePendingMessage(projectId, issueId, messageId)
       setPendingEditContent(result.content)
       removeEntries([result.id])
     } catch {

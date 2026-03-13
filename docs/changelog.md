@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-03-13 21:10 [progress]
+
+- BUG-012 / PLAN-023: Keep pending messages separate and editable
+- `apps/api/src/db/pending-messages.ts` now stores each queued message as its own row and supports per-message lookup/delete/relocation
+- `apps/api/src/routes/issues/message.ts` now recalls pending rows by `messageId` and flushes queued follow-ups one message at a time
+- `apps/api/src/routes/issues/command.ts` and `apps/api/src/engines/issue/orchestration/restart.ts` no longer pre-merge all pending prompts before execution
+- `apps/frontend/src/components/issue-detail/ChatBody.tsx` and `SessionMessages.tsx` now let users edit pending rows individually
+- Added regression coverage for separate pending storage, per-message recall, and queued done-message flushing
+
 ## 2026-03-13 04:54 [progress]
 
 ENG-011 / PLAN-020: Restore grouped tool rendering for ACP

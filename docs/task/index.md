@@ -117,3 +117,4 @@
 - [x] **BUG-008 ACP Codex model id 含 `/` 导致 400** `P1` - owner: codex - file: `docs/task/BUG-008.md`
 - [-] **BUG-009 模型发现链路缺少可诊断日志** `P1` - owner: codex - plan: `PLAN-011` - file: `docs/task/BUG-009.md`
 - [x] **BUG-010 ACP assistant streaming 未落地导致前端无返回** `P0` - owner: codex - plan: `PLAN-012` - file: `docs/task/BUG-010.md`
+- [x] **BUG-012 Pending messages should not merge automatically** `P1` - owner: local - plan: `PLAN-023` - file: `docs/task/BUG-012.md`

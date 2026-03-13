@@ -84,7 +84,7 @@ export function AcpTimeline({
   isRunning?: boolean
   workingStep?: string | null
   onCancel?: () => void
-  onEditPending?: () => void
+  onEditPending?: (messageId: string) => void
   isCancelling?: boolean
   hasOlderLogs?: boolean
   isLoadingOlder?: boolean
@@ -223,7 +223,7 @@ export function AcpTimeline({
                       (
                         <button
                           type="button"
-                          onClick={onEditPending}
+                          onClick={() => onEditPending(entry.messageId ?? `acp-pending-${idx}`)}
                           className="absolute right-2 top-2 hidden rounded-md border border-border/40 bg-background/90 px-2 py-0.5 text-[11px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground group-hover:inline-flex"
                         >
                           {t('common.edit')}
