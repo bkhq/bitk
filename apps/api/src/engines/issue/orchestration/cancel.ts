@@ -1,4 +1,4 @@
-import { updateIssueSession } from '@/engines/engine-store'
+import { getIssueWithSession, updateIssueSession } from '@/engines/engine-store'
 import { CANCEL_MAX_RETRIES, CANCEL_RESPONSE_TIMEOUT_MS } from '@/engines/issue/constants'
 import type { EngineContext } from '@/engines/issue/context'
 import { emitIssueSettled } from '@/engines/issue/events'
@@ -193,10 +193,19 @@ export async function cancelIssue(
       logger.info({ issueId, interruptedCount: active.length }, 'issue_cancel_soft_interrupted')
       return 'interrupted' as const
     }
-    // No active processes — mark as cancelled in DB and notify frontend
-    await updateIssueSession(issueId, { sessionStatus: 'cancelled' })
-    emitIssueSettled(issueId, '', 'cancelled')
-    logger.info({ issueId, cancelledCount: 0 }, 'issue_cancel_completed')
+    // No active processes — only update session status if it's not already
+    // in a terminal state. When an issue moves from review → done, the
+    // session has already settled (completed/failed) and we should not
+    // overwrite that status or emit a spurious settled event (which would
+    // trigger a misleading session.failed webhook).
+    const issue = await getIssueWithSession(issueId)
+    const currentStatus = issue?.sessionFields.sessionStatus
+    const isTerminal = currentStatus === 'completed' || currentStatus === 'failed' || currentStatus === 'cancelled'
+    if (!isTerminal) {
+      await updateIssueSession(issueId, { sessionStatus: 'cancelled' })
+      emitIssueSettled(issueId, '', 'cancelled')
+    }
+    logger.info({ issueId, cancelledCount: 0, skippedSettle: isTerminal }, 'issue_cancel_completed')
     return 'cancelled' as const
   })
 
