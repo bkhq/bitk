@@ -81,7 +81,6 @@ export type IssueRow = typeof issuesTable.$inferSelect
 export { getPendingMessages, markPendingMessagesDispatched } from '@/db/pending-messages'
 
 export function serializeIssue(row: IssueRow, childCount?: number) {
-  const engineType = row.engineType === 'gemini' ? 'acp' : row.engineType
   return {
     id: row.id,
     projectId: row.projectId,
@@ -94,7 +93,7 @@ export function serializeIssue(row: IssueRow, childCount?: number) {
     useWorktree: row.useWorktree,
     childCount: childCount ?? 0,
     // Session fields
-    engineType: engineType ?? null,
+    engineType: row.engineType ?? null,
     sessionStatus: row.sessionStatus ?? null,
     prompt: row.prompt ?? null,
     externalSessionId: row.externalSessionId ?? null,

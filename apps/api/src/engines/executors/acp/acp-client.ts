@@ -30,7 +30,9 @@ export async function spawnAcpProcess(options: {
     options.model,
     options.sessionId,
   )
-  void handler.sendUserMessage(options.prompt)
+  handler.sendUserMessage(options.prompt).catch(() => {
+    // Errors are already emitted to the event sink by runPrompt().
+  })
 
   return {
     subprocess,

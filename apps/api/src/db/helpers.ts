@@ -12,10 +12,6 @@ type ProjectRow = typeof projectsTable.$inferSelect
 
 const PROJECT_CACHE_TTL = 60 // seconds
 
-function normalizeEngineSetting(engineType: string | null): string | null {
-  return engineType === 'gemini' ? 'acp' : engineType
-}
-
 export async function findProject(param: string) {
   // Check cache first (param could be ID or alias)
   const cacheKey = `project:lookup:${param}`
@@ -102,9 +98,7 @@ export async function setAppSetting(key: string, value: string): Promise<void> {
 }
 
 export async function getEngineDefaultModel(engineType: string): Promise<string | null> {
-  const direct = await getAppSetting(`engine:${engineType}:defaultModel`)
-  if (direct || engineType !== 'acp') return direct
-  return getAppSetting('engine:gemini:defaultModel')
+  return getAppSetting(`engine:${engineType}:defaultModel`)
 }
 
 export async function setEngineDefaultModel(engineType: string, modelId: string): Promise<void> {
@@ -113,7 +107,7 @@ export async function setEngineDefaultModel(engineType: string, modelId: string)
 }
 
 export async function getDefaultEngine(): Promise<string | null> {
-  return normalizeEngineSetting(await getAppSetting('defaultEngine'))
+  return getAppSetting('defaultEngine')
 }
 
 export async function setDefaultEngine(engineType: string): Promise<void> {
@@ -131,7 +125,7 @@ export async function getAllEngineDefaultModels(): Promise<Record<string, string
     const suffix = ':defaultModel'
     for (const row of rows) {
       const engineType = row.key.slice(prefix.length, -suffix.length)
-      result[normalizeEngineSetting(engineType) ?? engineType] = row.value
+      result[engineType] = row.value
     }
     return result
   })
@@ -146,17 +140,13 @@ interface ProbeData {
 
 const PROBE_ENGINES_KEY = 'probe:engines'
 const PROBE_MODELS_KEY = 'probe:models'
-const PROBE_VERSION_KEY = 'probe:version'
-const PROBE_VERSION = '2'
 
 export async function getProbeResults(): Promise<ProbeData | null> {
-  const [enginesJson, modelsJson, version] = await Promise.all([
+  const [enginesJson, modelsJson] = await Promise.all([
     getAppSetting(PROBE_ENGINES_KEY),
     getAppSetting(PROBE_MODELS_KEY),
-    getAppSetting(PROBE_VERSION_KEY),
   ])
 
-  if (version !== PROBE_VERSION) return null
   if (!enginesJson || !modelsJson) return null
 
   try {
@@ -176,7 +166,6 @@ export async function saveProbeResults(
   await Promise.all([
     setAppSetting(PROBE_ENGINES_KEY, JSON.stringify(engines)),
     setAppSetting(PROBE_MODELS_KEY, JSON.stringify(models)),
-    setAppSetting(PROBE_VERSION_KEY, PROBE_VERSION),
   ])
 }
 

@@ -242,7 +242,6 @@ function rebuildAcpTimeline(entries: NormalizedLogEntry[]): AcpTimelineResult {
     pushEntry(entry)
   }
 
-  flushToolBuffer()
   flushStreamingAssistant()
   flushToolBuffer()
 

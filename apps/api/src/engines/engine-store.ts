@@ -19,14 +19,9 @@ export interface IssueSessionFields {
   model: string | null
 }
 
-function normalizeEngineType(engineType: string | null | undefined): EngineType | null {
-  if (!engineType) return null
-  return (engineType === 'gemini' ? 'acp' : engineType) as EngineType
-}
-
 export function getIssueSessionFields(row: IssueRow): IssueSessionFields {
   return {
-    engineType: normalizeEngineType(row.engineType),
+    engineType: row.engineType as EngineType | null,
     sessionStatus: row.sessionStatus as SessionStatus | null,
     prompt: row.prompt ?? null,
     externalSessionId: row.externalSessionId ?? null,
