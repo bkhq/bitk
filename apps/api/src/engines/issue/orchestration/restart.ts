@@ -1,5 +1,4 @@
 import { cleanupStaleSessions } from '@/db/helpers'
-import { collectPendingWithAttachments, markPendingMessagesDispatched } from '@/db/pending-messages'
 import { getIssueWithSession, updateIssueSession } from '@/engines/engine-store'
 import { engineRegistry } from '@/engines/executors'
 import type { EngineContext } from '@/engines/issue/context'
@@ -43,9 +42,6 @@ export async function restartIssue(
     const executor = engineRegistry.get(engineType)
     if (!executor) throw new Error(`No executor for engine type: ${engineType}`)
 
-    // Collect pending messages to merge into the restart prompt
-    const { prompt: pendingPrompt, pendingIds } = await collectPendingWithAttachments(issueId)
-
     await updateIssueSession(issueId, { sessionStatus: 'running' })
 
     const baseDir = await resolveWorkingDir(issue.projectId)
@@ -66,13 +62,12 @@ export async function restartIssue(
     const executionId = crypto.randomUUID()
     const projCtx = await getProjectExecContext(issue.projectId)
 
-    // Prepend project system prompt + merge pending messages
+    // Prepend project system prompt only. Pending follow-ups remain queued and
+    // will be flushed one-by-one after each turn completes.
     const basePrompt = projCtx.systemPrompt ?
       `${projCtx.systemPrompt}\n\n${issue.sessionFields.prompt ?? ''}` :
         (issue.sessionFields.prompt ?? '')
-    const effectivePrompt = pendingPrompt ?
-        [basePrompt, pendingPrompt].filter(Boolean).join('\n\n') :
-      basePrompt
+    const effectivePrompt = basePrompt
 
     const spawnOpts = {
       workingDir,
@@ -133,15 +128,6 @@ export async function restartIssue(
       spawned.externalSessionId ?? issue.sessionFields.externalSessionId ?? undefined,
     )
     monitorCompletion(ctx, executionId, issueId, engineType, false)
-
-    // Mark pending messages as dispatched after successful spawn
-    if (pendingIds.length > 0) {
-      await markPendingMessagesDispatched(pendingIds)
-      logger.info(
-        { issueId, pendingCount: pendingIds.length },
-        'restart_pending_messages_dispatched',
-      )
-    }
 
     return { executionId }
   })

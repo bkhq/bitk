@@ -174,10 +174,11 @@ function rebuildAcpTimeline(entries: NormalizedLogEntry[]): AcpTimelineResult {
         pendingStreamingAssistant &&
         pendingStreamingAssistant.turnIndex === entry.turnIndex
       ) {
+        const current: NormalizedLogEntry = pendingStreamingAssistant
         pendingStreamingAssistant = {
-          ...pendingStreamingAssistant,
-          content: `${pendingStreamingAssistant.content}${entry.content}`,
-          timestamp: entry.timestamp ?? pendingStreamingAssistant.timestamp,
+          ...current,
+          content: `${current.content}${entry.content}`,
+          timestamp: entry.timestamp ?? current.timestamp,
         }
       } else {
         flushStreamingAssistant()

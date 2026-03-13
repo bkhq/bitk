@@ -203,6 +203,54 @@ describe('Pending messages consumed on transition to working', () => {
     )
     expect(pendingMsgs.length).toBe(0)
   })
+
+  test('done issue queued follow-up is consumed after moving back to working', async () => {
+    const issue = expectSuccess(
+      await post<Issue>(`/api/projects/${projectId}/issues`, {
+        title: 'Done Queue Consume Test',
+        statusId: 'done',
+        engineType: 'echo',
+        model: 'auto',
+      }),
+    )
+
+    const followUp = await post<{ issueId: string, queued: boolean }>(
+      `/api/projects/${projectId}/issues/${issue.id}/follow-up`,
+      { prompt: 'queued while done' },
+    )
+    expect(followUp.status).toBe(200)
+    expect(followUp.json.success).toBe(true)
+    if (followUp.json.success) {
+      expect(followUp.json.data.queued).toBe(true)
+    }
+
+    let logsResult = await get<LogsResponse>(`/api/projects/${projectId}/issues/${issue.id}/logs`)
+    let logs = expectSuccess(logsResult)
+    const queuedDone = logs.logs.filter(
+      l => l.entryType === 'user-message' && l.metadata?.type === 'done',
+    )
+    expect(queuedDone).toHaveLength(1)
+    expect(queuedDone[0]?.content).toBe('queued while done')
+
+    await patch(`/api/projects/${projectId}/issues/${issue.id}`, {
+      statusId: 'working',
+    })
+
+    await waitFor(async () => {
+      const r = await get<Issue>(`/api/projects/${projectId}/issues/${issue.id}`)
+      const current = expectSuccess(r)
+      return current.statusId === 'review' && current.sessionStatus === 'completed'
+    }, 5000)
+
+    logsResult = await get<LogsResponse>(`/api/projects/${projectId}/issues/${issue.id}/logs`)
+    logs = expectSuccess(logsResult)
+    const remainingQueued = logs.logs.filter(
+      l =>
+        l.entryType === 'user-message'
+        && (l.metadata?.type === 'pending' || l.metadata?.type === 'done'),
+    )
+    expect(remainingQueued).toHaveLength(0)
+  })
 })
 
 // ============================

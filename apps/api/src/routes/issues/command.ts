@@ -6,11 +6,9 @@ import { findProject, getAppSetting } from '@/db/helpers'
 import { issueEngine } from '@/engines/issue'
 import { logger } from '@/logger'
 import {
-  collectPendingMessages,
   ensureWorking,
   executeIssueSchema,
   getProjectOwnedIssue,
-  markPendingMessagesDispatched,
   normalizePrompt,
   parseProjectEnvVars,
 } from './_shared'
@@ -109,20 +107,15 @@ command.post(
       }
       // Prepend project-level system prompt if configured
       const basePrompt = project.systemPrompt ? `${project.systemPrompt}\n\n${prompt}` : prompt
-      const { prompt: effectivePrompt, pendingIds } = await collectPendingMessages(
-        issueId,
-        basePrompt,
-      )
       const envVars = parseProjectEnvVars(project.envVars)
       const result = await issueEngine.executeIssue(issueId, {
         engineType: body.engineType,
-        prompt: effectivePrompt,
+        prompt: basePrompt,
         workingDir: effectiveWorkingDir,
         model: body.model,
         permissionMode: body.permissionMode,
         envVars,
       })
-      await markPendingMessagesDispatched(pendingIds)
       return c.json({
         success: true,
         data: {
@@ -172,10 +165,7 @@ command.post('/:id/restart', async (c) => {
     if (!guard.ok) {
       return c.json({ success: false, error: guard.reason! }, 400)
     }
-    // Collect pending messages so they are processed by the restarted session
-    const { pendingIds } = await collectPendingMessages(issueId, '')
     const result = await issueEngine.restartIssue(issueId)
-    await markPendingMessagesDispatched(pendingIds)
     return c.json({
       success: true,
       data: { executionId: result.executionId, issueId },
