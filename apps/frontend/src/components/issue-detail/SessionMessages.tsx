@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useChatMessages } from '@/hooks/use-chat-messages'
 import { useViewModeStore } from '@/stores/view-mode-store'
+import { AcpTimeline } from './AcpTimeline'
 import { LogEntry } from './LogEntry'
 import { ToolGroupMessage } from './ToolItems'
 
@@ -132,7 +133,29 @@ function TaskPlanMessage({ message }: { message: TaskPlanChatMessage }) {
 
 // ── SessionMessages (main export) ────────────────────────
 
-export function SessionMessages({
+export function SessionMessages(props: {
+  logs: NormalizedLogEntry[]
+  scrollRef?: React.RefObject<HTMLDivElement | null>
+  engineType?: string
+  isRunning?: boolean
+  workingStep?: string | null
+  onCancel?: () => void
+  onEditPending?: () => void
+  isCancelling?: boolean
+  hasOlderLogs?: boolean
+  isLoadingOlder?: boolean
+  onLoadOlder?: () => void
+}) {
+  const { engineType, ...rest } = props
+
+  if (engineType === 'acp') {
+    return <AcpTimeline {...rest} />
+  }
+
+  return <LegacySessionMessages {...rest} />
+}
+
+function LegacySessionMessages({
   logs,
   scrollRef,
   isRunning = false,
@@ -213,7 +236,7 @@ export function SessionMessages({
     }
     prevLenRef.current = messages.length
     prevFirstIdRef.current = firstId
-  }, [messages.length, isRunning, scrollRef])
+  }, [messages, isRunning, scrollRef])
 
   if (messages.length === 0 && pendingMessages.length === 0 && !isRunning) return null
 

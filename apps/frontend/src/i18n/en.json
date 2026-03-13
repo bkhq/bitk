@@ -178,6 +178,7 @@
     "plugins": "Plugins",
     "pluginSearch": "Search plugins...",
     "noPlugins": "No matching plugins",
+    "modelLockedHint": "Model is locked for this session. Restart to change it.",
     "refreshLogs": "Refresh logs",
     "worktree": "Worktree",
     "worktreeBranch": "Branch",

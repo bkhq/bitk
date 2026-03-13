@@ -5,16 +5,16 @@ import type {
   EngineRegistry,
   EngineType,
 } from '@/engines/types'
+import { AcpExecutor } from './acp'
 import { ClaudeCodeExecutor } from './claude'
 import { CodexExecutor } from './codex'
 import { EchoExecutor } from './echo'
-import { GeminiExecutor } from './gemini'
 
 // Re-export executor classes
+export { AcpExecutor } from './acp'
 export { ClaudeCodeExecutor } from './claude'
 export { CodexExecutor } from './codex'
 export { EchoExecutor } from './echo'
-export { GeminiExecutor } from './gemini'
 
 /**
  * Default engine registry — manages all executor instances.
@@ -55,7 +55,7 @@ function createRegistry(): EngineRegistry {
   // Register all supported executors
   registry.register(new ClaudeCodeExecutor())
   registry.register(new CodexExecutor())
-  registry.register(new GeminiExecutor())
+  registry.register(new AcpExecutor())
   registry.register(new EchoExecutor())
 
   return registry

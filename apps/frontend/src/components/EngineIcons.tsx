@@ -112,7 +112,7 @@ export function EchoIcon(props: IconProps) {
 const ENGINE_ICONS: Partial<Record<string, React.FC<IconProps>>> = {
   'claude-code': ClaudeIcon,
   'codex': CodexIcon,
-  'gemini': GeminiIcon,
+  'acp': GeminiIcon,
   'echo': EchoIcon,
 }
 

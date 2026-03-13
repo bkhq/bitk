@@ -16,6 +16,21 @@
 - [x] **FEAT-002 将 SERVER_NAME 和 SERVER_URL 从环境变量迁移到数据库** `P2` - owner: claude - file: `docs/task/FEAT-002.md`
 - [x] **FEAT-003 MAX_CONCURRENT_EXECUTIONS 可通过设置配置** `P2` - owner: claude - plan: `PLAN-006` - file: `docs/task/FEAT-003.md`
 
+## Engineering
+
+- [x] **ENG-002 ACP SDK 接入并实现独立 ACP executor** `P1` - owner: codex - plan: `PLAN-009` - file: `docs/task/ENG-002.md`
+- [x] **ENG-003 ACP engine 支持基于 model 的多 agent 路由** `P1` - owner: codex - plan: `PLAN-010` - file: `docs/task/ENG-003.md`
+- [x] **ENG-004 拆分 ACP agent 定义为独立文件** `P1` - owner: codex - plan: `PLAN-013` - file: `docs/task/ENG-004.md`
+- [x] **ENG-005 ACP tool call 消息按文档配对到产品状态** `P0` - owner: codex - plan: `PLAN-014` - file: `docs/task/ENG-005.md`
+- [x] **ENG-006 ACP plan 与 diff 映射到现有产品 UI** `P0` - owner: codex - plan: `PLAN-015` - file: `docs/task/ENG-006.md`
+- [x] **ENG-007 ACP tool result 优先显示格式化输出** `P1` - owner: codex - plan: `PLAN-016` - file: `docs/task/ENG-007.md`
+- [x] **ENG-008 ACP 前端改造为协议原生时间线** `P1` - owner: codex - plan: `PLAN-017` - file: `docs/task/ENG-008.md`
+- [x] **ENG-009 按功能模块拆分 ACP client** `P1` - owner: codex - plan: `PLAN-018` - file: `docs/task/ENG-009.md`
+- [x] **ENG-010 在 ACP engine 中接入 Claude agent** `P1` - owner: codex - plan: `PLAN-019` - file: `docs/task/ENG-010.md`
+- [x] **ENG-011 ACP 前端恢复工具组展示** `P1` - owner: codex - plan: `PLAN-020` - file: `docs/task/ENG-011.md`
+- [x] **ENG-012 禁止会话内 follow-up 切换模型** `P1` - owner: codex - plan: `PLAN-021` - file: `docs/task/ENG-012.md`
+- [x] **BUG-011 ACP 重复发射占位 tool action 导致前端重复展示** `P1` - owner: codex - plan: `PLAN-022` - file: `docs/task/BUG-011.md`
+
 ## Webhook
 
 - [x] **WEBHOOK-001 完善 Webhook 通知元信息** `P1` - plan: `PLAN-002` - file: `docs/task/WEBHOOK-001.md`
@@ -99,3 +114,6 @@
 - [x] **BUG-005 File browser rejects valid worktree root paths** `P1` - owner: claude - file: `docs/task/BUG-005.md`
 - [x] **BUG-006 Pending messages not displayed for todo issues** `P1` - owner: claude - file: `docs/task/BUG-006.md`
 - [-] **BUG-007 升级后 /api/projects 因缺失 is_archived 列返回 500** `P0` - owner: local - file: `docs/task/BUG-007.md`
+- [x] **BUG-008 ACP Codex model id 含 `/` 导致 400** `P1` - owner: codex - file: `docs/task/BUG-008.md`
+- [-] **BUG-009 模型发现链路缺少可诊断日志** `P1` - owner: codex - plan: `PLAN-011` - file: `docs/task/BUG-009.md`
+- [x] **BUG-010 ACP assistant streaming 未落地导致前端无返回** `P0` - owner: codex - plan: `PLAN-012` - file: `docs/task/BUG-010.md`

@@ -43,7 +43,7 @@ function entryId(entry: NormalizedLogEntry, fallback: string): string {
 
 // ---------- TodoWrite → TaskPlan ----------
 
-function extractTodos(entry: NormalizedLogEntry): TaskPlanChatMessage['todos'] | null {
+export function extractTodos(entry: NormalizedLogEntry): TaskPlanChatMessage['todos'] | null {
   const meta = entry.metadata
   if (!meta) return null
   const args = (meta.arguments ?? meta.input) as
@@ -51,11 +51,21 @@ function extractTodos(entry: NormalizedLogEntry): TaskPlanChatMessage['todos'] |
       todos?: Array<{ content: string, status: string, activeForm?: string }>
     } |
     undefined
-  if (!args?.todos || !Array.isArray(args.todos)) return null
-  return args.todos.map(t => ({
-    content: t.content ?? '',
-    status: t.status ?? 'pending',
-    activeForm: typeof t.activeForm === 'string' ? t.activeForm : undefined,
+  if (args?.todos && Array.isArray(args.todos)) {
+    return args.todos.map(t => ({
+      content: t.content ?? '',
+      status: t.status ?? 'pending',
+      activeForm: typeof t.activeForm === 'string' ? t.activeForm : undefined,
+    }))
+  }
+
+  const planEntries = meta.entries as
+    | Array<{ content?: string, status?: string }>
+    | undefined
+  if (!planEntries || !Array.isArray(planEntries)) return null
+  return planEntries.map(entry => ({
+    content: entry.content ?? '',
+    status: entry.status ?? 'pending',
   }))
 }
 
@@ -251,6 +261,19 @@ function rebuildMessages(entries: NormalizedLogEntry[]): ChatMessage[] {
 
     // system-message: display inline, never breaks tool groups
     if (entry.entryType === 'system-message') {
+      if (entry.metadata?.subtype === 'plan') {
+        const todos = extractTodos(entry)
+        if (todos) {
+          messages.push({
+            type: 'task-plan',
+            id: entryId(entry, nextId('tp')),
+            entry,
+            todos,
+            completedCount: todos.filter(t => t.status === 'completed').length,
+          } satisfies TaskPlanChatMessage)
+          continue
+        }
+      }
       if (consumedOutputIdx.has(i)) continue
       flushPendingThinking()
       messages.push({

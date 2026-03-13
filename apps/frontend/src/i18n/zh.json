@@ -178,6 +178,7 @@
     "plugins": "Plugins",
     "pluginSearch": "搜索插件...",
     "noPlugins": "没有匹配的插件",
+    "modelLockedHint": "当前会话已锁定模型，如需切换请重启会话。",
     "refreshLogs": "刷新日志",
     "worktree": "工作树",
     "worktreeBranch": "分支",

@@ -163,7 +163,7 @@ describe('POST /api/projects/:projectId/issues/:id/follow-up', () => {
     expect(data.issueId).toBe(issue.id)
   })
 
-  test('follow-up with custom model', async () => {
+  test('follow-up with matching model is allowed', async () => {
     const issue = expectSuccess(
       await createTestIssue(projectId, {
         title: 'Model Follow Up',
@@ -183,6 +183,31 @@ describe('POST /api/projects/:projectId/issues/:id/follow-up', () => {
     )
     expect(result.status).toBe(200)
     expectSuccess(result)
+  })
+
+  test('rejects follow-up model change once a session exists', async () => {
+    const issue = expectSuccess(
+      await createTestIssue(projectId, {
+        title: 'Locked Model Follow Up',
+        statusId: 'working',
+        engineType: 'echo',
+      }),
+    ) as Issue
+
+    await waitFor(async () => {
+      const r = await get<Issue>(`/api/projects/${projectId}/issues/${issue.id}`)
+      return expectSuccess(r).sessionStatus === 'completed'
+    }, 5000)
+
+    const result = await post<unknown>(`/api/projects/${projectId}/issues/${issue.id}/follow-up`, {
+      prompt: 'Switch model',
+      model: 'different-model',
+    })
+    expect(result.status).toBe(409)
+    expect(result.json.success).toBe(false)
+    if (!result.json.success) {
+      expect(result.json.error).toContain('Restart')
+    }
   })
 
   test('rejects follow-up with empty prompt', async () => {

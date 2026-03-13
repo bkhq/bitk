@@ -121,7 +121,7 @@ The most complex subsystem — bridges API routes and CLI-based AI agents.
 
 - `claude-code` — `stream-json` protocol (streaming JSON over stdout, process exits after each turn)
 - `codex` — `json-rpc` protocol (JSONL JSON-RPC over stdio, process **stays alive** between turns)
-- `gemini` — `acp` protocol
+- `acp` — `acp` protocol (`acp:<agent>:<model>`, currently Gemini + Codex)
 - `echo` — test/stub executor
 
 Each engine has an executor in `executors/<name>/executor.ts` implementing `EngineExecutor` interface: `spawn`, `spawnFollowUp`, `cancel`, `getAvailability`, `getModels`, `normalizeLog`.

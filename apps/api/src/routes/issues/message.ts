@@ -82,11 +82,11 @@ async function parseFollowUpBody(c: {
         error: 'permissionMode must be "auto", "supervised", or "plan"',
       }
     }
-    const modelPattern = /^[\w.\-[\]]{1,100}$/
+    const modelPattern = /^[\w./:\-[\]]{1,160}$/
     if (typeof model === 'string' && !modelPattern.test(model)) {
       return {
         ok: false,
-        error: 'model must match /^[\\w.\\-[\\]]{1,100}$/',
+        error: 'model must match /^[\\w./:\\-[\\]]{1,160}$/',
       }
     }
 
@@ -187,6 +187,15 @@ async function upsertAndNotify(
 
 const message = new Hono()
 
+function isFollowUpModelChangeBlocked(
+  issue: { externalSessionId: string | null, model: string | null },
+  requestedModel?: string,
+): boolean {
+  if (!issue.externalSessionId) return false
+  if (!requestedModel) return false
+  return requestedModel !== (issue.model ?? '')
+}
+
 // POST /api/projects/:projectId/issues/:id/follow-up — Follow-up
 message.post('/:id/follow-up', async (c) => {
   const projectId = c.req.param('projectId')!
@@ -218,6 +227,16 @@ message.post('/:id/follow-up', async (c) => {
   const issue = await getProjectOwnedIssue(project.id, issueId)
   if (!issue) {
     return c.json({ success: false, error: 'Issue not found' }, 404)
+  }
+
+  if (isFollowUpModelChangeBlocked(issue, parsed.model)) {
+    return c.json(
+      {
+        success: false,
+        error: 'Model changes are not allowed during an existing session. Restart to use a different model.',
+      },
+      409,
+    )
   }
 
   // Save uploaded files and insert attachment records

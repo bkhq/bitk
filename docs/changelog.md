@@ -1,5 +1,68 @@
 # Changelog
 
+## 2026-03-13 04:54 [progress]
+
+ENG-011 / PLAN-020: Restore grouped tool rendering for ACP
+
+- Updated `useAcpTimeline()` to buffer consecutive ACP tool entries into a single `tool-group`
+- Switched `AcpTimeline.tsx` to reuse the existing `ToolGroupMessage` renderer for better product consistency
+- Kept `plan`, `assistant`, and `system/session` entries as standalone timeline items
+- Added a hook test to lock contiguous ACP tool-call grouping behavior
+
+## 2026-03-13 04:46 [progress]
+
+ENG-010 / PLAN-019: Add Claude as a third ACP agent
+
+- Added `apps/api/src/engines/executors/acp/agents/claude.ts` using `@zed-industries/claude-code-acp`
+- Extended the ACP registry and model parser so Claude models use the `acp:claude:<model>` format
+- Added probe-result versioning in `db/helpers.ts` so old cached engine discovery does not hide newly added ACP agents
+- Verified API output now includes `acp:claude:default`, `acp:claude:sonnet`, and `acp:claude:haiku`
+
+## 2026-03-13 04:30 [progress]
+
+ENG-009 / PLAN-018: Split ACP client into functional modules
+
+- Extracted ACP event/state definitions into `apps/api/src/engines/executors/acp/types.ts`
+- Extracted subprocess/event-stream bridge into `apps/api/src/engines/executors/acp/transport.ts`
+- Extracted log normalization into `apps/api/src/engines/executors/acp/normalizer.ts`
+- Extracted ACP session/prompt handling into `apps/api/src/engines/executors/acp/protocol-handler.ts`
+- Reduced `acp-client.ts` to a stable public entrypoint that keeps existing exports working
+
+## 2026-03-13 04:24 [progress]
+
+ENG-008 / PLAN-017: Add a dedicated ACP frontend renderer
+
+- Added `useAcpTimeline()` to reconstruct ACP logs as a protocol-native ordered timeline instead of forcing them into the legacy grouped chat model
+- Added `AcpTimeline.tsx` as an ACP-specific renderer that reuses the existing tool cards and diff/command display components
+- Routed `SessionMessages` by `engineType`, so ACP issues now use the dedicated renderer while non-ACP engines keep the current UI
+- Added targeted hook tests for ACP plan mapping, paired tool rendering, and streaming assistant replacement
+
+## 2026-03-13 04:12 [progress]
+
+ENG-008 / PLAN-017: Investigate ACP-native frontend timeline redesign
+
+- Traced the current frontend path: `useIssueStream() -> useChatMessages() -> SessionMessages`
+- Confirmed ACP data is already present in logs, but the frontend still forces it into legacy `ChatMessage` shapes
+- Proposed a staged ACP-native timeline design with a dedicated adapter and renderer, keeping non-ACP engines on the existing UI until migration is complete
+
+## 2026-03-13 04:06 [progress]
+
+ENG-007: Prefer readable ACP tool result output over raw JSON blobs
+
+- `acp-client.ts`: added readable output extraction for `tool_call_update.rawOutput`
+- Preferred fields are `formatted_output`, `stdout`, `aggregated_output`, `stderr`, then nested `output/result/text/content`, with JSON stringify as the fallback
+- `acp-client.test.ts`: added a unified-exec-style result test to lock the priority order
+- Runtime verification on issue `dedeh172`, turn `9`: the `tool-use` result now persists as the three path lines directly instead of a serialized JSON object
+
+## 2026-03-13 02:20 [progress]
+
+- ENG-003 / PLAN-010: 将 `acp` engine 扩展为基于 model 前缀的多 agent 路由
+- 新增 `apps/api/src/engines/executors/acp/agents.ts`，统一管理 Gemini / Codex 的 command、auth、availability 与模型前缀
+- 约定 ACP 模型 ID 格式为 `acp:<agent>:<model>`，首批接入 `gemini` 和 `codex`
+- `AcpExecutor` 现在根据 model 前缀选择底层 ACP agent，`getModels()` 聚合多个 agent 的模型列表
+- 请求 schema 已放宽，允许 `model` 中包含 `:`
+- 运行时 smoke test 通过：Gemini 与 Codex 都完成 `initialize -> newSession -> prompt -> turnCompleted`
+
 ## 2026-03-12 12:20 [progress]
 
 PIPE-002: Update release workflow for GitHub Actions Node 24 migration
@@ -267,6 +330,56 @@ CHAT-001 Phase 1 完成：聊天界面 UI 优化后端基础设施
 - 修复 `apps/api/drizzle/meta/_journal.json` 中 `0011_sleepy_captain_marvel` 的 `when` 倒序问题
 - 原值早于 `0010_smart_bullseye`，会被 Drizzle 迁移器按 `created_at` 过滤逻辑永久跳过
 - 修复后自动迁移可继续在升级时补上 `projects.is_archived` 列
+
+## 2026-03-13 18:10 [progress]
+
+- ENG-002 / PLAN-009: 新增独立 `acp` engine，并将 ACP client 从供应商实现中抽离
+- 新增 `apps/api/src/engines/executors/acp/acp-client.ts`，使用 `@agentclientprotocol/sdk` 驱动默认 ACP agent
+- `spawn` / `spawnFollowUp` / `sendUserMessage` / `cancel` 已接入 ACP session
+- `getModels()` 改为通过 ACP `newSession()` 读取真实模型列表
+- 保留对历史 `gemini` engine 值的兼容映射，避免旧数据失效
+- 运行时 smoke test 通过：成功收到 `thinking`、`assistant-message` 和 `turnCompleted`
+
+## 2026-03-13 18:45 [BUG-P0]
+
+- BUG-010 / PLAN-012: 修复 ACP follow-up 只有 streaming chunk、前端无 assistant 返回的问题
+- `AcpExecutor` 改为使用 stateful `AcpLogNormalizer`，在 `agent_message_chunk` 期间累积文本
+- turn 结束时先补一条非 streaming `assistant-message`，再保留原有 turn completed system entry
+- 运行时复现 `acp:codex:gpt-5.3-codex/medium` follow-up，`/logs` 已能看到最终 assistant 回复 `PONG`
+
+## 2026-03-13 18:55 [progress]
+
+- ENG-004 / PLAN-013: 将 ACP agent 定义从单一 `agents.ts` 拆分为 `agents/base.ts`、`agents/gemini.ts`、`agents/codex.ts` 与 `agents/index.ts`
+- 保持 `AcpExecutor` 与测试的导入 API 不变，仅重组内部 registry 和共享 helper
+- 为后续继续接入新的 ACP agent 预留清晰边界
+
+## 2026-03-13 19:10 [progress]
+
+- ENG-005 / PLAN-014: 按 ACP 协议语义实现 stateful tool-call normalizer
+- `tool_call` 现在产出 action entry，`tool_call_update` 在结果信号或 turn 结束时产出 `isResult: true` 的 result entry
+- ACP tool state 现在保留 `title`、`kind`、`status`、`rawInput`、`rawOutput`、`content`、`locations`，并映射到现有 `toolAction` / `toolDetail.raw`
+- 运行时用 `acp:codex:gpt-5.3-codex/medium` 验证，turn 7 已在 SQLite 中落下成对的 tool-use action/result
+
+## 2026-03-13 19:25 [progress]
+
+- ENG-006 / PLAN-015: 将 ACP `plan` update 映射到现有 task-plan UI，将 ACP `diff` 内容映射到现有 compare renderer
+- `use-chat-messages` 现在会把 `system-message(subtype=plan)` 重建为 `task-plan`
+- `ToolItems` 现在会从 ACP metadata 中提取 `diff { path, oldText, newText }` 并复用现有 `ShikiUnifiedDiff`
+- 新增前端测试 `use-chat-messages.test.tsx` 覆盖 ACP plan -> task-plan 映射
+
+## 2026-03-13 05:18 [decision]
+
+- ENG-012 / PLAN-021: 禁止在已有 session 的 issue 上通过 follow-up 切换模型
+- `POST /issues/:id/follow-up` 现在会在已有 `externalSessionId` 且显式 `model` 变化时返回 `409`
+- `ChatInput` 在已有 session 时锁定模型选择，并且 follow-up 不再主动发送 `model`
+- 这样将“会话延续”和“模型切换”明确拆开，后续如需换模型，统一通过 restart 语义处理
+
+## 2026-03-13 05:28 [BUG-P1]
+
+- BUG-011 / PLAN-022: 修复 ACP normalizer 对同一 `toolCallId` 重复发射占位 action 与具体 action
+- 典型受影响工具是 `Read File` 与 `Terminal`，此前会先落一条泛化工具，再落一条带路径/命令的真实工具
+- ACP normalizer 现在只会在拿到足够具体的信息后发射 action，并保证每个 `toolCallId` 最多只发一次 action
+- 新增 ACP 定向回归测试，覆盖占位 `Read File` 后续升级为 `file-read` 的场景
 
 ## 2026-03-08 10:30 [progress]
 

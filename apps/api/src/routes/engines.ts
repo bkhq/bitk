@@ -11,7 +11,7 @@ import { engineRegistry } from '@/engines/executors'
 import { forceProbeEngines, getEngineDiscovery, getEngineModels } from '@/engines/startup-probe'
 import { BUILT_IN_PROFILES } from '@/engines/types'
 
-const ENGINE_TYPES = ['claude-code', 'codex', 'gemini', 'echo'] as const
+const ENGINE_TYPES = ['claude-code', 'codex', 'acp', 'echo'] as const
 const engineTypeEnum = z.enum(ENGINE_TYPES)
 
 const engines = new Hono()

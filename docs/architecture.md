@@ -130,7 +130,7 @@ The most complex subsystem — bridges API routes and CLI-based AI agents.
 | ------------- | ------------- | -------------------------------------------------- | ---------------------------------------------------------------- |
 | `claude-code` | `stream-json` | `claude` binary or `npx @anthropic-ai/claude-code` | Streaming JSON over stdout; process exits after each turn        |
 | `codex`       | `json-rpc`    | `npx @openai/codex app-server`                     | JSONL JSON-RPC over stdio; process **stays alive** between turns |
-| `gemini`      | `acp`         | `npx @google/gemini-cli`                           | ACP protocol                                                     |
+| `acp`         | `acp`         | selected by `model` prefix                         | ACP protocol; currently routes to Gemini CLI or Codex ACP        |
 | `echo`        | —             | —                                                  | Test/stub executor                                               |
 
 Each executor implements `EngineExecutor`: `spawn`, `spawnFollowUp`, `cancel`, `getAvailability`, `getModels`, `normalizeLog`.

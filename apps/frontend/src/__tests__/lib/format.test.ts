@@ -47,6 +47,14 @@ describe('formatModelName', () => {
   it('handles model with suffix', () => {
     expect(formatModelName('claude-opus-4-5[thinking]')).toBe('Claude Opus 4.5[thinking]')
   })
+
+  it('formats scoped acp gemini model ids', () => {
+    expect(formatModelName('acp:gemini:gemini-2.5-pro')).toBe('Gemini / gemini-2.5-pro')
+  })
+
+  it('formats scoped acp codex model ids', () => {
+    expect(formatModelName('acp:codex:gpt-5.4')).toBe('Codex / gpt-5.4')
+  })
 })
 
 describe('getProjectInitials', () => {

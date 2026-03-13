@@ -3,7 +3,7 @@ import type { Subprocess } from '@/engines/spawn'
 // ---------- Enums / Literal Unions ----------
 
 // Supported AI engine types
-export type EngineType = 'claude-code' | 'codex' | 'gemini' | 'echo'
+export type EngineType = 'claude-code' | 'codex' | 'acp' | 'echo'
 
 // Communication protocols
 export type EngineProtocol = 'stream-json' | 'json-rpc' | 'acp'
@@ -232,10 +232,10 @@ export const BUILT_IN_PROFILES: Record<EngineType, EngineProfile> = {
     capabilities: ['session-fork', 'setup-helper', 'context-usage', 'sandbox', 'reasoning'],
     permissionPolicy: 'auto',
   },
-  'gemini': {
-    engineType: 'gemini',
-    name: 'Gemini CLI',
-    baseCommand: 'npx -y @google/gemini-cli@latest',
+  'acp': {
+    engineType: 'acp',
+    name: 'ACP Agents',
+    baseCommand: 'dynamic (selected by model prefix)',
     protocol: 'acp',
     capabilities: ['session-fork'],
     permissionPolicy: 'auto',

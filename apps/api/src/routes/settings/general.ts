@@ -315,7 +315,7 @@ general.patch(
 
 // GET /api/settings/slash-commands?engine=claude-code
 general.get('/slash-commands', async (c) => {
-  const validEngines = ['claude-code', 'codex', 'gemini', 'echo']
+  const validEngines = ['claude-code', 'codex', 'acp', 'echo']
   const rawEngine = c.req.query('engine')
   if (rawEngine && !validEngines.includes(rawEngine)) {
     return c.json({ success: false, error: `Invalid engine type: ${rawEngine}` }, 400)

@@ -264,6 +264,7 @@ export function ChatBody({
               <LazySessionMessages
                 logs={logs}
                 scrollRef={scrollRef}
+                engineType={issue.engineType ?? undefined}
                 isRunning={isThinking}
                 workingStep={workingStep}
                 onCancel={() => {
@@ -330,6 +331,7 @@ export function ChatBody({
         scrollRef={scrollRef}
         engineType={issue.engineType ?? undefined}
         model={issue.model ?? undefined}
+        externalSessionId={issue.externalSessionId ?? undefined}
         sessionStatus={issue.sessionStatus}
         statusId={issue.statusId}
         isThinking={isThinking}

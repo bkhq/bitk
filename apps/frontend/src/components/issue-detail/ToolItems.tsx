@@ -30,6 +30,45 @@ function getItemToolName(item: ToolGroupItem): string | undefined {
   )
 }
 
+interface AcpDiffArtifact {
+  path: string
+  oldText?: string
+  newText: string
+}
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object' && !Array.isArray(value) ?
+      (value as Record<string, unknown>) :
+    null
+}
+
+function extractAcpDiffs(value: unknown): AcpDiffArtifact[] {
+  if (Array.isArray(value)) {
+    return value.flatMap(item => extractAcpDiffs(item))
+  }
+
+  const record = asRecord(value)
+  if (!record) return []
+
+  if (
+    record.type === 'diff'
+    && typeof record.path === 'string'
+    && typeof record.newText === 'string'
+  ) {
+    return [{
+      path: record.path,
+      oldText: typeof record.oldText === 'string' ? record.oldText : undefined,
+      newText: record.newText,
+    }]
+  }
+
+  return [
+    ...extractAcpDiffs(record.content),
+    ...extractAcpDiffs(record.output),
+    ...extractAcpDiffs(record.rawOutput),
+  ]
+}
+
 /** Compute +added / -removed line counts from old/new strings or patch. */
 function diffStats(
   oldStr: string | undefined,
@@ -148,6 +187,11 @@ export function FileToolItem({ item }: { item: ToolGroupItem }) {
   const filePath = tool && 'path' in tool ? tool.path : 'unknown'
   const codeLanguage = detectCodeLanguage(filePath)
   const parsed = parseFileToolInput(actionEntry.metadata?.input)
+  const acpDiffs = [
+    ...extractAcpDiffs(item.action.metadata?.content),
+    ...extractAcpDiffs(item.result?.metadata?.content),
+    ...extractAcpDiffs(item.result?.metadata?.output),
+  ]
   const hasContent = parsed.content !== undefined
   const hasOldString = parsed.oldString !== undefined
   const hasNewString = parsed.newString !== undefined
@@ -231,7 +275,22 @@ export function FileToolItem({ item }: { item: ToolGroupItem }) {
           ? <ShikiPatchDiff patch={parsed.unifiedDiff!} filePath={filePath} />
           : null}
 
-        {!hasContent && !hasOldString && !hasNewString && !hasPatch && !hasUnifiedDiff && !parsed.hasOnlyFilePath
+        {acpDiffs.length > 0
+          ? (
+              <div className="space-y-2">
+                {acpDiffs.map((diff, idx) => (
+                  <ShikiUnifiedDiff
+                    key={`${diff.path}-${idx}`}
+                    original={diff.oldText || ''}
+                    modified={diff.newText}
+                    filePath={diff.path}
+                  />
+                ))}
+              </div>
+            )
+          : null}
+
+        {!hasContent && !hasOldString && !hasNewString && !hasPatch && !hasUnifiedDiff && acpDiffs.length === 0 && !parsed.hasOnlyFilePath
           ? <CodeBlock content={parsed.raw || '(empty)'} language="json" collapsible={false} />
           : null}
       </div>

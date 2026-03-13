@@ -146,7 +146,7 @@ export function register(
       m.stdoutBroken = true
 
       // Transcript JSONL fallback is Claude CLI-specific — other engines
-      // (codex, gemini, echo) don't write transcript files.
+      // (codex, acp, echo) don't write transcript files.
       if (engineType !== 'claude-code') {
         debugLog.event(`stdout_broken pid=${pid} engine=${engineType} — no transcript fallback`)
         logger.warn(
