@@ -16,7 +16,7 @@ export const codexAgent: AcpAgentDefinition = {
   id: 'codex',
   label: 'Codex',
   commandName: 'codex-acp',
-  npxFallback: ['npx', '-y', '@zed-industries/codex-acp'],
+  npxFallback: ['npx', '-y', '@zed-industries/codex-acp@latest'],
   acpArgs: [],
   authStatus: getCodexAuthStatus,
   verify: async (cmd) => {

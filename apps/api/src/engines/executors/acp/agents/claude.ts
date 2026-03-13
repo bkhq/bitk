@@ -20,7 +20,7 @@ export const claudeAgent: AcpAgentDefinition = {
   id: 'claude',
   label: 'Claude',
   commandName: 'claude-code-acp',
-  npxFallback: ['npx', '-y', '@zed-industries/claude-code-acp'],
+  npxFallback: ['npx', '-y', '@zed-industries/claude-code-acp@latest'],
   acpArgs: [],
   authStatus: getClaudeAuthStatus,
   verify: async (cmd) => {
