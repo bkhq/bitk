@@ -93,7 +93,7 @@ export function handleTurnCompleted(
       const relocated = await relocatePendingForProcessing(issueId)
       if (relocated) {
         logger.info(
-          { issueId, executionId, oldPendingId: relocated.oldId },
+          { issueId, executionId, oldPendingIds: relocated.oldIds, mergedCount: relocated.oldIds.length },
           'auto_flush_pending_after_turn',
         )
         try {
@@ -107,13 +107,13 @@ export function handleTurnCompleted(
             relocated.displayPrompt,
             relocated.metadata,
           )
-          // Notify frontend to remove the old pending entry
-          emitIssueLogRemoved(issueId, [relocated.oldId])
+          // Notify frontend to remove the old pending entries
+          emitIssueLogRemoved(issueId, relocated.oldIds)
           logger.debug({ issueId, executionId }, 'turn_deferred_to_followup')
           return
         } catch (flushErr) {
           logger.error({ issueId, err: flushErr }, 'auto_flush_pending_failed')
-          restorePendingVisibility(relocated.oldId)
+          restorePendingVisibility(relocated.oldIds)
           // Fall through to normal review flow
         }
       }
