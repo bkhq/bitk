@@ -7,6 +7,7 @@ import del from './delete'
 import logs from './logs'
 import message from './message'
 import query from './query'
+import share from './share'
 import title from './title'
 import update from './update'
 
@@ -21,5 +22,6 @@ issues.route('/', message)
 issues.route('/', attachments)
 issues.route('/', logs)
 issues.route('/', changes)
+issues.route('/', share)
 
 export default issues

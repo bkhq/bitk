@@ -26,3 +26,4 @@
 - [x] **PLAN-021 禁止会话内 follow-up 切换模型** - task: `ENG-012` - owner: codex - file: `docs/plan/PLAN-021.md`
 - [x] **PLAN-022 修复 ACP 重复占位 tool action 发射** - task: `BUG-011` - owner: codex - file: `docs/plan/PLAN-022.md`
 - [x] **PLAN-023 Keep pending messages separate and editable** - task: `BUG-012` - owner: local - file: `docs/plan/PLAN-023.md`
+- [-] **PLAN-024 Issue Read-Only Share via Token** - task: `FEAT-004` - owner: claude - file: `docs/plan/PLAN-024.md`

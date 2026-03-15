@@ -109,7 +109,13 @@
     "delete": "删除",
     "deleteConfirm": "确定要删除此任务吗？此操作无法撤销。",
     "deleteWithChildren": "此任务包含子任务，子任务也将一并删除。",
-    "deleting": "删除中..."
+    "deleting": "删除中...",
+    "share": "分享",
+    "shareLink": "分享只读链接",
+    "shareLinkCopied": "分享链接已复制",
+    "unshare": "取消分享",
+    "unshareConfirm": "确定取消分享此任务？分享链接将失效。",
+    "readOnlyView": "只读视图"
   },
   "createIssue": {
     "model": "模型",
@@ -427,6 +433,12 @@
     "title": "待审核",
     "empty": "没有待审核的任务",
     "selectToStart": "选择一个任务进行审核"
+  },
+  "share": {
+    "title": "分享的任务",
+    "notFound": "分享的任务未找到或链接已过期",
+    "readOnly": "只读",
+    "poweredBy": "由 BKD 提供"
   },
   "statusName": {
     "Todo": "待办",

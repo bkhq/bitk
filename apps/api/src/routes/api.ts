@@ -8,6 +8,7 @@ import issues from './issues'
 import reviewIssues from './issues/review'
 import processes from './processes'
 import projects from './projects'
+import shareRoutes from './share'
 import worktrees from './worktrees'
 
 const apiRoutes = new Hono()
@@ -16,6 +17,7 @@ const apiRoutes = new Hono()
 apiRoutes.route('/projects', projects)
 apiRoutes.route('/projects/:projectId/issues', issues)
 apiRoutes.route('/issues/review', reviewIssues)
+apiRoutes.route('/share', shareRoutes)
 apiRoutes.route('/files', files)
 apiRoutes.route('/projects/:projectId/processes', processes)
 apiRoutes.route('/projects/:projectId/worktrees', worktrees)

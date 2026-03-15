@@ -60,6 +60,12 @@ export function useSessionState(
   projectId: string,
   issueId: string | null,
   issue: Issue | null | undefined,
+  logFetcher?: (opts?: { before?: string, cursor?: string, limit?: number }) => Promise<{
+    issue: unknown
+    logs: NormalizedLogEntry[]
+    hasMore: boolean
+    nextCursor: string | null
+  }>,
 ) {
   const hasSession = !!issue?.sessionStatus
   const isTodo = issue?.statusId === 'todo'
@@ -80,6 +86,7 @@ export function useSessionState(
     issueId: streamEnabled ? issueId : null,
     sessionStatus: issue?.sessionStatus ?? null,
     enabled: !!(issueId && streamEnabled),
+    logFetcher,
   })
 
   // Merge SSE-derived status with React Query status for resilience.
@@ -128,6 +135,8 @@ export function ChatBody({
   onToggleDiff,
   scrollRef: externalScrollRef,
   onAfterDelete,
+  readOnly,
+  logFetcher,
 }: {
   projectId: string
   issueId: string
@@ -136,6 +145,13 @@ export function ChatBody({
   onToggleDiff: () => void
   scrollRef?: React.RefObject<HTMLDivElement | null>
   onAfterDelete?: () => void
+  readOnly?: boolean
+  logFetcher?: (opts?: { before?: string, cursor?: string, limit?: number }) => Promise<{
+    issue: unknown
+    logs: NormalizedLogEntry[]
+    hasMore: boolean
+    nextCursor: string | null
+  }>
 }) {
   const { t } = useTranslation()
   const internalScrollRef = useRef<HTMLDivElement>(null)
@@ -181,7 +197,7 @@ export function ChatBody({
     refreshLogs,
     removeEntries,
     appendServerMessage,
-  } = useSessionState(projectId, issueId, issue)
+  } = useSessionState(projectId, issueId, issue, logFetcher)
 
   const handleEditPending = useCallback(async (messageId: string) => {
     try {
@@ -312,68 +328,80 @@ export function ChatBody({
         </div>
       </div>
 
-      {/* Issue metadata bar — fixed above input */}
-      <IssueDetail
-        issue={issue}
-        projectId={projectId}
-        status={STATUS_MAP.get(issue.statusId)}
-        onUpdate={fields => updateIssue.mutate({ id: issueId, ...fields })}
-        onDelete={handleDelete}
-        isDeleting={deleteIssueMutation.isPending}
-      />
+      {/* Issue metadata bar — fixed above input (hidden in read-only mode) */}
+      {!readOnly ?
+          (
+            <IssueDetail
+              issue={issue}
+              projectId={projectId}
+              status={STATUS_MAP.get(issue.statusId)}
+              onUpdate={fields => updateIssue.mutate({ id: issueId, ...fields })}
+              onDelete={handleDelete}
+              isDeleting={deleteIssueMutation.isPending}
+            />
+          ) :
+        null}
 
-      {/* Input */}
-      <ChatInput
-        projectId={projectId}
-        issueId={issueId}
-        diffOpen={showDiff}
-        onToggleDiff={onToggleDiff}
-        scrollRef={scrollRef}
-        engineType={issue.engineType ?? undefined}
-        model={issue.model ?? undefined}
-        externalSessionId={issue.externalSessionId ?? undefined}
-        sessionStatus={issue.sessionStatus}
-        statusId={issue.statusId}
-        isThinking={isThinking}
-        slashCommands={slashCommands}
-        pluginCommands={pluginCommands}
-        onRefreshLogs={refreshLogs}
-        onMessageSent={(messageId, prompt, metadata) => {
-          appendServerMessage(messageId, prompt, metadata)
-        }}
-        pendingEditContent={pendingEditContent}
-        onPendingEditConsumed={() => setPendingEditContent(null)}
-      />
-
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t('issue.delete')}</AlertDialogTitle>
-            <AlertDialogDescription>{t('issue.deleteConfirm')}</AlertDialogDescription>
-            {issue.childCount && issue.childCount > 0 ?
-                (
-                  <AlertDialogDescription className="text-destructive">
-                    {t('issue.deleteWithChildren')}
-                  </AlertDialogDescription>
-                ) :
-              null}
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleteIssueMutation.isPending}>
-              {t('common.cancel')}
-            </AlertDialogCancel>
-            <AlertDialogAction
-              disabled={deleteIssueMutation.isPending}
-              onClick={(event) => {
-                event.preventDefault()
-                handleConfirmDelete()
+      {/* Input (hidden in read-only mode) */}
+      {!readOnly ?
+          (
+            <ChatInput
+              projectId={projectId}
+              issueId={issueId}
+              diffOpen={showDiff}
+              onToggleDiff={onToggleDiff}
+              scrollRef={scrollRef}
+              engineType={issue.engineType ?? undefined}
+              model={issue.model ?? undefined}
+              externalSessionId={issue.externalSessionId ?? undefined}
+              sessionStatus={issue.sessionStatus}
+              statusId={issue.statusId}
+              isThinking={isThinking}
+              slashCommands={slashCommands}
+              pluginCommands={pluginCommands}
+              onRefreshLogs={refreshLogs}
+              onMessageSent={(messageId, prompt, metadata) => {
+                appendServerMessage(messageId, prompt, metadata)
               }}
-            >
-              {deleteIssueMutation.isPending ? t('issue.deleting') : t('issue.delete')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+              pendingEditContent={pendingEditContent}
+              onPendingEditConsumed={() => setPendingEditContent(null)}
+            />
+          ) :
+        null}
+
+      {!readOnly ?
+          (
+            <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>{t('issue.delete')}</AlertDialogTitle>
+                  <AlertDialogDescription>{t('issue.deleteConfirm')}</AlertDialogDescription>
+                  {issue.childCount && issue.childCount > 0 ?
+                      (
+                        <AlertDialogDescription className="text-destructive">
+                          {t('issue.deleteWithChildren')}
+                        </AlertDialogDescription>
+                      ) :
+                    null}
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel disabled={deleteIssueMutation.isPending}>
+                    {t('common.cancel')}
+                  </AlertDialogCancel>
+                  <AlertDialogAction
+                    disabled={deleteIssueMutation.isPending}
+                    onClick={(event) => {
+                      event.preventDefault()
+                      handleConfirmDelete()
+                    }}
+                  >
+                    {deleteIssueMutation.isPending ? t('issue.deleting') : t('issue.delete')}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          ) :
+        null}
     </>
   )
 }

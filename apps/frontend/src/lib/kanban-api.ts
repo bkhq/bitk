@@ -471,6 +471,32 @@ export const kanbanApi = {
     get<WebhookDelivery[]>(`/api/settings/webhooks/${id}/deliveries`),
   testWebhook: (id: string) => post<{ sent: boolean }>(`/api/settings/webhooks/${id}/test`, {}),
 
+  // Share
+  createShareToken: (projectId: string, issueId: string) =>
+    post<{ shareToken: string }>(
+      `/api/projects/${projectId}/issues/${issueId}/share`,
+      {},
+    ),
+  deleteShareToken: (projectId: string, issueId: string) =>
+    del<null>(`/api/projects/${projectId}/issues/${issueId}/share`),
+  getSharedIssue: (token: string) =>
+    get<Issue & { projectName: string, projectAlias: string }>(
+      `/api/share/${token}`,
+    ),
+  getSharedIssueLogs: (
+    token: string,
+    opts?: { before?: string, cursor?: string, limit?: number },
+  ) => {
+    const params = new URLSearchParams()
+    if (opts?.before) params.set('before', opts.before)
+    if (opts?.cursor) params.set('cursor', opts.cursor)
+    if (opts?.limit) params.set('limit', String(opts.limit))
+    const qs = params.toString()
+    return get<IssueLogsResponse>(
+      `/api/share/${token}/logs${qs ? `?${qs}` : ''}`,
+    )
+  },
+
   // Notes
   getNotes: () => get<Note[]>('/api/notes'),
   createNote: (data: { title?: string, content?: string }) => post<Note>('/api/notes', data),

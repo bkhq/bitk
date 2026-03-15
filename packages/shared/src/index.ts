@@ -47,6 +47,7 @@ export interface Issue {
   prompt: string | null
   externalSessionId: string | null
   model: string | null
+  shareToken: string | null
   totalInputTokens: number
   totalOutputTokens: number
   totalCostUsd: string

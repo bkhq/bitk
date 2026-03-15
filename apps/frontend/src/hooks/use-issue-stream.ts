@@ -5,11 +5,20 @@ import { kanbanApi } from '@/lib/kanban-api'
 import type { NormalizedLogEntry, SessionStatus } from '@/types/kanban'
 import { queryKeys } from './use-kanban'
 
+type LogFetcher = (opts?: { before?: string, cursor?: string, limit?: number }) => Promise<{
+  issue: unknown
+  logs: NormalizedLogEntry[]
+  hasMore: boolean
+  nextCursor: string | null
+}>
+
 interface UseIssueStreamOptions {
   projectId: string
   issueId: string | null
   sessionStatus?: SessionStatus | null
   enabled?: boolean
+  /** Override the default log fetcher (used for shared/read-only views) */
+  logFetcher?: LogFetcher
 }
 
 interface UseIssueStreamReturn {
@@ -81,6 +90,7 @@ export function useIssueStream({
   issueId,
   sessionStatus: externalStatus,
   enabled = true,
+  logFetcher,
 }: UseIssueStreamOptions): UseIssueStreamReturn {
   // Live logs: initial load + SSE entries, capped at MAX_LIVE_LOGS
   const [liveLogs, setLiveLogs] = useState<NormalizedLogEntry[]>([])
@@ -265,8 +275,8 @@ export function useIssueStream({
     if (!issueId || !olderCursorRef.current || isLoadingOlder) return
     setIsLoadingOlder(true)
 
-    kanbanApi
-      .getIssueLogs(projectId, issueId, { before: olderCursorRef.current })
+    const fetcher = logFetcher ?? ((opts?: { before?: string }) => kanbanApi.getIssueLogs(projectId, issueId, opts))
+    fetcher({ before: olderCursorRef.current ?? undefined })
       .then((data) => {
         if (!data.logs.length) {
           setHasOlderLogs(false)
@@ -292,7 +302,7 @@ export function useIssueStream({
       .finally(() => {
         setIsLoadingOlder(false)
       })
-  }, [projectId, issueId, isLoadingOlder])
+  }, [projectId, issueId, isLoadingOlder, logFetcher])
 
   useEffect(() => {
     if (!issueId || !enabled) {
@@ -329,8 +339,8 @@ export function useIssueStream({
     const scope = `${projectId}:${issueId}`
     let cancelled = false
 
-    kanbanApi
-      .getIssueLogs(projectId, issueId)
+    const initialFetcher = logFetcher ?? (() => kanbanApi.getIssueLogs(projectId, issueId))
+    initialFetcher()
       .then((data) => {
         if (cancelled || streamScopeRef.current !== scope) return
 
@@ -375,7 +385,7 @@ export function useIssueStream({
     // race: the HTTP response can overwrite SSE entries that arrived between
     // the request and response, making messages appear/disappear/reappear.
     // refreshCounter is included so that refreshLogs() can trigger a re-fetch.
-  }, [projectId, issueId, enabled, markSeen, _refreshCounter])
+  }, [projectId, issueId, enabled, markSeen, _refreshCounter, logFetcher])
 
   // Subscribe to live SSE events for this issue.
   useEffect(() => {

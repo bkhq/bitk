@@ -63,6 +63,7 @@ export const issues = sqliteTable(
     externalSessionId: text('external_session_id'),
 
     model: text('model'),
+    shareToken: text('share_token'),
     totalInputTokens: integer('total_input_tokens').notNull().default(0),
     totalOutputTokens: integer('total_output_tokens').notNull().default(0),
     totalCostUsd: text('total_cost_usd').notNull().default('0'),
@@ -79,6 +80,7 @@ export const issues = sqliteTable(
     index('issues_project_id_status_updated_at_idx').on(table.projectId, table.statusUpdatedAt),
     check('issues_status_id_check', sql`${table.statusId} IN ('todo','working','review','done')`),
     uniqueIndex('issues_project_id_issue_number_uniq').on(table.projectId, table.issueNumber),
+    uniqueIndex('issues_share_token_uniq').on(table.shareToken),
   ],
 )
 

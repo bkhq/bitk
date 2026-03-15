@@ -109,7 +109,13 @@
     "delete": "Delete",
     "deleteConfirm": "Are you sure you want to delete this issue? This action cannot be undone.",
     "deleteWithChildren": "This issue has sub-issues that will also be deleted.",
-    "deleting": "Deleting..."
+    "deleting": "Deleting...",
+    "share": "Share",
+    "shareLink": "Share read-only link",
+    "shareLinkCopied": "Share link copied",
+    "unshare": "Stop sharing",
+    "unshareConfirm": "Stop sharing this issue? The shared link will no longer work.",
+    "readOnlyView": "Read-only view"
   },
   "createIssue": {
     "model": "Model",
@@ -427,6 +433,12 @@
     "title": "Review",
     "empty": "No issues pending review",
     "selectToStart": "Select an issue to review"
+  },
+  "share": {
+    "title": "Shared Issue",
+    "notFound": "Shared issue not found or link has expired",
+    "readOnly": "Read-only",
+    "poweredBy": "Powered by BKD"
   },
   "statusName": {
     "Todo": "Todo",

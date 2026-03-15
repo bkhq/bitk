@@ -54,6 +54,7 @@ const HomePage = lazy(() => import('./pages/HomePage'))
 const KanbanPage = lazy(() => import('./pages/KanbanPage'))
 const IssueDetailPage = lazy(() => import('./pages/IssueDetailPage'))
 const ReviewPage = lazy(() => import('./pages/ReviewPage'))
+const SharedIssuePage = lazy(() => import('./pages/SharedIssuePage'))
 const TerminalPage = lazy(() => import('./pages/TerminalPage'))
 const LazyTerminalDrawer = lazy(() =>
   import('./components/terminal/TerminalDrawer').then(m => ({
@@ -218,6 +219,14 @@ if (!rootElement.innerHTML) {
                   element={(
                     <ErrorBoundary>
                       <TerminalPage />
+                    </ErrorBoundary>
+                  )}
+                />
+                <Route
+                  path="/share/:token"
+                  element={(
+                    <ErrorBoundary>
+                      <SharedIssuePage />
                     </ErrorBoundary>
                   )}
                 />

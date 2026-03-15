@@ -1,9 +1,10 @@
-import { ArrowLeft, Check, Link, Plus, Sparkles } from 'lucide-react'
+import { ArrowLeft, Check, ExternalLink, Link, Plus, Sparkles } from 'lucide-react'
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
-import { useAutoTitleIssue, useIssue, useUpdateIssue } from '@/hooks/use-kanban'
+import { useAutoTitleIssue, useCreateShareToken, useDeleteShareToken, useIssue, useUpdateIssue } from '@/hooks/use-kanban'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { useFileBrowserStore } from '@/stores/file-browser-store'
 import { getIssueUrl } from '@/stores/server-store'
@@ -25,6 +26,8 @@ export function ChatArea({
   onFileBrowserWidthChange,
   showBackToList,
   backPath,
+  readOnly,
+  logFetcher,
 }: {
   projectId: string
   issueId: string
@@ -37,6 +40,13 @@ export function ChatArea({
   onFileBrowserWidthChange: (w: number) => void
   showBackToList?: boolean
   backPath?: string
+  readOnly?: boolean
+  logFetcher?: (opts?: { before?: string, cursor?: string, limit?: number }) => Promise<{
+    issue: unknown
+    logs: import('@/types/kanban').NormalizedLogEntry[]
+    hasMore: boolean
+    nextCursor: string | null
+  }>
 }) {
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -49,6 +59,24 @@ export function ChatArea({
   const isMobile = useIsMobile()
   const showFileBrowser = useFileBrowserStore(s => s.isOpen && !s.isDrawer && s.issueId === issueId)
   const closeFileBrowser = useFileBrowserStore(s => s.close)
+
+  const createShareToken = useCreateShareToken(projectId)
+  const deleteShareToken = useDeleteShareToken(projectId)
+
+  const handleShare = useCallback(() => {
+    createShareToken.mutate(issueId, {
+      onSuccess: (data) => {
+        const url = `${window.location.origin}/share/${data.shareToken}`
+        navigator.clipboard.writeText(url).then(() => {
+          toast.success(t('issue.shareLinkCopied'))
+        }).catch(() => {})
+      },
+    })
+  }, [createShareToken, issueId, t])
+
+  const handleUnshare = useCallback(() => {
+    deleteShareToken.mutate(issueId)
+  }, [deleteShareToken, issueId])
 
   const updateIssue = useUpdateIssue(projectId)
   const autoTitle = useAutoTitleIssue(projectId)
@@ -173,7 +201,7 @@ export function ChatArea({
                 #
                 {issue.issueNumber}
               </span>
-              {editingTitle ?
+              {!readOnly && editingTitle ?
                   (
                     <input
                       className="text-sm font-semibold bg-transparent border-b-2 border-primary outline-none min-w-0 flex-1 tracking-tight"
@@ -193,61 +221,81 @@ export function ChatArea({
                   ) :
                   (
                     <span
-                      className="text-sm font-semibold truncate cursor-pointer hover:text-primary transition-colors duration-200 tracking-tight decoration-primary/30 hover:underline underline-offset-2"
-                      onClick={startEditingTitle}
-                      title={t('issue.editTitle')}
+                      className={`text-sm font-semibold truncate tracking-tight ${readOnly ? '' : 'cursor-pointer hover:text-primary transition-colors duration-200 decoration-primary/30 hover:underline underline-offset-2'}`}
+                      onClick={readOnly ? undefined : startEditingTitle}
+                      title={readOnly ? undefined : t('issue.editTitle')}
                     >
                       {issue.title}
                     </span>
                   )}
             </div>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className={`h-7 w-7 shrink-0 transition-colors ${
-              isAutoTitling ?
-                'text-violet-600 dark:text-violet-400 animate-pulse' :
-                issue.sessionStatus ?
-                  'text-muted-foreground hover:text-violet-600 dark:hover:text-violet-400' :
-                  'text-muted-foreground/30 cursor-not-allowed'
-            }`}
-            title={t('issue.autoTitle')}
-            disabled={!issue.sessionStatus || isAutoTitling}
-            onClick={handleAutoTitle}
-          >
-            <Sparkles className="h-3.5 w-3.5" />
-          </Button>
-          {!issue.parentIssueId ?
+          {readOnly ?
               (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground transition-colors"
-                  title={t('issue.createSubIssue')}
-                  onClick={() => setShowSubIssue(true)}
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                </Button>
+                <span className="text-[10px] font-medium text-muted-foreground bg-muted/60 rounded px-1.5 py-0.5 shrink-0">
+                  {t('share.readOnly')}
+                </span>
               ) :
-            null}
-          <Button
-            variant="ghost"
-            size="icon"
-            className={`h-7 w-7 shrink-0 transition-all duration-200 ${copied ? 'text-emerald-500 scale-110' : 'text-muted-foreground hover:text-foreground'}`}
-            title={t('issue.copyLink')}
-            onClick={() => {
-              navigator.clipboard
-                .writeText(getIssueUrl(projectId, issueId))
-                .then(() => {
-                  setCopied(true)
-                  setTimeout(setCopied, 2000, false)
-                })
-                .catch(() => {})
-            }}
-          >
-            {copied ? <Check className="h-3.5 w-3.5" /> : <Link className="h-3.5 w-3.5" />}
-          </Button>
+              (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={`h-7 w-7 shrink-0 transition-colors ${
+                      isAutoTitling ?
+                        'text-violet-600 dark:text-violet-400 animate-pulse' :
+                        issue.sessionStatus ?
+                          'text-muted-foreground hover:text-violet-600 dark:hover:text-violet-400' :
+                          'text-muted-foreground/30 cursor-not-allowed'
+                    }`}
+                    title={t('issue.autoTitle')}
+                    disabled={!issue.sessionStatus || isAutoTitling}
+                    onClick={handleAutoTitle}
+                  >
+                    <Sparkles className="h-3.5 w-3.5" />
+                  </Button>
+                  {!issue.parentIssueId ?
+                      (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+                          title={t('issue.createSubIssue')}
+                          onClick={() => setShowSubIssue(true)}
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                        </Button>
+                      ) :
+                    null}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={`h-7 w-7 shrink-0 transition-all duration-200 ${issue.shareToken ? 'text-blue-500 hover:text-blue-600' : 'text-muted-foreground hover:text-foreground'}`}
+                    title={issue.shareToken ? t('issue.unshare') : t('issue.shareLink')}
+                    disabled={createShareToken.isPending || deleteShareToken.isPending}
+                    onClick={issue.shareToken ? handleUnshare : handleShare}
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={`h-7 w-7 shrink-0 transition-all duration-200 ${copied ? 'text-emerald-500 scale-110' : 'text-muted-foreground hover:text-foreground'}`}
+                    title={t('issue.copyLink')}
+                    onClick={() => {
+                      navigator.clipboard
+                        .writeText(getIssueUrl(projectId, issueId))
+                        .then(() => {
+                          setCopied(true)
+                          setTimeout(setCopied, 2000, false)
+                        })
+                        .catch(() => {})
+                    }}
+                  >
+                    {copied ? <Check className="h-3.5 w-3.5" /> : <Link className="h-3.5 w-3.5" />}
+                  </Button>
+                </>
+              )}
         </div>
 
         {/* Shared chat body: messages + metadata bar + input */}
@@ -259,6 +307,8 @@ export function ChatArea({
           onToggleDiff={onToggleDiff}
           scrollRef={scrollRef}
           onAfterDelete={handleAfterDelete}
+          readOnly={readOnly}
+          logFetcher={logFetcher}
         />
       </div>
 
@@ -346,13 +396,17 @@ export function ChatArea({
           )
         : null}
 
-      {/* Sub-issue dialog */}
-      <SubIssueDialog
-        projectId={projectId}
-        parentIssueId={issueId}
-        open={showSubIssue}
-        onOpenChange={setShowSubIssue}
-      />
+      {/* Sub-issue dialog (hidden in read-only mode) */}
+      {!readOnly ?
+          (
+            <SubIssueDialog
+              projectId={projectId}
+              parentIssueId={issueId}
+              open={showSubIssue}
+              onOpenChange={setShowSubIssue}
+            />
+          ) :
+        null}
     </div>
   )
 }

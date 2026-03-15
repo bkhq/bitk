@@ -95,6 +95,7 @@ export function serializeIssue(row: IssueRow, childCount?: number) {
     prompt: row.prompt ?? null,
     externalSessionId: row.externalSessionId ?? null,
     model: row.model ?? null,
+    shareToken: row.shareToken ?? null,
     statusUpdatedAt: toISO(row.statusUpdatedAt),
     createdAt: toISO(row.createdAt),
     updatedAt: toISO(row.updatedAt),

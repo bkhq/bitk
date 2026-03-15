@@ -42,6 +42,7 @@ export const queryKeys = {
   reviewIssues: () => ['issues', 'review'] as const,
   webhooks: () => ['settings', 'webhooks'] as const,
   webhookDeliveries: (id: string) => ['settings', 'webhooks', id, 'deliveries'] as const,
+  sharedIssue: (token: string) => ['share', token] as const,
 }
 
 export function useProjects() {
@@ -921,6 +922,40 @@ export function useTestWebhook() {
     onSuccess: (_data, id) => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.webhookDeliveries(id),
+      })
+    },
+  })
+}
+
+// --- Share hooks ---
+
+export function useSharedIssue(token: string) {
+  return useQuery({
+    queryKey: queryKeys.sharedIssue(token),
+    queryFn: () => kanbanApi.getSharedIssue(token),
+    enabled: !!token,
+  })
+}
+
+export function useCreateShareToken(projectId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (issueId: string) => kanbanApi.createShareToken(projectId, issueId),
+    onSuccess: (_data, issueId) => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.issue(projectId, issueId),
+      })
+    },
+  })
+}
+
+export function useDeleteShareToken(projectId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (issueId: string) => kanbanApi.deleteShareToken(projectId, issueId),
+    onSuccess: (_data, issueId) => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.issue(projectId, issueId),
       })
     },
   })
