@@ -173,13 +173,13 @@ export async function deletePendingMessage(issueId: string, messageId: string): 
 }
 
 /**
- * Relocate one queued message for AI processing:
- * 1. Atomically mark pending as visible=0 (optimistic lock)
- * 2. Return the content + metadata for caller to create a new entry at current position
+ * Relocate all queued pending messages for AI processing:
+ * 1. Atomically mark all pending rows as visible=0 inside a transaction
+ * 2. Return the merged content + metadata for caller to create a single entry
  *
  * Returns null if no pending found or already consumed (race with user edit).
  * Caller should use persistUserMessage() to create the new entry, then emit
- * log-removed SSE for the old messageId.
+ * log-removed SSE for the old messageIds.
  */
 export async function relocatePendingForProcessing(issueId: string): Promise<{
   oldIds: string[]
@@ -197,16 +197,20 @@ export async function relocatePendingForProcessing(issueId: string): Promise<{
   })
   if (pendingRows.length === 0) return null
 
-  // Optimistic lock: only hide if still visible
-  const relocated: typeof pendingRows = []
-  for (const row of pendingRows) {
-    const result = db
-      .update(issueLogs)
-      .set({ visible: 0 })
-      .where(and(eq(issueLogs.id, row.id), eq(issueLogs.visible, 1)))
-      .run()
-    if (result.changes > 0) relocated.push(row)
-  }
+  // Atomic relocation: hide all pending rows in a single transaction
+  // to prevent concurrent flushes from splitting the batch
+  const relocated = db.transaction(() => {
+    const claimed: typeof pendingRows = []
+    for (const row of pendingRows) {
+      const result = db
+        .update(issueLogs)
+        .set({ visible: 0 })
+        .where(and(eq(issueLogs.id, row.id), eq(issueLogs.visible, 1)))
+        .run()
+      if (result.changes > 0) claimed.push(row)
+    }
+    return claimed
+  })
   if (relocated.length === 0) return null
 
   // Build merged prompt from all relocated messages with attachment context
@@ -228,7 +232,7 @@ export async function relocatePendingForProcessing(issueId: string): Promise<{
   // Merge metadata from all messages: collect attachments from every row,
   // use last-wins for scalar fields (model, permissionMode, etc.)
   const allAttachments: unknown[] = []
-  let mergedMeta: Record<string, unknown> = {}
+  const mergedMeta: Record<string, unknown> = {}
   for (const row of relocated) {
     let meta: Record<string, unknown> = {}
     try {
@@ -247,7 +251,7 @@ export async function relocatePendingForProcessing(issueId: string): Promise<{
   return {
     oldIds: logIds,
     prompt: prompts.join('\n\n'),
-    displayPrompt: displayParts.join('\n\n') || undefined,
+    displayPrompt: displayParts.length > 0 ? displayParts.join('\n\n') : undefined,
     metadata: mergedMeta,
   }
 }
