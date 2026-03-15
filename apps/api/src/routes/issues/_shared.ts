@@ -180,12 +180,12 @@ export function flushPendingAsFollowUp(issueId: string, issue: { model: string |
         relocated.displayPrompt,
         relocated.metadata,
       )
-      // Notify frontend to remove old pending entry
-      emitIssueLogRemoved(issueId, [relocated.oldId])
-      logger.debug({ issueId, oldPendingId: relocated.oldId }, 'pending_flushed_as_followup')
+      // Notify frontend to remove old pending entries
+      emitIssueLogRemoved(issueId, relocated.oldIds)
+      logger.debug({ issueId, oldPendingIds: relocated.oldIds, mergedCount: relocated.oldIds.length }, 'pending_flushed_as_followup')
     } catch (err) {
       logger.error({ issueId, err }, 'pending_flush_followup_failed')
-      if (relocated) restorePendingVisibility(relocated.oldId)
+      if (relocated) restorePendingVisibility(relocated.oldIds)
     }
   })()
 }
@@ -294,12 +294,12 @@ export function triggerIssueExecution(
       })
       // Notify frontend to remove old pending entry after successful execution
       if (relocated) {
-        emitIssueLogRemoved(issueId, [relocated.oldId])
+        emitIssueLogRemoved(issueId, relocated.oldIds)
       }
       logger.debug({ issueId, hadPending: !!relocated }, 'auto_execute_started')
     } catch (err) {
       logger.error({ issueId, err }, 'auto_execute_failed')
-      if (relocated) restorePendingVisibility(relocated.oldId)
+      if (relocated) restorePendingVisibility(relocated.oldIds)
       issueEngine.setLastError(issueId, err instanceof Error ? err.message : 'auto_execute_failed')
       try {
         await db

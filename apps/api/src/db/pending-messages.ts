@@ -173,59 +173,86 @@ export async function deletePendingMessage(issueId: string, messageId: string): 
 }
 
 /**
- * Relocate one queued message for AI processing:
- * 1. Atomically mark pending as visible=0 (optimistic lock)
- * 2. Return the content + metadata for caller to create a new entry at current position
+ * Relocate all queued pending messages for AI processing:
+ * 1. Atomically mark all pending rows as visible=0 inside a transaction
+ * 2. Return the merged content + metadata for caller to create a single entry
  *
  * Returns null if no pending found or already consumed (race with user edit).
  * Caller should use persistUserMessage() to create the new entry, then emit
- * log-removed SSE for the old messageId.
+ * log-removed SSE for the old messageIds.
  */
 export async function relocatePendingForProcessing(issueId: string): Promise<{
-  oldId: string
+  oldIds: string[]
   prompt: string
   displayPrompt: string | undefined
   metadata: Record<string, unknown>
 } | null> {
   const all = await getPendingMessages(issueId)
-  const pending = all.find((row) => {
+  const pendingRows = all.filter((row) => {
     try {
       return JSON.parse(row.metadata!).type === 'pending'
     } catch {
       return false
     }
-  }) ?? null
-  if (!pending) return null
+  })
+  if (pendingRows.length === 0) return null
 
-  // Optimistic lock: only hide if still visible
-  const result = db
-    .update(issueLogs)
-    .set({ visible: 0 })
-    .where(and(eq(issueLogs.id, pending.id), eq(issueLogs.visible, 1)))
-    .run()
+  // Atomic relocation: hide all pending rows in a single transaction
+  // to prevent concurrent flushes from splitting the batch
+  const relocated = db.transaction(() => {
+    const claimed: typeof pendingRows = []
+    for (const row of pendingRows) {
+      const result = db
+        .update(issueLogs)
+        .set({ visible: 0 })
+        .where(and(eq(issueLogs.id, row.id), eq(issueLogs.visible, 1)))
+        .run()
+      if (result.changes > 0) claimed.push(row)
+    }
+    return claimed
+  })
+  if (relocated.length === 0) return null
 
-  // Check affected rows — if 0, user already recalled this pending
-  if (result.changes === 0) return null
+  // Build merged prompt from all relocated messages with attachment context
+  const logIds = relocated.map(r => r.id)
+  const attachmentCtx = await getAttachmentContextForLogIds(logIds)
 
-  let meta: Record<string, unknown> = {}
-  try {
-    meta = pending.metadata ? JSON.parse(pending.metadata) : {}
-  } catch {
-    // ignore
+  const prompts: string[] = []
+  const displayParts: string[] = []
+  for (const row of relocated) {
+    let meta: Record<string, unknown> = {}
+    try {
+      meta = row.metadata ? JSON.parse(row.metadata) : {}
+    } catch { /* ignore */ }
+    const fileCtx = attachmentCtx.get(row.id) ?? ''
+    prompts.push((row.content + fileCtx).trim())
+    displayParts.push((meta.displayPrompt as string | undefined) ?? row.content)
   }
 
-  // Build full prompt with attachment context
-  const attachmentCtx = await getAttachmentContextForLogIds([pending.id])
-  const fileCtx = attachmentCtx.get(pending.id) ?? ''
-  const prompt = (pending.content + fileCtx).trim()
-
-  const { type: _type, ...restMeta } = meta
+  // Merge metadata from all messages: collect attachments from every row,
+  // use last-wins for scalar fields (model, permissionMode, etc.)
+  const allAttachments: unknown[] = []
+  const mergedMeta: Record<string, unknown> = {}
+  for (const row of relocated) {
+    let meta: Record<string, unknown> = {}
+    try {
+      meta = row.metadata ? JSON.parse(row.metadata) : {}
+    } catch { /* ignore */ }
+    const { type: _type, attachments: rowAttachments, ...rest } = meta
+    Object.assign(mergedMeta, rest)
+    if (Array.isArray(rowAttachments)) {
+      allAttachments.push(...rowAttachments)
+    }
+  }
+  if (allAttachments.length > 0) {
+    mergedMeta.attachments = allAttachments
+  }
 
   return {
-    oldId: pending.id,
-    prompt,
-    displayPrompt: (meta.displayPrompt as string | undefined) ?? pending.content,
-    metadata: restMeta,
+    oldIds: logIds,
+    prompt: prompts.join('\n\n'),
+    displayPrompt: displayParts.length > 0 ? displayParts.join('\n\n') : undefined,
+    metadata: mergedMeta,
   }
 }
 
@@ -233,11 +260,20 @@ export async function relocatePendingForProcessing(issueId: string): Promise<{
  * Restore a relocated pending message back to visible if dispatch failed.
  * Prevents losing user input when the engine call fails after relocation.
  */
-export function restorePendingVisibility(pendingId: string): void {
-  db.update(issueLogs)
-    .set({ visible: 1 })
-    .where(and(eq(issueLogs.id, pendingId), eq(issueLogs.visible, 0)))
-    .run()
+export function restorePendingVisibility(pendingIds: string | string[]): void {
+  const ids = Array.isArray(pendingIds) ? pendingIds : [pendingIds]
+  if (ids.length === 0) return
+  if (ids.length === 1) {
+    db.update(issueLogs)
+      .set({ visible: 1 })
+      .where(and(eq(issueLogs.id, ids[0]), eq(issueLogs.visible, 0)))
+      .run()
+  } else {
+    db.update(issueLogs)
+      .set({ visible: 1 })
+      .where(and(inArray(issueLogs.id, ids), eq(issueLogs.visible, 0)))
+      .run()
+  }
 }
 
 /**

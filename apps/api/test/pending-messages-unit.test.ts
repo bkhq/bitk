@@ -127,26 +127,54 @@ describe('pending message recall', () => {
 })
 
 describe('pending message dispatch', () => {
-  test('relocates one pending row at a time in chronological order', async () => {
+  test('relocates all pending rows at once and merges prompts', async () => {
     const issue = await createTestIssue()
 
     const firstId = await upsertPendingMessage(issue.id, 'first pending', { type: 'pending' })
     const secondId = await upsertPendingMessage(issue.id, 'second pending', { type: 'pending' })
 
-    const firstRelocated = await relocatePendingForProcessing(issue.id)
-    expect(firstRelocated?.oldId).toBe(firstId)
-    expect(firstRelocated?.prompt).toBe('first pending')
+    const relocated = await relocatePendingForProcessing(issue.id)
+    expect(relocated?.oldIds).toEqual([firstId, secondId])
+    expect(relocated?.prompt).toBe('first pending\n\nsecond pending')
+    expect(relocated?.displayPrompt).toBe('first pending\n\nsecond pending')
 
-    let pending = await getPendingMessages(issue.id)
-    expect(pending).toHaveLength(1)
-    expect(pending[0]?.id).toBe(secondId)
-
-    const secondRelocated = await relocatePendingForProcessing(issue.id)
-    expect(secondRelocated?.oldId).toBe(secondId)
-    expect(secondRelocated?.prompt).toBe('second pending')
-
-    pending = await getPendingMessages(issue.id)
+    const pending = await getPendingMessages(issue.id)
     expect(pending).toHaveLength(0)
+
+    // No more pending messages to relocate
+    const empty = await relocatePendingForProcessing(issue.id)
+    expect(empty).toBeNull()
+  })
+
+  test('merges attachments metadata from all pending messages', async () => {
+    const issue = await createTestIssue()
+
+    const att1 = { id: 'a1', name: 'file1.txt', mimeType: 'text/plain', size: 100 }
+    const att2 = { id: 'a2', name: 'file2.png', mimeType: 'image/png', size: 200 }
+
+    await upsertPendingMessage(issue.id, 'msg with file1', {
+      type: 'pending',
+      attachments: [att1],
+    })
+    await upsertPendingMessage(issue.id, 'msg with file2', {
+      type: 'pending',
+      attachments: [att2],
+    })
+
+    const relocated = await relocatePendingForProcessing(issue.id)
+    expect(relocated).not.toBeNull()
+    expect(relocated!.metadata.attachments).toEqual([att1, att2])
+    expect(relocated!.prompt).toBe('msg with file1\n\nmsg with file2')
+  })
+
+  test('merges metadata without attachments when none present', async () => {
+    const issue = await createTestIssue()
+
+    await upsertPendingMessage(issue.id, 'plain msg', { type: 'pending' })
+
+    const relocated = await relocatePendingForProcessing(issue.id)
+    expect(relocated).not.toBeNull()
+    expect(relocated!.metadata.attachments).toBeUndefined()
   })
 
   test('restorePendingVisibility makes a failed relocation retryable', async () => {
@@ -154,10 +182,10 @@ describe('pending message dispatch', () => {
     const pendingId = await upsertPendingMessage(issue.id, 'retry me', { type: 'pending' })
 
     const relocated = await relocatePendingForProcessing(issue.id)
-    expect(relocated?.oldId).toBe(pendingId)
+    expect(relocated?.oldIds).toEqual([pendingId])
     expect(await getPendingMessages(issue.id)).toHaveLength(0)
 
-    restorePendingVisibility(pendingId)
+    restorePendingVisibility(relocated!.oldIds)
 
     const pending = await getPendingMessages(issue.id)
     expect(pending).toHaveLength(1)
