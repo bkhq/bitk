@@ -411,12 +411,11 @@ const IssueRow = memo(({
         >
           {issue.title}
         </span>
-        <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+        <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity shrink-0" onClick={e => e.stopPropagation()} onPointerDown={e => e.stopPropagation()}>
           <IssueContextMenu issue={issue} projectId={projectId}>
             <button
               type="button"
               className="inline-flex items-center justify-center rounded-md p-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-              onClick={e => e.stopPropagation()}
             >
               <MoreHorizontal className="size-3.5" />
             </button>
