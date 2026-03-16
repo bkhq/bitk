@@ -22,6 +22,7 @@
   "dependencies": {
     "@agentclientprotocol/sdk": "^0.16.1",
     "@hono/zod-validator": "^0.7.6",
+    "@modelcontextprotocol/sdk": "^1.27.1",
     "consola": "^3.4.2",
     "drizzle-orm": "^0.45.1",
     "hono": "^4.12.1",
