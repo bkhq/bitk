@@ -61,6 +61,7 @@ export default function SharedIssuePage() {
         fileBrowserWidth={fileBrowserWidth}
         onFileBrowserWidthChange={handleFileBrowserWidthChange}
         readOnly
+        sharedIssue={issue}
         logFetcher={logFetcher}
       />
     </div>

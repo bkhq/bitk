@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import type { Issue } from '@/types/kanban'
 import { useAutoTitleIssue, useCreateShareToken, useDeleteShareToken, useIssue, useUpdateIssue } from '@/hooks/use-kanban'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { useFileBrowserStore } from '@/stores/file-browser-store'
@@ -27,6 +28,7 @@ export function ChatArea({
   showBackToList,
   backPath,
   readOnly,
+  sharedIssue,
   logFetcher,
 }: {
   projectId: string
@@ -41,6 +43,7 @@ export function ChatArea({
   showBackToList?: boolean
   backPath?: string
   readOnly?: boolean
+  sharedIssue?: Issue & { projectName?: string, projectAlias?: string }
   logFetcher?: (opts?: { before?: string, cursor?: string, limit?: number }) => Promise<{
     issue: unknown
     logs: import('@/types/kanban').NormalizedLogEntry[]
@@ -50,7 +53,10 @@ export function ChatArea({
 }) {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const { data: issue, isLoading, isError } = useIssue(projectId, issueId)
+  const { data: fetchedIssue, isLoading: fetchLoading, isError: fetchError } = useIssue(projectId, issueId, { enabled: !sharedIssue })
+  const issue = sharedIssue ?? fetchedIssue
+  const isLoading = !sharedIssue && fetchLoading
+  const isError = !sharedIssue && fetchError
   const scrollRef = useRef<HTMLDivElement>(null)
   const [showSubIssue, setShowSubIssue] = useState(false)
   const [copied, setCopied] = useState(false)

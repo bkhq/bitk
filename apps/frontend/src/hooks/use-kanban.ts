@@ -188,11 +188,12 @@ export function useIssues(projectId: string) {
   })
 }
 
-export function useIssue(projectId: string, issueId: string) {
+export function useIssue(projectId: string, issueId: string, opts?: { enabled?: boolean }) {
+  const enabled = (opts?.enabled ?? true) && !!projectId && !!issueId
   return useQuery({
     queryKey: queryKeys.issue(projectId, issueId),
     queryFn: () => kanbanApi.getIssue(projectId, issueId),
-    enabled: !!projectId && !!issueId,
+    enabled,
   })
 }
 
