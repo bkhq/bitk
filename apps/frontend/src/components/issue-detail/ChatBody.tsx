@@ -283,17 +283,17 @@ export function ChatBody({
                 engineType={issue.engineType ?? undefined}
                 isRunning={isThinking}
                 workingStep={workingStep}
-                onCancel={() => {
+                onCancel={readOnly ? undefined : () => {
                   setIsCancelling(true)
                   cancelIssue.mutate(issueId, {
                     onError: () => setIsCancelling(false),
                   })
                 }}
-                isCancelling={isCancelling}
+                isCancelling={readOnly ? false : isCancelling}
                 hasOlderLogs={hasOlderLogs}
                 isLoadingOlder={isLoadingOlder}
                 onLoadOlder={loadOlderLogs}
-                onEditPending={handleEditPending}
+                onEditPending={readOnly ? undefined : handleEditPending}
               />
             </Suspense>
           </div>

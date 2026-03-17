@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { and, eq, isNull } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { customAlphabet } from 'nanoid'
 import { db } from '@/db'
@@ -6,7 +6,7 @@ import { findProject } from '@/db/helpers'
 import { issues as issuesTable } from '@/db/schema'
 import { getProjectOwnedIssue, invalidateIssueCache } from './_shared'
 
-const shareToken = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 12)
+const generateShareToken = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 12)
 
 const share = new Hono()
 
@@ -32,12 +32,23 @@ share.post('/:id/share', async (c) => {
     })
   }
 
-  // Generate new token
-  const token = shareToken()
-  await db
+  // Atomically set token only when currently null to handle concurrent requests
+  const token = generateShareToken()
+  const result = await db
     .update(issuesTable)
     .set({ shareToken: token })
-    .where(eq(issuesTable.id, issueId))
+    .where(and(eq(issuesTable.id, issueId), isNull(issuesTable.shareToken)))
+    .returning({ shareToken: issuesTable.shareToken })
+
+  // Another request may have set the token concurrently — re-read
+  if (result.length === 0) {
+    const refreshed = await getProjectOwnedIssue(project.id, issueId)
+    return c.json({
+      success: true,
+      data: { shareToken: refreshed!.shareToken },
+    })
+  }
+
   await invalidateIssueCache(project.id, issueId)
 
   return c.json({
