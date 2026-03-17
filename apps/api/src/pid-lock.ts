@@ -8,6 +8,7 @@ import { ROOT_DIR } from './root'
 
 const PID_FILE_NAME = 'bkd.pid'
 const UPGRADE_TOKEN_FILE_NAME = 'bkd.upgrade-token'
+const HTTP_PROBE_TIMEOUT_MS = 2000
 
 /**
  * Derive the PID lock file path from the same source as the SQLite DB,
@@ -46,12 +47,86 @@ function getUpgradeTokenPath(): string {
  */
 function isProcessAlive(pid: number): boolean {
   try {
-    // signal 0 doesn't kill — it just checks existence
     process.kill(pid, 0)
     return true
   } catch {
     return false
   }
+}
+
+/**
+ * Check /proc/<pid>/cmdline (Linux only) for BKD-related keywords.
+ * Returns `true` if the process looks like a BKD instance, `false` if
+ * it is clearly something else, or `undefined` if /proc is unavailable.
+ */
+function isBkdByProcfs(pid: number): boolean | undefined {
+  try {
+    const cmdline = readFileSync(`/proc/${pid}/cmdline`, 'utf8')
+    const normalized = cmdline.replaceAll('\0', ' ').toLowerCase()
+    return normalized.includes('bkd') || normalized.includes('bun')
+  } catch {
+    return undefined
+  }
+}
+
+/**
+ * Probe the BKD HTTP health endpoint synchronously via curl.
+ * Returns `true` if the endpoint responds with the expected BKD API identity,
+ * `false` if the port is occupied by something else, or `undefined` on
+ * connection errors (port not listening / timeout).
+ */
+function isBkdByHttpProbe(port: number): boolean | undefined {
+  try {
+    const result = Bun.spawnSync(
+      ['curl', '-sf', '--max-time', String(HTTP_PROBE_TIMEOUT_MS / 1000), `http://127.0.0.1:${port}/api`],
+      { stdout: 'pipe', stderr: 'ignore' },
+    )
+    if (result.exitCode !== 0) return undefined
+    const body = JSON.parse(result.stdout.toString()) as { success?: boolean, data?: { name?: string } }
+    return body?.data?.name === 'bkd-api'
+  } catch {
+    return undefined
+  }
+}
+
+/**
+ * Determine whether the process holding the PID lock is truly a running
+ * BKD instance. Combines three signals:
+ *   1. kill(pid, 0) — is the process alive at all?
+ *   2. /proc/<pid>/cmdline — does it look like bkd/bun? (Linux only)
+ *   3. HTTP probe to the configured port — does it serve /api with name='bkd-api'?
+ *
+ * The HTTP probe is the strongest signal because it directly confirms the
+ * service identity, whereas cmdline can match other Bun processes.
+ */
+function isBkdProcessAlive(pid: number): boolean {
+  if (!isProcessAlive(pid)) return false
+
+  // --- procfs check (fast, Linux only) ---
+  const procResult = isBkdByProcfs(pid)
+  if (procResult === false) {
+    // Definitely NOT bkd — stale PID recycled by an unrelated process
+    logger.info({ pid }, 'pid_lock_not_bkd_by_procfs')
+    return false
+  }
+
+  // --- HTTP probe (works on all platforms) ---
+  const port = Number(process.env.PORT ?? 3000)
+  const httpResult = isBkdByHttpProbe(port)
+  if (httpResult === true) {
+    // Port is serving BKD API — truly a running instance
+    return true
+  }
+  if (httpResult === false) {
+    // Port responds but is NOT BKD — different service on same port
+    logger.info({ pid, port }, 'pid_lock_not_bkd_by_http_probe')
+    return false
+  }
+
+  // HTTP probe inconclusive (connection refused / timeout).
+  // The old process may still be starting up or the port changed.
+  // Fall back to procfs result if available, otherwise assume alive.
+  return procResult ?? true
 }
 
 /**
@@ -158,7 +233,7 @@ export function acquirePidLock(): void {
     exitDuplicateInstance(pidFile, Number.NaN)
   }
 
-  if (!Number.isNaN(existingPid) && existingPid > 0 && isProcessAlive(existingPid)) {
+  if (!Number.isNaN(existingPid) && existingPid > 0 && isBkdProcessAlive(existingPid)) {
     // Allow takeover when the upgrading process left a valid token file.
     // The token contains the parent's PID + a random nonce, so it cannot
     // be forged via environment variables or command-line arguments.
