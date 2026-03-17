@@ -3,7 +3,7 @@ import { cacheDel } from '@/cache'
 import { getAppSetting, setAppSetting } from '@/db/helpers'
 import type { EngineType } from '@/engines/types'
 import type { EngineContext } from './context'
-import type { PaginatedLogResult } from './persistence/queries'
+import type { LogQueryOpts, PaginatedLogResult } from './persistence/queries'
 import { getLogsFromDb } from './persistence/queries'
 import { cancel } from './process/cancel'
 import { getActiveProcesses, getActiveProcessForIssue } from './process/state'
@@ -124,11 +124,7 @@ export async function migrateSlashCommandsKey(): Promise<void> {
 export function getLogs(
   ctx: EngineContext,
   issueId: string,
-  opts?: {
-    cursor?: string // ULID id — fetch entries after this
-    before?: string // ULID id — fetch entries before this
-    limit?: number
-  },
+  opts?: LogQueryOpts,
 ): PaginatedLogResult {
   // DB filters by visible=1; isVisible() post-filters by entry type.
   const result = getLogsFromDb(issueId, opts)
@@ -165,9 +161,19 @@ export function getLogs(
   const newestDbId = persisted.length > 0 ? persisted.at(-1).messageId : undefined
   const lowerBound = opts?.cursor ?? newestDbId
 
+  // Build in-memory filter set to match DB-level entryTypes / turnIndex filters
+  const entryTypeSet = opts?.entryTypes ? new Set(opts.entryTypes) : undefined
+  const turnLower = opts?.turnIndex
+  const turnUpper = opts?.turnIndexEnd
+
   const merged = [...persisted]
   for (const entry of active.logs.toArray()) {
     if (!isVisible(entry)) continue
+    // Apply entryTypes filter
+    if (entryTypeSet && !entryTypeSet.has(entry.entryType)) continue
+    // Apply turnIndex range filter
+    if (turnLower != null && (entry.turnIndex == null || entry.turnIndex < turnLower)) continue
+    if (turnUpper != null && (entry.turnIndex == null || entry.turnIndex > turnUpper)) continue
     const key = entry.messageId ?
       `id:${entry.messageId}` :
       `${entry.turnIndex ?? 0}:${entry.timestamp ?? ''}:${entry.entryType}:${entry.content}`

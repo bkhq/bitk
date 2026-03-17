@@ -11,7 +11,8 @@ import {
   restartIssue,
   restartStaleSessions,
 } from './orchestration'
-import type { PaginatedLogResult } from './persistence/queries'
+import type { LogQueryOpts, PaginatedLogResult } from './persistence/queries'
+import { getNextTurnIndex } from './persistence/queries'
 import { registerLogPipeline } from './pipeline'
 import { terminateProcess } from './process/cancel'
 import {
@@ -150,13 +151,26 @@ export class IssueEngine {
 
   getLogs(
     issueId: string,
-    opts?: {
-      cursor?: string // ULID id — fetch entries after this
-      before?: string // ULID id — fetch entries before this
-      limit?: number
-    },
+    opts?: LogQueryOpts,
   ): PaginatedLogResult {
     return getLogs(this.ctx, issueId, opts)
+  }
+
+  /**
+   * Get the maximum turn index for an issue, considering both DB and
+   * in-memory ring buffer. Returns -1 if no turns exist anywhere.
+   */
+  getMaxTurnIndex(issueId: string): number {
+    const dbMax = getNextTurnIndex(issueId) - 1
+    const active = this.ctx.pm.getFirstActiveInGroup(issueId)?.meta
+    if (!active || active.logs.length === 0) return dbMax
+    let memMax = -1
+    for (const entry of active.logs.toArray()) {
+      if (entry.turnIndex != null && entry.turnIndex > memMax) {
+        memMax = entry.turnIndex
+      }
+    }
+    return Math.max(dbMax, memMax)
   }
 
   getProcess(executionId: string): ManagedProcess | undefined {
