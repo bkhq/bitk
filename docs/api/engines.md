@@ -10,11 +10,30 @@ List detected engines and their models. Uses 3-tier cache (memory -> DB -> live 
 {
   "success": true,
   "data": {
-    "engines": [{ "name": "claude-code", "available": true, "isAvailable": true }],
-    "models": [{ "id": "...", "name": "...", "provider": "...", "isDefault": true }]
+    "engines": [
+      {
+        "engineType": "claude-code",
+        "installed": true,
+        "executable": true,
+        "version": "1.0.0",
+        "binaryPath": "/usr/local/bin/claude",
+        "authStatus": "authenticated"
+      }
+    ],
+    "models": {
+      "claude-code": [
+        { "id": "opus", "name": "Opus", "isDefault": true },
+        { "id": "sonnet", "name": "Sonnet" }
+      ],
+      "codex": [
+        { "id": "o3", "name": "o3", "isDefault": true }
+      ]
+    }
   }
 }
 ```
+
+`engines` items follow `EngineAvailability` (`engineType`, `installed`, `executable`, `version`, `binaryPath`, `authStatus`, `error`). `models` is a per-engine map (`Record<string, EngineModel[]>`), not a flat array.
 
 ## GET /api/engines/profiles
 

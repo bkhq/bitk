@@ -4,7 +4,7 @@ Base URL: `/api`
 
 ## Response Envelope
 
-All responses use a standard envelope:
+Most JSON CRUD responses use a standard envelope. Exceptions include binary/file download endpoints (which return raw streams) and `/api/runtime` (which returns a raw object).
 
 ```json
 { "success": true, "data": T }
@@ -31,7 +31,7 @@ All POST/PATCH routes use Zod schema validation via `@hono/zod-validator`. Valid
 
 ## Soft Deletion
 
-All DELETE operations use `isDeleted` flag — data is never hard-deleted.
+Database-backed DELETE operations (projects, issues, notes, etc.) use an `isDeleted` flag — data is never hard-deleted. However, some endpoints perform **irreversible** deletions: file DELETE (`/api/files/*`) removes files from disk, and worktree DELETE (`/api/worktrees/*`) physically removes Git worktrees.
 
 ## Security
 
