@@ -128,16 +128,14 @@
       "coder": "Coder",
       "planner": "Planner",
       "reviewer": "Reviewer",
-      "researcher": "Researcher",
-      "echo": "Echo"
+      "researcher": "Researcher"
     },
     "engineDesc": {
       "default": "自动分配",
       "coder": "编写代码",
       "planner": "规划任务",
       "reviewer": "审查代码",
-      "researcher": "调研分析",
-      "echo": "模拟模型，不做任何工作"
+      "researcher": "调研分析"
     },
     "modelDesc": {
       "opus": "最强大",
@@ -284,6 +282,10 @@
     "version": "v{{version}}",
     "models": "{{count}} 个模型",
     "defaultModel": "默认模型",
+    "availableModels": "可用模型",
+    "default": "默认",
+    "setDefault": "设为默认",
+    "modelHidden": "已隐藏",
     "probe": "刷新",
     "probing": "正在检测引擎...",
     "workspacePath": "默认工作区路径",

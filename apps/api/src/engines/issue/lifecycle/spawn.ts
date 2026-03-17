@@ -24,6 +24,7 @@ import {
   isWorktreeRegistered,
   resolveWorktreePath,
 } from '@/engines/issue/utils/worktree'
+import { parseAcpEngineType } from '@/engines/startup-probe'
 import type { EngineType, PermissionPolicy, SpawnedProcess } from '@/engines/types'
 import { logger } from '@/logger'
 import { monitorCompletion } from './completion-monitor'
@@ -46,6 +47,7 @@ export async function spawnWithSessionFallback(
     projectId: string
     envVars?: Record<string, string>
     systemPrompt?: string
+    agent?: string
   },
 ): Promise<SpawnedProcess> {
   const spawnCtx = {
@@ -62,6 +64,7 @@ export async function spawnWithSessionFallback(
         sessionId: opts.sessionId,
         model: opts.model,
         permissionMode: opts.permissionMode,
+        agent: opts.agent,
       },
       spawnCtx,
     )
@@ -91,6 +94,7 @@ export async function spawnWithSessionFallback(
         model: opts.model,
         permissionMode: opts.permissionMode,
         externalSessionId,
+        agent: opts.agent,
       },
       spawnCtx,
     )
@@ -116,6 +120,7 @@ export async function spawnFresh(
     permissionMode: PermissionPolicy
     projectId: string
     envVars?: Record<string, string>
+    agent?: string
   },
 ): Promise<SpawnedProcess> {
   const externalSessionId = crypto.randomUUID()
@@ -126,6 +131,7 @@ export async function spawnFresh(
       model: opts.model,
       permissionMode: opts.permissionMode,
       externalSessionId,
+      agent: opts.agent,
     },
     {
       vars: opts.envVars ?? {},
@@ -189,6 +195,7 @@ export async function spawnRetry(
   const permOptions = getPermissionOptions(engineType)
   const executionId = crypto.randomUUID()
   const projCtx = await getProjectExecContext(issue.projectId)
+  const acpAgent = parseAcpEngineType(engineType) ?? undefined
 
   const spawnOpts = {
     workingDir,
@@ -198,6 +205,7 @@ export async function spawnRetry(
     projectId: issue.projectId,
     envVars: projCtx.envVars,
     systemPrompt: projCtx.systemPrompt,
+    agent: acpAgent,
   }
   const spawned = issue.sessionFields.externalSessionId ?
       await spawnWithSessionFallback(executor, issueId, {
@@ -312,6 +320,7 @@ export async function spawnFollowUpProcess(
 
   const permOptions = getPermissionOptions(engineType, permissionMode)
   const projCtx = await getProjectExecContext(issue.projectId)
+  const acpAgent = parseAcpEngineType(engineType) ?? undefined
 
   let spawned: SpawnedProcess
   try {
@@ -324,6 +333,7 @@ export async function spawnFollowUpProcess(
       projectId: issue.projectId,
       envVars: projCtx.envVars,
       systemPrompt: projCtx.systemPrompt,
+      agent: acpAgent,
     })
   } catch (spawnError) {
     // Spawn failed after we already emitted 'running' and persisted the user

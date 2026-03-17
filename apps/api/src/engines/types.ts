@@ -3,7 +3,7 @@ import type { Subprocess } from '@/engines/spawn'
 // ---------- Enums / Literal Unions ----------
 
 // Supported AI engine types
-export type EngineType = 'claude-code' | 'codex' | 'acp' | 'echo'
+export type EngineType = 'claude-code' | 'codex' | 'acp' | `acp:${string}`
 
 // Communication protocols
 export type EngineProtocol = 'stream-json' | 'json-rpc' | 'acp'
@@ -215,7 +215,7 @@ export interface EngineRegistry {
 // ---------- Constants ----------
 
 // Default built-in engine profiles
-export const BUILT_IN_PROFILES: Record<EngineType, EngineProfile> = {
+export const BUILT_IN_PROFILES: Partial<Record<EngineType, EngineProfile>> & Record<'claude-code' | 'codex' | 'acp', EngineProfile> = {
   'claude-code': {
     engineType: 'claude-code',
     name: 'Claude Code',
@@ -237,14 +237,6 @@ export const BUILT_IN_PROFILES: Record<EngineType, EngineProfile> = {
     name: 'ACP Agents',
     baseCommand: 'dynamic (selected by model prefix)',
     protocol: 'acp',
-    capabilities: ['session-fork'],
-    permissionPolicy: 'auto',
-  },
-  'echo': {
-    engineType: 'echo',
-    name: 'Echo (Mock)',
-    baseCommand: 'echo',
-    protocol: 'stream-json',
     capabilities: ['session-fork'],
     permissionPolicy: 'auto',
   },

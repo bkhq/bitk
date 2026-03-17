@@ -17,7 +17,7 @@ export interface Project {
   updatedAt: string
 }
 
-export type EngineType = 'claude-code' | 'codex' | 'acp' | 'echo'
+export type EngineType = 'claude-code' | 'codex' | 'acp' | `acp:${string}`
 
 export interface PluginInfo { name: string, path: string }
 
@@ -297,7 +297,7 @@ export interface EngineProfile {
 
 export interface EngineSettings {
   defaultEngine: string | null
-  engines: Record<string, { defaultModel?: string }>
+  engines: Record<string, { defaultModel?: string, hiddenModels?: string[] }>
 }
 
 export interface ProbeResult {

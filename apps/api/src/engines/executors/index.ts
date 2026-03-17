@@ -8,13 +8,11 @@ import type {
 import { AcpExecutor } from './acp'
 import { ClaudeCodeExecutor } from './claude'
 import { CodexExecutor } from './codex'
-import { EchoExecutor } from './echo'
 
 // Re-export executor classes
 export { AcpExecutor } from './acp'
 export { ClaudeCodeExecutor } from './claude'
 export { CodexExecutor } from './codex'
-export { EchoExecutor } from './echo'
 
 /**
  * Default engine registry — manages all executor instances.
@@ -27,7 +25,16 @@ class DefaultEngineRegistry implements EngineRegistry {
   }
 
   get(engineType: EngineType): EngineExecutor | undefined {
-    return this.executors.get(engineType)
+    // Direct match first
+    const direct = this.executors.get(engineType)
+    if (direct) return direct
+
+    // Virtual ACP engine types (e.g. "acp:codex") resolve to the ACP executor
+    if (engineType.startsWith('acp:')) {
+      return this.executors.get('acp' as EngineType)
+    }
+
+    return undefined
   }
 
   getAll(): EngineExecutor[] {
@@ -56,7 +63,6 @@ function createRegistry(): EngineRegistry {
   registry.register(new ClaudeCodeExecutor())
   registry.register(new CodexExecutor())
   registry.register(new AcpExecutor())
-  registry.register(new EchoExecutor())
 
   return registry
 }

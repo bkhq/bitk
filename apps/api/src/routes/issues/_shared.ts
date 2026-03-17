@@ -25,7 +25,10 @@ export const createIssueSchema = z.object({
   statusId: z.enum(STATUS_IDS),
   parentIssueId: z.string().optional(),
   useWorktree: z.boolean().optional(),
-  engineType: z.enum(['claude-code', 'codex', 'acp', 'echo']).optional(),
+  engineType: z.string().refine(
+    val => ['claude-code', 'codex', 'acp'].includes(val) || val.startsWith('acp:'),
+    { message: 'Invalid engine type' },
+  ).optional(),
   model: z
     .string()
     .regex(/^[\w./:-]{1,160}$/)
@@ -54,7 +57,10 @@ export const updateIssueSchema = z.object({
 })
 
 export const executeIssueSchema = z.object({
-  engineType: z.enum(['claude-code', 'codex', 'acp', 'echo']),
+  engineType: z.string().refine(
+    val => ['claude-code', 'codex', 'acp'].includes(val) || val.startsWith('acp:'),
+    { message: 'Invalid engine type' },
+  ),
   prompt: z.string().min(1).max(32768),
   model: z
     .string()
@@ -285,7 +291,7 @@ export function triggerIssueExecution(
         basePrompt
 
       await issueEngine.executeIssue(issueId, {
-        engineType: (issue.engineType ?? 'echo') as EngineType,
+        engineType: (issue.engineType ?? 'claude-code') as EngineType,
         prompt: effectivePrompt,
         workingDir: effectiveWorkingDir,
         model: issue.model ?? undefined,

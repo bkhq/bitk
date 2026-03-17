@@ -3,16 +3,25 @@ import { Hono } from 'hono'
 import * as z from 'zod'
 import {
   getAllEngineDefaultModels,
+  getAllEngineHiddenModels,
   getDefaultEngine,
   setDefaultEngine,
   setEngineDefaultModel,
+  setEngineHiddenModels,
 } from '@/db/helpers'
 import { engineRegistry } from '@/engines/executors'
-import { forceProbeEngines, getEngineDiscovery, getEngineModels } from '@/engines/startup-probe'
+import { getAcpAgents } from '@/engines/executors/acp/agents'
+import { forceProbeEngines, getEngineDiscovery, getEngineModels, toAcpEngineType } from '@/engines/startup-probe'
+import type { EngineProfile } from '@/engines/types'
 import { BUILT_IN_PROFILES } from '@/engines/types'
 
-const ENGINE_TYPES = ['claude-code', 'codex', 'acp', 'echo'] as const
-const engineTypeEnum = z.enum(ENGINE_TYPES)
+const ENGINE_TYPES = ['claude-code', 'codex', 'acp'] as const
+
+/** Accept both base engine types and virtual ACP types (e.g. "acp:codex") */
+const engineTypeOrAcpEnum = z.string().refine(
+  val => ENGINE_TYPES.includes(val as typeof ENGINE_TYPES[number]) || val.startsWith('acp:'),
+  { message: 'Invalid engine type' },
+)
 
 const engines = new Hono()
 
@@ -22,21 +31,38 @@ engines.get('/available', async (c) => {
   return c.json({ success: true, data: { engines, models } })
 })
 
-// GET /api/engines/profiles — List engine profiles
+// GET /api/engines/profiles — List engine profiles (ACP expanded into per-agent profiles)
 engines.get('/profiles', (c) => {
-  const profiles = Object.values(BUILT_IN_PROFILES)
+  const baseProfiles = Object.values(BUILT_IN_PROFILES)
+  const acpProfile = BUILT_IN_PROFILES.acp
+  const agents = getAcpAgents()
+
+  // Replace the single ACP profile with per-agent profiles
+  const profiles: EngineProfile[] = [
+    ...baseProfiles.filter(p => p.engineType !== 'acp'),
+    ...agents.map(agent => ({
+      ...acpProfile,
+      engineType: toAcpEngineType(agent.id) as EngineProfile['engineType'],
+      name: `ACP: ${agent.label}`,
+    })),
+  ]
+
   return c.json({ success: true, data: profiles })
 })
 
-// GET /api/engines/settings — Get all engine settings (default engine + per-engine default models)
+// GET /api/engines/settings — Get all engine settings (default engine + per-engine models + hidden)
 engines.get('/settings', async (c) => {
-  const [defaults, defaultEngine] = await Promise.all([
+  const [defaults, hiddenModels, defaultEngine] = await Promise.all([
     getAllEngineDefaultModels(),
+    getAllEngineHiddenModels(),
     getDefaultEngine(),
   ])
-  const engines: Record<string, { defaultModel: string }> = {}
+  const engines: Record<string, { defaultModel?: string, hiddenModels?: string[] }> = {}
   for (const [engineType, model] of Object.entries(defaults)) {
-    engines[engineType] = { defaultModel: model }
+    engines[engineType] = { ...engines[engineType], defaultModel: model }
+  }
+  for (const [engineType, hidden] of Object.entries(hiddenModels)) {
+    engines[engineType] = { ...engines[engineType], hiddenModels: hidden }
   }
   return c.json({ success: true, data: { defaultEngine, engines } })
 })
@@ -44,7 +70,7 @@ engines.get('/settings', async (c) => {
 // PATCH /api/engines/default-engine — Update global default engine
 engines.patch(
   '/default-engine',
-  zValidator('json', z.object({ defaultEngine: engineTypeEnum }), (result, c) => {
+  zValidator('json', z.object({ defaultEngine: engineTypeOrAcpEnum }), (result, c) => {
     if (!result.success) {
       return c.json(
         {
@@ -78,7 +104,7 @@ engines.patch(
   }),
   async (c) => {
     const rawType = c.req.param('engineType')
-    const parsed = engineTypeEnum.safeParse(rawType)
+    const parsed = engineTypeOrAcpEnum.safeParse(rawType)
     if (!parsed.success) {
       return c.json({ success: false, error: `Unknown engine type: ${rawType}` }, 400)
     }
@@ -89,20 +115,53 @@ engines.patch(
   },
 )
 
+// PATCH /api/engines/:engineType/hidden-models — Update hidden models for an engine type
+engines.patch(
+  '/:engineType/hidden-models',
+  zValidator('json', z.object({ hiddenModels: z.array(z.string()) }), (result, c) => {
+    if (!result.success) {
+      return c.json(
+        {
+          success: false,
+          error: result.error.issues.map(i => i.message).join(', '),
+        },
+        400,
+      )
+    }
+  }),
+  async (c) => {
+    const rawType = c.req.param('engineType')
+    const parsed = engineTypeOrAcpEnum.safeParse(rawType)
+    if (!parsed.success) {
+      return c.json({ success: false, error: `Unknown engine type: ${rawType}` }, 400)
+    }
+    const engineType = parsed.data
+    const { hiddenModels } = c.req.valid('json')
+    await setEngineHiddenModels(engineType, hiddenModels)
+    return c.json({ success: true, data: { engineType, hiddenModels } })
+  },
+)
+
 // GET /api/engines/:engineType/models — List available models for an engine
 engines.get('/:engineType/models', async (c) => {
   const rawType = c.req.param('engineType')
-  const parsed = engineTypeEnum.safeParse(rawType)
+  const parsed = engineTypeOrAcpEnum.safeParse(rawType)
   if (!parsed.success) {
     return c.json({ success: false, error: `Unknown engine type: ${rawType}` }, 400)
   }
   const engineType = parsed.data
-  const executor = engineRegistry.get(engineType)
+  // For virtual ACP types, resolve to base 'acp' executor
+  const lookupType = engineType.startsWith('acp:') ? 'acp' : engineType
+  const executor = engineRegistry.get(lookupType as typeof ENGINE_TYPES[number])
   if (!executor) {
     return c.json({ success: false, error: `Unknown engine type: ${engineType}` }, 404)
   }
 
-  const models = await getEngineModels(engineType)
+  const allModels = await getEngineModels(lookupType as typeof ENGINE_TYPES[number])
+  // For virtual ACP types, filter to only models matching the agent prefix
+  const models = engineType.startsWith('acp:')
+    ? allModels.filter(m => m.id.startsWith(`${engineType}:`))
+    : allModels
   const defaultModel = models.find(m => m.isDefault)?.id
 
   return c.json({

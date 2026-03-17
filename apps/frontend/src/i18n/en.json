@@ -128,16 +128,14 @@
       "coder": "Coder",
       "planner": "Planner",
       "reviewer": "Reviewer",
-      "researcher": "Researcher",
-      "echo": "Echo"
+      "researcher": "Researcher"
     },
     "engineDesc": {
       "default": "Auto assign",
       "coder": "Write code",
       "planner": "Plan tasks",
       "reviewer": "Review code",
-      "researcher": "Research",
-      "echo": "Mock engine, does nothing"
+      "researcher": "Research"
     },
     "modelDesc": {
       "opus": "Most capable",
@@ -284,6 +282,10 @@
     "version": "v{{version}}",
     "models": "{{count}} models",
     "defaultModel": "Default Model",
+    "availableModels": "Available Models",
+    "default": "Default",
+    "setDefault": "Set default",
+    "modelHidden": "Hidden",
     "probe": "Refresh",
     "probing": "Detecting engines...",
     "workspacePath": "Default Workspace Path",

@@ -258,6 +258,11 @@ export const kanbanApi = {
     patch<{ defaultEngine: string }>('/api/engines/default-engine', {
       defaultEngine,
     }),
+  updateEngineHiddenModels: (engineType: string, data: { hiddenModels: string[] }) =>
+    patch<{ engineType: string, hiddenModels: string[] }>(
+      `/api/engines/${encodeURIComponent(engineType)}/hidden-models`,
+      data,
+    ),
   probeEngines: () => post<ProbeResult>('/api/engines/probe', {}),
 
   // App Settings

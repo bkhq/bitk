@@ -63,6 +63,7 @@ import {
   useSystemInfo,
   useSystemLogs,
   useUpdateDefaultEngine,
+  useUpdateEngineHiddenModels,
   useUpdateEngineModelSetting,
   useUpdateServerInfo,
   useUpdateWorkspacePath,
@@ -823,6 +824,7 @@ function ModelsSection({ open }: { open: boolean }) {
   const { data: profiles } = useEngineProfiles(open)
   const { data: engineSettings } = useEngineSettings(open)
   const updateModelSetting = useUpdateEngineModelSetting()
+  const updateHiddenModels = useUpdateEngineHiddenModels()
   const updateDefaultEngine = useUpdateDefaultEngine()
   const probe = useProbeEngines()
   const showNoAvailableEngines = !enginesLoading && availableEngines.length === 0
@@ -889,18 +891,24 @@ function ModelsSection({ open }: { open: boolean }) {
                 availableEngines.map((engine) => {
                   const profile = profiles?.find(p => p.engineType === engine.engineType)
                   const engineModels = models?.[engine.engineType] ?? []
-                  const savedDefault = engineSettings?.engines[engine.engineType]?.defaultModel
+                  const engineSetting = engineSettings?.engines[engine.engineType]
                   return (
                     <EngineCard
                       key={engine.engineType}
                       engine={engine}
                       profile={profile}
                       models={engineModels}
-                      savedDefault={savedDefault}
+                      savedDefault={engineSetting?.defaultModel}
+                      hiddenModels={engineSetting?.hiddenModels ?? []}
                       onChangeDefault={modelId =>
                         updateModelSetting.mutate({
                           engineType: engine.engineType,
                           defaultModel: modelId,
+                        })}
+                      onChangeHiddenModels={hiddenModels =>
+                        updateHiddenModels.mutate({
+                          engineType: engine.engineType,
+                          hiddenModels,
                         })}
                     />
                   )
@@ -1289,13 +1297,17 @@ function EngineCard({
   profile,
   models,
   savedDefault,
+  hiddenModels,
   onChangeDefault,
+  onChangeHiddenModels,
 }: {
   engine: EngineAvailability
   profile?: EngineProfile
   models: EngineModel[]
   savedDefault?: string
+  hiddenModels: string[]
   onChangeDefault: (modelId: string) => void
+  onChangeHiddenModels: (hiddenModels: string[]) => void
 }) {
   const { t } = useTranslation()
   const [expanded, setExpanded] = useState(false)
@@ -1303,6 +1315,12 @@ function EngineCard({
   const builtInDefault = models.find(m => m.isDefault)
   const selectedModel = savedDefault ?? builtInDefault?.id ?? ''
   const selectedModelName = models.find(m => m.id === selectedModel)?.name
+  const hiddenSet = useMemo(() => new Set(hiddenModels), [hiddenModels])
+  const visibleModels = useMemo(
+    () => models.filter(m => !hiddenSet.has(m.id)),
+    [models, hiddenSet],
+  )
+  const visibleCount = visibleModels.length
 
   return (
     <div className="rounded-lg border overflow-hidden">
@@ -1348,7 +1366,11 @@ function EngineCard({
               null}
             {hasModels ?
                 (
-                  <span className="shrink-0">{t('settings.models', { count: models.length })}</span>
+                  <span className="shrink-0">
+                    {visibleCount < models.length
+                      ? `${visibleCount}/${models.length}`
+                      : t('settings.models', { count: models.length })}
+                  </span>
                 ) :
               null}
           </div>
@@ -1390,42 +1412,66 @@ function EngineCard({
         </div>
       </button>
 
-      {expanded && hasModels ?
-          (
-            <div className="border-t px-3 py-2 flex flex-col gap-1">
-              <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-0.5">
-                {t('settings.defaultModel')}
-              </span>
+      {expanded && hasModels
+        ? (
+            <div className="border-t px-3 py-2 flex flex-col gap-0.5">
               {models.map((m) => {
-                const isSelected = m.id === selectedModel
+                const isHidden = hiddenSet.has(m.id)
+                const isDefault = m.id === selectedModel
                 return (
-                  <button
+                  <div
                     key={m.id}
-                    type="button"
-                    onClick={() => !isSelected && onChangeDefault(m.id)}
                     className={cn(
-                      'flex items-center gap-2 rounded-md px-2.5 py-1.5 text-xs transition-colors text-left',
-                      isSelected ?
-                        'bg-primary/10 text-primary font-medium' :
-                        'text-foreground/80 hover:bg-accent/50',
+                      'flex items-center gap-2 rounded-md px-2 py-1.5 text-xs',
+                      isDefault && !isHidden && 'bg-primary/5',
                     )}
                   >
-                    <span className="flex-1 truncate">
+                    <Switch
+                      checked={!isHidden}
+                      onCheckedChange={(checked) => {
+                        const next = checked
+                          ? hiddenModels.filter(id => id !== m.id)
+                          : [...hiddenModels, m.id]
+                        onChangeHiddenModels(next)
+                      }}
+                      className="scale-75 origin-left shrink-0"
+                    />
+                    <span className={cn(
+                      'flex-1 truncate',
+                      isHidden && 'text-muted-foreground line-through',
+                    )}
+                    >
                       {m.name}
-                      {m.isDefault ? ` (${t('createIssue.engineLabel.default')})` : ''}
                     </span>
-                    {isSelected ? <Check className="h-3 w-3 shrink-0" /> : null}
-                  </button>
+                    {isDefault
+                      ? (
+                          <span className="shrink-0 text-[10px] text-primary font-medium px-1.5 py-0.5 rounded bg-primary/10">
+                            {t('settings.default')}
+                          </span>
+                        )
+                      : !isHidden
+                          ? (
+                              <button
+                                type="button"
+                                onClick={() => onChangeDefault(m.id)}
+                                className="shrink-0 text-[10px] text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded hover:bg-accent/50 transition-colors"
+                              >
+                                {t('settings.setDefault')}
+                              </button>
+                            )
+                          : null}
+                  </div>
                 )
               })}
+
               {engine.binaryPath && (
                 <div className="mt-1 truncate border-t pt-1.5 text-[10px] font-mono text-muted-foreground/50">
                   {engine.binaryPath}
                 </div>
               )}
             </div>
-          ) :
-        null}
+          )
+        : null}
     </div>
   )
 }

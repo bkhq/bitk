@@ -468,6 +468,19 @@ export function useUpdateEngineModelSetting() {
   })
 }
 
+export function useUpdateEngineHiddenModels() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (args: { engineType: string, hiddenModels: string[] }) =>
+      kanbanApi.updateEngineHiddenModels(args.engineType, {
+        hiddenModels: args.hiddenModels,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.engineSettings() })
+    },
+  })
+}
+
 export function useUpdateDefaultEngine() {
   const queryClient = useQueryClient()
   return useMutation({

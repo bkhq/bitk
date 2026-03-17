@@ -19,8 +19,9 @@ function getClaudeAuthStatus(): EngineAvailability['authStatus'] {
 export const claudeAgent: AcpAgentDefinition = {
   id: 'claude',
   label: 'Claude',
-  commandName: 'claude-code-acp',
-  npxFallback: ['npx', '-y', '@zed-industries/claude-code-acp@latest'],
+  // Renamed from claude-code-acp to claude-agent-acp (old package is deprecated)
+  commandName: 'claude-agent-acp',
+  npxFallback: ['npx', '-y', '@zed-industries/claude-agent-acp@latest'],
   acpArgs: [],
   authStatus: getClaudeAuthStatus,
   verify: async (cmd) => {

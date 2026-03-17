@@ -14,6 +14,7 @@ import {
   normalizeAcpEvent,
   spawnAcpProcess,
 } from './acp-client'
+import type { AcpAgentId } from './agents'
 import {
   getAcpAgentAvailability,
   getAcpAgents,
@@ -27,10 +28,18 @@ export class AcpExecutor implements EngineExecutor {
   readonly protocol = 'acp' as const
   readonly capabilities: EngineCapability[] = ['session-fork']
 
+  /** Resolve agent ID: model string takes precedence, then SpawnOptions.agent, then 'gemini'. */
+  private resolveAgentId(model: string | undefined, agent: string | undefined): AcpAgentId {
+    const parsedModel = parseAcpModel(model)
+    if (parsedModel) return parsedModel.agentId
+    return (agent as AcpAgentId) ?? 'gemini'
+  }
+
   async spawn(options: SpawnOptions, env: ExecutionEnv): Promise<SpawnedProcess> {
     const parsedModel = parseAcpModel(options.model)
+    const agentId = this.resolveAgentId(options.model, options.agent)
     return spawnAcpProcess({
-      cmd: getAcpLaunchCommand(parsedModel?.agentId ?? 'gemini'),
+      cmd: getAcpLaunchCommand(agentId),
       workingDir: options.workingDir,
       prompt: options.prompt,
       permissionMode: options.permissionMode ?? 'auto',
@@ -44,8 +53,9 @@ export class AcpExecutor implements EngineExecutor {
 
   async spawnFollowUp(options: FollowUpOptions, env: ExecutionEnv): Promise<SpawnedProcess> {
     const parsedModel = parseAcpModel(options.model)
+    const agentId = this.resolveAgentId(options.model, options.agent)
     return spawnAcpProcess({
-      cmd: getAcpLaunchCommand(parsedModel?.agentId ?? 'gemini'),
+      cmd: getAcpLaunchCommand(agentId),
       workingDir: options.workingDir,
       prompt: options.prompt,
       permissionMode: options.permissionMode ?? 'auto',

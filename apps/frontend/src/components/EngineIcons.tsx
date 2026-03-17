@@ -68,52 +68,13 @@ export function GeminiIcon(props: IconProps) {
   )
 }
 
-/** Echo — concentric sound waves */
-export function EchoIcon(props: IconProps) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
-      <circle cx="12" cy="12" r="3" fill="currentColor" />
-      <path
-        d="M12 5a7 7 0 0 1 0 14"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        fill="none"
-        opacity="0.7"
-      />
-      <path
-        d="M12 2a10 10 0 0 1 0 20"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        fill="none"
-        opacity="0.4"
-      />
-      <path
-        d="M12 5a7 7 0 0 0 0 14"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        fill="none"
-        opacity="0.7"
-      />
-      <path
-        d="M12 2a10 10 0 0 0 0 20"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        fill="none"
-        opacity="0.4"
-      />
-    </svg>
-  )
-}
-
 const ENGINE_ICONS: Partial<Record<string, React.FC<IconProps>>> = {
   'claude-code': ClaudeIcon,
   'codex': CodexIcon,
   'acp': GeminiIcon,
-  'echo': EchoIcon,
+  'acp:gemini': GeminiIcon,
+  'acp:codex': CodexIcon,
+  'acp:claude': ClaudeIcon,
 }
 
 export function EngineIcon({ engineType, ...props }: IconProps & { engineType: string }) {

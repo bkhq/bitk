@@ -20,6 +20,7 @@ import {
   useEngineSettings,
   useProject,
 } from '@/hooks/use-kanban'
+import { formatModelName } from '@/lib/format'
 import { tStatus } from '@/lib/i18n-utils'
 import type { StatusDefinition } from '@/lib/statuses'
 import { STATUSES } from '@/lib/statuses'
@@ -89,11 +90,13 @@ export function CreateIssueForm({
     return installedEngines[0]?.engineType ?? ''
   }, [engineType, engineSettings, installedEngines])
 
-  // Models for the resolved engine
+  // Models for the resolved engine, filtering out hidden ones
   const currentModels = useMemo(() => {
     const models = discovery?.models ?? {}
-    return resolvedEngineType ? (models[resolvedEngineType] ?? []) : []
-  }, [resolvedEngineType, discovery?.models])
+    const all = resolvedEngineType ? (models[resolvedEngineType] ?? []) : []
+    const hidden = new Set(engineSettings?.engines[resolvedEngineType]?.hiddenModels ?? [])
+    return hidden.size > 0 ? all.filter(m => !hidden.has(m.id)) : all
+  }, [resolvedEngineType, discovery?.models, engineSettings])
 
   // When engine changes, reset model to "default" (system auto)
   const handleEngineChange = useCallback((newEngine: string) => {
@@ -446,11 +449,11 @@ function ModelSelect({
         )}
       >
         <span className="truncate">
-          {isDefault ? t('createIssue.modelDefault') : (current?.name ?? '—')}
+          {isDefault ? t('createIssue.modelDefault') : (current ? formatModelName(current.name || current.id) : '—')}
         </span>
         <ChevronDown className="h-3 w-3 text-muted-foreground ml-auto shrink-0" />
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="min-w-[220px]">
+      <DropdownMenuContent align="start" className="min-w-[220px] max-h-[320px] overflow-y-auto">
         <DropdownMenuItem onSelect={() => onChange('')} className={isDefault ? 'bg-accent/50' : ''}>
           <span className="font-medium">{t('createIssue.modelDefault')}</span>
           <span className="text-[10px] text-muted-foreground ml-1">
@@ -465,16 +468,18 @@ function ModelSelect({
             onSelect={() => onChange(m.id)}
             className={m.id === value ? 'bg-accent/50' : ''}
           >
-            <span className="font-medium">{m.name}</span>
-            {m.isDefault ?
-                (
+            <span className="font-medium">
+              {formatModelName(m.name || m.id)}
+            </span>
+            {m.isDefault
+              ? (
                   <span className="text-[10px] text-muted-foreground ml-1">
                     (
                     {t('createIssue.engineLabel.default')}
                     )
                   </span>
-                ) :
-              null}
+                )
+              : null}
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>
