@@ -97,6 +97,7 @@ Hardcoded constants — no DB table:
 | `/api/.../issues/:id/cancel`         | POST               | `issues/command.ts`                                       | Cancel active session            |
 | `/api/.../issues/:id/messages`       | POST               | `issues/message.ts`                                       | Queue pending message            |
 | `/api/.../issues/:id/logs`           | GET                | `issues/logs.ts`                                          | Paginated logs (cursor-based)    |
+| `/api/.../issues/:id/logs/filter/*`  | GET                | `issues/logs.ts`                                          | Filtered logs (path key/value)   |
 | `/api/.../issues/:id/attachments`    | GET, POST          | `issues/attachments.ts`                                   | File upload (multipart)          |
 | `/api/.../issues/:id/changes`        | GET                | `issues/changes.ts`                                       | Git diff stats                   |
 | `/api/.../issues/:id/title/generate` | POST               | `issues/title.ts`                                         | AI-generated title               |

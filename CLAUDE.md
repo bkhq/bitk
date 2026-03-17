@@ -103,11 +103,18 @@ POST           /api/projects/:projectId/issues/:id/restart
 POST           /api/projects/:projectId/issues/:id/cancel
 POST           /api/projects/:projectId/issues/:id/messages
 GET            /api/projects/:projectId/issues/:id/logs
+GET            /api/projects/:projectId/issues/:id/logs/filter/*
 GET/POST       /api/projects/:projectId/issues/:id/attachments
 GET            /api/projects/:projectId/issues/:id/changes
 POST           /api/projects/:projectId/issues/:id/auto-title
 GET            /api/projects/:projectId/issues/:id/slash-commands
 ```
+
+The `/logs/filter/*` route accepts path-based key/value filter pairs (order-independent):
+- `types/<comma-separated>` — filter by entry type (`user-message`, `assistant-message`, `tool-use`, `system-message`, `thinking`)
+- `turn/<value>` — filter by turn: single (`3`), range (`2-5`), `last`, or `lastN` (`last3`)
+- Example: `/logs/filter/types/user-message,assistant-message/turn/last3`
+- Pagination via query params: `cursor`, `before`, `limit`
 
 System routes: `/api/engines/*`, `/api/events` (SSE), `/api/settings/*`, `/api/upgrade/*`, `/api/terminal/ws`, `/api/files/*`, `/api/filesystem/*`, `/api/git/*`, `/api/processes/*`, `/api/worktrees/*`.
 

@@ -49,7 +49,7 @@ Database-backed DELETE operations (projects, issues, notes, etc.) use an `isDele
 | [projects.md](./projects.md) | Project CRUD, archive, sort |
 | [issues.md](./issues.md) | Issue CRUD, bulk update |
 | [execution.md](./execution.md) | Execute, follow-up, restart, cancel |
-| [logs.md](./logs.md) | Issue logs (paginated) |
+| [logs.md](./logs.md) | Issue logs (paginated, filtered) |
 | [changes.md](./changes.md) | Git changes and file diffs |
 | [attachments.md](./attachments.md) | File attachments |
 | [engines.md](./engines.md) | Engine discovery, models, settings |

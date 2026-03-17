@@ -154,6 +154,7 @@ POST           /api/projects/:projectId/issues/:id/restart
 POST           /api/projects/:projectId/issues/:id/cancel
 POST           /api/projects/:projectId/issues/:id/messages
 GET            /api/projects/:projectId/issues/:id/logs
+GET            /api/projects/:projectId/issues/:id/logs/filter/*
 GET/POST       /api/projects/:projectId/issues/:id/attachments
 GET            /api/projects/:projectId/issues/:id/changes
 POST           /api/projects/:projectId/issues/:id/auto-title
