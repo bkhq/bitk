@@ -215,6 +215,7 @@
     "executionFailed": "执行失败",
     "duration": "耗时 {{time}}",
     "copyMessage": "复制消息",
+    "viewMessage": "查看 Markdown 渲染",
     "status": {
       "pending": "等待中",
       "spawning": "启动中",

@@ -215,6 +215,7 @@
     "executionFailed": "Execution failed",
     "duration": "Completed in {{time}}",
     "copyMessage": "Copy message",
+    "viewMessage": "View as Markdown",
     "status": {
       "pending": "Pending",
       "spawning": "Spawning",
