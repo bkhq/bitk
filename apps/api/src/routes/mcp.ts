@@ -75,11 +75,26 @@ function getOrCreateSession(sessionId: string | undefined): McpSession {
   return { server, transport, lastAccess: Date.now() }
 }
 
-// --- API key authentication middleware ---
+// --- Enabled gate + API key authentication middleware ---
 
+const MCP_ENABLED_SETTING = 'mcp:enabled'
 const MCP_API_KEY_SETTING = 'mcp:apiKey'
 
 mcpRoute.use('*', async (c, next) => {
+  // Check if MCP is enabled (env override or DB setting)
+  const enabledEnv = process.env.MCP_ENABLED
+  if (enabledEnv !== undefined) {
+    if (enabledEnv !== 'true' && enabledEnv !== '1') {
+      return c.json({ error: 'MCP endpoint is disabled' }, 403)
+    }
+  } else {
+    const enabledSetting = await getAppSetting(MCP_ENABLED_SETTING)
+    if (enabledSetting !== 'true') {
+      return c.json({ error: 'MCP endpoint is disabled. Enable it in Settings.' }, 403)
+    }
+  }
+
+  // API key authentication
   const apiKey = process.env.MCP_API_KEY ?? (await getAppSetting(MCP_API_KEY_SETTING))
 
   // If no API key is configured, only allow localhost

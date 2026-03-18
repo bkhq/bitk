@@ -1,5 +1,6 @@
-import { describe, expect, test } from 'bun:test'
+import { beforeAll, describe, expect, test } from 'bun:test'
 import app from '@/app'
+import { setAppSetting } from '@/db/helpers'
 import './setup'
 import { createTestProject } from './helpers'
 
@@ -75,6 +76,10 @@ function parseToolResult(result: { content: Array<{ type: string, text: string }
 }
 
 describe('MCP /api/mcp', () => {
+  beforeAll(async () => {
+    await setAppSetting('mcp:enabled', 'true')
+  })
+
   test('initialize returns server info', async () => {
     const { sessionId, data } = await initSession()
     expect(sessionId).toBeTruthy()

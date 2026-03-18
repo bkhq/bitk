@@ -5,12 +5,14 @@ import {
   ChevronDown,
   CircleAlert,
   CircleCheck,
+  Copy,
   Download,
   FileText,
   Filter,
   FolderOpen,
   Info,
   Loader2,
+  Network,
   RefreshCw,
   RotateCcw,
   Search,
@@ -51,6 +53,7 @@ import {
   useEngineSettings,
   useLogPageSize,
   useMaxConcurrentExecutions,
+  useMcpSettings,
   useProbeEngines,
   useRestartWithUpgrade,
   useRestoreDeletedIssue,
@@ -64,6 +67,7 @@ import {
   useSystemLogs,
   useUpdateDefaultEngine,
   useUpdateEngineModelSetting,
+  useUpdateMcpSettings,
   useUpdateServerInfo,
   useUpdateWorkspacePath,
   useUpgradeCheck,
@@ -100,6 +104,7 @@ export function AppSettingsDialog({
       { id: 'logs', label: t('settings.tabLogs'), icon: FileText },
       { id: 'cleanup', label: t('settings.tabCleanup'), icon: Trash2 },
       { id: 'recycleBin', label: t('settings.tabRecycleBin'), icon: Trash },
+      { id: 'mcp', label: t('settings.tabMcp'), icon: Network },
       { id: 'webhooks', label: t('settings.tabWebhooks'), icon: Webhook },
       { id: 'upgrade', label: t('settings.tabUpgrade'), icon: ArrowDownToLine },
       { id: 'about', label: t('settings.tabAbout'), icon: Info },
@@ -122,6 +127,7 @@ export function AppSettingsDialog({
           {active === 'logs' && <LogsSection open={open} />}
           {active === 'cleanup' && <CleanupSection open={open} />}
           {active === 'recycleBin' && <RecycleBinSection open={open} />}
+          {active === 'mcp' && <McpSection open={open} />}
           {active === 'webhooks' && <WebhookSection open={open} />}
           {active === 'upgrade' && <UpgradeSection open={open} />}
           {active === 'about' && <AboutSection open={open} />}
@@ -662,6 +668,117 @@ function LogLine({ line, highlight = '' }: { line: string, highlight?: string })
       <span>
         <HighlightText text={msg} highlight={highlight} />
       </span>
+    </div>
+  )
+}
+
+function McpSection({ open }: { open: boolean }) {
+  const { t } = useTranslation()
+  const { data: mcpData } = useMcpSettings(open)
+  const updateMcp = useUpdateMcpSettings()
+  const [apiKey, setApiKey] = useState('')
+  const [apiKeyLoaded, setApiKeyLoaded] = useState(false)
+  const [copied, setCopied] = useState(false)
+
+  useEffect(() => {
+    if (mcpData && !apiKeyLoaded) {
+      setApiKey(mcpData.apiKey ?? '')
+      setApiKeyLoaded(true)
+    }
+  }, [mcpData, apiKeyLoaded])
+
+  const enabled = mcpData?.enabled ?? false
+  const serverUrl = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'
+
+  const configJson = JSON.stringify(
+    {
+      mcpServers: {
+        bkd: {
+          url: `${serverUrl}/api/mcp`,
+          ...(mcpData?.apiKey ? { headers: { Authorization: `Bearer ${mcpData.apiKey}` } } : {}),
+        },
+      },
+    },
+    null,
+    2,
+  )
+
+  const handleCopy = useCallback(() => {
+    navigator.clipboard.writeText(configJson)
+    setCopied(true)
+    setTimeout(setCopied, 2000, false)
+  }, [configJson])
+
+  return (
+    <div className="space-y-4">
+      {/* Enable toggle */}
+      <div className="flex items-center justify-between">
+        <div>
+          <span className="text-sm font-medium">{t('settings.mcpEnabled')}</span>
+          <p className="text-[11px] text-muted-foreground">
+            {t('settings.mcpEnabledHint')}
+          </p>
+        </div>
+        <Switch
+          size="sm"
+          checked={enabled}
+          onCheckedChange={checked => updateMcp.mutate({ enabled: checked })}
+        />
+      </div>
+
+      {!enabled && (
+        <p className="text-xs text-muted-foreground bg-muted/50 rounded-md px-3 py-2">
+          {t('settings.mcpDisabledNotice')}
+        </p>
+      )}
+
+      {enabled && (
+        <>
+          {/* API Key */}
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium">{t('settings.mcpApiKey')}</Label>
+            <p className="text-[11px] text-muted-foreground">
+              {t('settings.mcpApiKeyHint')}
+            </p>
+            <div className="flex gap-2">
+              <Input
+                className="h-8 text-xs font-mono"
+                type="password"
+                placeholder={t('settings.mcpApiKeyPlaceholder')}
+                value={apiKey}
+                onChange={e => setApiKey(e.target.value)}
+                onBlur={() => {
+                  if (apiKey !== (mcpData?.apiKey ?? '')) {
+                    updateMcp.mutate({ apiKey })
+                  }
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Config snippet */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-medium">{t('settings.mcpConfigTitle')}</Label>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 text-xs"
+                onClick={handleCopy}
+              >
+                <Copy className="mr-1 size-3" />
+                {copied ? t('settings.mcpCopied') : t('settings.mcpCopy')}
+              </Button>
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              {t('settings.mcpConfigHint')}
+            </p>
+            <pre className="rounded-md bg-muted/50 p-3 text-xs font-mono overflow-x-auto whitespace-pre">
+              {configJson}
+            </pre>
+          </div>
+        </>
+      )}
     </div>
   )
 }

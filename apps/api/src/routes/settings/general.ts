@@ -335,4 +335,74 @@ general.get('/slash-commands', async (c) => {
   return c.json({ success: true, data: categorized })
 })
 
+// --- MCP Settings ---
+
+const MCP_ENABLED_KEY = 'mcp:enabled'
+const MCP_API_KEY_KEY = 'mcp:apiKey'
+
+// GET /api/settings/mcp
+general.get('/mcp', async (c) => {
+  const [enabledRaw, apiKey] = await Promise.all([
+    getAppSetting(MCP_ENABLED_KEY),
+    getAppSetting(MCP_API_KEY_KEY),
+  ])
+  return c.json({
+    success: true,
+    data: {
+      enabled: enabledRaw === 'true',
+      apiKey: apiKey ?? null,
+    },
+  })
+})
+
+// PATCH /api/settings/mcp
+general.patch(
+  '/mcp',
+  zValidator(
+    'json',
+    z.object({
+      enabled: z.boolean().optional(),
+      apiKey: z.string().max(256).optional(),
+    }),
+    (result, c) => {
+      if (!result.success) {
+        return c.json(
+          {
+            success: false,
+            error: result.error.issues.map(i => i.message).join(', '),
+          },
+          400,
+        )
+      }
+    },
+  ),
+  async (c) => {
+    const { enabled, apiKey } = c.req.valid('json')
+
+    if (enabled !== undefined) {
+      await setAppSetting(MCP_ENABLED_KEY, String(enabled))
+    }
+
+    if (apiKey !== undefined) {
+      if (apiKey.trim()) {
+        await setAppSetting(MCP_API_KEY_KEY, apiKey.trim())
+      } else {
+        await deleteAppSetting(MCP_API_KEY_KEY)
+      }
+    }
+
+    const [enabledRaw, currentKey] = await Promise.all([
+      getAppSetting(MCP_ENABLED_KEY),
+      getAppSetting(MCP_API_KEY_KEY),
+    ])
+    return c.json({
+      success: true,
+      data: {
+        enabled: enabledRaw === 'true',
+        apiKey: currentKey ?? null,
+      },
+    })
+  },
+)
+
 export default general
