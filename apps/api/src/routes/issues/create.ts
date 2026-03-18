@@ -6,7 +6,6 @@ import { cacheDel, cacheDelByPrefix } from '@/cache'
 import { db } from '@/db'
 import { findProject, getDefaultEngine, getEngineDefaultModel, getServerUrl } from '@/db/helpers'
 import { issues as issuesTable } from '@/db/schema'
-import { engineRegistry } from '@/engines/executors'
 import type { EngineType } from '@/engines/types'
 import { logger } from '@/logger'
 import { buildIssueUrl, dispatch as webhookDispatch } from '@/webhooks/dispatcher'
@@ -52,16 +51,11 @@ create.post(
       resolvedEngine = ((await getDefaultEngine()) || 'claude-code') as EngineType
     }
     if (!resolvedModel) {
+      // Leave model unset — let the engine CLI use its own default.
+      // Only fill from saved settings if the user explicitly configured one.
       const savedModel = await getEngineDefaultModel(resolvedEngine!)
-      if (savedModel) {
+      if (savedModel && savedModel !== 'auto') {
         resolvedModel = savedModel
-      } else {
-        const allModels = await engineRegistry.getModels(resolvedEngine as EngineType)
-        // For virtual ACP types (e.g. "acp:claude"), filter to only models scoped to that agent
-        const models = resolvedEngine!.startsWith('acp:')
-          ? allModels.filter(m => m.id.startsWith(`${resolvedEngine}:`))
-          : allModels
-        resolvedModel = models.find(m => m.isDefault)?.id ?? models[0]?.id ?? 'auto'
       }
     }
 

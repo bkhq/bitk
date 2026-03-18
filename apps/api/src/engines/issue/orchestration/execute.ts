@@ -1,4 +1,3 @@
-import { getEngineDefaultModel } from '@/db/helpers'
 import { getIssueWithSession, updateIssueSession } from '@/engines/engine-store'
 import { engineRegistry } from '@/engines/executors'
 import type { EngineContext } from '@/engines/issue/context'
@@ -54,18 +53,15 @@ export async function executeIssue(
       throw new Error(`Engine '${opts.engineType}' is not yet executable (spawn not implemented)`)
     }
 
-    // Treat 'auto' as unset — let the engine use its own default
-    let model = opts.model === 'auto' ? undefined : opts.model
-    if (!model) {
-      const defaultModel = await getEngineDefaultModel(opts.engineType)
-      if (defaultModel && defaultModel !== 'auto') model = defaultModel
-    }
+    // Treat 'auto' as unset — let the engine CLI use its own default.
+    // Do NOT look up or fill in a default model from DB; the engine decides.
+    const model = opts.model === 'auto' ? undefined : opts.model
 
     await updateIssueSession(issueId, {
       engineType: opts.engineType,
       sessionStatus: 'running',
       prompt: opts.prompt,
-      model,
+      model: model ?? null,
     })
 
     const baseDir = opts.workingDir ?? ROOT_DIR
