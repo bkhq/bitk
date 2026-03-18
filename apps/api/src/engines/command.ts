@@ -51,10 +51,9 @@ export class CommandBuilder {
   }
 
   param(key: string, value?: string): this {
+    this.args.push(key)
     if (value !== undefined) {
-      this.args.push(`${key}=${value}`)
-    } else {
-      this.args.push(key)
+      this.args.push(value)
     }
     return this
   }
