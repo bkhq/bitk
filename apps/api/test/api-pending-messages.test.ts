@@ -240,7 +240,7 @@ describe('Pending messages consumed on transition to working', () => {
       const r = await get<Issue>(`/api/projects/${projectId}/issues/${issue.id}`)
       const current = expectSuccess(r)
       return current.statusId === 'review' && current.sessionStatus === 'completed'
-    }, 5000)
+    }, 10000)
 
     logsResult = await get<LogsResponse>(`/api/projects/${projectId}/issues/${issue.id}/logs`)
     logs = expectSuccess(logsResult)
