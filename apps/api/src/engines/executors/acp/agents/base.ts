@@ -96,7 +96,7 @@ export function parseAcpModelWithRegistry(
   model: string | null | undefined,
   registry: Record<AcpAgentId, AcpAgentDefinition>,
 ): ParsedAcpModel | null {
-  if (!model) return null
+  if (!model || model === 'auto') return null
 
   if (!model.startsWith(ACP_MODEL_PREFIX)) {
     return {

@@ -296,8 +296,10 @@ async function queryCodexModels(): Promise<EngineModel[]> {
  * Build the common thread start params used by both spawn and spawnFollowUp.
  */
 function buildThreadParams(options: SpawnOptions): ThreadStartParams {
+  // Treat 'auto' as unset so Codex uses its own default model
+  const model = options.model && options.model !== 'auto' ? options.model : undefined
   const params: ThreadStartParams = {
-    model: options.model,
+    model,
     cwd: options.workingDir,
     approvalPolicy: 'never',
     sandbox: 'danger-full-access',
