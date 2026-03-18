@@ -7,7 +7,7 @@ import { customAlphabet } from 'nanoid'
 import * as z from 'zod'
 import { cacheDel, cacheDelByPrefix } from '@/cache'
 import { db } from '@/db'
-import { findProject, getAppSetting, getDefaultEngine, getEngineDefaultModel } from '@/db/helpers'
+import { findProject, getAppSetting, getDefaultEngine, getEngineDefaultModel, getServerUrl } from '@/db/helpers'
 import { issueLogs, issues as issuesTable, projects as projectsTable } from '@/db/schema'
 import { issueEngine } from '@/engines/issue'
 import { engineRegistry } from '@/engines/executors'
@@ -22,6 +22,7 @@ import {
   triggerIssueExecution,
 } from '@/routes/issues/_shared'
 import { toISO } from '@/utils/date'
+import { buildIssueUrl, dispatch as webhookDispatch } from '@/webhooks/dispatcher'
 
 // --- Constants ---
 
@@ -391,6 +392,25 @@ export function createMcpServer(): McpServer {
       model: resolved.model,
       sessionStatus: shouldExecute ? 'pending' : null,
     })
+
+    // Dispatch webhook (mirrors routes/issues/create.ts)
+    const webhookPayload: Record<string, unknown> = {
+      event: 'issue.created',
+      issueId: newIssue.id,
+      issueNumber: newIssue.issueNumber,
+      projectId: project.id,
+      projectName: project.name,
+      title,
+      statusId: effectiveStatusId,
+      engineType: resolved.engine,
+      model: resolved.model,
+      timestamp: new Date().toISOString(),
+    }
+    const srvUrl = await getServerUrl()
+    if (srvUrl) {
+      webhookPayload.issueUrl = buildIssueUrl(srvUrl, project.id, newIssue.id)
+    }
+    void webhookDispatch('issue.created', webhookPayload, `issue.created:${newIssue.id}`)
 
     if (shouldExecute) {
       triggerIssueExecution(

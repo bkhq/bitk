@@ -688,14 +688,15 @@ function McpSection({ open }: { open: boolean }) {
   }, [mcpData, apiKeyLoaded])
 
   const enabled = mcpData?.enabled ?? false
-  const serverUrl = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'
+  const { data: serverInfo } = useServerInfo(open)
+  const serverUrl = serverInfo?.url || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000')
 
   const configJson = JSON.stringify(
     {
       mcpServers: {
         bkd: {
           url: `${serverUrl}/api/mcp`,
-          ...(mcpData?.apiKey ? { headers: { Authorization: `Bearer ${mcpData.apiKey}` } } : {}),
+          ...(apiKey ? { headers: { Authorization: `Bearer ${apiKey}` } } : {}),
         },
       },
     },
