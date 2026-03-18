@@ -9,8 +9,8 @@ import {
 } from '@/db/schema'
 import type { EngineContext } from '@/engines/issue/context'
 import { handleTurnCompleted } from '@/engines/issue/lifecycle/turn-completion'
+import { ExecutionStore } from '@/engines/issue/store/execution-store'
 import type { ManagedProcess } from '@/engines/issue/types'
-import { RingBuffer } from '@/engines/issue/utils/ring-buffer'
 import { waitFor } from './helpers'
 import './setup'
 
@@ -38,7 +38,6 @@ async function createWorkingIssue(title: string) {
       statusId: 'working',
       issueNumber,
       title,
-      sortOrder: 0,
       engineType: 'echo',
       sessionStatus: 'running',
       prompt: title,
@@ -77,7 +76,7 @@ describe('turn completion pending-flush regression', () => {
       } as any,
       state: 'running',
       startedAt: new Date(),
-      logs: new RingBuffer(20),
+      logs: new ExecutionStore(executionId),
       retryCount: 0,
       turnInFlight: true,
       queueCancelRequested: false,
@@ -85,6 +84,8 @@ describe('turn completion pending-flush regression', () => {
       turnSettled: false,
       metaTurn: false,
       slashCommands: [],
+      agents: [],
+      plugins: [],
       lastActivityAt: new Date(),
       pendingInputs: [],
     }

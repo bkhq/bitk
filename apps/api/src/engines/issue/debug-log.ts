@@ -15,7 +15,7 @@ const NOOP_LOG: IssueDebugLog = {
   stdout() {},
   stderr() {},
   event() {},
-} as IssueDebugLog
+} as unknown as IssueDebugLog
 
 export class IssueDebugLog {
   private readonly filePath: string

@@ -26,8 +26,18 @@ const NPX_FALLBACK = 'npx -y @anthropic-ai/claude-code'
 /** Base directory for per-issue debug logs */
 const ISSUE_LOG_DIR = join(ROOT_DIR, 'data', 'logs', 'issues')
 
-/** Timeout for the lightweight auth verification probe */
-const AUTH_VERIFY_TIMEOUT_MS = 15_000
+function getLocalClaudeAuthStatus(): EngineAvailability['authStatus'] {
+  if (process.env.ANTHROPIC_API_KEY) {
+    return 'authenticated'
+  }
+
+  const home = process.env.HOME ?? '/root'
+  if (existsSync(join(home, '.claude', '.credentials.json'))) {
+    return 'authenticated'
+  }
+
+  return 'unauthenticated'
+}
 
 /**
  * Find the `claude` binary in well-known locations WITHOUT falling back to npx.
@@ -174,8 +184,7 @@ export class ClaudeCodeExecutor implements EngineExecutor {
       const versionMatch = stdout.match(/(\d+\.\d+\.\d[\w.-]*)/)
       const version = versionMatch?.[1]
 
-      // Verify auth by running a minimal test session
-      const authStatus = await this.verifyAuth(binaryPath)
+      const authStatus = getLocalClaudeAuthStatus()
 
       return {
         engineType: 'claude-code',
@@ -330,55 +339,6 @@ export class ClaudeCodeExecutor implements EngineExecutor {
   }
 
   // ---------- Private ----------
-
-  /**
-   * Verify authentication by running a minimal test session.
-   * Spawns `claude -p "hi" --max-turns 1 --output-format text` and checks
-   * if the process succeeds (authenticated) or prints a login prompt.
-   */
-  private async verifyAuth(binaryPath: string): Promise<EngineAvailability['authStatus']> {
-    try {
-      const resolved = await CommandBuilder.create(binaryPath)
-        .params(['-p', '--output-format', 'text', '--max-turns', '1', '--no-chrome'])
-        .params(['--', 'hi'])
-        .env('NPM_CONFIG_LOGLEVEL', 'error')
-        .resolve()
-
-      const proc = spawnNode([resolved.resolvedPath, ...resolved.args], {
-        stdin: 'ignore',
-        stdout: 'pipe',
-        stderr: 'pipe',
-        env: safeEnv(resolved.env),
-      })
-
-      const timer = setTimeout(() => proc.kill(), AUTH_VERIFY_TIMEOUT_MS)
-
-      const [stdoutText, stderrText] = await Promise.all([
-        new Response(proc.stdout).text(),
-        new Response(proc.stderr).text(),
-      ])
-      const exitCode = await proc.exited
-      clearTimeout(timer)
-
-      // Claude prints login prompts as plain text on stdout/stderr and exits non-zero
-      const combined = `${stdoutText}\n${stderrText}`
-      if (/not logged in|please run \/login|login required/i.test(combined)) {
-        return 'unauthenticated'
-      }
-      if (/auth|unauthorized|401|forbidden|403|invalid.*key/i.test(combined)) {
-        return 'unauthenticated'
-      }
-
-      // Exit 0 with any text output → auth works
-      return exitCode === 0 ? 'authenticated' : 'unauthenticated'
-    } catch (err) {
-      logger.debug(
-        { error: err instanceof Error ? err.message : String(err) },
-        'claude_auth_verify_failed',
-      )
-      return 'unknown'
-    }
-  }
 
   /**
    * Build the common CommandBuilder shared by spawn and spawnFollowUp.

@@ -20,7 +20,7 @@ const aliasId = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 8)
 const aliasRegex = /^[a-z0-9]+$/
 const fractionalKeyRegex = /^[a-z0-9]+$/i
 
-const envVarsSchema = z.record(z.string().max(10000)).optional()
+const envVarsSchema = z.record(z.string(), z.string().max(10000)).optional()
 
 const createProjectSchema = z.object({
   name: z.string().min(1).max(200),
@@ -186,7 +186,7 @@ projects.post(
     const lastProject = await db
       .select({ sortOrder: projectsTable.sortOrder })
       .from(projectsTable)
-      .where(eq(projectsTable.isDeleted, false))
+      .where(eq(projectsTable.isDeleted, 0))
       .orderBy(desc(projectsTable.sortOrder))
       .limit(1)
       .then(rows => rows[0])

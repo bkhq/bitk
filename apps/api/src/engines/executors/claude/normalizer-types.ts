@@ -11,7 +11,13 @@ export type ClaudeJson =
   ClaudeStreamEventWrapper |
   ClaudeResult |
   ClaudeError |
-  ClaudeRateLimit
+  ClaudeRateLimit |
+  ClaudeInternalLifecycle
+
+export interface ClaudeInternalLifecycle {
+  type: 'queue-operation' | 'progress' | 'last-prompt'
+  [key: string]: unknown
+}
 
 export interface ClaudeSystem {
   type: 'system'

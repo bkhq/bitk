@@ -1,10 +1,22 @@
 import { describe, expect, test } from 'bun:test'
 import { CodexExecutor, CodexLogNormalizer } from '@/engines/executors/codex'
+import type { NormalizedLogEntry } from '@/engines/types'
 
 const executor = new CodexExecutor()
 
+function asSingleEntry(
+  result: NormalizedLogEntry | NormalizedLogEntry[] | null,
+): NormalizedLogEntry | null {
+  if (!result) return null
+  return Array.isArray(result) ? (result[0] ?? null) : result
+}
+
 function normalize(method: string, params?: Record<string, unknown>) {
-  return executor.normalizeLog(JSON.stringify({ method, params }))
+  return asSingleEntry(executor.normalizeLog(JSON.stringify({ method, params })))
+}
+
+function parseSingle(normalizer: CodexLogNormalizer, rawLine: string) {
+  return asSingleEntry(normalizer.parse(rawLine))
 }
 
 /** Helper: build a codex/event/* notification line */
@@ -368,13 +380,13 @@ describe('CodexLogNormalizer (codex/event/*)', () => {
   describe('agent_message_delta (streaming)', () => {
     test('accumulates deltas into full assistant-message', () => {
       const n = new CodexLogNormalizer()
-      const r1 = n.parse(codexEvent('agent_message_delta', { delta: 'Hello ' }))
+      const r1 = parseSingle(n, codexEvent('agent_message_delta', { delta: 'Hello ' }))
       expect(r1).not.toBeNull()
       expect(r1!.entryType).toBe('assistant-message')
       expect(r1!.content).toBe('Hello ')
       expect(r1!.metadata?.streaming).toBe(true)
 
-      const r2 = n.parse(codexEvent('agent_message_delta', { delta: 'world!' }))
+      const r2 = parseSingle(n, codexEvent('agent_message_delta', { delta: 'world!' }))
       expect(r2!.content).toBe('Hello world!')
     })
 
@@ -386,7 +398,7 @@ describe('CodexLogNormalizer (codex/event/*)', () => {
     test('resets thinking state when assistant delta arrives', () => {
       const n = new CodexLogNormalizer()
       n.parse(codexEvent('agent_reasoning_delta', { delta: 'thinking...' }))
-      const r = n.parse(codexEvent('agent_message_delta', { delta: 'Hi' }))
+      const r = parseSingle(n, codexEvent('agent_message_delta', { delta: 'Hi' }))
       expect(r!.entryType).toBe('assistant-message')
       expect(r!.content).toBe('Hi')
     })
@@ -397,13 +409,13 @@ describe('CodexLogNormalizer (codex/event/*)', () => {
       const n = new CodexLogNormalizer()
       // Accumulate some deltas first
       n.parse(codexEvent('agent_message_delta', { delta: 'partial' }))
-      const r = n.parse(codexEvent('agent_message', { message: 'Full message' }))
+      const r = parseSingle(n, codexEvent('agent_message', { message: 'Full message' }))
       expect(r!.entryType).toBe('assistant-message')
       expect(r!.content).toBe('Full message')
       expect(r!.metadata?.streaming).toBeUndefined()
 
       // Next delta should start fresh
-      const r2 = n.parse(codexEvent('agent_message_delta', { delta: 'New' }))
+      const r2 = parseSingle(n, codexEvent('agent_message_delta', { delta: 'New' }))
       expect(r2!.content).toBe('New')
     })
   })
@@ -414,12 +426,12 @@ describe('CodexLogNormalizer (codex/event/*)', () => {
   describe('agent_reasoning_delta', () => {
     test('accumulates thinking text', () => {
       const n = new CodexLogNormalizer()
-      const r1 = n.parse(codexEvent('agent_reasoning_delta', { delta: 'Let me ' }))
+      const r1 = parseSingle(n, codexEvent('agent_reasoning_delta', { delta: 'Let me ' }))
       expect(r1!.entryType).toBe('thinking')
       expect(r1!.content).toBe('Let me ')
       expect(r1!.metadata?.streaming).toBe(true)
 
-      const r2 = n.parse(codexEvent('agent_reasoning_delta', { delta: 'think...' }))
+      const r2 = parseSingle(n, codexEvent('agent_reasoning_delta', { delta: 'think...' }))
       expect(r2!.content).toBe('Let me think...')
     })
   })
@@ -427,7 +439,7 @@ describe('CodexLogNormalizer (codex/event/*)', () => {
   describe('agent_reasoning (complete)', () => {
     test('returns complete thinking entry', () => {
       const n = new CodexLogNormalizer()
-      const r = n.parse(codexEvent('agent_reasoning', { text: 'Full reasoning' }))
+      const r = parseSingle(n, codexEvent('agent_reasoning', { text: 'Full reasoning' }))
       expect(r!.entryType).toBe('thinking')
       expect(r!.content).toBe('Full reasoning')
       expect(r!.metadata?.streaming).toBeUndefined()
@@ -440,12 +452,10 @@ describe('CodexLogNormalizer (codex/event/*)', () => {
   describe('exec_command_begin', () => {
     test('returns tool-use with command', () => {
       const n = new CodexLogNormalizer()
-      const r = n.parse(
-        codexEvent('exec_command_begin', {
-          command: ['git', 'status'],
-          call_id: 'call-1',
-        }),
-      )
+      const r = parseSingle(n, codexEvent('exec_command_begin', {
+        command: ['git', 'status'],
+        call_id: 'call-1',
+      }))
       expect(r!.entryType).toBe('tool-use')
       expect(r!.content).toBe('Tool: Bash')
       expect(r!.metadata?.toolName).toBe('Bash')
@@ -463,12 +473,10 @@ describe('CodexLogNormalizer (codex/event/*)', () => {
   describe('exec_command_output_delta', () => {
     test('returns streaming tool output', () => {
       const n = new CodexLogNormalizer()
-      const r = n.parse(
-        codexEvent('exec_command_output_delta', {
-          chunk: 'output text',
-          stream: 'stdout',
-        }),
-      )
+      const r = parseSingle(n, codexEvent('exec_command_output_delta', {
+        chunk: 'output text',
+        stream: 'stdout',
+      }))
       expect(r!.entryType).toBe('tool-use')
       expect(r!.content).toBe('output text')
       expect(r!.metadata?.streaming).toBe(true)
@@ -479,14 +487,12 @@ describe('CodexLogNormalizer (codex/event/*)', () => {
   describe('exec_command_end', () => {
     test('returns tool result with exit code', () => {
       const n = new CodexLogNormalizer()
-      const r = n.parse(
-        codexEvent('exec_command_end', {
-          command: ['ls', '-la'],
-          exit_code: 0,
-          formatted_output: 'file1.ts\nfile2.ts',
-          call_id: 'call-2',
-        }),
-      )
+      const r = parseSingle(n, codexEvent('exec_command_end', {
+        command: ['ls', '-la'],
+        exit_code: 0,
+        formatted_output: 'file1.ts\nfile2.ts',
+        call_id: 'call-2',
+      }))
       expect(r!.entryType).toBe('tool-use')
       expect(r!.content).toBe('file1.ts\nfile2.ts')
       expect(r!.metadata?.isResult).toBe(true)
@@ -558,14 +564,14 @@ describe('CodexLogNormalizer (codex/event/*)', () => {
   describe('patch_apply_end', () => {
     test('returns success result', () => {
       const n = new CodexLogNormalizer()
-      const r = n.parse(codexEvent('patch_apply_end', { success: true }))
+      const r = parseSingle(n, codexEvent('patch_apply_end', { success: true }))
       expect(r!.content).toBe('Patch applied successfully')
       expect(r!.metadata?.exitCode).toBe(0)
     })
 
     test('returns failure result', () => {
       const n = new CodexLogNormalizer()
-      const r = n.parse(codexEvent('patch_apply_end', { success: false }))
+      const r = parseSingle(n, codexEvent('patch_apply_end', { success: false }))
       expect(r!.content).toBe('Patch apply failed')
       expect(r!.metadata?.exitCode).toBe(1)
     })
@@ -577,15 +583,13 @@ describe('CodexLogNormalizer (codex/event/*)', () => {
   describe('mcp_tool_call_begin', () => {
     test('returns tool-use with server:tool name', () => {
       const n = new CodexLogNormalizer()
-      const r = n.parse(
-        codexEvent('mcp_tool_call_begin', {
-          invocation: {
-            server: 'fs',
-            tool: 'readFile',
-            arguments: { path: '/tmp' },
-          },
-        }),
-      )
+      const r = parseSingle(n, codexEvent('mcp_tool_call_begin', {
+        invocation: {
+          server: 'fs',
+          tool: 'readFile',
+          arguments: { path: '/tmp' },
+        },
+      }))
       expect(r!.metadata?.toolName).toBe('mcp:fs:readFile')
       expect(r!.toolAction?.kind).toBe('tool')
     })
@@ -594,27 +598,23 @@ describe('CodexLogNormalizer (codex/event/*)', () => {
   describe('mcp_tool_call_end', () => {
     test('extracts text content from result', () => {
       const n = new CodexLogNormalizer()
-      const r = n.parse(
-        codexEvent('mcp_tool_call_end', {
-          invocation: { server: 'fs', tool: 'readFile' },
-          result: {
-            content: [{ type: 'text', text: 'file contents' }],
-            is_error: false,
-          },
-        }),
-      )
+      const r = parseSingle(n, codexEvent('mcp_tool_call_end', {
+        invocation: { server: 'fs', tool: 'readFile' },
+        result: {
+          content: [{ type: 'text', text: 'file contents' }],
+          is_error: false,
+        },
+      }))
       expect(r!.content).toBe('file contents')
       expect(r!.metadata?.exitCode).toBe(0)
     })
 
     test('handles error result', () => {
       const n = new CodexLogNormalizer()
-      const r = n.parse(
-        codexEvent('mcp_tool_call_end', {
-          invocation: { server: 'fs', tool: 'readFile' },
-          result: { is_error: true },
-        }),
-      )
+      const r = parseSingle(n, codexEvent('mcp_tool_call_end', {
+        invocation: { server: 'fs', tool: 'readFile' },
+        result: { is_error: true },
+      }))
       expect(r!.content).toBe('MCP tool call failed')
       expect(r!.metadata?.exitCode).toBe(1)
     })
@@ -626,21 +626,21 @@ describe('CodexLogNormalizer (codex/event/*)', () => {
   describe('error and warning events', () => {
     test('error returns error-message', () => {
       const n = new CodexLogNormalizer()
-      const r = n.parse(codexEvent('error', { message: 'API error' }))
+      const r = parseSingle(n, codexEvent('error', { message: 'API error' }))
       expect(r!.entryType).toBe('error-message')
       expect(r!.content).toBe('Error: API error')
     })
 
     test('stream_error returns error-message', () => {
       const n = new CodexLogNormalizer()
-      const r = n.parse(codexEvent('stream_error', { message: 'connection lost' }))
+      const r = parseSingle(n, codexEvent('stream_error', { message: 'connection lost' }))
       expect(r!.entryType).toBe('error-message')
       expect(r!.content).toBe('Stream error: connection lost')
     })
 
     test('warning returns error-message', () => {
       const n = new CodexLogNormalizer()
-      const r = n.parse(codexEvent('warning', { message: 'Deprecated API' }))
+      const r = parseSingle(n, codexEvent('warning', { message: 'Deprecated API' }))
       expect(r!.entryType).toBe('error-message')
       expect(r!.content).toBe('Deprecated API')
     })
@@ -654,26 +654,22 @@ describe('CodexLogNormalizer (codex/event/*)', () => {
   describe('system events', () => {
     test('model_reroute', () => {
       const n = new CodexLogNormalizer()
-      const r = n.parse(
-        codexEvent('model_reroute', {
-          from_model: 'gpt-4o',
-          to_model: 'gpt-5.3-codex',
-        }),
-      )
+      const r = parseSingle(n, codexEvent('model_reroute', {
+        from_model: 'gpt-4o',
+        to_model: 'gpt-5.3-codex',
+      }))
       expect(r!.entryType).toBe('system-message')
       expect(r!.content).toBe('Model rerouted from gpt-4o to gpt-5.3-codex')
     })
 
     test('token_count', () => {
       const n = new CodexLogNormalizer()
-      const r = n.parse(
-        codexEvent('token_count', {
-          info: {
-            last_token_usage: { total_tokens: 5000 },
-            model_context_window: 128000,
-          },
-        }),
-      )
+      const r = parseSingle(n, codexEvent('token_count', {
+        info: {
+          last_token_usage: { total_tokens: 5000 },
+          model_context_window: 128000,
+        },
+      }))
       expect(r!.entryType).toBe('token-usage')
       expect(r!.metadata?.totalTokens).toBe(5000)
       expect(r!.metadata?.contextWindow).toBe(128000)
@@ -681,18 +677,16 @@ describe('CodexLogNormalizer (codex/event/*)', () => {
 
     test('context_compacted', () => {
       const n = new CodexLogNormalizer()
-      const r = n.parse(codexEvent('context_compacted'))
+      const r = parseSingle(n, codexEvent('context_compacted'))
       expect(r!.content).toBe('Context compacted')
     })
 
     test('session_configured', () => {
       const n = new CodexLogNormalizer()
-      const r = n.parse(
-        codexEvent('session_configured', {
-          model: 'gpt-5.3-codex',
-          session_id: 'sess-123',
-        }),
-      )
+      const r = parseSingle(n, codexEvent('session_configured', {
+        model: 'gpt-5.3-codex',
+        session_id: 'sess-123',
+      }))
       expect(r!.content).toBe('model: gpt-5.3-codex')
       expect(r!.metadata?.sessionId).toBe('sess-123')
     })
@@ -726,7 +720,7 @@ describe('CodexLogNormalizer (codex/event/*)', () => {
       n.parse(codexEvent('agent_message_delta', { delta: 'partial text' }))
       n.parse(codexEvent('exec_command_begin', { command: ['ls'] }))
       // Next delta should start fresh
-      const r = n.parse(codexEvent('agent_message_delta', { delta: 'New' }))
+      const r = parseSingle(n, codexEvent('agent_message_delta', { delta: 'New' }))
       expect(r!.content).toBe('New')
     })
 
@@ -734,7 +728,7 @@ describe('CodexLogNormalizer (codex/event/*)', () => {
       const n = new CodexLogNormalizer()
       n.parse(codexEvent('agent_reasoning_delta', { delta: 'thinking' }))
       n.parse(codexEvent('agent_reasoning_section_break'))
-      const r = n.parse(codexEvent('agent_reasoning_delta', { delta: 'fresh' }))
+      const r = parseSingle(n, codexEvent('agent_reasoning_delta', { delta: 'fresh' }))
       expect(r!.content).toBe('fresh')
     })
 
@@ -747,7 +741,7 @@ describe('CodexLogNormalizer (codex/event/*)', () => {
         }),
       )
       // Next agent_message_delta should NOT include stale plan text
-      const r = n.parse(codexEvent('agent_message_delta', { delta: 'Answer' }))
+      const r = parseSingle(n, codexEvent('agent_message_delta', { delta: 'Answer' }))
       expect(r!.content).toBe('Answer')
     })
 
@@ -756,7 +750,7 @@ describe('CodexLogNormalizer (codex/event/*)', () => {
       n.parse(codexEvent('agent_message_delta', { delta: 'partial' }))
       n.parse(codexEvent('turn_complete'))
       // Next delta should start fresh
-      const r = n.parse(codexEvent('agent_message_delta', { delta: 'New turn' }))
+      const r = parseSingle(n, codexEvent('agent_message_delta', { delta: 'New turn' }))
       expect(r!.content).toBe('New turn')
     })
   })
@@ -767,12 +761,10 @@ describe('CodexLogNormalizer (codex/event/*)', () => {
   describe('JSON-RPC response handling', () => {
     test('thread/start response with model emits session_configured', () => {
       const n = new CodexLogNormalizer()
-      const r = n.parse(
-        JSON.stringify({
-          id: 1,
-          result: { thread: { id: 'thr-1' }, model: 'gpt-5.3-codex' },
-        }),
-      )
+      const r = parseSingle(n, JSON.stringify({
+        id: 1,
+        result: { thread: { id: 'thr-1' }, model: 'gpt-5.3-codex' },
+      }))
       expect(r!.entryType).toBe('system-message')
       expect(r!.content).toBe('model: gpt-5.3-codex')
     })
@@ -789,7 +781,7 @@ describe('CodexLogNormalizer (codex/event/*)', () => {
   describe('turn_complete event', () => {
     test('emits completion entry with turnCompleted metadata', () => {
       const n = new CodexLogNormalizer()
-      const r = n.parse(codexEvent('turn_complete'))
+      const r = parseSingle(n, codexEvent('turn_complete'))
       expect(r).not.toBeNull()
       expect(r!.entryType).toBe('system-message')
       expect(r!.metadata?.turnCompleted).toBe(true)
@@ -797,7 +789,7 @@ describe('CodexLogNormalizer (codex/event/*)', () => {
 
     test('extracts turn_id and ignores last_agent_message (already streamed)', () => {
       const n = new CodexLogNormalizer()
-      const r = n.parse(codexEvent('turn_complete', {
+      const r = parseSingle(n, codexEvent('turn_complete', {
         turn_id: 'turn-42',
         last_agent_message: 'Done!',
       }))
@@ -808,7 +800,7 @@ describe('CodexLogNormalizer (codex/event/*)', () => {
 
     test('task_complete alias works', () => {
       const n = new CodexLogNormalizer()
-      const r = n.parse(codexEvent('task_complete', { turn_id: 'tc-1' }))
+      const r = parseSingle(n, codexEvent('task_complete', { turn_id: 'tc-1' }))
       expect(r!.metadata?.turnCompleted).toBe(true)
       expect(r!.metadata?.turnId).toBe('tc-1')
     })
@@ -817,7 +809,7 @@ describe('CodexLogNormalizer (codex/event/*)', () => {
   describe('turn_started event', () => {
     test('extracts turn_id and context window', () => {
       const n = new CodexLogNormalizer()
-      const r = n.parse(codexEvent('turn_started', {
+      const r = parseSingle(n, codexEvent('turn_started', {
         turn_id: 'ts-1',
         model_context_window: 128000,
         collaboration_mode_kind: 'default',
@@ -830,7 +822,7 @@ describe('CodexLogNormalizer (codex/event/*)', () => {
 
     test('task_started alias works', () => {
       const n = new CodexLogNormalizer()
-      const r = n.parse(codexEvent('task_started', { turn_id: 'ts-2' }))
+      const r = parseSingle(n, codexEvent('task_started', { turn_id: 'ts-2' }))
       expect(r!.metadata?.subtype).toBe('turn_started')
       expect(r!.metadata?.turnId).toBe('ts-2')
     })
@@ -839,7 +831,7 @@ describe('CodexLogNormalizer (codex/event/*)', () => {
   describe('turn_aborted event', () => {
     test('emits system-message with turnCompleted', () => {
       const n = new CodexLogNormalizer()
-      const r = n.parse(codexEvent('turn_aborted'))
+      const r = parseSingle(n, codexEvent('turn_aborted'))
       expect(r!.entryType).toBe('system-message')
       expect(r!.content).toBe('Turn aborted')
       expect(r!.metadata?.turnCompleted).toBe(true)
@@ -852,25 +844,23 @@ describe('CodexLogNormalizer (codex/event/*)', () => {
   describe('plan events', () => {
     test('plan_delta accumulates plan text', () => {
       const n = new CodexLogNormalizer()
-      const r1 = n.parse(codexEvent('plan_delta', { delta: 'Step 1: ' }))
+      const r1 = parseSingle(n, codexEvent('plan_delta', { delta: 'Step 1: ' }))
       expect(r1!.content).toBe('Step 1: ')
       expect(r1!.metadata?.isPlan).toBe(true)
 
-      const r2 = n.parse(codexEvent('plan_delta', { delta: 'do something' }))
+      const r2 = parseSingle(n, codexEvent('plan_delta', { delta: 'do something' }))
       expect(r2!.content).toBe('Step 1: do something')
     })
 
     test('plan_update with steps', () => {
       const n = new CodexLogNormalizer()
-      const r = n.parse(
-        codexEvent('plan_update', {
-          plan: [
-            { step: 'Read file', status: 'done' },
-            { step: 'Edit file', status: 'pending' },
-          ],
-          explanation: 'Updated plan',
-        }),
-      )
+      const r = parseSingle(n, codexEvent('plan_update', {
+        plan: [
+          { step: 'Read file', status: 'done' },
+          { step: 'Edit file', status: 'pending' },
+        ],
+        explanation: 'Updated plan',
+      }))
       expect(r!.entryType).toBe('system-message')
       expect(r!.content).toBe('Updated plan')
     })
@@ -882,42 +872,36 @@ describe('CodexLogNormalizer (codex/event/*)', () => {
   describe('exec_command_begin enriched fields', () => {
     test('includes cwd, source, and parsed_cmd description', () => {
       const n = new CodexLogNormalizer()
-      const r = n.parse(
-        codexEvent('exec_command_begin', {
-          command: ['cat', '/app/file.ts'],
-          call_id: 'c1',
-          cwd: '/app',
-          source: 'agent',
-          parsed_cmd: [{ type: 'read', cmd: 'cat', name: 'cat', path: '/app/file.ts' }],
-        }),
-      )
+      const r = parseSingle(n, codexEvent('exec_command_begin', {
+        command: ['cat', '/app/file.ts'],
+        call_id: 'c1',
+        cwd: '/app',
+        source: 'agent',
+        parsed_cmd: [{ type: 'read', cmd: 'cat', name: 'cat', path: '/app/file.ts' }],
+      }))
       expect(r!.metadata?.cwd).toBe('/app')
       expect(r!.metadata?.source).toBe('agent')
-      expect(r!.metadata?.input?.description).toBe('Read /app/file.ts')
+      expect((r!.metadata?.input as { description?: string } | undefined)?.description).toBe('Read /app/file.ts')
     })
 
     test('parsed_cmd search type', () => {
       const n = new CodexLogNormalizer()
-      const r = n.parse(
-        codexEvent('exec_command_begin', {
-          command: ['grep', '-r', 'foo', '/app'],
-          call_id: 'c2',
-          parsed_cmd: [{ type: 'search', cmd: 'grep', query: 'foo', path: '/app' }],
-        }),
-      )
-      expect(r!.metadata?.input?.description).toBe('Search "foo" in /app')
+      const r = parseSingle(n, codexEvent('exec_command_begin', {
+        command: ['grep', '-r', 'foo', '/app'],
+        call_id: 'c2',
+        parsed_cmd: [{ type: 'search', cmd: 'grep', query: 'foo', path: '/app' }],
+      }))
+      expect((r!.metadata?.input as { description?: string } | undefined)?.description).toBe('Search "foo" in /app')
     })
 
     test('parsed_cmd unknown type has no description', () => {
       const n = new CodexLogNormalizer()
-      const r = n.parse(
-        codexEvent('exec_command_begin', {
-          command: ['echo', 'hi'],
-          call_id: 'c3',
-          parsed_cmd: [{ type: 'unknown', cmd: 'echo' }],
-        }),
-      )
-      expect(r!.metadata?.input?.description).toBeUndefined()
+      const r = parseSingle(n, codexEvent('exec_command_begin', {
+        command: ['echo', 'hi'],
+        call_id: 'c3',
+        parsed_cmd: [{ type: 'unknown', cmd: 'echo' }],
+      }))
+      expect((r!.metadata?.input as { description?: string } | undefined)?.description).toBeUndefined()
     })
   })
 
@@ -927,14 +911,12 @@ describe('CodexLogNormalizer (codex/event/*)', () => {
   describe('exec_command_end duration', () => {
     test('includes duration string', () => {
       const n = new CodexLogNormalizer()
-      const r = n.parse(
-        codexEvent('exec_command_end', {
-          command: ['ls'],
-          exit_code: 0,
-          formatted_output: 'file1',
-          duration: '1.2s',
-        }),
-      )
+      const r = parseSingle(n, codexEvent('exec_command_end', {
+        command: ['ls'],
+        exit_code: 0,
+        formatted_output: 'file1',
+        duration: '1.2s',
+      }))
       expect(r!.metadata?.duration).toBe('1.2s')
     })
   })
@@ -961,22 +943,20 @@ describe('CodexLogNormalizer (codex/event/*)', () => {
   describe('patch_apply_end enriched', () => {
     test('includes stdout/stderr in content', () => {
       const n = new CodexLogNormalizer()
-      const r = n.parse(
-        codexEvent('patch_apply_end', {
-          success: true,
-          call_id: 'p1',
-          stdout: 'Applied 2 edits',
-          stderr: '',
-          changes: { '/app/a.ts': { type: 'update', unified_diff: 'diff' } },
-        }),
-      )
+      const r = parseSingle(n, codexEvent('patch_apply_end', {
+        success: true,
+        call_id: 'p1',
+        stdout: 'Applied 2 edits',
+        stderr: '',
+        changes: { '/app/a.ts': { type: 'update', unified_diff: 'diff' } },
+      }))
       expect(r!.content).toBe('Applied 2 edits')
       expect(r!.metadata?.changedPaths).toEqual(['/app/a.ts'])
     })
 
     test('falls back to default message when no stdout/stderr', () => {
       const n = new CodexLogNormalizer()
-      const r = n.parse(codexEvent('patch_apply_end', { success: false }))
+      const r = parseSingle(n, codexEvent('patch_apply_end', { success: false }))
       expect(r!.content).toBe('Patch apply failed')
     })
   })
@@ -987,15 +967,13 @@ describe('CodexLogNormalizer (codex/event/*)', () => {
   describe('exec_approval_request enriched', () => {
     test('includes cwd and reason', () => {
       const n = new CodexLogNormalizer()
-      const r = n.parse(
-        codexEvent('exec_approval_request', {
-          command: ['rm', '-rf', '/tmp/build'],
-          call_id: 'ea-1',
-          cwd: '/app',
-          reason: 'Needs elevated permissions',
-          parsed_cmd: [{ type: 'unknown', cmd: 'rm' }],
-        }),
-      )
+      const r = parseSingle(n, codexEvent('exec_approval_request', {
+        command: ['rm', '-rf', '/tmp/build'],
+        call_id: 'ea-1',
+        cwd: '/app',
+        reason: 'Needs elevated permissions',
+        parsed_cmd: [{ type: 'unknown', cmd: 'rm' }],
+      }))
       expect(r!.metadata?.cwd).toBe('/app')
       expect(r!.metadata?.reason).toBe('Needs elevated permissions')
     })
@@ -1024,13 +1002,11 @@ describe('CodexLogNormalizer (codex/event/*)', () => {
   describe('mcp_tool_call_end Ok/Err envelope', () => {
     test('unwraps Ok envelope', () => {
       const n = new CodexLogNormalizer()
-      const r = n.parse(
-        codexEvent('mcp_tool_call_end', {
-          invocation: { server: 'fs', tool: 'read' },
-          result: { Ok: { content: [{ type: 'text', text: 'contents' }] } },
-          duration: '0.5s',
-        }),
-      )
+      const r = parseSingle(n, codexEvent('mcp_tool_call_end', {
+        invocation: { server: 'fs', tool: 'read' },
+        result: { Ok: { content: [{ type: 'text', text: 'contents' }] } },
+        duration: '0.5s',
+      }))
       expect(r!.content).toBe('contents')
       expect(r!.metadata?.exitCode).toBe(0)
       expect(r!.metadata?.duration).toBe('0.5s')
@@ -1038,24 +1014,20 @@ describe('CodexLogNormalizer (codex/event/*)', () => {
 
     test('unwraps Err envelope', () => {
       const n = new CodexLogNormalizer()
-      const r = n.parse(
-        codexEvent('mcp_tool_call_end', {
-          invocation: { server: 'fs', tool: 'read' },
-          result: { Err: 'file not found' },
-        }),
-      )
+      const r = parseSingle(n, codexEvent('mcp_tool_call_end', {
+        invocation: { server: 'fs', tool: 'read' },
+        result: { Err: 'file not found' },
+      }))
       expect(r!.content).toBe('file not found')
       expect(r!.metadata?.exitCode).toBe(1)
     })
 
     test('backwards compat: flat result without Ok/Err', () => {
       const n = new CodexLogNormalizer()
-      const r = n.parse(
-        codexEvent('mcp_tool_call_end', {
-          invocation: { server: 'fs', tool: 'read' },
-          result: { content: [{ type: 'text', text: 'flat' }], is_error: false },
-        }),
-      )
+      const r = parseSingle(n, codexEvent('mcp_tool_call_end', {
+        invocation: { server: 'fs', tool: 'read' },
+        result: { content: [{ type: 'text', text: 'flat' }], is_error: false },
+      }))
       expect(r!.content).toBe('flat')
       expect(r!.metadata?.exitCode).toBe(0)
     })
@@ -1067,18 +1039,16 @@ describe('CodexLogNormalizer (codex/event/*)', () => {
   describe('session_configured enriched', () => {
     test('includes provider, cwd, approval policy', () => {
       const n = new CodexLogNormalizer()
-      const r = n.parse(
-        codexEvent('session_configured', {
-          model: 'o3',
-          session_id: 's1',
-          model_provider_id: 'openai',
-          cwd: '/app',
-          approval_policy: 'never',
-          reasoning_effort: 'high',
-          forked_from_id: 'parent-s1',
-          thread_name: 'my thread',
-        }),
-      )
+      const r = parseSingle(n, codexEvent('session_configured', {
+        model: 'o3',
+        session_id: 's1',
+        model_provider_id: 'openai',
+        cwd: '/app',
+        approval_policy: 'never',
+        reasoning_effort: 'high',
+        forked_from_id: 'parent-s1',
+        thread_name: 'my thread',
+      }))
       expect(r!.content).toBe('model: o3  provider: openai')
       expect(r!.metadata?.modelProviderId).toBe('openai')
       expect(r!.metadata?.cwd).toBe('/app')
@@ -1095,29 +1065,25 @@ describe('CodexLogNormalizer (codex/event/*)', () => {
   describe('error with codex_error_info', () => {
     test('extracts string error type', () => {
       const n = new CodexLogNormalizer()
-      const r = n.parse(
-        codexEvent('error', {
-          message: 'Context exceeded',
-          codex_error_info: 'context_window_exceeded',
-        }),
-      )
+      const r = parseSingle(n, codexEvent('error', {
+        message: 'Context exceeded',
+        codex_error_info: 'context_window_exceeded',
+      }))
       expect(r!.metadata?.errorType).toBe('context_window_exceeded')
     })
 
     test('extracts object error type key', () => {
       const n = new CodexLogNormalizer()
-      const r = n.parse(
-        codexEvent('error', {
-          message: 'HTTP error',
-          codex_error_info: { http_connection_failed: { http_status_code: 429 } },
-        }),
-      )
+      const r = parseSingle(n, codexEvent('error', {
+        message: 'HTTP error',
+        codex_error_info: { http_connection_failed: { http_status_code: 429 } },
+      }))
       expect(r!.metadata?.errorType).toBe('http_connection_failed')
     })
 
     test('no error info has no errorType', () => {
       const n = new CodexLogNormalizer()
-      const r = n.parse(codexEvent('error', { message: 'plain error' }))
+      const r = parseSingle(n, codexEvent('error', { message: 'plain error' }))
       expect(r!.metadata?.errorType).toBeUndefined()
     })
   })
@@ -1128,15 +1094,13 @@ describe('CodexLogNormalizer (codex/event/*)', () => {
   describe('token_count enriched', () => {
     test('includes input/output tokens and rate limits', () => {
       const n = new CodexLogNormalizer()
-      const r = n.parse(
-        codexEvent('token_count', {
-          info: {
-            last_token_usage: { total_tokens: 5000, input_tokens: 3000, output_tokens: 2000 },
-            model_context_window: 128000,
-          },
-          rate_limits: { requests_remaining: 10 },
-        }),
-      )
+      const r = parseSingle(n, codexEvent('token_count', {
+        info: {
+          last_token_usage: { total_tokens: 5000, input_tokens: 3000, output_tokens: 2000 },
+          model_context_window: 128000,
+        },
+        rate_limits: { requests_remaining: 10 },
+      }))
       expect(r!.metadata?.inputTokens).toBe(3000)
       expect(r!.metadata?.outputTokens).toBe(2000)
       expect(r!.metadata?.rateLimits).toEqual({ requests_remaining: 10 })
@@ -1149,13 +1113,11 @@ describe('CodexLogNormalizer (codex/event/*)', () => {
   describe('request_user_input', () => {
     test('returns system-message with questions', () => {
       const n = new CodexLogNormalizer()
-      const r = n.parse(
-        codexEvent('request_user_input', {
-          call_id: 'rui-1',
-          turn_id: 't1',
-          questions: [{ question: 'Do you want to proceed?' }],
-        }),
-      )
+      const r = parseSingle(n, codexEvent('request_user_input', {
+        call_id: 'rui-1',
+        turn_id: 't1',
+        questions: [{ question: 'Do you want to proceed?' }],
+      }))
       expect(r!.entryType).toBe('system-message')
       expect(r!.content).toBe('Do you want to proceed?')
       expect(r!.metadata?.subtype).toBe('request_user_input')
@@ -1165,14 +1127,12 @@ describe('CodexLogNormalizer (codex/event/*)', () => {
   describe('dynamic_tool_call_request', () => {
     test('returns tool-use entry', () => {
       const n = new CodexLogNormalizer()
-      const r = n.parse(
-        codexEvent('dynamic_tool_call_request', {
-          callId: 'dtc-1',
-          turnId: 't1',
-          tool: 'custom_tool',
-          arguments: { key: 'value' },
-        }),
-      )
+      const r = parseSingle(n, codexEvent('dynamic_tool_call_request', {
+        callId: 'dtc-1',
+        turnId: 't1',
+        tool: 'custom_tool',
+        arguments: { key: 'value' },
+      }))
       expect(r!.entryType).toBe('tool-use')
       expect(r!.metadata?.toolName).toBe('custom_tool')
       expect(r!.metadata?.input).toEqual({ key: 'value' })
@@ -1182,13 +1142,11 @@ describe('CodexLogNormalizer (codex/event/*)', () => {
   describe('terminal_interaction', () => {
     test('returns system-message with stdin', () => {
       const n = new CodexLogNormalizer()
-      const r = n.parse(
-        codexEvent('terminal_interaction', {
-          call_id: 'ti-1',
-          process_id: 'pid-1',
-          stdin: 'yes\n',
-        }),
-      )
+      const r = parseSingle(n, codexEvent('terminal_interaction', {
+        call_id: 'ti-1',
+        process_id: 'pid-1',
+        stdin: 'yes\n',
+      }))
       expect(r!.entryType).toBe('system-message')
       expect(r!.content).toContain('yes')
       expect(r!.metadata?.subtype).toBe('terminal_interaction')
@@ -1202,9 +1160,7 @@ describe('CodexLogNormalizer (codex/event/*)', () => {
   describe('review mode events', () => {
     test('entered_review_mode returns system-message', () => {
       const n = new CodexLogNormalizer()
-      const r = n.parse(
-        codexEvent('entered_review_mode', { user_facing_hint: 'Review changes' }),
-      )
+      const r = parseSingle(n, codexEvent('entered_review_mode', { user_facing_hint: 'Review changes' }))
       expect(r!.entryType).toBe('system-message')
       expect(r!.content).toBe('Review changes')
       expect(r!.metadata?.subtype).toBe('entered_review_mode')
@@ -1212,7 +1168,7 @@ describe('CodexLogNormalizer (codex/event/*)', () => {
 
     test('exited_review_mode returns system-message', () => {
       const n = new CodexLogNormalizer()
-      const r = n.parse(codexEvent('exited_review_mode'))
+      const r = parseSingle(n, codexEvent('exited_review_mode'))
       expect(r!.entryType).toBe('system-message')
       expect(r!.content).toBe('Exited review mode')
     })
@@ -1224,13 +1180,11 @@ describe('CodexLogNormalizer (codex/event/*)', () => {
   describe('collaboration events', () => {
     test('collab_agent_spawn_begin returns system-message with prompt', () => {
       const n = new CodexLogNormalizer()
-      const r = n.parse(
-        codexEvent('collab_agent_spawn_begin', {
-          call_id: 'cs-1',
-          sender_thread_id: 'sender-1',
-          prompt: 'Fix the bug in auth module',
-        }),
-      )
+      const r = parseSingle(n, codexEvent('collab_agent_spawn_begin', {
+        call_id: 'cs-1',
+        sender_thread_id: 'sender-1',
+        prompt: 'Fix the bug in auth module',
+      }))
       expect(r!.entryType).toBe('system-message')
       expect(r!.content).toContain('Fix the bug')
       expect(r!.metadata?.subtype).toBe('collab_agent_spawn_begin')
@@ -1238,38 +1192,32 @@ describe('CodexLogNormalizer (codex/event/*)', () => {
 
     test('collab_agent_spawn_end returns system-message with status', () => {
       const n = new CodexLogNormalizer()
-      const r = n.parse(
-        codexEvent('collab_agent_spawn_end', {
-          call_id: 'cs-1',
-          new_thread_id: 'new-1',
-          status: 'running',
-          prompt: '',
-          sender_thread_id: 'sender-1',
-        }),
-      )
+      const r = parseSingle(n, codexEvent('collab_agent_spawn_end', {
+        call_id: 'cs-1',
+        new_thread_id: 'new-1',
+        status: 'running',
+        prompt: '',
+        sender_thread_id: 'sender-1',
+      }))
       expect(r!.content).toBe('Agent spawned: running')
       expect(r!.metadata?.newThreadId).toBe('new-1')
     })
 
     test('collab_agent_interaction_begin returns system-message', () => {
       const n = new CodexLogNormalizer()
-      const r = n.parse(
-        codexEvent('collab_agent_interaction_begin', {
-          call_id: 'ci-1',
-          prompt: 'Check status',
-        }),
-      )
+      const r = parseSingle(n, codexEvent('collab_agent_interaction_begin', {
+        call_id: 'ci-1',
+        prompt: 'Check status',
+      }))
       expect(r!.content).toContain('Check status')
     })
 
     test('collab_waiting_begin shows count', () => {
       const n = new CodexLogNormalizer()
-      const r = n.parse(
-        codexEvent('collab_waiting_begin', {
-          call_id: 'cw-1',
-          receiver_thread_ids: ['t1', 't2', 't3'],
-        }),
-      )
+      const r = parseSingle(n, codexEvent('collab_waiting_begin', {
+        call_id: 'cw-1',
+        receiver_thread_ids: ['t1', 't2', 't3'],
+      }))
       expect(r!.content).toBe('Waiting for 3 agent(s)')
     })
   })
@@ -1280,13 +1228,11 @@ describe('CodexLogNormalizer (codex/event/*)', () => {
   describe('elicitation_request', () => {
     test('returns system-message with server name', () => {
       const n = new CodexLogNormalizer()
-      const r = n.parse(
-        codexEvent('elicitation_request', {
-          server_name: 'github',
-          message: 'Please authenticate',
-          id: 'el-1',
-        }),
-      )
+      const r = parseSingle(n, codexEvent('elicitation_request', {
+        server_name: 'github',
+        message: 'Please authenticate',
+        id: 'el-1',
+      }))
       expect(r!.entryType).toBe('system-message')
       expect(r!.content).toBe('Please authenticate')
       expect(r!.metadata?.serverName).toBe('github')
@@ -1299,13 +1245,11 @@ describe('CodexLogNormalizer (codex/event/*)', () => {
   describe('web_search_end enriched', () => {
     test('includes action type', () => {
       const n = new CodexLogNormalizer()
-      const r = n.parse(
-        codexEvent('web_search_end', {
-          call_id: 'ws-1',
-          query: 'how to fix TypeScript errors',
-          action: { type: 'search' },
-        }),
-      )
+      const r = parseSingle(n, codexEvent('web_search_end', {
+        call_id: 'ws-1',
+        query: 'how to fix TypeScript errors',
+        action: { type: 'search' },
+      }))
       expect(r!.metadata?.actionType).toBe('search')
     })
   })

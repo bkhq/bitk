@@ -4,7 +4,7 @@ import { AcpLogNormalizer, normalizeAcpEvent } from '@/engines/executors/acp/acp
 
 describe('normalizeAcpEvent', () => {
   test('maps assistant chunks to streaming assistant messages', () => {
-    const entry = normalizeAcpEvent(JSON.stringify({
+    const result = normalizeAcpEvent(JSON.stringify({
       type: 'acp-session-update',
       timestamp: '2026-03-13T00:00:00.000Z',
       update: {
@@ -16,10 +16,11 @@ describe('normalizeAcpEvent', () => {
       },
     }))
 
-    expect(entry).toBeTruthy()
-    expect(entry?.entryType).toBe('assistant-message')
-    expect(entry?.content).toBe('hello from acp')
-    expect(entry?.metadata?.streaming).toBe(true)
+    expect(result).toBeTruthy()
+    const entries = Array.isArray(result) ? result : [result]
+    expect(entries[0]?.entryType).toBe('assistant-message')
+    expect(entries[0]?.content).toBe('hello from acp')
+    expect(entries[0]?.metadata?.streaming).toBe(true)
   })
 
   test('marks prompt result as a turn completion entry', () => {

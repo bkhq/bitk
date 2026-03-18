@@ -206,8 +206,9 @@ export async function relocatePendingForProcessing(issueId: string): Promise<{
         .update(issueLogs)
         .set({ visible: 0 })
         .where(and(eq(issueLogs.id, row.id), eq(issueLogs.visible, 1)))
-        .run()
-      if (result.changes > 0) claimed.push(row)
+        .returning({ id: issueLogs.id })
+        .get()
+      if (result) claimed.push(row)
     }
     return claimed
   })

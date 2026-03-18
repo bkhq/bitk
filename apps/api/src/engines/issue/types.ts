@@ -74,16 +74,6 @@ export interface ManagedProcess {
   }>
   /** Per-issue debug file logger for raw I/O and lifecycle events */
   debugLog?: IssueDebugLog
-  /**
-   * True when stdout pipe closed prematurely while the process is still alive.
-   *  Transcript fallback is in progress — stall detection should not escalate.
-   */
-  stdoutBroken?: boolean
-  /**
-   * UUID of the last stdout message processed (used by transcript fallback
-   *  to skip already-seen entries).
-   */
-  lastSeenUuid?: string
   /** CWD of the spawned process (needed to construct transcript JSONL path). */
   spawnCwd?: string
   /** External session ID (Claude CLI session UUID). */

@@ -4,6 +4,7 @@ import { upgradeWebSocket } from 'hono/bun'
 import * as z from 'zod'
 import { ProcessManager } from '@/engines/process-manager'
 import { spawnNodeSync } from '@/engines/spawn'
+import type { Subprocess } from '@/engines/spawn'
 import { logger } from '@/logger'
 
 // App-specific env vars that must not leak into terminal PTY processes.
@@ -175,7 +176,7 @@ app.post('/terminal', (c) => {
       LANG: process.env.LANG || 'C.UTF-8',
       LC_CTYPE: process.env.LC_CTYPE || 'C.UTF-8',
     },
-  })
+  }) as unknown as Subprocess
 
   try {
     terminalPM.register(id, proc, meta, {
@@ -198,14 +199,14 @@ app.get(
   '/terminal/ws/:id',
   // Reject before upgrade if session doesn't exist
   (c, next) => {
-    const id = c.req.param('id')
+    const id = c.req.param('id') ?? ''
     if (!terminalPM.has(id)) {
       return c.json({ success: false, error: 'Session not found' }, 404)
     }
     return next()
   },
   upgradeWebSocket((c) => {
-    const id = c.req.param('id')
+    const id = c.req.param('id') ?? ''
     // Capture the raw WS ref so onClose can detect stale sockets
     let myWsRaw: WsLike | null = null
 

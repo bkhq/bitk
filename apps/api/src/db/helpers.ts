@@ -289,7 +289,7 @@ export async function backfillSortOrders(): Promise<void> {
   const allProjects = await db
     .select({ id: projectsTable.id, sortOrder: projectsTable.sortOrder })
     .from(projectsTable)
-    .where(eq(projectsTable.isDeleted, false))
+    .where(eq(projectsTable.isDeleted, 0))
     .orderBy(asc(projectsTable.createdAt))
 
   const projectsNeedBackfill = allProjects.length > 1
@@ -312,7 +312,7 @@ export async function backfillSortOrders(): Promise<void> {
     const issues = await db
       .select({ id: issuesTable.id, sortOrder: issuesTable.sortOrder, statusId: issuesTable.statusId })
       .from(issuesTable)
-      .where(and(eq(issuesTable.projectId, projectId), eq(issuesTable.isDeleted, false)))
+      .where(and(eq(issuesTable.projectId, projectId), eq(issuesTable.isDeleted, 0)))
       .orderBy(asc(issuesTable.createdAt))
 
     const needsBackfill = issues.length > 1

@@ -1,8 +1,4 @@
 import { kill } from 'node:process'
-import {
-  getTranscriptPath,
-  runTranscriptFallback,
-} from '@/engines/executors/claude/transcript-fallback'
 import type { EngineContext } from '@/engines/issue/context'
 import { createIssueDebugLog, teeStreamToDebug } from '@/engines/issue/debug-log'
 import { emitDiagnosticLog } from '@/engines/issue/diagnostic'
@@ -142,96 +138,17 @@ export function register(
       }
       if (!alive) return
 
-      // stdout broke while process is still running
-      m.stdoutBroken = true
-
-      // Transcript JSONL fallback is Claude CLI-specific — other engines
-      // (codex, acp, echo) don't write transcript files.
-      if (engineType !== 'claude-code') {
-        debugLog.event(`stdout_broken pid=${pid} engine=${engineType} — no transcript fallback`)
-        logger.warn(
-          { issueId, executionId, pid, engineType },
-          'stdout_broken_no_fallback_non_claude',
-        )
-        return
-      }
-
-      const cwd = m.spawnCwd
-      const sessionId = m.externalSessionId
-      if (!cwd || !sessionId) {
-        logger.warn(
-          { issueId, executionId, hasCwd: !!cwd, hasSessionId: !!sessionId },
-          'transcript_fallback_skipped_missing_context',
-        )
-        return
-      }
-
-      // When running in a worktree, Claude CLI records the transcript under
-      // the worktree path. Use spawnCwd (the actual working directory) for
-      // the transcript path, not worktreeBaseDir.
-      const transcriptPath = getTranscriptPath(cwd, sessionId)
-      const cutoffTimestamp = m.lastActivityAt.toISOString()
-      debugLog.event(
-        `stdout_broken pid=${pid} alive=true — starting transcript fallback from ${cutoffTimestamp}`,
-      )
+      debugLog.event(`stdout_broken pid=${pid} engine=${engineType} — no fallback`)
       logger.warn(
-        { issueId, executionId, pid, transcriptPath, cutoffTimestamp },
-        'stdout_broken_transcript_fallback_starting',
+        { issueId, executionId, pid, engineType },
+        'stdout_broken_no_fallback',
       )
       emitDiagnosticLog(
         issueId,
         executionId,
-        `[BKD] stdout pipe broke — falling back to transcript JSONL (pid=${pid})`,
-        { event: 'stdout_broken_fallback', pid },
+        `[BKD] stdout pipe broke with no fallback recovery (pid=${pid})`,
+        { event: 'stdout_broken_no_fallback', pid },
       )
-
-      // Poll transcript JSONL until turn completion is detected or
-      // the process exits.  The process may still be mid-turn (running
-      // tool calls) when stdout breaks, so a single read is not enough.
-      const POLL_INTERVAL_MS = 5_000
-      const MAX_POLL_MS = 10 * 60_000 // 10 min safety cap
-      const pollStart = Date.now()
-      let lastCutoff = cutoffTimestamp
-
-      const pollTimer = setInterval(() => {
-        const current = ctx.pm.get(executionId)?.meta
-        if (!current || current.turnSettled || current.state !== 'running') {
-          clearInterval(pollTimer)
-          return
-        }
-
-        // Safety: stop polling after MAX_POLL_MS to avoid infinite loop.
-        // Clear stdoutBroken so stall detection can take over again.
-        if (Date.now() - pollStart > MAX_POLL_MS) {
-          clearInterval(pollTimer)
-          current.stdoutBroken = false
-          debugLog.event('transcript_fallback_timeout')
-          logger.warn({ issueId, executionId }, 'transcript_fallback_poll_timeout')
-          return
-        }
-
-        const turnCompleted = runTranscriptFallback(
-          transcriptPath,
-          lastCutoff,
-          logParser,
-          (entry) => {
-            const turnIdx = ctx.turnIndexes.get(executionId) ?? 0
-            handleStreamEntry(issueId, executionId, {
-              ...entry,
-              turnIndex: turnIdx,
-            })
-            // Advance cutoff so next poll skips already-processed entries
-            if (entry.timestamp) lastCutoff = entry.timestamp
-          },
-        )
-
-        if (turnCompleted) {
-          clearInterval(pollTimer)
-          debugLog.event('transcript_fallback_turn_completed')
-          logger.info({ issueId, executionId }, 'transcript_fallback_turn_completed')
-          onTurnCompleted()
-        }
-      }, POLL_INTERVAL_MS)
     })
     .catch((err) => {
       debugLog.event(`stdout_stream_error: ${err}`)

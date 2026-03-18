@@ -27,3 +27,5 @@
 - [x] **PLAN-022 修复 ACP 重复占位 tool action 发射** - task: `BUG-011` - owner: codex - file: `docs/plan/PLAN-022.md`
 - [x] **PLAN-023 Keep pending messages separate and editable** - task: `BUG-012` - owner: local - file: `docs/plan/PLAN-023.md`
 - [x] **PLAN-024 Issue context menu and export** - task: `FEAT-004` - owner: claude - file: `docs/plan/PLAN-024.md`
+- [x] **PLAN-025 全量修复前后端 TypeScript 类型错误** - task: `BUG-016` - owner: codex - file: `docs/plan/PLAN-025.md`
+- [x] **PLAN-026 删除原生 Claude stdout transcript fallback** - task: `BUG-014` - owner: codex - file: `docs/plan/PLAN-026.md`

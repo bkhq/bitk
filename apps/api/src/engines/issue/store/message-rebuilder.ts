@@ -162,8 +162,8 @@ export function rebuildMessages(
     // Extract task plan from last TodoWrite in the group
     if (todoItems.length > 0) {
       const lastTodo = todoItems.at(-1)
-      const todos = extractTodos(lastTodo.action)
-      if (todos) {
+      const todos = lastTodo ? extractTodos(lastTodo.action) : null
+      if (lastTodo && todos) {
         messages.push({
           type: 'task-plan',
           id: entryId(lastTodo.action, nextId('tp')),

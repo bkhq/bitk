@@ -1,4 +1,4 @@
-# PLAN-024 删除原生 Claude stdout transcript fallback
+# PLAN-026 删除原生 Claude stdout transcript fallback
 
 - **task**: BUG-014
 - **status**: completed

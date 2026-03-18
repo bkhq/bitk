@@ -75,11 +75,13 @@ export function CreateIssueForm({
   const [engineType, setEngineType] = useState('')
   const [modelId, setModelId] = useState('')
   const [permission, setPermission] = useState<PermissionId>('auto')
-  const [useWorktree, setUseWorktree] = useState(true)
+  const [useWorktree, setUseWorktree] = useState(false)
 
-  // Sync worktree toggle with project git repo status
+  // Keep worktree disabled for non-git projects, but do not auto-enable it.
   useEffect(() => {
-    setUseWorktree(projectIsGitRepo)
+    if (!projectIsGitRepo) {
+      setUseWorktree(false)
+    }
   }, [projectIsGitRepo])
 
   // Resolve the effective engine type ('' means use system default)
@@ -145,7 +147,7 @@ export function CreateIssueForm({
           setEngineType('')
           setModelId('')
           setPermission('auto')
-          setUseWorktree(projectIsGitRepo)
+          setUseWorktree(false)
           onCreated?.()
         },
       },
@@ -156,7 +158,6 @@ export function CreateIssueForm({
     statusId,
     permission,
     useWorktree,
-    projectIsGitRepo,
     parentIssueId,
     resolvedEngineType,
     modelId,

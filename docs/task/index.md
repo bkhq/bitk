@@ -119,3 +119,7 @@
 - [-] **BUG-009 模型发现链路缺少可诊断日志** `P1` - owner: codex - plan: `PLAN-011` - file: `docs/task/BUG-009.md`
 - [x] **BUG-010 ACP assistant streaming 未落地导致前端无返回** `P0` - owner: codex - plan: `PLAN-012` - file: `docs/task/BUG-010.md`
 - [x] **BUG-012 Pending messages should not merge automatically** `P1` - owner: local - plan: `PLAN-023` - file: `docs/task/BUG-012.md`
+- [x] **BUG-013 原生 Claude probe 改为本地凭据判断** `P1` - owner: codex - file: `docs/task/BUG-013.md`
+- [x] **BUG-014 删除原生 Claude stdout transcript fallback** `P1` - owner: codex - plan: `PLAN-024` - file: `docs/task/BUG-014.md`
+- [x] **BUG-015 创建任务工作树默认关闭** `P2` - owner: codex - file: `docs/task/BUG-015.md`
+- [x] **BUG-016 全量修复仓库现有 tsc 错误** `P1` - owner: codex - plan: `PLAN-025` - file: `docs/task/BUG-016.md`

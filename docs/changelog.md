@@ -442,3 +442,28 @@ Per-issue debug 文件日志：
 - `consumer.ts`: stdout 流正常/异常结束记录日志；stderr catch 块不再静默丢弃错误
 - `process-manager.ts`: 子进程退出记录 pid/exitCode/prevState；forceKill/SIGKILL 发送记录日志；stateChange/exit handler 异常记录日志
 - `register.ts`: 流消费 promise resolve/reject 记录日志
+
+## 2026-03-18 20:50 [progress]
+
+- BUG-013: 原生 `claude-code` probe 不再通过 `claude -p --output-format text --max-turns 1 --no-chrome -- hi` 发起真实会话验证认证状态
+- `ClaudeCodeExecutor.getAvailability()` 现在仅保留本地二进制与版本检查，认证状态改为读取 `ANTHROPIC_API_KEY` 或 `~/.claude/.credentials.json`
+- 这样可避免 hooks、插件刷新、skills 注入与 API 过载把已安装且已有本地凭据的 Claude 误判为不可用
+
+## 2026-03-18 21:10 [progress]
+
+- BUG-014: 删除原生 `claude-code` 的 stdout transcript fallback 运行时链路
+- 移除了 `engines/executors/claude/transcript-fallback.ts`、`ManagedProcess.stdoutBroken/lastSeenUuid` 以及 GC 中针对该 fallback 的特殊分支
+- `/api/projects/:projectId/processes` 与前端进程面板不再暴露 transcript JSONL 路径；stdout pipe 异常结束时仅记录诊断日志，不再尝试补读 transcript
+
+## 2026-03-18 21:20 [progress]
+
+- BUG-015: 创建任务弹窗中的工作树开关默认值改为关闭
+- Git 仓库项目不再自动把工作树开关同步为开启；仅在非 Git 仓库场景下强制保持关闭
+- 创建成功后表单重置也恢复为工作树关闭，只有用户主动开启时才会提交 `useWorktree=true`
+
+## 2026-03-18 22:05 [progress]
+
+- BUG-016: 修复当前仓库前后端全部 `tsc --noEmit` 错误
+- 先通过 `bun install` 恢复缺失依赖，清除了前端 Atlaskit 拖拽模块和 API 侧 ACP SDK 的解析失败
+- 修复了 API 侧的缓存排序、Drizzle `isDeleted` 比较、pending message 可见性更新、Claude normalizer 内部事件联合类型、issue 查询与 message rebuild 严格空值问题，以及 terminal 路由的类型收窄
+- 同步修正了相关测试中的联合返回类型辅助函数、过期断言、`sortOrder` 类型和 `ExecutionStore` / `ManagedProcess` 测试桩

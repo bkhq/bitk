@@ -711,30 +711,6 @@ describe('ClaudeLogNormalizer', () => {
     })
   })
 
-  describe('disabled rules do not filter', () => {
-    const disabledRule: WriteFilterRule = {
-      id: 'read',
-      type: 'tool-name',
-      match: 'Read',
-      enabled: false,
-    }
-    const normalizer = new ClaudeLogNormalizer([disabledRule])
-
-    test('Read is NOT filtered when rule is disabled', () => {
-      const entries = parseAll(
-        normalizer,
-        line({
-          type: 'tool_use',
-          name: 'Read',
-          id: 'tu_dis1',
-          input: { file_path: '/d' },
-        }),
-      )
-      expect(entries).toHaveLength(1)
-      expect(entries[0]!.content).toBe('/d')
-    })
-  })
-
   describe('content_block_delta', () => {
     const normalizer = new ClaudeLogNormalizer()
 

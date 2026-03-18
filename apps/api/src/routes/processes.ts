@@ -3,7 +3,6 @@ import { Hono } from 'hono'
 import { db } from '@/db'
 import { findProject } from '@/db/helpers'
 import { issues as issuesTable } from '@/db/schema'
-import { getTranscriptPath } from '@/engines/executors/claude/transcript-fallback'
 import { issueEngine } from '@/engines/issue'
 import { getPidFromManaged } from '@/engines/issue/utils/pid'
 import { logger } from '@/logger'
@@ -34,7 +33,6 @@ processes.get('/', async (c) => {
     spawnCommand: string | null
     lastIdleAt: string | null
     pid: number | null
-    transcriptPath: string | null
   }> = []
 
   if (issueIds.length > 0) {
@@ -67,9 +65,6 @@ processes.get('/', async (c) => {
         spawnCommand: p.spawnCommand ?? null,
         lastIdleAt: p.lastIdleAt?.toISOString() ?? null,
         pid: getPidFromManaged(p) ?? null,
-        transcriptPath: p.spawnCwd && p.externalSessionId && p.engineType === 'claude-code'
-          ? getTranscriptPath(p.spawnCwd, p.externalSessionId)
-          : null,
       })
     }
   }
