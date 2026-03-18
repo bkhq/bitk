@@ -118,7 +118,7 @@ engines.patch(
 // PATCH /api/engines/:engineType/hidden-models — Update hidden models for an engine type
 engines.patch(
   '/:engineType/hidden-models',
-  zValidator('json', z.object({ hiddenModels: z.array(z.string()) }), (result, c) => {
+  zValidator('json', z.object({ hiddenModels: z.array(z.string().regex(/^[\w./:-]{1,160}$/)).max(500) }), (result, c) => {
     if (!result.success) {
       return c.json(
         {

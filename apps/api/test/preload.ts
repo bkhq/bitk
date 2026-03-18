@@ -23,3 +23,8 @@ if (!existsSync(testDir)) {
 }
 // Store path for cleanup
 ;(globalThis as any).__TEST_DB_PATH = testDbPath
+
+// Register echo executor for tests (removed from production registry)
+const { engineRegistry } = await import('@/engines/executors')
+const { EchoExecutor } = await import('@/engines/executors/echo/executor')
+;(engineRegistry as any).register(new EchoExecutor())

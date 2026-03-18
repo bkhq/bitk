@@ -50,11 +50,11 @@ describe('GET /api/engines/settings', () => {
 describe('PATCH /api/engines/default-engine', () => {
   test('sets a valid default engine', async () => {
     const result = await patch<{ defaultEngine: string }>('/api/engines/default-engine', {
-      defaultEngine: 'echo',
+      defaultEngine: 'claude-code',
     })
     expect(result.status).toBe(200)
     const data = expectSuccess(result)
-    expect(data.defaultEngine).toBe('echo')
+    expect(data.defaultEngine).toBe('claude-code')
   })
 
   test('rejects invalid engine type', async () => {
@@ -76,10 +76,10 @@ describe('GET /api/engines/:engineType/models', () => {
       engineType: string
       defaultModel: string | undefined
       models: unknown[]
-    }>('/api/engines/echo/models')
+    }>('/api/engines/claude-code/models')
     expect(result.status).toBe(200)
     const data = expectSuccess(result)
-    expect(data.engineType).toBe('echo')
+    expect(data.engineType).toBe('claude-code')
     expect(Array.isArray(data.models)).toBe(true)
   })
 

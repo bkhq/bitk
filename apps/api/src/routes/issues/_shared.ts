@@ -27,7 +27,7 @@ export const createIssueSchema = z.object({
   parentIssueId: z.string().optional(),
   useWorktree: z.boolean().optional(),
   engineType: z.string().refine(
-    val => ['claude-code', 'codex', 'acp'].includes(val) || isValidAcpEngineType(val),
+    val => ['claude-code', 'codex', 'acp', 'echo'].includes(val) || isValidAcpEngineType(val),
     { message: 'Invalid engine type' },
   ).optional(),
   model: z
@@ -59,7 +59,7 @@ export const updateIssueSchema = z.object({
 
 export const executeIssueSchema = z.object({
   engineType: z.string().refine(
-    val => ['claude-code', 'codex', 'acp'].includes(val) || isValidAcpEngineType(val),
+    val => ['claude-code', 'codex', 'acp', 'echo'].includes(val) || isValidAcpEngineType(val),
     { message: 'Invalid engine type' },
   ),
   prompt: z.string().min(1).max(32768),

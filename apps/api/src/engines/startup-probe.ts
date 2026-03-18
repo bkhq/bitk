@@ -225,14 +225,9 @@ export function toAcpEngineType(agentId: AcpAgentId): string {
   return `${ACP_ENGINE_PREFIX}${agentId}`
 }
 
-/** Check if an engine type is a virtual ACP agent engine */
-export function isAcpEngineType(engineType: string): boolean {
-  return engineType.startsWith(ACP_ENGINE_PREFIX)
-}
-
-/** Extract ACP agent ID from a virtual engine type (e.g. "acp:codex" → "codex") */
+/** Extract ACP agent ID from a validated virtual engine type (e.g. "acp:codex" → "codex") */
 export function parseAcpEngineType(engineType: string): AcpAgentId | null {
-  if (!isAcpEngineType(engineType)) return null
+  if (!isValidAcpEngineType(engineType)) return null
   return engineType.slice(ACP_ENGINE_PREFIX.length) as AcpAgentId
 }
 
@@ -264,6 +259,9 @@ function expandAcpEngines(discovery: EngineDiscovery): EngineDiscovery {
   const modelsByAgent = new Map<string, EngineModel[]>()
   for (const model of acpModels) {
     const match = model.id.match(/^acp:([\w-]+):/)
+    if (!match) {
+      logger.warn({ modelId: model.id }, 'acp_model_missing_agent_prefix_defaulting_to_gemini')
+    }
     const agentId = match?.[1] ?? 'gemini'
     const arr = modelsByAgent.get(agentId)
     if (arr) arr.push(model)
