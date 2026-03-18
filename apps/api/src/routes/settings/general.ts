@@ -346,11 +346,26 @@ general.get('/mcp', async (c) => {
     getAppSetting(MCP_ENABLED_KEY),
     getAppSetting(MCP_API_KEY_KEY),
   ])
+
+  // Env overrides take precedence (mirrors mcp route middleware logic)
+  const enabledEnv = process.env.MCP_ENABLED
+  const apiKeyEnv = process.env.MCP_API_KEY
+
+  const effectiveEnabled = enabledEnv !== undefined
+    ? (enabledEnv === 'true' || enabledEnv === '1')
+    : enabledRaw === 'true'
+
+  const effectiveApiKey = apiKeyEnv ?? apiKey ?? null
+
   return c.json({
     success: true,
     data: {
-      enabled: enabledRaw === 'true',
-      apiKey: apiKey ?? null,
+      enabled: effectiveEnabled,
+      apiKey: effectiveApiKey,
+      envOverride: {
+        enabled: enabledEnv !== undefined,
+        apiKey: apiKeyEnv !== undefined,
+      },
     },
   })
 })
@@ -395,11 +410,21 @@ general.patch(
       getAppSetting(MCP_ENABLED_KEY),
       getAppSetting(MCP_API_KEY_KEY),
     ])
+
+    const enabledEnv = process.env.MCP_ENABLED
+    const apiKeyEnv = process.env.MCP_API_KEY
+
     return c.json({
       success: true,
       data: {
-        enabled: enabledRaw === 'true',
-        apiKey: currentKey ?? null,
+        enabled: enabledEnv !== undefined
+          ? (enabledEnv === 'true' || enabledEnv === '1')
+          : enabledRaw === 'true',
+        apiKey: apiKeyEnv ?? currentKey ?? null,
+        envOverride: {
+          enabled: enabledEnv !== undefined,
+          apiKey: apiKeyEnv !== undefined,
+        },
       },
     })
   },

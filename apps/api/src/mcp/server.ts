@@ -1,18 +1,26 @@
+import { mkdir, stat } from 'node:fs/promises'
 import { resolve } from 'node:path'
-import { and, asc, desc, eq, isNull, max } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray, isNull, max } from 'drizzle-orm'
 import { generateKeyBetween } from 'jittered-fractional-indexing'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { customAlphabet } from 'nanoid'
 import * as z from 'zod'
+import { cacheDel, cacheDelByPrefix } from '@/cache'
 import { db } from '@/db'
-import { findProject, getDefaultEngine, getEngineDefaultModel } from '@/db/helpers'
+import { findProject, getAppSetting, getDefaultEngine, getEngineDefaultModel } from '@/db/helpers'
 import { issueLogs, issues as issuesTable, projects as projectsTable } from '@/db/schema'
 import { issueEngine } from '@/engines/issue'
 import { engineRegistry } from '@/engines/executors'
 import { getEngineDiscovery } from '@/engines/startup-probe'
 import type { EngineType } from '@/engines/types'
+import { emitIssueUpdated } from '@/events/issue-events'
 import { logger } from '@/logger'
-import { parseProjectEnvVars, triggerIssueExecution } from '@/routes/issues/_shared'
+import {
+  ensureWorking,
+  flushPendingAsFollowUp,
+  parseProjectEnvVars,
+  triggerIssueExecution,
+} from '@/routes/issues/_shared'
 import { toISO } from '@/utils/date'
 
 // --- Constants ---
@@ -97,6 +105,39 @@ async function resolveEngineAndModel(engineType?: string, model?: string) {
   }
 
   return { engine: resolvedEngine, model: resolvedModel }
+}
+
+/**
+ * SEC-016: Validate and prepare working directory within workspace root.
+ * Returns the resolved dir or an error string.
+ */
+async function resolveWorkingDir(
+  projectDirectory: string | undefined,
+): Promise<{ dir?: string, error?: string }> {
+  if (!projectDirectory) return {}
+
+  const resolvedDir = resolve(projectDirectory)
+
+  // Validate directory is within workspace root
+  const workspaceRoot = await getAppSetting('workspace:defaultPath')
+  if (workspaceRoot && workspaceRoot !== '/') {
+    const resolvedRoot = resolve(workspaceRoot)
+    if (!resolvedDir.startsWith(`${resolvedRoot}/`) && resolvedDir !== resolvedRoot) {
+      return { error: 'Project directory is outside the configured workspace' }
+    }
+  }
+
+  try {
+    await mkdir(resolvedDir, { recursive: true })
+    const s = await stat(resolvedDir)
+    if (!s.isDirectory()) {
+      return { error: 'Project directory is not a directory' }
+    }
+  } catch {
+    return { error: `Failed to prepare project directory: ${resolvedDir}` }
+  }
+
+  return { dir: resolvedDir }
 }
 
 async function insertIssueInTransaction(
@@ -391,6 +432,10 @@ export function createMcpServer(): McpServer {
 
     const transitioningToWorking = statusId === 'working' && existing.statusId !== 'working'
     const shouldExecute = transitioningToWorking && (!existing.sessionStatus || existing.sessionStatus === 'pending')
+    const shouldFlush = transitioningToWorking
+      && !shouldExecute
+      && ['completed', 'failed', 'cancelled'].includes(existing.sessionStatus ?? '')
+    const transitioningToDone = statusId === 'done' && existing.statusId !== 'done'
 
     const updates = {
       ...(title !== undefined && { title }),
@@ -409,6 +454,10 @@ export function createMcpServer(): McpServer {
       .where(eq(issuesTable.id, issueId))
       .returning()
 
+    // Invalidate cache + emit SSE event for UI sync
+    await cacheDel(`issue:${project.id}:${issueId}`)
+    emitIssueUpdated(issueId, updates)
+
     if (shouldExecute) {
       triggerIssueExecution(
         issueId,
@@ -417,10 +466,12 @@ export function createMcpServer(): McpServer {
         project.systemPrompt,
         parseProjectEnvVars(project.envVars),
       )
+    } else if (shouldFlush) {
+      flushPendingAsFollowUp(issueId, { model: existing.model })
     }
 
     // Cancel active processes when moving to done
-    if (statusId === 'done' && existing.statusId !== 'done') {
+    if (transitioningToDone) {
       void issueEngine.cancelIssue(issueId).catch((err) => {
         logger.error({ issueId, err }, 'mcp_done_cancel_failed')
       })
@@ -431,7 +482,7 @@ export function createMcpServer(): McpServer {
 
   server.registerTool('delete-issue', {
     title: 'Delete Issue',
-    description: 'Soft-delete an issue.',
+    description: 'Soft-delete an issue and its children. Terminates active processes.',
     inputSchema: z.object({
       projectId: z.string().describe('Project ID or alias'),
       issueId: z.string().describe('Issue ID'),
@@ -452,7 +503,50 @@ export function createMcpServer(): McpServer {
       )
     if (!existing) return errorResult('Issue not found')
 
-    await db.update(issuesTable).set({ isDeleted: 1 }).where(eq(issuesTable.id, issueId))
+    // Best-effort terminate active processes (5s timeout)
+    const shouldTerminate =
+      existing.sessionStatus === 'running'
+      || existing.sessionStatus === 'pending'
+      || issueEngine.hasActiveProcessForIssue(issueId)
+    if (shouldTerminate) {
+      try {
+        await Promise.race([
+          issueEngine.terminateProcess(issueId),
+          new Promise<never>((_, reject) =>
+            setTimeout(reject, 5_000, new Error('terminate timeout')),
+          ),
+        ])
+      } catch (err) {
+        logger.warn({ issueId, err }, 'mcp_delete_terminate_failed')
+      }
+    }
+
+    // Soft-delete issue + children in a transaction
+    await db.transaction(async (tx) => {
+      const childIssues = await tx
+        .select({ id: issuesTable.id })
+        .from(issuesTable)
+        .where(
+          and(
+            eq(issuesTable.parentIssueId, issueId),
+            eq(issuesTable.projectId, project.id),
+            eq(issuesTable.isDeleted, 0),
+          ),
+        )
+      const childIds = childIssues.map(c => c.id)
+
+      await tx.update(issuesTable).set({ isDeleted: 1 }).where(eq(issuesTable.id, issueId))
+
+      if (childIds.length > 0) {
+        await tx.update(issuesTable).set({ isDeleted: 1 }).where(inArray(issuesTable.id, childIds))
+      }
+    })
+
+    // Invalidate caches
+    await cacheDel(`issue:${project.id}:${issueId}`)
+    await cacheDelByPrefix(`projectIssueIds:${project.id}`)
+    await cacheDelByPrefix(`childCounts:${project.id}`)
+
     return textResult({ deleted: true, id: issueId })
   })
 
@@ -460,7 +554,7 @@ export function createMcpServer(): McpServer {
 
   server.registerTool('execute-issue', {
     title: 'Execute Issue',
-    description: 'Start AI engine execution on an issue. The issue must be in "working" or "review" status.',
+    description: 'Start AI engine execution on an issue. Automatically moves review issues to working.',
     inputSchema: z.object({
       projectId: z.string().describe('Project ID or alias'),
       issueId: z.string().describe('Issue ID'),
@@ -484,18 +578,27 @@ export function createMcpServer(): McpServer {
       )
     if (!issue) return errorResult('Issue not found')
 
-    if (issue.statusId === 'todo' || issue.statusId === 'done') {
-      return errorResult(`Cannot execute issue in "${issue.statusId}" status`)
+    // ensureWorking: rejects todo/done, moves review→working
+    const guard = await ensureWorking(issue)
+    if (!guard.ok) {
+      return errorResult(guard.reason!)
     }
 
+    // SEC-016: Validate working directory within workspace
+    const { dir: effectiveWorkingDir, error: dirError } = await resolveWorkingDir(
+      project.directory || undefined,
+    )
+    if (dirError) return errorResult(dirError)
+
     try {
-      const workingDir = project.directory || undefined
       const basePrompt = project.systemPrompt ? `${project.systemPrompt}\n\n${prompt}` : prompt
+      const envVars = parseProjectEnvVars(project.envVars)
       const result = await issueEngine.executeIssue(issueId, {
         engineType: engineType as EngineType,
         prompt: basePrompt,
-        workingDir,
+        workingDir: effectiveWorkingDir,
         model,
+        envVars,
       })
       return textResult({ executionId: result.executionId, issueId, messageId: result.messageId })
     } catch (error) {
@@ -528,6 +631,11 @@ export function createMcpServer(): McpServer {
         ),
       )
     if (!issue) return errorResult('Issue not found')
+
+    // Block model change during active session
+    if (issue.externalSessionId && model && model !== (issue.model ?? '')) {
+      return errorResult('Model changes are not allowed during an existing session. Restart to use a different model.')
+    }
 
     try {
       const result = await issueEngine.followUpIssue(issueId, prompt, model)
@@ -571,7 +679,7 @@ export function createMcpServer(): McpServer {
 
   server.registerTool('restart-issue', {
     title: 'Restart Issue',
-    description: 'Restart a failed AI session on an issue.',
+    description: 'Restart a failed AI session on an issue. Automatically moves review issues to working.',
     inputSchema: z.object({
       projectId: z.string().describe('Project ID or alias'),
       issueId: z.string().describe('Issue ID'),
@@ -591,6 +699,12 @@ export function createMcpServer(): McpServer {
         ),
       )
     if (!issue) return errorResult('Issue not found')
+
+    // ensureWorking: rejects todo/done, moves review→working
+    const guard = await ensureWorking(issue)
+    if (!guard.ok) {
+      return errorResult(guard.reason!)
+    }
 
     try {
       const result = await issueEngine.restartIssue(issueId)

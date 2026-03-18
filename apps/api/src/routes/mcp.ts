@@ -1,4 +1,5 @@
 import { Hono } from 'hono'
+import { getConnInfo } from 'hono/bun'
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js'
 import { createMcpServer } from '@/mcp/server'
 import { getAppSetting } from '@/db/helpers'
@@ -75,6 +76,23 @@ function getOrCreateSession(sessionId: string | undefined): McpSession {
   return { server, transport, lastAccess: Date.now() }
 }
 
+// --- Localhost detection via client IP ---
+
+const LOCALHOST_ADDRS = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1', 'localhost'])
+
+function isLocalhostRequest(c: Parameters<Parameters<typeof mcpRoute.use>[1]>[0]): boolean {
+  // Prefer actual client IP from Bun's conninfo (not spoofable)
+  try {
+    const info = getConnInfo(c)
+    const addr = info.remote.address
+    if (addr) return LOCALHOST_ADDRS.has(addr)
+  } catch {
+    // getConnInfo unavailable (e.g., test environment) — fall back to URL hostname
+  }
+  const hostname = new URL(c.req.url).hostname
+  return LOCALHOST_ADDRS.has(hostname)
+}
+
 // --- Enabled gate + API key authentication middleware ---
 
 const MCP_ENABLED_SETTING = 'mcp:enabled'
@@ -97,11 +115,9 @@ mcpRoute.use('*', async (c, next) => {
   // API key authentication
   const apiKey = process.env.MCP_API_KEY ?? (await getAppSetting(MCP_API_KEY_SETTING))
 
-  // If no API key is configured, only allow localhost
+  // If no API key is configured, only allow localhost (using client IP, not Host header)
   if (!apiKey) {
-    const host = c.req.header('host') ?? new URL(c.req.url).hostname
-    const isLocal = host.startsWith('localhost') || host.startsWith('127.0.0.1') || host.startsWith('[::1]')
-    if (!isLocal) {
+    if (!isLocalhostRequest(c)) {
       return c.json({ error: 'MCP endpoint requires API key or localhost access' }, 403)
     }
     return next()
