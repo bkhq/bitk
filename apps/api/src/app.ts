@@ -4,6 +4,7 @@ import { secureHeaders } from 'hono/secure-headers'
 import { getEngineDiscovery } from './engines/startup-probe'
 import { httpLogger, logger } from './logger'
 import { apiRoutes, engineRoutes, eventRoutes, settingsRoutes } from './routes'
+import mcpRoute from './routes/mcp'
 import notesRoutes from './routes/notes'
 import terminalRoute from './routes/terminal'
 
@@ -14,7 +15,7 @@ app.use(secureHeaders())
 
 // --- Compression (skip for SSE routes) ---
 app.use('*', async (c, next) => {
-  if (c.req.path.endsWith('/stream') || c.req.path === '/api/events') {
+  if (c.req.path.endsWith('/stream') || c.req.path === '/api/events' || c.req.path.startsWith('/api/mcp')) {
     return next()
   }
   return compress()(c, next)
@@ -29,6 +30,7 @@ app.route('/api/engines', engineRoutes)
 app.route('/api/events', eventRoutes)
 app.route('/api/settings', settingsRoutes)
 app.route('/api/notes', notesRoutes)
+app.route('/api/mcp', mcpRoute)
 app.route('/api', terminalRoute)
 
 // --- 404 handler ---
