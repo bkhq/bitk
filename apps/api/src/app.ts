@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import { compress } from 'hono/compress'
 import { secureHeaders } from 'hono/secure-headers'
+import { authMiddleware, authRoutes } from './auth'
 import { getEngineDiscovery } from './engines/startup-probe'
 import { httpLogger, logger } from './logger'
 import { apiRoutes, engineRoutes, eventRoutes, settingsRoutes } from './routes'
@@ -23,6 +24,12 @@ app.use('*', async (c, next) => {
 
 // --- HTTP request logging ---
 app.use(httpLogger())
+
+// --- Auth routes (public, must be before auth middleware) ---
+app.route('/api/auth', authRoutes)
+
+// --- Auth middleware (protects all routes below when AUTH_ENABLED=true) ---
+app.use('/api/*', authMiddleware())
 
 // --- Routes ---
 app.route('/api', apiRoutes)

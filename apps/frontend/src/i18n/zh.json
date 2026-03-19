@@ -549,5 +549,15 @@
     "minimize": "最小化",
     "maximize": "最大化",
     "restore": "还原"
+  },
+  "auth": {
+    "login": "登录",
+    "loginDescription": "登录以访问仪表板",
+    "loginWithOAuth": "SSO 登录",
+    "authenticating": "认证中...",
+    "loginFailed": "登录失败",
+    "noCodeReceived": "未收到授权码",
+    "backToLogin": "返回登录",
+    "logout": "退出登录"
   }
 }

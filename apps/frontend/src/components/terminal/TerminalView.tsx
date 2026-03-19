@@ -4,6 +4,7 @@ import { WebLinksAddon } from '@xterm/addon-web-links'
 import { WebglAddon } from '@xterm/addon-webgl'
 import { Terminal } from '@xterm/xterm'
 import { useCallback, useEffect, useRef } from 'react'
+import { getToken } from '@/lib/auth'
 import { useTerminalSessionStore } from '@/stores/terminal-session-store'
 import '@xterm/xterm/css/xterm.css'
 
@@ -116,8 +117,15 @@ function clearSessionId(): void {
 
 // --- API helpers ---
 
+function terminalHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {}
+  const token = getToken()
+  if (token) headers.Authorization = `Bearer ${token}`
+  return headers
+}
+
 async function createSession(): Promise<string> {
-  const res = await fetch('/api/terminal', { method: 'POST' })
+  const res = await fetch('/api/terminal', { method: 'POST', headers: terminalHeaders() })
   const json = await res.json()
   if (!json.success) throw new Error(json.error)
   return json.data.id as string
@@ -125,7 +133,7 @@ async function createSession(): Promise<string> {
 
 async function checkSession(id: string): Promise<boolean> {
   try {
-    const res = await fetch(`/api/terminal/${id}`)
+    const res = await fetch(`/api/terminal/${id}`, { headers: terminalHeaders() })
     const json = await res.json()
     return json.success === true
   } catch {
@@ -135,7 +143,7 @@ async function checkSession(id: string): Promise<boolean> {
 
 function deleteSession(sessionId: string): void {
   clearSessionId()
-  void fetch(`/api/terminal/${sessionId}`, { method: 'DELETE' })
+  void fetch(`/api/terminal/${sessionId}`, { method: 'DELETE', headers: terminalHeaders() })
 }
 
 function wsUrl(sessionId: string): string {
@@ -145,7 +153,10 @@ function wsUrl(sessionId: string): string {
   const host = import.meta.env.DEV ?
     `${location.hostname}:${import.meta.env.VITE_API_PORT || 3010}` :
     location.host
-  return `${proto}//${host}/api/terminal/ws/${sessionId}`
+  const base = `${proto}//${host}/api/terminal/ws/${sessionId}`
+  // Pass auth token as query param (WebSocket doesn't support custom headers)
+  const token = getToken()
+  return token ? `${base}?token=${encodeURIComponent(token)}` : base
 }
 
 // --- Store-backed singleton helpers ---

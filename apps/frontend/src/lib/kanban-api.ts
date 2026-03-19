@@ -21,12 +21,29 @@ import type {
   WebhookDelivery,
   WebhookEventType,
 } from '@/types/kanban'
+import { clearToken, getToken } from './auth'
+
+function authHeaders(): Record<string, string> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+  const token = getToken()
+  if (token) {
+    headers.Authorization = `Bearer ${token}`
+  }
+  return headers
+}
 
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(url, {
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders(),
     ...options,
   })
+
+  if (res.status === 401) {
+    clearToken()
+    window.location.href = '/login'
+    throw new Error('Unauthorized')
+  }
+
   const json = (await res.json()) as ApiResponse<T>
   if (!json.success) {
     throw new Error(json.error)
@@ -51,7 +68,19 @@ function del<T>(url: string) {
 }
 
 async function postFormData<T>(url: string, formData: FormData): Promise<T> {
-  const res = await fetch(url, { method: 'POST', body: formData })
+  const token = getToken()
+  const headers: Record<string, string> = {}
+  if (token) {
+    headers.Authorization = `Bearer ${token}`
+  }
+  const res = await fetch(url, { method: 'POST', body: formData, headers })
+
+  if (res.status === 401) {
+    clearToken()
+    window.location.href = '/login'
+    throw new Error('Unauthorized')
+  }
+
   const json = (await res.json()) as ApiResponse<T>
   if (!json.success) {
     throw new Error(json.error)

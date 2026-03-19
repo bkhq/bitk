@@ -1,5 +1,6 @@
 import type { ChangesSummary } from '@bkd/shared'
 import type { NormalizedLogEntry, SessionStatus } from '@/types/kanban'
+import { getToken } from './auth'
 
 export interface IssueEventHandler {
   onLog: (entry: NormalizedLogEntry) => void
@@ -39,7 +40,9 @@ class EventBus {
   connect(): void {
     if (this.es) return
 
-    const es = new EventSource('/api/events')
+    const token = getToken()
+    const sseUrl = token ? `/api/events?token=${encodeURIComponent(token)}` : '/api/events'
+    const es = new EventSource(sseUrl)
     this.es = es
 
     es.onopen = () => {

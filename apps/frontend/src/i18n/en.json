@@ -549,5 +549,15 @@
     "minimize": "Minimize",
     "maximize": "Maximize",
     "restore": "Restore"
+  },
+  "auth": {
+    "login": "Login",
+    "loginDescription": "Sign in to access the dashboard",
+    "loginWithOAuth": "Sign in with SSO",
+    "authenticating": "Authenticating...",
+    "loginFailed": "Login failed",
+    "noCodeReceived": "No authorization code received",
+    "backToLogin": "Back to login",
+    "logout": "Logout"
   }
 }
