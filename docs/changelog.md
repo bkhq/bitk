@@ -467,3 +467,9 @@ Per-issue debug 文件日志：
 - 先通过 `bun install` 恢复缺失依赖，清除了前端 Atlaskit 拖拽模块和 API 侧 ACP SDK 的解析失败
 - 修复了 API 侧的缓存排序、Drizzle `isDeleted` 比较、pending message 可见性更新、Claude normalizer 内部事件联合类型、issue 查询与 message rebuild 严格空值问题，以及 terminal 路由的类型收窄
 - 同步修正了相关测试中的联合返回类型辅助函数、过期断言、`sortOrder` 类型和 `ExecutionStore` / `ManagedProcess` 测试桩
+## 2026-03-19 11:30 [progress]
+
+- AUDIT-028 / PLAN-027: completed a repository-wide modular audit and wrote reports under `docs/codex-audit/`
+- Added module reports for API runtime, API execution, API data/upgrade, frontend app shell, frontend high-privilege surfaces, and repository infrastructure
+- Re-mapped existing `AUDIT-001` to `AUDIT-027` backlog items into the new module reports for easier triage
+- Registered new findings as `AUDIT-029` to `AUDIT-039`, including unrestricted `/api/files` root control, unverified upgrade activation, cross-project SSE broadcast exposure, issue-lock timeout mutual-exclusion breakage, MCP API key plaintext exposure, and release/build path drift

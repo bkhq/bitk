@@ -29,3 +29,5 @@
 - [x] **PLAN-024 Issue context menu and export** - task: `FEAT-004` - owner: claude - file: `docs/plan/PLAN-024.md`
 - [x] **PLAN-025 全量修复前后端 TypeScript 类型错误** - task: `BUG-016` - owner: codex - file: `docs/plan/PLAN-025.md`
 - [x] **PLAN-026 删除原生 Claude stdout transcript fallback** - task: `BUG-014` - owner: codex - file: `docs/plan/PLAN-026.md`
+- [x] **PLAN-027 完整仓库模块化审计** - task: `AUDIT-028` - owner: codex - file: `docs/plan/PLAN-027.md`
+- [ ] **PLAN-028 OAuth PKCE Authentication** - task: `AUTH-001` - owner: claude - file: `docs/plan/PLAN-028.md`

@@ -5,6 +5,10 @@
 - [x] **CRASH-001 BKD 服务崩溃检测与关键日志记录** `P0` - owner: — - file: `docs/task/CRASH-001.md`
 - [x] **CRASH-002 修复永久卡死根本原因** `P0` - owner: claude - file: `docs/task/CRASH-002.md`
 
+## Authentication
+
+- [x] **AUTH-001 OAuth PKCE Authentication** `P0` - owner: claude - plan: `PLAN-028` - file: `docs/task/AUTH-001.md`
+
 ## Chat UI
 
 - [x] **CHAT-001 聊天界面 UI 优化（对标 Claude Code）** `P1` - owner: claude - file: `docs/task/CHAT-001.md`
@@ -36,22 +40,42 @@
 
 - [x] **WEBHOOK-001 完善 Webhook 通知元信息** `P1` - plan: `PLAN-002` - file: `docs/task/WEBHOOK-001.md`
 
-## Backend Audit — CRITICAL
+## Audit — CRITICAL (P0)
 
 - [ ] **AUDIT-001 升级系统路径穿越漏洞** `P0` - file: `docs/task/AUDIT-001.md`
 - [ ] **AUDIT-002 Notes 路由无项目作用域和权限检查** `P0` - file: `docs/task/AUDIT-002.md`
 - [ ] **AUDIT-003 回收站全局暴露已删除 issue** `P0` - file: `docs/task/AUDIT-003.md`
 - [ ] **AUDIT-004 Turn 完成异步结算竞态** `P0` - file: `docs/task/AUDIT-004.md`
+- [ ] **AUDIT-029 Files API caller-controlled root exposes host filesystem** `P0` - file: `docs/task/AUDIT-029.md`
+- [x] **AUDIT-034 Privileged API surfaces rely entirely on upstream auth boundaries** `P0` - resolved by: `AUTH-001` - file: `docs/task/AUDIT-034.md`
+- [ ] **AUDIT-035 Upgrade restart path accepts downloaded artifacts without mandatory integrity verification** `P0` - file: `docs/task/AUDIT-035.md`
+- [ ] **AUDIT-040 Webhook secrets sent as plaintext Bearer tokens** `P0` - file: `docs/task/AUDIT-040.md`
+- [ ] **AUDIT-041 Telegram bot token exposed in API URL** `P0` - file: `docs/task/AUDIT-041.md`
+- [ ] **AUDIT-042 Upgrade apply exits without verifying child process health** `P0` - file: `docs/task/AUDIT-042.md`
 
-## Backend Audit — HIGH
+## Audit — HIGH (P1)
 
 - [ ] **AUDIT-005 Engine 领域数据内存泄漏** `P1` - file: `docs/task/AUDIT-005.md`
 - [ ] **AUDIT-006 Reconciler 检查范围过窄** `P1` - file: `docs/task/AUDIT-006.md`
 - [ ] **AUDIT-007 Reconciler 与 spawn 竞态** `P1` - file: `docs/task/AUDIT-007.md`
 - [ ] **AUDIT-008 Logs 端点 limit 参数未经 Zod 验证** `P1` - file: `docs/task/AUDIT-008.md`
 - [ ] **AUDIT-009 子进程 exited Promise 无超时** `P1` - file: `docs/task/AUDIT-009.md`
+- [ ] **AUDIT-030 Files API root containment check is prefix-based and bypassable** `P1` - file: `docs/task/AUDIT-030.md`
+- [ ] **AUDIT-036 Global SSE stream broadcasts cross-project activity to any subscriber** `P1` - file: `docs/task/AUDIT-036.md`
+- [ ] **AUDIT-037 Issue lock timeout releases mutual exclusion before timed-out work stops** `P1` - file: `docs/task/AUDIT-037.md`
+- [ ] **AUDIT-038 MCP API key is returned to the frontend and rendered in plaintext** `P1` - file: `docs/task/AUDIT-038.md`
+- [ ] **AUDIT-043 Git detect-remote bypasses workspace sandbox** `P1` - file: `docs/task/AUDIT-043.md`
+- [ ] **AUDIT-044 Files API read operations do not verify symlinks** `P1` - file: `docs/task/AUDIT-044.md`
+- [ ] **AUDIT-045 No CORS middleware configured** `P1` - file: `docs/task/AUDIT-045.md`
+- [ ] **AUDIT-046 EventBus emit-during-unsubscribe race condition** `P1` - file: `docs/task/AUDIT-046.md`
+- [ ] **AUDIT-047 No SSE connection limit allows resource exhaustion** `P1` - file: `docs/task/AUDIT-047.md`
+- [ ] **AUDIT-048 Cache thundering herd in cacheGetOrSet** `P1` - file: `docs/task/AUDIT-048.md`
+- [ ] **AUDIT-049 MCP create-project bypasses workspace root validation** `P1` - file: `docs/task/AUDIT-049.md`
+- [ ] **AUDIT-050 Codex sendUserMessage error silently swallowed** `P1` - file: `docs/task/AUDIT-050.md`
+- [ ] **AUDIT-051 Upgrade download not cancellable** `P1` - file: `docs/task/AUDIT-051.md`
+- [ ] **AUDIT-052 Upgrade apply process.exit prevents finally block cleanup** `P1` - file: `docs/task/AUDIT-052.md`
 
-## Backend Audit — MEDIUM
+## Audit — MEDIUM (P2)
 
 - [ ] **AUDIT-010 Lock 超时 lockDepth 计算错误** `P2` - file: `docs/task/AUDIT-010.md`
 - [ ] **AUDIT-011 consumeStderr reader lock 未释放** `P2` - file: `docs/task/AUDIT-011.md`
@@ -63,8 +87,31 @@
 - [ ] **AUDIT-017 数据库迁移错误匹配正则脆弱** `P2` - file: `docs/task/AUDIT-017.md`
 - [ ] **AUDIT-018 SPA 静态文件 fallback 不可达** `P2` - file: `docs/task/AUDIT-018.md`
 - [ ] **AUDIT-019 Execute/FollowUp 模型名正则不一致** `P2` - file: `docs/task/AUDIT-019.md`
+- [ ] **AUDIT-031 Full compile injects mismatched version symbols** `P2` - file: `docs/task/AUDIT-031.md`
+- [ ] **AUDIT-033 Launcher release channel is mutable via forced launcher-v1 tag rewrite** `P2` - file: `docs/task/AUDIT-033.md`
+- [ ] **AUDIT-039 useIssueStream can drop later log updates after live-log trimming** `P2` - file: `docs/task/AUDIT-039.md`
+- [ ] **AUDIT-053 MCP API key comparison not timing-safe** `P2` - file: `docs/task/AUDIT-053.md`
+- [ ] **AUDIT-054 Multipart form data bypasses prompt length validation** `P2` - file: `docs/task/AUDIT-054.md`
+- [ ] **AUDIT-055 Webhook SSRF prevention does not block DNS rebinding** `P2` - file: `docs/task/AUDIT-055.md`
+- [ ] **AUDIT-056 No shutdown timeout for graceful shutdown** `P2` - file: `docs/task/AUDIT-056.md`
+- [ ] **AUDIT-057 UPLOAD_DIR uses process.cwd() instead of ROOT_DIR** `P2` - file: `docs/task/AUDIT-057.md`
+- [ ] **AUDIT-058 Cache returns null for legitimate falsy cached values** `P2` - file: `docs/task/AUDIT-058.md`
+- [ ] **AUDIT-059 No merged prompt size limit for pending inputs** `P2` - file: `docs/task/AUDIT-059.md`
+- [ ] **AUDIT-060 Floating-point cost accumulation drift** `P2` - file: `docs/task/AUDIT-060.md`
+- [ ] **AUDIT-061 git status expensive in large repos for changes summary** `P2` - file: `docs/task/AUDIT-061.md`
+- [ ] **AUDIT-062 No webhook retry mechanism for failed deliveries** `P2` - file: `docs/task/AUDIT-062.md`
+- [ ] **AUDIT-063 dangerouslySetInnerHTML ESLint rule disabled globally** `P2` - file: `docs/task/AUDIT-063.md`
+- [ ] **AUDIT-064 API client missing AbortSignal propagation** `P2` - file: `docs/task/AUDIT-064.md`
+- [ ] **AUDIT-065 Terminal session store resource leak on reset** `P2` - file: `docs/task/AUDIT-065.md`
+- [ ] **AUDIT-066 No prefers-reduced-motion support for CSS animations** `P2` - file: `docs/task/AUDIT-066.md`
+- [ ] **AUDIT-067 Files and filesystem API lack shared path validation** `P2` - file: `docs/task/AUDIT-067.md`
+- [ ] **AUDIT-068 Compile script mutates tracked source files in place** `P2` - file: `docs/task/AUDIT-068.md`
+- [ ] **AUDIT-069 CI/release workflow actions not pinned to SHA** `P2` - file: `docs/task/AUDIT-069.md`
+- [ ] **AUDIT-070 Upload cleanup symlinks could cause out-of-directory deletion** `P2` - file: `docs/task/AUDIT-070.md`
+- [ ] **AUDIT-071 Vite dev server allowedHosts:true disables host validation** `P2` - file: `docs/task/AUDIT-071.md`
+- [ ] **AUDIT-072 No GitHub API rate limit handling in upgrade checker** `P2` - file: `docs/task/AUDIT-072.md`
 
-## Backend Audit — LOW
+## Audit — LOW (P3)
 
 - [ ] **AUDIT-020 Issues 列表无分页 limit** `P3` - file: `docs/task/AUDIT-020.md`
 - [ ] **AUDIT-021 软删除不级联到 logs/attachments** `P3` - file: `docs/task/AUDIT-021.md`
@@ -74,6 +121,11 @@
 - [ ] **AUDIT-025 上传路径泄露到 AI 引擎上下文** `P3` - file: `docs/task/AUDIT-025.md`
 - [ ] **AUDIT-026 SSE writeSSE 序列化失败无日志** `P3` - file: `docs/task/AUDIT-026.md`
 - [ ] **AUDIT-027 全局无速率限制** `P3` - file: `docs/task/AUDIT-027.md`
+- [ ] **AUDIT-032 FileBrowserPage is implemented but unreachable from the router** `P3` - file: `docs/task/AUDIT-032.md`
+
+## Audit — Completed
+
+- [x] **AUDIT-028 完整仓库模块化审计** `P1` - owner: codex - plan: `PLAN-027` - file: `docs/task/AUDIT-028.md`
 
 ## Chat UI — Pagination
 
