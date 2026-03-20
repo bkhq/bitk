@@ -14,10 +14,10 @@ const STORAGE_KEY = 'bkd-view-mode'
 const FULL_WIDTH_KEY = 'bkd-full-width-chat'
 
 function loadMode(): ViewMode {
-  if (typeof window === 'undefined') return 'kanban'
+  if (typeof window === 'undefined') return 'list'
   const stored = localStorage.getItem(STORAGE_KEY)
-  if (stored === 'list') return stored
-  return 'kanban'
+  if (stored === 'kanban') return stored
+  return 'list'
 }
 
 function loadFullWidth(): boolean {

@@ -463,7 +463,7 @@ function AssistantMessage({
         <MarkdownContent content={content} className="text-[14px] leading-[1.75]" />
       </div>
       <Dialog open={viewOpen} onOpenChange={setViewOpen}>
-        <DialogContent className="w-[fit-content] min-w-[min(36rem,80vw)] max-w-[80vw] max-h-[80vh] overflow-y-auto">
+        <DialogContent className="w-[90vw] max-w-[90vw] max-h-[90vh] overflow-y-auto">
           <DialogTitle className="sr-only">{t('session.viewMessage')}</DialogTitle>
           <Suspense fallback={<div className="p-4 text-sm text-muted-foreground">Loading...</div>}>
             <MarkdownRenderer content={content} />
