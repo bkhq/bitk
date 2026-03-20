@@ -11,6 +11,7 @@ import { db } from '@/db'
 import { findProject, getAppSetting, getDefaultEngine, getEngineDefaultModel, getServerUrl } from '@/db/helpers'
 import { issueLogs, issues as issuesTable, projects as projectsTable } from '@/db/schema'
 import { issueEngine } from '@/engines/issue'
+import { getLogsFromDb } from '@/engines/issue/persistence/queries'
 import { engineRegistry } from '@/engines/executors'
 import { getEngineDiscovery } from '@/engines/startup-probe'
 import type { EngineType } from '@/engines/types'
@@ -750,13 +751,16 @@ export function createMcpServer(): McpServer {
 
   server.registerTool('get-issue-logs', {
     title: 'Get Issue Logs',
-    description: 'Get execution logs for an issue. Returns the most recent entries.',
+    description: 'Get execution logs for an issue. By default returns only user and assistant messages (no tool output noise). Use entryTypes to include other types.',
     inputSchema: z.object({
       projectId: z.string().describe('Project ID or alias'),
       issueId: z.string().describe('Issue ID'),
       limit: z.number().min(1).max(200).optional().describe('Max entries to return. Default: 50'),
+      entryTypes: z.array(z.enum(['user-message', 'assistant-message', 'tool-use', 'system-message', 'thinking']))
+        .optional()
+        .describe('Entry types to include. Default: ["user-message", "assistant-message"]'),
     }),
-  }, async ({ projectId, issueId, limit }: { projectId: string, issueId: string, limit?: number }) => {
+  }, async ({ projectId, issueId, limit, entryTypes }: { projectId: string, issueId: string, limit?: number, entryTypes?: string[] }) => {
     const project = await findProject(projectId)
     if (!project) return errorResult('Project not found')
 
@@ -772,19 +776,17 @@ export function createMcpServer(): McpServer {
       )
     if (!issue) return errorResult('Issue not found')
 
-    const rows = await db
-      .select()
-      .from(issueLogs)
-      .where(and(eq(issueLogs.issueId, issueId), eq(issueLogs.isDeleted, 0)))
-      .orderBy(desc(issueLogs.id))
-      .limit(limit ?? 50)
+    const { entries } = getLogsFromDb(issueId, {
+      limit: limit ?? 50,
+      entryTypes: entryTypes ?? ['user-message', 'assistant-message'],
+    })
 
-    return textResult(rows.map(r => ({
-      id: r.id,
-      entryType: r.entryType,
-      content: r.content,
-      timestamp: r.timestamp,
-      turnIndex: r.turnIndex,
+    return textResult(entries.map(e => ({
+      id: e.messageId,
+      entryType: e.entryType,
+      content: e.content,
+      timestamp: e.timestamp,
+      turnIndex: e.turnIndex,
     })))
   })
 
