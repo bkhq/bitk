@@ -136,6 +136,7 @@ export async function restartIssue(
       worktreePath ? baseDir : undefined,
       workingDir,
       spawned.externalSessionId ?? issue.sessionFields.externalSessionId ?? undefined,
+      issue.keepAlive,
     )
     monitorCompletion(ctx, executionId, issueId, engineType, false)
 

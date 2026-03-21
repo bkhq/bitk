@@ -118,17 +118,21 @@ export function gcSweep(ctx: EngineContext): void {
         !managed.turnInFlight &&
         now - managed.lastIdleAt.getTime() > IDLE_TIMEOUT_MS
       ) {
-        logger.info(
-          {
-            issueId: managed.issueId,
-            executionId: managed.executionId,
-            idleMinutes: Math.round((now - managed.lastIdleAt.getTime()) / 60000),
-          },
-          'idle_timeout_terminate',
-        )
-        terminateAndSettle(ctx, entry.id, managed, 'completed')
-        cleaned++
-        continue
+        // Skip idle timeout for issues with keepAlive enabled
+        if (!managed.keepAlive) {
+          logger.info(
+            {
+              issueId: managed.issueId,
+              executionId: managed.executionId,
+              idleMinutes: Math.round((now - managed.lastIdleAt.getTime()) / 60000),
+            },
+            'idle_timeout_terminate',
+          )
+          terminateAndSettle(ctx, entry.id, managed, 'completed')
+          cleaned++
+          continue
+        }
+        // keepAlive: skip termination but fall through to stall detection
       }
 
       // --- Check 2: Stream stall detection (turn in-flight but no output) ---

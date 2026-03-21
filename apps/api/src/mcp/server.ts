@@ -62,6 +62,7 @@ function serializeIssue(row: typeof issuesTable.$inferSelect) {
     engineType: row.engineType ?? null,
     sessionStatus: row.sessionStatus ?? null,
     model: row.model ?? null,
+    keepAlive: row.keepAlive,
     statusUpdatedAt: toISO(row.statusUpdatedAt),
     createdAt: toISO(row.createdAt),
     updatedAt: toISO(row.updatedAt),
@@ -155,10 +156,11 @@ async function insertIssueInTransaction(
     model: string | null
     sessionStatus: string | null
     useWorktree?: boolean
+    keepAlive?: boolean
     tags?: string[]
   },
 ) {
-  const { statusId, title, engineType, model, sessionStatus, useWorktree, tags } = opts
+  const { statusId, title, engineType, model, sessionStatus, useWorktree, keepAlive, tags } = opts
 
   const [newIssue] = await db.transaction(async (tx) => {
     const [maxNumRow] = await tx
@@ -194,6 +196,7 @@ async function insertIssueInTransaction(
         sessionStatus,
         prompt: title,
         useWorktree: useWorktree ?? false,
+        keepAlive: keepAlive ?? false,
         tag: serializeTags(tags),
       })
       .returning()
@@ -376,9 +379,10 @@ export function createMcpServer(): McpServer {
       engineType: z.enum(['claude-code', 'codex']).optional().describe('AI engine type. Defaults to server setting.'),
       model: z.string().optional().describe('Model ID. Defaults to engine default.'),
       useWorktree: z.boolean().optional().describe('If true, execute in an isolated git worktree. Recommended for complex multi-file changes.'),
+      keepAlive: z.boolean().optional().describe('If true, prevent idle timeout from terminating the process. Useful for long-running sessions.'),
       tags: z.array(z.string().max(50)).max(10).optional().describe('Tags for grouping issues (max 10 tags, each max 50 chars).'),
     }),
-  }, async ({ projectId, title, statusId, engineType, model, useWorktree, tags }) => {
+  }, async ({ projectId, title, statusId, engineType, model, useWorktree, keepAlive, tags }) => {
     const project = await findProject(projectId)
     if (!project) return errorResult('Project not found')
 
@@ -393,6 +397,7 @@ export function createMcpServer(): McpServer {
       model: resolved.model,
       sessionStatus: shouldExecute ? 'pending' : null,
       useWorktree,
+      keepAlive,
       tags,
     })
 
@@ -443,9 +448,10 @@ export function createMcpServer(): McpServer {
       issueId: z.string().describe('Issue ID'),
       title: z.string().min(1).max(500).optional().describe('New title'),
       statusId: z.enum(['todo', 'working', 'review', 'done']).optional().describe('New status'),
+      keepAlive: z.boolean().optional().describe('If true, prevent idle timeout from terminating the process.'),
       tags: z.array(z.string().max(50)).max(10).nullable().optional().describe('Tags for grouping issues. Pass null to clear tags.'),
     }),
-  }, async ({ projectId, issueId, title, statusId, tags }) => {
+  }, async ({ projectId, issueId, title, statusId, keepAlive, tags }) => {
     const project = await findProject(projectId)
     if (!project) return errorResult('Project not found')
 
@@ -473,7 +479,13 @@ export function createMcpServer(): McpServer {
       ...(statusId !== undefined && { statusId }),
       ...(statusId !== undefined && statusId !== existing.statusId && { statusUpdatedAt: new Date() }),
       ...(shouldExecute && { sessionStatus: 'pending' as const }),
+      ...(keepAlive !== undefined && { keepAlive }),
       ...(tags !== undefined && { tag: serializeTags(tags) }),
+    }
+
+    // Sync keepAlive to in-memory process so GC picks up the change immediately
+    if (keepAlive !== undefined) {
+      issueEngine.updateKeepAlive(issueId, keepAlive)
     }
 
     if (Object.keys(updates).length === 0) {

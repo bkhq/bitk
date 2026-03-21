@@ -227,6 +227,11 @@ update.patch(
     }
     if (body.sortOrder !== undefined) updates.sortOrder = body.sortOrder
     if (body.isPinned !== undefined) updates.isPinned = body.isPinned
+    if (body.keepAlive !== undefined) {
+      updates.keepAlive = body.keepAlive
+      // Sync to in-memory process so GC picks up the change immediately
+      issueEngine.updateKeepAlive(issueId, body.keepAlive)
+    }
 
     if (Object.keys(updates).length === 0) {
       return c.json({ success: true, data: serializeIssue(existing) })

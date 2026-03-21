@@ -32,6 +32,7 @@ export function register(
   worktreeBaseDir?: string,
   spawnCwd?: string,
   externalSessionId?: string,
+  keepAlive?: boolean,
 ): ManagedProcess {
   const managed: ManagedProcess = {
     executionId,
@@ -47,6 +48,7 @@ export function register(
     logicalFailure: false,
     turnSettled: false,
     metaTurn,
+    keepAlive: keepAlive ?? false,
     lastActivityAt: new Date(),
     slashCommands: [],
     agents: [],

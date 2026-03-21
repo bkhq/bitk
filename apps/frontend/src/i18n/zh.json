@@ -109,7 +109,8 @@
     "delete": "删除",
     "deleteConfirm": "确定要删除此任务吗？此操作无法撤销。",
     "deleteWithChildren": "此任务包含子任务，子任务也将一并删除。",
-    "deleting": "删除中..."
+    "deleting": "删除中...",
+    "keepAlive": "保持活跃 — 防止空闲超时自动终止进程"
   },
   "createIssue": {
     "model": "模型",

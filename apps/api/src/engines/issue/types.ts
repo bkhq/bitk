@@ -61,6 +61,8 @@ export interface ManagedProcess {
    *  process and abort instead of hard-killing a legitimate turn.
    */
   cancelEscalationId?: string
+  /** Prevent idle timeout from terminating this process (mirrors issue.keepAlive) */
+  keepAlive: boolean
   /** Git repo directory that owns this worktree (needed for `git worktree remove`) */
   worktreeBaseDir?: string
   worktreePath?: string

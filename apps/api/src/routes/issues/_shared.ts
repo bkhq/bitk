@@ -25,6 +25,7 @@ export const createIssueSchema = z.object({
   tags: z.array(z.string().max(50)).max(10).optional(),
   statusId: z.enum(STATUS_IDS),
   useWorktree: z.boolean().optional(),
+  keepAlive: z.boolean().optional(),
   engineType: z.string().refine(
     val => ['claude-code', 'codex', 'acp', 'echo'].includes(val) || isValidAcpEngineType(val),
     { message: 'Invalid engine type' },
@@ -54,6 +55,7 @@ export const updateIssueSchema = z.object({
   statusId: z.enum(STATUS_IDS).optional(),
   sortOrder: z.string().min(1).max(50).regex(fractionalKeyRegex).optional(),
   isPinned: z.boolean().optional(),
+  keepAlive: z.boolean().optional(),
 })
 
 export const executeIssueSchema = z.object({
@@ -94,6 +96,7 @@ export function serializeIssue(row: IssueRow) {
     sortOrder: row.sortOrder,
     useWorktree: row.useWorktree,
     isPinned: row.isPinned,
+    keepAlive: row.keepAlive,
     // Session fields
     engineType: row.engineType ?? null,
     sessionStatus: row.sessionStatus ?? null,

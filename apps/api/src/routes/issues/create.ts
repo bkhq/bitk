@@ -99,6 +99,7 @@ create.post(
             tag: serializeTags(body.tags),
             sortOrder,
             useWorktree: body.useWorktree ?? false,
+            keepAlive: body.keepAlive ?? false,
             engineType: resolvedEngine,
             model: resolvedModel,
             sessionStatus: shouldExecute ? 'pending' : null,

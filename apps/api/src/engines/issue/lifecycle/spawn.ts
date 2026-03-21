@@ -231,6 +231,7 @@ export async function spawnRetry(
     worktreePath ? baseDir : undefined,
     workingDir,
     spawned.externalSessionId ?? issue.sessionFields.externalSessionId ?? undefined,
+    issue.keepAlive,
   )
   monitorCompletion(ctx, executionId, issueId, engineType, true)
   logger.debug({ issueId, executionId, engineType, turnIndex }, 'issue_retry_spawned')
@@ -384,6 +385,7 @@ export async function spawnFollowUpProcess(
     worktreePath ? baseDir : undefined,
     workingDir,
     spawned.externalSessionId ?? issue.sessionFields.externalSessionId ?? undefined,
+    issue.keepAlive,
   )
   // User message already persisted above (before spawn)
   monitorCompletion(ctx, executionId, issueId, engineType, false)

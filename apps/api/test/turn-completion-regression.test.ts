@@ -86,6 +86,7 @@ describe('turn completion pending-flush regression', () => {
       slashCommands: [],
       agents: [],
       plugins: [],
+      keepAlive: false,
       lastActivityAt: new Date(),
       pendingInputs: [],
     }

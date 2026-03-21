@@ -202,6 +202,12 @@ export class IssueEngine {
     return getActiveProcessesList(this.ctx)
   }
 
+  /** Sync keepAlive flag to any active in-memory process for this issue */
+  updateKeepAlive(issueId: string, keepAlive: boolean): void {
+    const active = this.ctx.pm.getFirstActiveInGroup(issueId)?.meta
+    if (active) active.keepAlive = keepAlive
+  }
+
   async cancelAll(): Promise<void> {
     return cancelAll(this.ctx)
   }

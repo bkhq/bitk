@@ -158,6 +158,7 @@ export async function executeIssue(
       worktreePath ? baseDir : undefined,
       workingDir,
       finalExternalSessionId,
+      issue.keepAlive,
     )
     emitDiagnosticLog(
       issueId,

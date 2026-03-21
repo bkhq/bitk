@@ -37,6 +37,7 @@ function makeManagedProcess(
     logicalFailure: false,
     turnSettled: false,
     metaTurn: false,
+    keepAlive: false,
     lastActivityAt: new Date(),
     slashCommands: [],
     agents: [],
@@ -227,7 +228,7 @@ describe('gcSweep — stream stall detection', () => {
   })
 
   test('does NOT kill idle process within IDLE_TIMEOUT_MS', () => {
-    const recentIdle = new Date(Date.now() - 5 * 60_000) // 5 min ago
+    const recentIdle = new Date(Date.now() - 4 * 60_000) // 4 min ago (within 5 min timeout)
     const managed = makeManagedProcess({
       issueId: 'issue-5',
       executionId: 'exec-5',
@@ -240,6 +241,23 @@ describe('gcSweep — stream stall detection', () => {
     gcSweep(ctx)
 
     expect(forceKillCalls).not.toContain('exec-5')
+  })
+
+  test('keepAlive prevents idle timeout termination', () => {
+    const idleAt = new Date(Date.now() - IDLE_TIMEOUT_MS - 60_000) // past idle timeout
+    const managed = makeManagedProcess({
+      issueId: 'issue-ka',
+      executionId: 'exec-ka',
+      turnInFlight: false,
+      keepAlive: true,
+      lastIdleAt: idleAt,
+      lastActivityAt: idleAt,
+    })
+    const { ctx, forceKillCalls } = makeContext([{ id: 'exec-ka', meta: managed }])
+
+    gcSweep(ctx)
+
+    expect(forceKillCalls).not.toContain('exec-ka')
   })
 
   test('handles multiple processes — detects stalled, skips active and idle', () => {

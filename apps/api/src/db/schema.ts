@@ -57,6 +57,7 @@ export const issues = sqliteTable(
     parentIssueId: text('parent_issue_id').references((): any => issues.id),
     useWorktree: integer('use_worktree', { mode: 'boolean' }).notNull().default(false),
     isPinned: integer('is_pinned', { mode: 'boolean' }).notNull().default(false),
+    keepAlive: integer('keep_alive', { mode: 'boolean' }).notNull().default(false),
     // Session fields (null = no engine session started)
     engineType: text('engine_type'),
     sessionStatus: text('session_status'),

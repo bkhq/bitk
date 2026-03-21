@@ -1,0 +1,1 @@
+ALTER TABLE `issues` ADD `keep_alive` integer DEFAULT 0 NOT NULL;

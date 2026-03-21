@@ -1,7 +1,8 @@
-import { ChevronDown, GitBranch, Tag, Trash2 } from 'lucide-react'
+import { ChevronDown, GitBranch, Tag, Trash2, Zap } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
+import { Switch } from '@/components/ui/switch'
 import { useClickOutside } from '@/hooks/use-click-outside'
 import { useProjectWorktrees } from '@/hooks/use-kanban'
 import { tStatus } from '@/lib/i18n-utils'
@@ -25,7 +26,7 @@ export function IssueDetail({
   issue: Issue
   projectId?: string
   status?: StatusDefinition
-  onUpdate?: (fields: Partial<Pick<Issue, 'statusId' | 'tags'>>) => void
+  onUpdate?: (fields: Partial<Pick<Issue, 'statusId' | 'tags' | 'keepAlive'>>) => void
   onDelete?: () => void
   isDeleting?: boolean
 }) {
@@ -49,6 +50,23 @@ export function IssueDetail({
     <div className="shrink-0 relative z-20 flex items-center gap-1.5 px-4 py-1.5 border-t border-border/40 bg-muted/20">
       {/* Status — editable */}
       <StatusSelect status={status} onChange={id => onUpdate?.({ statusId: id })} />
+
+      {/* Keep Alive */}
+      <label
+        className={`${badgeBase} cursor-pointer transition-colors ${
+          issue.keepAlive
+            ? 'border-amber-400/40 bg-amber-500/10 text-amber-600 dark:text-amber-400'
+            : 'border-border/50 bg-muted/20 text-muted-foreground/40'
+        }`}
+        title={t('issue.keepAlive')}
+      >
+        <Zap className="h-3 w-3" />
+        <Switch
+          size="sm"
+          checked={issue.keepAlive}
+          onCheckedChange={v => onUpdate?.({ keepAlive: !!v })}
+        />
+      </label>
 
       {/* Delete */}
       {onDelete ?

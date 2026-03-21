@@ -40,6 +40,7 @@ export interface Issue {
   sortOrder: string
   useWorktree: boolean
   isPinned: boolean
+  keepAlive: boolean
   engineType: EngineType | null
   sessionStatus: SessionStatus | null
   prompt: string | null
