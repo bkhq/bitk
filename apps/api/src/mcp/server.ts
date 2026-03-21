@@ -11,7 +11,7 @@ import { db } from '@/db'
 import { findProject, getAppSetting, getDefaultEngine, getEngineDefaultModel, getServerUrl } from '@/db/helpers'
 import { issues as issuesTable, projects as projectsTable } from '@/db/schema'
 import { issueEngine } from '@/engines/issue'
-import { getLogsFromDb } from '@/engines/issue/persistence/queries'
+import { getLogsFromDb, getNextTurnIndex } from '@/engines/issue/persistence/queries'
 import { engineRegistry } from '@/engines/executors'
 import { getEngineDiscovery } from '@/engines/startup-probe'
 import type { EngineType } from '@/engines/types'
@@ -21,8 +21,11 @@ import {
   ensureWorking,
   flushPendingAsFollowUp,
   parseProjectEnvVars,
+  parseTags,
+  serializeTags,
   triggerIssueExecution,
 } from '@/routes/issues/_shared'
+import { buildProcessInfoList } from '@/routes/processes'
 import { toISO } from '@/utils/date'
 import { buildIssueUrl, dispatch as webhookDispatch } from '@/webhooks/dispatcher'
 
@@ -55,6 +58,7 @@ function serializeIssue(row: typeof issuesTable.$inferSelect) {
     statusId: row.statusId,
     issueNumber: row.issueNumber,
     title: row.title,
+    tags: parseTags(row.tag),
     engineType: row.engineType ?? null,
     sessionStatus: row.sessionStatus ?? null,
     model: row.model ?? null,
@@ -150,9 +154,11 @@ async function insertIssueInTransaction(
     engineType: string | null
     model: string | null
     sessionStatus: string | null
+    useWorktree?: boolean
+    tags?: string[]
   },
 ) {
-  const { statusId, title, engineType, model, sessionStatus } = opts
+  const { statusId, title, engineType, model, sessionStatus, useWorktree, tags } = opts
 
   const [newIssue] = await db.transaction(async (tx) => {
     const [maxNumRow] = await tx
@@ -187,6 +193,8 @@ async function insertIssueInTransaction(
         model,
         sessionStatus,
         prompt: title,
+        useWorktree: useWorktree ?? false,
+        tag: serializeTags(tags),
       })
       .returning()
   })
@@ -345,15 +353,25 @@ export function createMcpServer(): McpServer {
 
   server.registerTool('create-issue', {
     title: 'Create Issue',
-    description: 'Create a new issue (task) in a project. Set statusId to "working" to auto-execute with an AI engine.',
+    description: [
+      'Create a new issue (task) in a project. Set statusId to "working" to auto-execute with an AI engine.',
+      '',
+      'Best practices:',
+      '- Use a SHORT, concise title (e.g. "fix login bug", "add dark mode"). Do NOT put detailed requirements in the title.',
+      '- After creating the issue, use follow-up-issue to send detailed requirements, context, and instructions.',
+      '- For complex tasks involving multiple files or large changes, set useWorktree=true for isolated execution.',
+      '- Check list-processes before creating working issues to monitor system workload.',
+    ].join('\n'),
     inputSchema: z.object({
       projectId: z.string().describe('Project ID or alias'),
-      title: z.string().min(1).max(500).describe('Issue title / prompt for the AI agent'),
+      title: z.string().min(1).max(500).describe('Short, concise issue title (e.g. "fix auth bug"). Send detailed requirements via follow-up-issue after creation.'),
       statusId: z.enum(['todo', 'working', 'review', 'done']).describe('Initial status. Use "working" to auto-execute.'),
-      engineType: z.enum(['claude-code', 'codex', 'acp', 'echo']).optional().describe('AI engine type. Defaults to server setting.'),
+      engineType: z.enum(['claude-code', 'codex']).optional().describe('AI engine type. Defaults to server setting.'),
       model: z.string().optional().describe('Model ID. Defaults to engine default.'),
+      useWorktree: z.boolean().optional().describe('If true, execute in an isolated git worktree. Recommended for complex multi-file changes.'),
+      tags: z.array(z.string().max(50)).max(10).optional().describe('Tags for grouping issues (max 10 tags, each max 50 chars).'),
     }),
-  }, async ({ projectId, title, statusId, engineType, model }) => {
+  }, async ({ projectId, title, statusId, engineType, model, useWorktree, tags }) => {
     const project = await findProject(projectId)
     if (!project) return errorResult('Project not found')
 
@@ -367,6 +385,8 @@ export function createMcpServer(): McpServer {
       engineType: resolved.engine,
       model: resolved.model,
       sessionStatus: shouldExecute ? 'pending' : null,
+      useWorktree,
+      tags,
     })
 
     // Dispatch webhook (mirrors routes/issues/create.ts)
@@ -403,14 +423,22 @@ export function createMcpServer(): McpServer {
 
   server.registerTool('update-issue', {
     title: 'Update Issue',
-    description: 'Update an issue\'s title, status, or other fields. Moving to "working" triggers AI execution.',
+    description: [
+      'Update an issue\'s title, status, or other fields. Moving to "working" triggers AI execution.',
+      '',
+      'Completion workflow:',
+      '- When a task is finished, move to "review" (not "done") to await human confirmation.',
+      '- Only move to "done" after human review and approval.',
+      '- For git repos, ensure changes are committed by feature/function before moving to review.',
+    ].join('\n'),
     inputSchema: z.object({
       projectId: z.string().describe('Project ID or alias'),
       issueId: z.string().describe('Issue ID'),
       title: z.string().min(1).max(500).optional().describe('New title'),
       statusId: z.enum(['todo', 'working', 'review', 'done']).optional().describe('New status'),
+      tags: z.array(z.string().max(50)).max(10).nullable().optional().describe('Tags for grouping issues. Pass null to clear tags.'),
     }),
-  }, async ({ projectId, issueId, title, statusId }) => {
+  }, async ({ projectId, issueId, title, statusId, tags }) => {
     const project = await findProject(projectId)
     if (!project) return errorResult('Project not found')
 
@@ -438,6 +466,7 @@ export function createMcpServer(): McpServer {
       ...(statusId !== undefined && { statusId }),
       ...(statusId !== undefined && statusId !== existing.statusId && { statusUpdatedAt: new Date() }),
       ...(shouldExecute && { sessionStatus: 'pending' as const }),
+      ...(tags !== undefined && { tag: serializeTags(tags) }),
     }
 
     if (Object.keys(updates).length === 0) {
@@ -534,12 +563,20 @@ export function createMcpServer(): McpServer {
 
   server.registerTool('execute-issue', {
     title: 'Execute Issue',
-    description: 'Start AI engine execution on an issue. Automatically moves review issues to working.',
+    description: [
+      'Start AI engine execution on an issue. Automatically moves review issues to working.',
+      '',
+      'Important reminders:',
+      '- Ensure the project has correct global configuration (system prompt, env vars, working directory) before executing to prevent task failures.',
+      '- Check list-processes to monitor current workload before starting new executions.',
+      '- After task completion, the issue should be moved to "review" (not "done") to await human confirmation.',
+      '- For git repositories, commit changes organized by feature/function before moving to review.',
+    ].join('\n'),
     inputSchema: z.object({
       projectId: z.string().describe('Project ID or alias'),
       issueId: z.string().describe('Issue ID'),
       prompt: z.string().min(1).max(32768).describe('Prompt / instructions for the AI agent'),
-      engineType: z.enum(['claude-code', 'codex', 'acp', 'echo']).describe('AI engine type'),
+      engineType: z.enum(['claude-code', 'codex']).describe('AI engine type'),
       model: z.string().optional().describe('Model ID'),
     }),
   }, async ({ projectId, issueId, prompt, engineType, model }) => {
@@ -589,11 +626,18 @@ export function createMcpServer(): McpServer {
 
   server.registerTool('follow-up-issue', {
     title: 'Follow Up Issue',
-    description: 'Send a follow-up message to an active AI session on an issue.',
+    description: [
+      'Send a follow-up message to an active AI session on an issue.',
+      '',
+      'Best practices:',
+      '- Use this to send detailed requirements after creating an issue with a short title.',
+      '- Include specific context: acceptance criteria, constraints, file paths, code examples.',
+      '- For git repos, remind the agent to commit changes by feature and move issue to "review" when done.',
+    ].join('\n'),
     inputSchema: z.object({
       projectId: z.string().describe('Project ID or alias'),
       issueId: z.string().describe('Issue ID'),
-      prompt: z.string().min(1).max(32768).describe('Follow-up message'),
+      prompt: z.string().min(1).max(32768).describe('Follow-up message with detailed requirements'),
       model: z.string().optional().describe('Model ID (cannot change during active session)'),
     }),
   }, async ({ projectId, issueId, prompt, model }) => {
@@ -705,20 +749,56 @@ export function createMcpServer(): McpServer {
     return textResult({ engines, models })
   })
 
+  // ==================== Process Monitoring ====================
+
+  server.registerTool('list-processes', {
+    title: 'List Active Processes',
+    description: 'List all active AI engine processes across all projects. Returns process count, state, engine type, model, and associated issue/project info. Use this to monitor system workload before starting new tasks.',
+    inputSchema: z.object({}),
+  }, async () => {
+    const processes = await buildProcessInfoList()
+    const summary = {
+      totalActive: processes.length,
+      byState: {} as Record<string, number>,
+      byEngine: {} as Record<string, number>,
+      byProject: {} as Record<string, { projectName: string, count: number }>,
+    }
+
+    for (const p of processes) {
+      summary.byState[p.processState] = (summary.byState[p.processState] ?? 0) + 1
+      summary.byEngine[p.engineType] = (summary.byEngine[p.engineType] ?? 0) + 1
+      if (!summary.byProject[p.projectId]) {
+        summary.byProject[p.projectId] = { projectName: p.projectName, count: 0 }
+      }
+      summary.byProject[p.projectId].count++
+    }
+
+    return textResult({ summary, processes })
+  })
+
   // ==================== Issue Logs ====================
 
   server.registerTool('get-issue-logs', {
     title: 'Get Issue Logs',
-    description: 'Get execution logs for an issue. By default returns only user and assistant messages (no tool output noise). Use entryTypes to include other types.',
+    description: [
+      'Get execution logs for an issue. By default returns only user and assistant messages (no tool output noise).',
+      '',
+      'Features:',
+      '- Set lastTurn=true to get only the last turn\'s conversation (useful for checking the latest agent response).',
+      '- Returns sessionStatus so you know the current session state (running/completed/failed/cancelled).',
+      '- Analyze the last assistant message content to determine if the agent is waiting for user input (e.g. asking questions, requesting confirmation).',
+      '- Based on the content and sessionStatus, decide next action: send a follow-up, restart, or move to review.',
+    ].join('\n'),
     inputSchema: z.object({
       projectId: z.string().describe('Project ID or alias'),
       issueId: z.string().describe('Issue ID'),
       limit: z.number().min(1).max(200).optional().describe('Max entries to return. Default: 50'),
+      lastTurn: z.boolean().optional().describe('If true, return only the last turn\'s user and assistant messages.'),
       entryTypes: z.array(z.enum(['user-message', 'assistant-message', 'tool-use', 'system-message', 'thinking']))
         .optional()
         .describe('Entry types to include. Default: ["user-message", "assistant-message"]'),
     }),
-  }, async ({ projectId, issueId, limit, entryTypes }: { projectId: string, issueId: string, limit?: number, entryTypes?: string[] }) => {
+  }, async ({ projectId, issueId, limit, lastTurn, entryTypes }: { projectId: string, issueId: string, limit?: number, lastTurn?: boolean, entryTypes?: string[] }) => {
     const project = await findProject(projectId)
     if (!project) return errorResult('Project not found')
 
@@ -734,18 +814,34 @@ export function createMcpServer(): McpServer {
       )
     if (!issue) return errorResult('Issue not found')
 
-    const { entries } = getLogsFromDb(issueId, {
-      limit: limit ?? 50,
+    // When lastTurn is requested, ignore caller limit to return the full turn
+    const queryOpts: Parameters<typeof getLogsFromDb>[1] = {
+      limit: lastTurn ? 200 : (limit ?? 50),
       entryTypes: entryTypes ?? ['user-message', 'assistant-message'],
-    })
+    }
 
-    return textResult(entries.map(e => ({
-      id: e.messageId,
-      entryType: e.entryType,
-      content: e.content,
-      timestamp: e.timestamp,
-      turnIndex: e.turnIndex,
-    })))
+    // Filter to last turn if requested
+    if (lastTurn) {
+      const nextTurn = getNextTurnIndex(issueId)
+      if (nextTurn === 0) {
+        return textResult({ sessionStatus: issue.sessionStatus ?? null, entries: [] })
+      }
+      queryOpts.turnIndex = nextTurn - 1
+      queryOpts.turnIndexEnd = nextTurn - 1
+    }
+
+    const { entries } = getLogsFromDb(issueId, queryOpts)
+
+    return textResult({
+      sessionStatus: issue.sessionStatus ?? null,
+      entries: entries.map(e => ({
+        id: e.messageId,
+        entryType: e.entryType,
+        content: e.content,
+        timestamp: e.timestamp,
+        turnIndex: e.turnIndex,
+      })),
+    })
   })
 
   return server
