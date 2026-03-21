@@ -1,7 +1,7 @@
 import { Activity, Maximize2, Minimize2, Minus, X } from 'lucide-react'
 import { useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useProject, useProjectProcesses } from '@/hooks/use-kanban'
+import { useAllProcesses } from '@/hooks/use-kanban'
 import { useIsMobile } from '@/hooks/use-mobile'
 import {
   PROCESS_MANAGER_MAX_WIDTH_RATIO,
@@ -12,15 +12,14 @@ import { ProcessList } from './ProcessList'
 
 export function ProcessManagerDrawer() {
   const { t } = useTranslation()
-  const { isOpen, isFullscreen, width, projectId, close, minimize, toggleFullscreen, setWidth } =
+  const { isOpen, isFullscreen, width, close, minimize, toggleFullscreen, setWidth } =
     useProcessManagerStore()
   const isMobile = useIsMobile()
   const dragRef = useRef<{ startX: number, startWidth: number } | null>(null)
 
-  const { data: project } = useProject(projectId ?? '')
-  const { data, isLoading } = useProjectProcesses(projectId ?? '', !!projectId && isOpen)
+  const { data, isLoading } = useAllProcesses(isOpen)
 
-  if (!isOpen || !projectId) return null
+  if (!isOpen) return null
 
   const viewportWidth = typeof window === 'undefined' ? 1024 : window.innerWidth
   const maxWidth = Math.round(viewportWidth * PROCESS_MANAGER_MAX_WIDTH_RATIO)
@@ -88,9 +87,9 @@ export function ProcessManagerDrawer() {
           <div className="flex items-center gap-2 min-w-0">
             <Activity className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
             <span className="text-xs font-medium text-muted-foreground truncate">
-              {project?.name ?? t('processManager.title')}
+              {t('processManager.title')}
             </span>
-            {processes.length > 0 && <Badge count={processes.length} />}
+            {processes.length > 0 && <CountBadge count={processes.length} />}
           </div>
           <div className="flex items-center gap-1">
             <button
@@ -150,7 +149,7 @@ export function ProcessManagerDrawer() {
                   </div>
                 ) :
                 (
-                  <ProcessList processes={processes} projectId={projectId} />
+                  <ProcessList processes={processes} />
                 )}
         </div>
       </div>
@@ -158,7 +157,7 @@ export function ProcessManagerDrawer() {
   )
 }
 
-function Badge({ count }: { count: number }) {
+function CountBadge({ count }: { count: number }) {
   return (
     <span className="inline-flex items-center justify-center h-4 min-w-4 px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-medium">
       {count}

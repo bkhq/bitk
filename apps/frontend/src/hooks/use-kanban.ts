@@ -23,7 +23,7 @@ export const queryKeys = {
     ['projects', projectId, 'issues', issueId, 'slash-commands'] as const,
   projectFiles: (root: string | null, path: string, hideIgnored: boolean) =>
     ['files', root, path, { hideIgnored }] as const,
-  projectProcesses: (projectId: string) => ['projects', projectId, 'processes'] as const,
+  allProcesses: () => ['processes', 'all'] as const,
   projectWorktrees: (projectId: string) => ['projects', projectId, 'worktrees'] as const,
   logPageSize: () => ['settings', 'logPageSize'] as const,
   worktreeAutoCleanup: () => ['settings', 'worktreeAutoCleanup'] as const,
@@ -394,7 +394,7 @@ export function useCancelIssue(projectId: string) {
         queryKey: queryKeys.issues(projectId),
       })
       queryClient.invalidateQueries({
-        queryKey: queryKeys.projectProcesses(projectId),
+        queryKey: queryKeys.allProcesses(),
       })
     },
   })
@@ -851,28 +851,26 @@ export function useSaveFile() {
 
 // --- Process Manager hooks ---
 
-export function useProjectProcesses(projectId: string, enabled = true) {
+export function useAllProcesses(enabled = true) {
   return useQuery({
-    queryKey: queryKeys.projectProcesses(projectId),
-    queryFn: () => kanbanApi.getProjectProcesses(projectId),
-    enabled: !!projectId && enabled,
+    queryKey: queryKeys.allProcesses(),
+    queryFn: () => kanbanApi.getAllProcesses(),
+    enabled,
     refetchInterval: 5000,
   })
 }
 
-export function useTerminateProcess(projectId: string) {
+export function useTerminateProcessGlobal() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (issueId: string) => kanbanApi.terminateProcess(projectId, issueId),
-    onSuccess: (_data, issueId) => {
+    mutationFn: (issueId: string) => kanbanApi.terminateProcess(issueId),
+    onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: queryKeys.projectProcesses(projectId),
+        queryKey: queryKeys.allProcesses(),
       })
+      // Refresh issue status on kanban boards after termination
       queryClient.invalidateQueries({
-        queryKey: queryKeys.issue(projectId, issueId),
-      })
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.issues(projectId),
+        queryKey: queryKeys.projects(),
       })
     },
   })

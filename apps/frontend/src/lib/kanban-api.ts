@@ -461,12 +461,12 @@ export const kanbanApi = {
   },
 
   // Process Manager
-  getProjectProcesses: (projectId: string) =>
-    get<ProjectProcessesResponse>(`/api/projects/${projectId}/processes`),
+  getAllProcesses: () =>
+    get<ProjectProcessesResponse>('/api/processes'),
 
-  terminateProcess: (projectId: string, issueId: string) =>
+  terminateProcess: (issueId: string) =>
     post<{ issueId: string, status: string }>(
-      `/api/projects/${projectId}/processes/${issueId}/terminate`,
+      `/api/processes/${issueId}/terminate`,
       {},
     ),
 

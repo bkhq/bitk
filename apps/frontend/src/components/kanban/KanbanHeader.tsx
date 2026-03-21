@@ -58,7 +58,7 @@ export function KanbanHeader({
           )}
           <button
             type="button"
-            onClick={() => toggleProcessManager(project.alias)}
+            onClick={() => toggleProcessManager()}
             className="rounded-md p-1 text-muted-foreground hover:text-foreground hover:bg-foreground/[0.07] transition-colors shrink-0"
             aria-label={t('processManager.title')}
             title={t('processManager.title')}

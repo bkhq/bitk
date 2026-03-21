@@ -1,96 +1,89 @@
 import { and, eq, inArray } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { db } from '@/db'
-import { findProject } from '@/db/helpers'
-import { issues as issuesTable } from '@/db/schema'
+import { issues as issuesTable, projects as projectsTable } from '@/db/schema'
 import { issueEngine } from '@/engines/issue'
 import { getPidFromManaged } from '@/engines/issue/utils/pid'
 import { logger } from '@/logger'
+import type { ProcessInfo } from '@bkd/shared'
 
-const processes = new Hono()
-
-processes.get('/', async (c) => {
-  const projectId = c.req.param('projectId')!
-  const project = await findProject(projectId)
-  if (!project) {
-    return c.json({ success: false, error: 'Project not found' }, 404)
-  }
-
+async function buildProcessInfoList(): Promise<ProcessInfo[]> {
   const activeProcesses = issueEngine.getActiveProcesses()
   const issueIds = activeProcesses.map(p => p.issueId)
+  if (issueIds.length === 0) return []
 
-  // Build result from in-memory active processes (PM is the source of truth)
-  const result: Array<{
-    executionId: string
-    issueId: string
-    issueTitle: string
-    issueNumber: number
-    engineType: string
-    processState: string
-    model: string | null
-    startedAt: string
-    turnInFlight: boolean
-    spawnCommand: string | null
-    lastIdleAt: string | null
-    pid: number | null
-  }> = []
-
-  if (issueIds.length > 0) {
-    const projectIssues = await db
-      .select()
-      .from(issuesTable)
-      .where(
-        and(
-          eq(issuesTable.projectId, project.id),
-          eq(issuesTable.isDeleted, 0),
-          inArray(issuesTable.id, issueIds),
-        ),
-      )
-
-    const issueMap = new Map(projectIssues.map(i => [i.id, i]))
-
-    for (const p of activeProcesses) {
-      const issue = issueMap.get(p.issueId)
-      if (!issue) continue
-      result.push({
-        executionId: p.executionId,
-        issueId: p.issueId,
-        issueTitle: issue.title,
-        issueNumber: issue.issueNumber,
-        engineType: p.engineType,
-        processState: p.state,
-        model: issue.model ?? null,
-        startedAt: p.startedAt.toISOString(),
-        turnInFlight: p.turnInFlight,
-        spawnCommand: p.spawnCommand ?? null,
-        lastIdleAt: p.lastIdleAt?.toISOString() ?? null,
-        pid: getPidFromManaged(p) ?? null,
-      })
-    }
-  }
-
-  // Process state comes entirely from PM memory. DB-only stale entries
-  // (running/pending with no active process) are cleaned by the reconciler.
-  return c.json({ success: true, data: { processes: result } })
-})
-
-// POST /api/projects/:projectId/processes/:issueId/terminate
-processes.post('/:issueId/terminate', async (c) => {
-  const projectId = c.req.param('projectId')!
-  const project = await findProject(projectId)
-  if (!project) {
-    return c.json({ success: false, error: 'Project not found' }, 404)
-  }
-
-  const issueId = c.req.param('issueId')!
-  const [issue] = await db
+  const matchedIssues = await db
     .select()
     .from(issuesTable)
     .where(
       and(
-        eq(issuesTable.id, issueId),
-        eq(issuesTable.projectId, project.id),
         eq(issuesTable.isDeleted, 0),
+        inArray(issuesTable.id, issueIds),
+      ),
+    )
+
+  if (matchedIssues.length === 0) return []
+
+  const projectIds = [...new Set(matchedIssues.map(i => i.projectId))]
+  const projects = await db
+    .select({ id: projectsTable.id, alias: projectsTable.alias, name: projectsTable.name })
+    .from(projectsTable)
+    .where(
+      and(
+        inArray(projectsTable.id, projectIds),
+        eq(projectsTable.isDeleted, 0),
+      ),
+    )
+  const projectMap = new Map(projects.map(p => [p.id, { alias: p.alias, name: p.name }]))
+
+  const issueMap = new Map(matchedIssues.map(i => [i.id, i]))
+  const result: ProcessInfo[] = []
+
+  for (const p of activeProcesses) {
+    const issue = issueMap.get(p.issueId)
+    if (!issue) continue
+    result.push({
+      executionId: p.executionId,
+      issueId: p.issueId,
+      issueTitle: issue.title,
+      issueNumber: issue.issueNumber,
+      projectId: issue.projectId,
+      projectAlias: projectMap.get(issue.projectId)?.alias ?? '',
+      projectName: projectMap.get(issue.projectId)?.name ?? '',
+      engineType: p.engineType,
+      processState: p.state,
+      model: issue.model ?? null,
+      startedAt: p.startedAt.toISOString(),
+      turnInFlight: p.turnInFlight,
+      spawnCommand: p.spawnCommand ?? null,
+      lastIdleAt: p.lastIdleAt?.toISOString() ?? null,
+      pid: getPidFromManaged(p) ?? null,
+    })
+  }
+
+  return result
+}
+
+const processes = new Hono()
+
+processes.get('/', async (c) => {
+  const result = await buildProcessInfoList()
+  return c.json({ success: true, data: { processes: result } })
+})
+
+processes.post('/:issueId/terminate', async (c) => {
+  const issueId = c.req.param('issueId')!
+
+  // Verify issue exists and its project is not deleted
+  const [issue] = await db
+    .select({ id: issuesTable.id, projectId: issuesTable.projectId })
+    .from(issuesTable)
+    .innerJoin(projectsTable, eq(issuesTable.projectId, projectsTable.id))
+    .where(
+      and(
+        eq(issuesTable.id, issueId),
+        eq(issuesTable.isDeleted, 0),
+        eq(projectsTable.isDeleted, 0),
       ),
     )
 

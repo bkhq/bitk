@@ -19,10 +19,9 @@ interface ProcessManagerStore {
   isMinimized: boolean
   isFullscreen: boolean
   width: number
-  projectId: string | null
-  open: (projectId: string) => void
+  open: () => void
   close: () => void
-  toggle: (projectId: string) => void
+  toggle: () => void
   minimize: () => void
   restore: () => void
   toggleFullscreen: () => void
@@ -37,15 +36,14 @@ export const useProcessManagerStore = create<ProcessManagerStore>(set => ({
   isMinimized: false,
   isFullscreen: false,
   width: Math.round(getViewportWidth() * DEFAULT_WIDTH_RATIO),
-  projectId: null,
 
-  open: projectId => set({ isOpen: true, isMinimized: false, projectId }),
+  open: () => set({ isOpen: true, isMinimized: false }),
   close: () => set({ isOpen: false }),
-  toggle: projectId =>
+  toggle: () =>
     set((s) => {
-      if (s.isMinimized) return { isOpen: true, isMinimized: false, projectId }
-      if (s.isOpen && s.projectId === projectId) return { isOpen: false }
-      return { isOpen: true, projectId }
+      if (s.isMinimized) return { isOpen: true, isMinimized: false }
+      if (s.isOpen) return { isOpen: false }
+      return { isOpen: true }
     }),
   minimize: () => set({ isOpen: false, isMinimized: true, isFullscreen: false }),
   restore: () => set({ isOpen: true, isMinimized: false }),

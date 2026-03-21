@@ -111,7 +111,7 @@ export function IssueListPanel({
             variant="ghost"
             size="icon"
             className="h-7 w-7 text-muted-foreground hover:text-foreground"
-            onClick={() => toggleProcessManager(projectId)}
+            onClick={() => toggleProcessManager()}
             aria-label={t('processManager.title')}
             title={t('processManager.title')}
           >

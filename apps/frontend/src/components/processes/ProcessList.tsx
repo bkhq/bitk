@@ -1,7 +1,5 @@
 import {
   Activity,
-  ChevronDown,
-  ChevronRight,
   CircleAlert,
   CircleCheck,
   CirclePause,
@@ -11,12 +9,12 @@ import {
   Square,
   Terminal,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { useTerminateProcess } from '@/hooks/use-kanban'
+import { useTerminateProcessGlobal } from '@/hooks/use-kanban'
 import type { ProcessInfo } from '@/types/kanban'
 
 function StatusIcon({ status }: { status: string | null }) {
@@ -66,10 +64,10 @@ function isIdle(proc: ProcessInfo): boolean {
   return !proc.turnInFlight && !!proc.lastIdleAt
 }
 
-function ProcessCard({ proc, projectId }: { proc: ProcessInfo, projectId: string }) {
+function ProcessCard({ proc }: { proc: ProcessInfo }) {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const terminateMutation = useTerminateProcess(projectId)
+  const terminateMutation = useTerminateProcessGlobal()
   const [showCommand, setShowCommand] = useState(false)
   const idle = isIdle(proc)
 
@@ -81,7 +79,7 @@ function ProcessCard({ proc, projectId }: { proc: ProcessInfo, projectId: string
         <button
           type="button"
           className="text-xs font-medium text-foreground truncate hover:underline cursor-pointer text-left min-w-0"
-          onClick={() => navigate(`/projects/${projectId}/issues/${proc.issueId}`)}
+          onClick={() => navigate(`/projects/${proc.projectAlias}/issues/${proc.issueId}`)}
         >
           <span className="text-muted-foreground">
             #
@@ -145,13 +143,6 @@ function ProcessCard({ proc, projectId }: { proc: ProcessInfo, projectId: string
             className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground cursor-pointer"
             onClick={() => setShowCommand(v => !v)}
           >
-            {showCommand ?
-                (
-                  <ChevronDown className="h-3 w-3" />
-                ) :
-                (
-                  <ChevronRight className="h-3 w-3" />
-                )}
             <Terminal className="h-3 w-3" />
             {t('processManager.command')}
           </button>
@@ -180,17 +171,48 @@ function ProcessCard({ proc, projectId }: { proc: ProcessInfo, projectId: string
   )
 }
 
-export function ProcessList({
-  processes,
-  projectId,
-}: {
-  processes: ProcessInfo[]
-  projectId: string
-}) {
+export function ProcessList({ processes }: { processes: ProcessInfo[] }) {
+  // Group processes by project
+  const grouped = useMemo(() => {
+    const map = new Map<string, { projectName: string, projectId: string, items: ProcessInfo[] }>()
+    for (const proc of processes) {
+      let group = map.get(proc.projectId)
+      if (!group) {
+        group = { projectName: proc.projectName, projectId: proc.projectId, items: [] }
+        map.set(proc.projectId, group)
+      }
+      group.items.push(proc)
+    }
+    return [...map.values()]
+  }, [processes])
+
+  // If only one project, skip the group header
+  if (grouped.length === 1) {
+    return (
+      <div className="flex flex-col gap-2">
+        {grouped[0]!.items.map(proc => (
+          <ProcessCard key={proc.executionId} proc={proc} />
+        ))}
+      </div>
+    )
+  }
+
   return (
-    <div className="flex flex-col gap-2">
-      {processes.map(proc => (
-        <ProcessCard key={proc.issueId} proc={proc} projectId={projectId} />
+    <div className="flex flex-col gap-4">
+      {grouped.map(group => (
+        <div key={group.projectId}>
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-xs font-medium text-muted-foreground">{group.projectName}</span>
+            <span className="inline-flex items-center justify-center h-4 min-w-4 px-1 rounded-full bg-muted text-muted-foreground text-[10px] font-medium">
+              {group.items.length}
+            </span>
+          </div>
+          <div className="flex flex-col gap-2">
+            {group.items.map(proc => (
+              <ProcessCard key={proc.executionId} proc={proc} />
+            ))}
+          </div>
+        </div>
       ))}
     </div>
   )
