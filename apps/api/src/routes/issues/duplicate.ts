@@ -1,11 +1,11 @@
-import { and, asc, desc, eq, inArray, max } from 'drizzle-orm'
+import { and, asc, desc, eq, max } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { generateKeyBetween } from 'jittered-fractional-indexing'
 import { ulid } from 'ulid'
 import { cacheDelByPrefix } from '@/cache'
 import { db } from '@/db'
 import { findProject } from '@/db/helpers'
-import { issues as issuesTable, issueLogs as logsTable, issuesLogsToolsCall as toolsTable } from '@/db/schema'
+import { issues as issuesTable, issueLogs as logsTable } from '@/db/schema'
 import { getProjectOwnedIssue, serializeIssue } from './_shared'
 
 const duplicate = new Hono()
@@ -66,19 +66,27 @@ duplicate.post('/:id/duplicate', async (c) => {
 
     if (!created) return []
 
-    // Copy issue logs
+    // Copy only user and assistant message logs (no tool calls)
     const sourceLogs = await tx
       .select()
       .from(logsTable)
-      .where(eq(logsTable.issueId, issueId))
+      .where(
+        and(
+          eq(logsTable.issueId, issueId),
+          eq(logsTable.visible, 1),
+        ),
+      )
       .orderBy(asc(logsTable.id))
 
-    if (sourceLogs.length > 0) {
-      // Map old log ID -> new log ID
+    const messageLogs = sourceLogs.filter(
+      log => log.entryType === 'user-message' || log.entryType === 'assistant-message',
+    )
+
+    if (messageLogs.length > 0) {
       const logIdMap = new Map<string, string>()
       const now = new Date()
 
-      for (const log of sourceLogs) {
+      for (const log of messageLogs) {
         const newLogId = ulid()
         logIdMap.set(log.id, newLogId)
 
@@ -92,39 +100,11 @@ duplicate.post('/:id/duplicate', async (c) => {
           metadata: log.metadata,
           replyToMessageId: log.replyToMessageId ? (logIdMap.get(log.replyToMessageId) ?? log.replyToMessageId) : null,
           timestamp: log.timestamp,
-          toolCallRefId: log.toolCallRefId,
+          toolCallRefId: null,
           visible: log.visible,
           createdAt: now,
           updatedAt: now,
         })
-      }
-
-      // Copy tool calls in batches
-      const oldLogIds = sourceLogs.map(l => l.id)
-      for (let i = 0; i < oldLogIds.length; i += 500) {
-        const chunk = oldLogIds.slice(i, i + 500)
-        const toolRows = await tx
-          .select()
-          .from(toolsTable)
-          .where(inArray(toolsTable.logId, chunk))
-
-        for (const tool of toolRows) {
-          const newLogId = logIdMap.get(tool.logId)
-          if (!newLogId) continue
-
-          await tx.insert(toolsTable).values({
-            id: ulid(),
-            logId: newLogId,
-            issueId: created.id,
-            toolName: tool.toolName,
-            toolCallId: tool.toolCallId,
-            kind: tool.kind,
-            isResult: tool.isResult,
-            raw: tool.raw,
-            createdAt: now,
-            updatedAt: now,
-          })
-        }
       }
     }
 

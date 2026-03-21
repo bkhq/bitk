@@ -68,41 +68,8 @@ function getAllLogs(issueId: string): NormalizedLogEntry[] {
     .filter(isVisible)
 }
 
-function logsToText(logs: NormalizedLogEntry[], issueTitle: string): string {
-  const lines: string[] = [`# ${issueTitle}`, '']
-
-  for (const log of logs) {
-    if (log.entryType === 'user-message') {
-      lines.push(`## User`)
-      lines.push('')
-      lines.push(log.content)
-      lines.push('')
-    } else if (log.entryType === 'assistant-message') {
-      lines.push(`## Assistant`)
-      lines.push('')
-      lines.push(log.content)
-      lines.push('')
-    } else if (log.entryType === 'tool-use' && log.toolAction) {
-      const action = log.toolAction
-      if (action.kind === 'command-run') {
-        lines.push(`> Command: ${action.command}`)
-        if (action.result) lines.push(`> Result: ${action.result}`)
-        lines.push('')
-      } else if (action.kind === 'file-read') {
-        lines.push(`> Read: ${action.path}`)
-        lines.push('')
-      } else if (action.kind === 'file-edit') {
-        lines.push(`> Edit: ${action.path}`)
-        lines.push('')
-      }
-    }
-  }
-
-  return lines.join('\n')
-}
-
 const exportQuerySchema = z.object({
-  format: z.enum(['json', 'txt']).default('json'),
+  format: z.enum(['json']).default('json'),
 })
 
 // GET /api/projects/:projectId/issues/:id/export — Export issue logs
@@ -119,21 +86,9 @@ exportRoute.get('/:id/export', zValidator('query', exportQuerySchema), async (c)
     return c.json({ success: false, error: 'Issue not found' }, 404)
   }
 
-  const { format } = c.req.valid('query')
   const logs = getAllLogs(issueId)
   const filename = `issue-${issue.issueNumber}-${issue.id}`
 
-  if (format === 'txt') {
-    const text = logsToText(logs, issue.title)
-    return new Response(text, {
-      headers: {
-        'Content-Type': 'text/plain; charset=utf-8',
-        'Content-Disposition': `attachment; filename="${filename}.txt"`,
-      },
-    })
-  }
-
-  // Default: JSON
   const json = JSON.stringify({ issue: { id: issue.id, title: issue.title, issueNumber: issue.issueNumber }, logs }, null, 2)
   return new Response(json, {
     headers: {

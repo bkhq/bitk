@@ -437,8 +437,6 @@
     "rename": "Rename",
     "copy": "Copy",
     "download": "Download",
-    "exportJson": "Export chat (.json)",
-    "exportTxt": "TXT document (.txt)",
     "delete": "Delete",
     "deleteConfirm": "Are you sure you want to delete this issue?",
     "copySuccess": "Issue duplicated",
