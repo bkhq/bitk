@@ -437,8 +437,6 @@
     "rename": "重命名",
     "copy": "复制",
     "download": "下载",
-    "exportJson": "导出聊天记录 (.json)",
-    "exportTxt": "TXT 文档 (.txt)",
     "delete": "删除",
     "deleteConfirm": "确定要删除此任务吗？",
     "copySuccess": "任务已复制",

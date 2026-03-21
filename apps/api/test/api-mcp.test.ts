@@ -163,7 +163,6 @@ describe('MCP /api/mcp', () => {
       projectId,
       title: 'MCP test task',
       statusId: 'todo',
-      engineType: 'echo',
     })
     const issue = parseToolResult(createResult)
     expect(issue.title).toBe('MCP test task')

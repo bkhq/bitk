@@ -7,7 +7,7 @@ import { getPidFromManaged } from '@/engines/issue/utils/pid'
 import { logger } from '@/logger'
 import type { ProcessInfo } from '@bkd/shared'
 
-async function buildProcessInfoList(): Promise<ProcessInfo[]> {
+export async function buildProcessInfoList(): Promise<ProcessInfo[]> {
   const activeProcesses = issueEngine.getActiveProcesses()
   const issueIds = activeProcesses.map(p => p.issueId)
   if (issueIds.length === 0) return []

@@ -25,9 +25,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useDeleteIssue, useDuplicateIssue, useUpdateIssue } from '@/hooks/use-kanban'
@@ -130,18 +127,15 @@ export function IssueContextMenu({
     duplicateIssue.mutate(issue.id)
   }, [duplicateIssue, issue.id])
 
-  const handleExport = useCallback(
-    (format: 'json' | 'txt') => {
-      const url = kanbanApi.exportIssueUrl(projectId, issue.id, format)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = ''
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-    },
-    [projectId, issue.id],
-  )
+  const handleExport = useCallback(() => {
+    const url = kanbanApi.exportIssueUrl(projectId, issue.id)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = ''
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+  }, [projectId, issue.id])
 
   const handleDelete = useCallback(() => {
     deleteIssue.mutate(issue.id)
@@ -178,20 +172,10 @@ export function IssueContextMenu({
             <Copy className="size-4" />
             {t('contextMenu.copy')}
           </DropdownMenuItem>
-          <DropdownMenuSub>
-            <DropdownMenuSubTrigger>
-              <Download className="size-4" />
-              {t('contextMenu.download')}
-            </DropdownMenuSubTrigger>
-            <DropdownMenuSubContent>
-              <DropdownMenuItem onSelect={() => handleExport('json')}>
-                {t('contextMenu.exportJson')}
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => handleExport('txt')}>
-                {t('contextMenu.exportTxt')}
-              </DropdownMenuItem>
-            </DropdownMenuSubContent>
-          </DropdownMenuSub>
+          <DropdownMenuItem onSelect={handleExport}>
+            <Download className="size-4" />
+            {t('contextMenu.download')}
+          </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem variant="destructive" onSelect={() => setDeleteOpen(true)}>
             <Trash2 className="size-4" />

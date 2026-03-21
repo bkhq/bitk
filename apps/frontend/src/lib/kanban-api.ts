@@ -175,8 +175,8 @@ export const kanbanApi = {
     del<{ id: string }>(`/api/projects/${projectId}/issues/${issueId}`),
   duplicateIssue: (projectId: string, issueId: string) =>
     post<Issue>(`/api/projects/${projectId}/issues/${issueId}/duplicate`, {}),
-  exportIssueUrl: (projectId: string, issueId: string, format: 'json' | 'txt') =>
-    `/api/projects/${projectId}/issues/${issueId}/export?format=${format}`,
+  exportIssueUrl: (projectId: string, issueId: string) =>
+    `/api/projects/${projectId}/issues/${issueId}/export?format=json`,
 
   // Issue session operations (merged from sessions)
   executeIssue: (projectId: string, issueId: string, data: ExecuteIssueRequest) =>

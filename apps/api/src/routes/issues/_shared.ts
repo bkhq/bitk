@@ -107,7 +107,7 @@ export function serializeIssue(row: IssueRow) {
 }
 
 /** Parse JSON-encoded tags from DB text column into string array. */
-function parseTags(raw: string | null | undefined): string[] | null {
+export function parseTags(raw: string | null | undefined): string[] | null {
   if (!raw) return null
   let candidates: string[]
   try {

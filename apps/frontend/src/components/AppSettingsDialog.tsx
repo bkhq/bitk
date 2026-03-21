@@ -696,6 +696,7 @@ function McpSection({ open }: { open: boolean }) {
     {
       mcpServers: {
         bkd: {
+          type: 'http',
           url: `${serverUrl}/api/mcp`,
           ...(apiKey ? { headers: { Authorization: `Bearer ${apiKey}` } } : {}),
         },
