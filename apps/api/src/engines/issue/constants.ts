@@ -9,7 +9,7 @@ export const MAX_AUTO_RETRIES = 1
 //   T+6m: no response after interrupt — force kill
 export const GC_INTERVAL_MS = 60 * 1000 // 1 minute — frequent stall detection
 export const MAX_CONCURRENT_EXECUTIONS = Number(process.env.MAX_CONCURRENT_EXECUTIONS) || 5
-export const IDLE_TIMEOUT_MS = 5 * 60 * 1000 // 5 minutes
+export const IDLE_TIMEOUT_MS = 10 * 60 * 1000 // 10 minutes
 export const STREAM_STALL_TIMEOUT_MS = 2 * 60 * 1000 // 2 minutes — check process liveness (non-destructive)
 export const STALL_LIVENESS_GRACE_MS = 2 * 60 * 1000 // 2 minutes — wait for CLI internal retry before sending interrupt
 export const STALL_INTERRUPT_GRACE_MS = 2 * 60 * 1000 // 2 minutes — kill process if no response after interrupt
