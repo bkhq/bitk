@@ -107,7 +107,7 @@ export async function executeIssue(
       )
     } catch (spawnError) {
       logger.error(
-        { issueId, executionId, error: spawnError },
+        { issueId, executionId, err: spawnError },
         'execute_spawn_failed_reverting_session',
       )
       const errorMsg = spawnError instanceof Error ? spawnError.message : String(spawnError)
@@ -119,7 +119,7 @@ export async function executeIssue(
       )
       emitErrorLog(issueId, executionId, errorMsg)
       await updateIssueSession(issueId, { sessionStatus: 'failed' }).catch(e =>
-        logger.error({ issueId, error: e }, 'execute_spawn_failed_revert_session_error'),
+        logger.error({ issueId, err: e }, 'execute_spawn_failed_revert_session_error'),
       )
       emitStateChange(issueId, executionId, 'failed')
       throw spawnError

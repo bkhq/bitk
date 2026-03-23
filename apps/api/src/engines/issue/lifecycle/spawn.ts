@@ -316,7 +316,7 @@ export async function spawnFollowUpProcess(
         worktreePath = await createWorktree(baseDir, issue.projectId, issueId)
         workingDir = worktreePath
       } catch (wtErr) {
-        logger.warn({ issueId, error: wtErr }, 'worktree_creation_failed_fallback_to_base')
+        logger.warn({ issueId, err: wtErr }, 'worktree_creation_failed_fallback_to_base')
       }
     }
   }
@@ -342,7 +342,7 @@ export async function spawnFollowUpProcess(
     // Spawn failed after we already emitted 'running' and persisted the user
     // message.  Revert the session status so the issue doesn't get stuck in
     // 'running' forever with no process to settle it.
-    logger.error({ issueId, executionId, error: spawnError }, 'spawn_failed_reverting_session')
+    logger.error({ issueId, executionId, err: spawnError }, 'spawn_failed_reverting_session')
     const errorMsg = spawnError instanceof Error ? spawnError.message : String(spawnError)
     emitDiagnosticLog(
       issueId,
@@ -357,11 +357,11 @@ export async function spawnFollowUpProcess(
       try {
         removeLogEntry(messageId)
       } catch (e) {
-        logger.error({ issueId, messageId, error: e }, 'spawn_failed_remove_user_message_error')
+        logger.error({ issueId, messageId, err: e }, 'spawn_failed_remove_user_message_error')
       }
     }
     await updateIssueSession(issueId, { sessionStatus: 'failed' }).catch(e =>
-      logger.error({ issueId, error: e }, 'spawn_failed_revert_session_error'),
+      logger.error({ issueId, err: e }, 'spawn_failed_revert_session_error'),
     )
     emitStateChange(issueId, executionId, 'failed')
     ctx.entryCounters.delete(executionId)
