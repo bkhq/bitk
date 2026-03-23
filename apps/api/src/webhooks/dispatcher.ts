@@ -359,43 +359,50 @@ export async function dispatch(
     return
   }
 
-  for (const row of rows) {
+  // Filter to subscribed webhooks
+  const subscribedRows = rows.filter((row) => {
     let subscribed: string[]
     try {
       subscribed = JSON.parse(row.events)
     } catch {
-      continue
+      return false
     }
     // Backwards compat: legacy `issue.status_changed` matches all granular status events
-    const matches = subscribed.includes(event)
+    return subscribed.includes(event)
       || (event.startsWith('issue.status.') && subscribed.includes('issue.status_changed'))
-    if (!matches) continue
+  })
 
-    // Dedup: skip if an identical delivery was already sent recently
-    if (dedupKey) {
-      try {
-        const cutoff = new Date(Date.now() - DEDUP_WINDOW_MS)
-        const [existing] = await db
-          .select({ id: webhookDeliveries.id })
-          .from(webhookDeliveries)
-          .where(
-            and(
-              eq(webhookDeliveries.webhookId, row.id),
-              eq(webhookDeliveries.dedupKey, dedupKey),
-              eq(webhookDeliveries.success, true),
-              gte(webhookDeliveries.createdAt, cutoff),
-            ),
-          )
-          .limit(1)
-        if (existing) {
-          logger.debug({ webhookId: row.id, event, dedupKey }, 'webhook_dedup_skipped')
-          continue
-        }
-      } catch (err) {
-        logger.warn({ err, webhookId: row.id, event }, 'webhook_dedup_check_failed')
-        // On check failure, proceed with delivery to avoid losing events
+  // Batch dedup check: single query for all webhook IDs instead of N sequential SELECTs
+  const dedupSkipIds = new Set<string>()
+  if (dedupKey && subscribedRows.length > 0) {
+    try {
+      const cutoff = new Date(Date.now() - DEDUP_WINDOW_MS)
+      const webhookIds = subscribedRows.map(r => r.id)
+      const recentDeliveries = await db
+        .select({ webhookId: webhookDeliveries.webhookId })
+        .from(webhookDeliveries)
+        .where(
+          and(
+            inArray(webhookDeliveries.webhookId, webhookIds),
+            eq(webhookDeliveries.dedupKey, dedupKey),
+            eq(webhookDeliveries.success, true),
+            gte(webhookDeliveries.createdAt, cutoff),
+          ),
+        )
+      for (const d of recentDeliveries) {
+        dedupSkipIds.add(d.webhookId)
       }
+      if (dedupSkipIds.size > 0) {
+        logger.debug({ event, dedupKey, skipped: dedupSkipIds.size }, 'webhook_dedup_skipped')
+      }
+    } catch (err) {
+      logger.warn({ err, event }, 'webhook_dedup_check_failed')
+      // On check failure, proceed with delivery to avoid losing events
     }
+  }
+
+  for (const row of subscribedRows) {
+    if (dedupSkipIds.has(row.id)) continue
 
     // Fire and forget — don't block the event bus
     void deliver(row, event, payload, dedupKey).catch((err) => {

@@ -73,6 +73,21 @@ update.patch(
     // Track which issues actually had a status change (not just reorder within same column)
     const actualStatusChanges = new Set<string>()
 
+    // Batch-fetch all issues that need status transition checks (avoids N+1 SELECTs)
+    const statusChangeIds = body.updates
+      .filter(u => projectIssueIdSet.has(u.id) && u.statusId !== undefined)
+      .map(u => u.id)
+    const existingMap = new Map<string, typeof issuesTable.$inferSelect>()
+    if (statusChangeIds.length > 0) {
+      const existingRows = await db
+        .select()
+        .from(issuesTable)
+        .where(inArray(issuesTable.id, statusChangeIds))
+      for (const row of existingRows) {
+        existingMap.set(row.id, row)
+      }
+    }
+
     await db.transaction(async (tx) => {
       for (const u of body.updates) {
         if (!projectIssueIdSet.has(u.id)) continue
@@ -85,17 +100,11 @@ update.patch(
 
         if (Object.keys(changes).length === 0) continue
 
-        // Fetch existing issue once when statusId changes to check transitions
-        let existing: typeof issuesTable.$inferSelect | undefined
-        if (u.statusId !== undefined) {
-          const [row] = await tx.select().from(issuesTable).where(eq(issuesTable.id, u.id))
-          existing = row
-
-          // Only update statusUpdatedAt on actual status change
-          if (existing && existing.statusId !== u.statusId) {
-            changes.statusUpdatedAt = new Date()
-            actualStatusChanges.add(u.id)
-          }
+        // Use pre-fetched existing issue for status transition checks
+        const existing = u.statusId !== undefined ? existingMap.get(u.id) : undefined
+        if (existing && existing.statusId !== u.statusId) {
+          changes.statusUpdatedAt = new Date()
+          actualStatusChanges.add(u.id)
         }
 
         // Check if this is a transition to working that should trigger execution
