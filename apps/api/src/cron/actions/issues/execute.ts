@@ -12,6 +12,11 @@ registerAction('issue-execute', {
     const { project, issue } = await resolveIssue(config)
     const prompt = config.prompt as string
 
+    // Skip if issue already has an active session
+    if (issue.sessionStatus === 'running' || issue.sessionStatus === 'pending') {
+      return `skipped: issue ${issue.id} already has active session (${issue.sessionStatus})`
+    }
+
     const guard = await ensureWorking(issue)
     if (!guard.ok) throw new Error(guard.reason!)
 

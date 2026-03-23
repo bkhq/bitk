@@ -14,7 +14,7 @@ export async function executeTask(
   jobId: string,
   jobName: string,
   taskConfig: TaskConfig,
-): Promise<void> {
+): Promise<string> {
   const logId = ulid()
   const startedAt = new Date()
 
@@ -43,6 +43,7 @@ export async function executeTask(
       .run()
 
     logger.debug({ jobName, durationMs, result }, 'cron_job_success')
+    return logId
   } catch (err) {
     const finishedAt = new Date()
     const durationMs = finishedAt.getTime() - startedAt.getTime()
@@ -54,5 +55,6 @@ export async function executeTask(
       .run()
 
     logger.error({ jobName, durationMs, err }, 'cron_job_failed')
+    return logId
   }
 }

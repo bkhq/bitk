@@ -1,5 +1,6 @@
 import { eq } from 'drizzle-orm'
 import { cacheDel } from '@/cache'
+import { STATUS_IDS } from '@/config'
 import { db } from '@/db'
 import { issues as issuesTable } from '@/db/schema'
 import { issueEngine } from '@/engines/issue'
@@ -14,6 +15,10 @@ registerAction('issue-close', {
   async handler(config) {
     const { project, issue } = await resolveIssue(config)
     const targetStatus = (config.targetStatus as string) ?? 'done'
+
+    if (!STATUS_IDS.includes(targetStatus as any)) {
+      throw new Error(`Invalid targetStatus: "${targetStatus}". Must be one of: ${STATUS_IDS.join(', ')}`)
+    }
 
     if (issue.statusId === targetStatus) {
       return `issue ${issue.id} already in ${targetStatus} status`

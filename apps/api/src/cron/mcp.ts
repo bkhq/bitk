@@ -4,7 +4,7 @@ import * as z from 'zod'
 import { db } from '@/db'
 import { cronJobLogs, cronJobs } from '@/db/schema'
 import { logger } from '@/logger'
-import { getActionsHelp, validateActionConfig } from './actions'
+import { getAction, getActionsHelp, validateActionConfig } from './actions'
 import { executeTask } from './executor'
 import { getBaker, syncJob } from './index'
 import { serializeJob } from './serialize'
@@ -103,11 +103,12 @@ export function registerCronMcpTools(server: McpServer): void {
     const validationError = validateActionConfig(action, taskConfig)
     if (validationError) return errorResult(validationError)
 
-    // Insert into DB (taskType stored as category tag for display)
+    // Insert into DB (taskType = category from action definition)
+    const actionDef = getAction(action)
     const [row] = db.insert(cronJobs).values({
       name,
       cron,
-      taskType: action,
+      taskType: actionDef?.category ?? 'custom',
       taskConfig: JSON.stringify(taskConfig),
       enabled: true,
     }).returning().all()
@@ -173,16 +174,20 @@ export function registerCronMcpTools(server: McpServer): void {
       // Job not in Baker, proceed with direct execution
     }
 
-    const config: TaskConfig = JSON.parse(row.taskConfig)
-    await executeTask(row.id, row.name, config)
+    let config: TaskConfig
+    try {
+      config = JSON.parse(row.taskConfig)
+    } catch {
+      return errorResult(`Job "${row.name}" has corrupt taskConfig in database`)
+    }
 
-    // Get the latest log for this job
+    const logId = await executeTask(row.id, row.name, config)
+
+    // Fetch the exact log entry created by this execution
     const [log] = db
       .select()
       .from(cronJobLogs)
-      .where(eq(cronJobLogs.jobId, row.id))
-      .orderBy(desc(cronJobLogs.startedAt))
-      .limit(1)
+      .where(eq(cronJobLogs.id, logId))
       .all()
 
     return textResult({

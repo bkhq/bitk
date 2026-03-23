@@ -1,4 +1,4 @@
-import { and, eq, sql } from 'drizzle-orm'
+import { and, count as countFn, desc, eq, lt } from 'drizzle-orm'
 import { db } from '@/db'
 import { cronJobLogs, cronJobs } from '@/db/schema'
 import { logger } from '@/logger'
@@ -21,32 +21,28 @@ export async function runLogCleanup(): Promise<string> {
       .select({ id: cronJobLogs.id })
       .from(cronJobLogs)
       .where(eq(cronJobLogs.jobId, job.id))
-      .orderBy(sql`${cronJobLogs.id} DESC`)
+      .orderBy(desc(cronJobLogs.id))
       .limit(MAX_LOGS_PER_JOB)
       .all()
       .map(r => r.id)
 
     if (keepIds.length < MAX_LOGS_PER_JOB) continue
 
-    // Count before delete
-    const [{ count: beforeCount }] = db
-      .select({ count: sql<number>`count(*)` })
-      .from(cronJobLogs)
-      .where(eq(cronJobLogs.jobId, job.id))
-      .all()
-
     // Delete logs older than the Nth newest
     const oldest = keepIds.at(-1)!
+
+    // Count rows to delete before deleting (single atomic read in SQLite WAL)
+    const [{ cnt }] = db
+      .select({ cnt: countFn() })
+      .from(cronJobLogs)
+      .where(and(eq(cronJobLogs.jobId, job.id), lt(cronJobLogs.id, oldest)))
+      .all()
+
     db.delete(cronJobLogs)
-      .where(
-        and(
-          eq(cronJobLogs.jobId, job.id),
-          sql`${cronJobLogs.id} < ${oldest}`,
-        ),
-      )
+      .where(and(eq(cronJobLogs.jobId, job.id), lt(cronJobLogs.id, oldest)))
       .run()
 
-    totalDeleted += beforeCount - MAX_LOGS_PER_JOB
+    totalDeleted += cnt
   }
 
   if (totalDeleted > 0) {
