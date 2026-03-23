@@ -125,7 +125,13 @@ mcpRoute.use('*', async (c, next) => {
   }
 
   const token = c.req.header('authorization')?.replace('Bearer ', '')
-  if (!token || token !== apiKey) {
+  if (!token) {
+    return c.json({ error: 'Unauthorized' }, 401)
+  }
+  // Use timing-safe comparison to prevent timing attacks
+  const tokenBuf = Buffer.from(token)
+  const keyBuf = Buffer.from(apiKey)
+  if (tokenBuf.length !== keyBuf.length || !crypto.timingSafeEqual(tokenBuf, keyBuf)) {
     return c.json({ error: 'Unauthorized' }, 401)
   }
   return next()
