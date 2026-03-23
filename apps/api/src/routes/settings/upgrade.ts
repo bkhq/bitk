@@ -113,10 +113,7 @@ upgrade.post(
     }
     // Start download in background; errors are tracked in downloadStatus
     downloadUpdate(url, fileName, checksumUrl).catch((err) => {
-      logger.error(
-        { error: err instanceof Error ? err.message : String(err) },
-        'upgrade_download_route_error',
-      )
+      logger.error({ err }, 'upgrade_download_route_error')
     })
     return c.json({ success: true, data: { status: 'started', fileName } })
   },
@@ -137,12 +134,11 @@ upgrade.post('/restart', async (c) => {
       data: { status: 'restarting' },
     })
   } catch (err) {
-    const errorMessage = err instanceof Error ? err.message : String(err)
-    logger.error({ error: errorMessage, stack: err instanceof Error ? err.stack : undefined }, 'upgrade_restart_failed')
+    logger.error({ err, stack: err instanceof Error ? err.stack : undefined }, 'upgrade_restart_failed')
     return c.json(
       {
         success: false,
-        error: errorMessage || 'Failed to apply upgrade and restart',
+        error: 'Failed to apply upgrade and restart',
       },
       400,
     )
@@ -181,7 +177,7 @@ upgrade.delete(
       await deleteDownloadedUpdate(fileName)
       return c.json({ success: true, data: { deleted: fileName } })
     } catch (err) {
-      logger.error({ error: err instanceof Error ? err.message : String(err), fileName }, 'upgrade_delete_failed')
+      logger.error({ err, fileName }, 'upgrade_delete_failed')
       return c.json(
         {
           success: false,
