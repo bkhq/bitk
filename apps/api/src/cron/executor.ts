@@ -3,19 +3,15 @@ import { ulid } from 'ulid'
 import { db } from '@/db'
 import { findProject } from '@/db/helpers'
 import { cronJobLogs, issues as issuesTable } from '@/db/schema'
-import { issueEngine } from '@/engines/issue'
-import type { EngineType } from '@/engines/types'
 import { logger } from '@/logger'
-import { ensureWorking, parseProjectEnvVars } from '@/routes/issues/_shared'
+import { getIssueActionHandler } from './actions'
 import { getBuiltinHandler } from './registry'
 
 export interface TaskConfig {
   handler?: string // for builtin tasks
   projectId?: string // for issue tasks
-  issueId?: string // for issue-follow-up
-  prompt?: string // for issue tasks
-  engineType?: string // for issue-execute
-  model?: string // for issue tasks
+  issueId?: string // for issue tasks
+  action?: string // for issue tasks — registered action name
   [key: string]: unknown
 }
 
@@ -48,12 +44,8 @@ export async function executeTask(
         result = await handler()
         break
       }
-      case 'issue-follow-up': {
-        result = await executeIssueFollowUp(taskConfig)
-        break
-      }
-      case 'issue-execute': {
-        result = await executeIssueCreate(taskConfig)
+      case 'issue': {
+        result = await executeIssueAction(taskConfig)
         break
       }
       default:
@@ -83,12 +75,16 @@ export async function executeTask(
   }
 }
 
-// ---------- Issue task handlers ----------
+// ---------- Issue action dispatcher ----------
 
-async function resolveIssue(config: TaskConfig) {
-  const { projectId, issueId } = config
+async function executeIssueAction(config: TaskConfig): Promise<string> {
+  const { projectId, issueId, action } = config
   if (!projectId) throw new Error('taskConfig.projectId is required')
   if (!issueId) throw new Error('taskConfig.issueId is required')
+  if (!action) throw new Error('taskConfig.action is required')
+
+  const handler = getIssueActionHandler(action)
+  if (!handler) throw new Error(`Unknown issue action: ${action}`)
 
   const project = await findProject(projectId)
   if (!project) throw new Error(`Project not found: ${projectId}`)
@@ -106,45 +102,5 @@ async function resolveIssue(config: TaskConfig) {
     .all()
   if (!issue) throw new Error(`Issue not found: ${issueId}`)
 
-  return { project, issue }
-}
-
-async function executeIssueFollowUp(config: TaskConfig): Promise<string> {
-  const { project, issue } = await resolveIssue(config)
-  const prompt = config.prompt
-  if (!prompt) throw new Error('taskConfig.prompt is required for issue-follow-up')
-
-  const guard = await ensureWorking(issue)
-  if (!guard.ok) throw new Error(guard.reason!)
-
-  const result = await issueEngine.followUpIssue(
-    issue.id,
-    prompt,
-    config.model ?? issue.model ?? undefined,
-  )
-
-  return `follow-up sent to issue ${issue.id} in project ${project.id} (executionId: ${result.executionId})`
-}
-
-async function executeIssueCreate(config: TaskConfig): Promise<string> {
-  const { project, issue } = await resolveIssue(config)
-  const prompt = config.prompt
-  if (!prompt) throw new Error('taskConfig.prompt is required for issue-execute')
-
-  const guard = await ensureWorking(issue)
-  if (!guard.ok) throw new Error(guard.reason!)
-
-  const engineType = (config.engineType ?? issue.engineType ?? 'claude-code') as EngineType
-  const basePrompt = project.systemPrompt ? `${project.systemPrompt}\n\n${prompt}` : prompt
-  const envVars = parseProjectEnvVars(project.envVars)
-
-  const result = await issueEngine.executeIssue(issue.id, {
-    engineType,
-    prompt: basePrompt,
-    workingDir: project.directory || undefined,
-    model: config.model ?? issue.model ?? undefined,
-    envVars,
-  })
-
-  return `execution started for issue ${issue.id} in project ${project.id} (executionId: ${result.executionId})`
+  return handler({ project, issue, config })
 }

@@ -4,6 +4,7 @@ import * as z from 'zod'
 import { db } from '@/db'
 import { cronJobLogs, cronJobs } from '@/db/schema'
 import { logger } from '@/logger'
+import { getIssueActionsHelp, validateIssueActionConfig } from './actions'
 import { executeTask } from './executor'
 import { getBaker, syncJob } from './index'
 import { getBuiltinHandler } from './registry'
@@ -44,20 +45,14 @@ function validateTaskConfig(taskType: string, config: TaskConfig, jobName: strin
       }
       return null
     }
-    case 'issue-follow-up': {
-      if (!config.projectId) return 'taskConfig.projectId is required for issue-follow-up'
-      if (!config.issueId) return 'taskConfig.issueId is required for issue-follow-up'
-      if (!config.prompt) return 'taskConfig.prompt is required for issue-follow-up'
-      return null
-    }
-    case 'issue-execute': {
-      if (!config.projectId) return 'taskConfig.projectId is required for issue-execute'
-      if (!config.issueId) return 'taskConfig.issueId is required for issue-execute'
-      if (!config.prompt) return 'taskConfig.prompt is required for issue-execute'
-      return null
+    case 'issue': {
+      if (!config.projectId) return 'taskConfig.projectId is required for issue tasks'
+      if (!config.issueId) return 'taskConfig.issueId is required for issue tasks'
+      if (!config.action) return 'taskConfig.action is required for issue tasks'
+      return validateIssueActionConfig(config.action as string, config)
     }
     default:
-      return `Unsupported task type: "${taskType}"`
+      return `Unsupported task type: "${taskType}". Available: builtin, issue`
   }
 }
 
@@ -99,15 +94,15 @@ export function registerCronMcpTools(server: McpServer): void {
       '',
       'Task types:',
       '  - builtin: run a built-in handler (upload-cleanup, worktree-cleanup, log-cleanup)',
-      '  - issue-follow-up: send a follow-up message to an existing issue on schedule',
-      '    taskConfig: { projectId, issueId, prompt, model? }',
-      '  - issue-execute: trigger execution on an existing issue on schedule',
-      '    taskConfig: { projectId, issueId, prompt, engineType?, model? }',
+      '  - issue: perform an action on an issue. taskConfig requires: { projectId, issueId, action, ...action-params }',
+      '',
+      'Issue actions (taskConfig.action):',
+      getIssueActionsHelp(),
     ].join('\n'),
     inputSchema: z.object({
       name: z.string().min(1).max(100).describe('Unique job name'),
       cron: z.string().min(1).describe('Cron expression or preset'),
-      taskType: z.enum(['builtin', 'issue-follow-up', 'issue-execute']).describe('Task type'),
+      taskType: z.enum(['builtin', 'issue']).describe('Task type'),
       taskConfig: z.record(z.string(), z.unknown()).optional().describe('Task configuration (JSON object)'),
     }),
   }, async ({ name, cron, taskType, taskConfig }) => {
