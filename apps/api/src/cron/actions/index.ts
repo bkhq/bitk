@@ -8,6 +8,7 @@ export {
   getActionHandler,
   getActionNames,
   getActionsHelp,
+  getDefaultActions,
   registerAction,
   validateActionConfig,
 } from './registry'

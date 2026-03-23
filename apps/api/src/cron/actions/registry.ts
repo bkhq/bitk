@@ -21,6 +21,17 @@ export function getActionNames(): string[] {
   return [...actions.keys()]
 }
 
+/** Return actions that declare a defaultCron (used for auto-seeding DB on startup) */
+export function getDefaultActions(): Array<{ name: string, cron: string, runOnStartup?: boolean }> {
+  const defaults: Array<{ name: string, cron: string, runOnStartup?: boolean }> = []
+  for (const [name, def] of actions) {
+    if (def.defaultCron) {
+      defaults.push({ name, cron: def.defaultCron, runOnStartup: def.runOnStartup })
+    }
+  }
+  return defaults
+}
+
 export function getActionsHelp(): string {
   const lines: string[] = []
   for (const [name, def] of actions) {

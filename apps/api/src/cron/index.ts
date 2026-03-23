@@ -4,17 +4,9 @@ import { db } from '@/db'
 import { cronJobs } from '@/db/schema'
 import { logger } from '@/logger'
 // Import actions to trigger self-registration before any job loads
-import './actions'
+import { getActionHandler, getDefaultActions } from './actions'
 import type { TaskConfig } from './executor'
 import { executeTask } from './executor'
-import { runWorktreeCleanup } from './actions/builtins/worktree-cleanup'
-
-/** Default job definitions seeded on first startup. Key = action name. */
-const DEFAULT_JOBS: Record<string, { cron: string }> = {
-  'upload-cleanup': { cron: '0 0 * * * *' }, // every hour
-  'worktree-cleanup': { cron: '0 */30 * * * *' }, // every 30 minutes
-  'log-cleanup': { cron: '0 0 3 * * *' }, // daily at 3 AM
-}
 
 let baker: Baker | null = null
 
@@ -23,24 +15,24 @@ export function getBaker(): Baker {
   return baker
 }
 
-/** Ensure default jobs exist in DB (insert if missing) */
+/** Ensure default jobs exist in DB (driven by action registry metadata) */
 function ensureDefaultJobs(): void {
-  for (const [action, def] of Object.entries(DEFAULT_JOBS)) {
+  for (const { name, cron } of getDefaultActions()) {
     const [existing] = db
       .select({ id: cronJobs.id })
       .from(cronJobs)
-      .where(and(eq(cronJobs.name, action), eq(cronJobs.isDeleted, 0)))
+      .where(and(eq(cronJobs.name, name), eq(cronJobs.isDeleted, 0)))
       .all()
 
     if (!existing) {
       db.insert(cronJobs).values({
-        name: action,
-        cron: def.cron,
+        name,
+        cron,
         taskType: 'builtin',
-        taskConfig: JSON.stringify({ action }),
+        taskConfig: JSON.stringify({ action: name }),
         enabled: true,
       }).run()
-      logger.info({ name: action }, 'cron_default_job_created')
+      logger.info({ name }, 'cron_default_job_created')
     }
   }
 }
@@ -127,10 +119,16 @@ export function startCron(): () => void {
   // Start all jobs
   baker.bakeAll()
 
-  // Run worktree cleanup once immediately on startup (matches old startWorktreeCleanup behavior)
-  void runWorktreeCleanup().catch((err) => {
-    logger.error({ err }, 'worktree_cleanup_startup_error')
-  })
+  // Run actions with runOnStartup flag immediately
+  for (const { name, runOnStartup } of getDefaultActions()) {
+    if (!runOnStartup) continue
+    const handler = getActionHandler(name)
+    if (handler) {
+      void handler({}).catch((err) => {
+        logger.error({ err, action: name }, 'cron_startup_run_error')
+      })
+    }
+  }
 
   logger.info({ jobCount: count }, 'cron_scheduler_started')
 

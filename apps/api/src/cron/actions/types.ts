@@ -10,6 +10,10 @@ export interface ActionDef {
   requiredFields?: string[]
   /** Optional deep validation at cron-create time (e.g. verify refs exist) */
   validate?: (config: Record<string, unknown>) => Promise<string | null>
+  /** Default cron schedule — if set, a DB row is auto-seeded on first startup */
+  defaultCron?: string
+  /** Run handler once immediately on startup (before first scheduled tick) */
+  runOnStartup?: boolean
   /** The handler function */
   handler: ActionHandler
 }
