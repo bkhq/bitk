@@ -1,4 +1,5 @@
 import { registerAction } from '../registry'
+import { runIssueLogRetention } from './issue-log-retention'
 import { runLogCleanup } from './log-cleanup'
 import { runUploadCleanup } from './upload-cleanup'
 import { runWorktreeCleanup } from './worktree-cleanup'
@@ -23,4 +24,11 @@ registerAction('log-cleanup', {
   category: 'builtin',
   defaultCron: '0 0 3 * * *', // daily at 3 AM
   handler: () => runLogCleanup(),
+})
+
+registerAction('issue-log-retention', {
+  description: 'Delete issue logs for done issues older than retention period (default 30 days, configurable via appSettings)',
+  category: 'builtin',
+  defaultCron: '0 0 4 * * *', // daily at 4 AM
+  handler: () => runIssueLogRetention(),
 })
