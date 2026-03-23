@@ -104,15 +104,24 @@ export function registerCronMcpTools(server: McpServer): void {
     const validationError = await validateActionConfig(action, taskConfig)
     if (validationError) return errorResult(validationError)
 
-    // Insert into DB (taskType = category from action definition)
+    // Insert into DB (handle concurrent duplicate name gracefully)
     const actionDef = getAction(action)
-    const [row] = db.insert(cronJobs).values({
-      name,
-      cron,
-      taskType: actionDef?.category ?? 'custom',
-      taskConfig: JSON.stringify(taskConfig),
-      enabled: true,
-    }).returning().all()
+    let row: typeof cronJobs.$inferSelect
+    try {
+      ;[row] = db.insert(cronJobs).values({
+        name,
+        cron,
+        taskType: actionDef?.category ?? 'custom',
+        taskConfig: JSON.stringify(taskConfig),
+        enabled: true,
+      }).returning().all()
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      if (msg.includes('UNIQUE constraint')) {
+        return errorResult(`Job with name "${name}" already exists`)
+      }
+      throw err
+    }
 
     // Sync to Baker
     syncJob(name)
@@ -164,7 +173,9 @@ export function registerCronMcpTools(server: McpServer): void {
     const row = findJob(job)
     if (!row) return errorResult('Job not found')
 
-    // Check Baker's overrun protection before direct execution
+    // Check Baker's overrun protection before direct execution.
+    // Note: small TOCTOU window — a scheduled run could start between this check
+    // and executeTask(). Baker's overrunProtection only covers its own callback path.
     try {
       const b = getBaker()
       const status = b.getStatus(row.name)

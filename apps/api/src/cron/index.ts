@@ -111,13 +111,21 @@ export function startCron(): () => void {
   })
 
   // Ensure default jobs exist in DB
-  ensureDefaultJobs()
+  try {
+    ensureDefaultJobs()
+  } catch (err) {
+    logger.error({ err }, 'cron_ensure_defaults_failed')
+  }
 
   // Load all enabled jobs
   const count = loadJobsFromDb(baker)
 
   // Start all jobs
-  baker.bakeAll()
+  try {
+    baker.bakeAll()
+  } catch (err) {
+    logger.error({ err }, 'cron_bake_all_failed')
+  }
 
   // Run actions with runOnStartup flag immediately
   for (const { name, runOnStartup } of getDefaultActions()) {
