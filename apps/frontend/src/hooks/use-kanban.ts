@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { kanbanApi } from '@/lib/kanban-api'
+import { STALE_TIME } from '@/lib/query-config'
 import { useBoardStore } from '@/stores/board-store'
 import { useFileBrowserStore } from '@/stores/file-browser-store'
 import type { ExecuteIssueRequest, Issue, WebhookEventType } from '@/types/kanban'
@@ -49,6 +50,7 @@ export function useProjects() {
   return useQuery({
     queryKey: queryKeys.projects(),
     queryFn: () => kanbanApi.getProjects(),
+    staleTime: STALE_TIME.STANDARD,
   })
 }
 
@@ -57,6 +59,7 @@ export function useArchivedProjects(enabled = false) {
     queryKey: queryKeys.archivedProjects(),
     queryFn: () => kanbanApi.getProjects({ archived: true }),
     enabled,
+    staleTime: STALE_TIME.STANDARD,
   })
 }
 
@@ -64,6 +67,7 @@ export function useReviewIssues() {
   return useQuery({
     queryKey: queryKeys.reviewIssues(),
     queryFn: () => kanbanApi.getReviewIssues(),
+    staleTime: STALE_TIME.STANDARD,
   })
 }
 
@@ -156,6 +160,7 @@ export function useProjectWorktrees(projectId: string) {
     queryKey: queryKeys.projectWorktrees(projectId),
     queryFn: () => kanbanApi.getWorktrees(projectId),
     enabled: !!projectId,
+    staleTime: STALE_TIME.STANDARD,
   })
 }
 
@@ -177,6 +182,7 @@ export function useProject(projectId: string) {
     queryKey: queryKeys.project(projectId),
     queryFn: () => kanbanApi.getProject(projectId),
     enabled: !!projectId,
+    staleTime: STALE_TIME.STANDARD,
   })
 }
 
@@ -185,6 +191,7 @@ export function useIssues(projectId: string) {
     queryKey: queryKeys.issues(projectId),
     queryFn: () => kanbanApi.getIssues(projectId),
     enabled: !!projectId,
+    staleTime: STALE_TIME.STANDARD,
   })
 }
 
@@ -193,6 +200,7 @@ export function useIssue(projectId: string, issueId: string) {
     queryKey: queryKeys.issue(projectId, issueId),
     queryFn: () => kanbanApi.getIssue(projectId, issueId),
     enabled: !!projectId && !!issueId,
+    staleTime: STALE_TIME.STANDARD,
   })
 }
 
@@ -201,6 +209,7 @@ export function useIssueChanges(projectId: string, issueId: string, enabled = tr
     queryKey: queryKeys.issueChanges(projectId, issueId),
     queryFn: () => kanbanApi.getIssueChanges(projectId, issueId),
     enabled: !!projectId && !!issueId && enabled,
+    staleTime: STALE_TIME.STANDARD,
   })
 }
 
@@ -214,6 +223,7 @@ export function useIssueFilePatch(
     queryKey: queryKeys.issueFilePatch(projectId, issueId, path ?? ''),
     queryFn: () => kanbanApi.getIssueFilePatch(projectId, issueId, path ?? ''),
     enabled: !!projectId && !!issueId && !!path && enabled,
+    staleTime: STALE_TIME.STANDARD,
   })
 }
 
@@ -407,7 +417,7 @@ export function useSlashCommands(projectId: string, issueId: string, enabled = f
     queryKey: queryKeys.slashCommands(projectId, issueId),
     queryFn: () => kanbanApi.getSlashCommands(projectId, issueId),
     enabled: !!projectId && !!issueId && enabled,
-    staleTime: 60_000,
+    staleTime: STALE_TIME.STANDARD,
   })
 }
 
@@ -416,7 +426,7 @@ export function useGlobalSlashCommands(engine?: string | null) {
     queryKey: ['settings', 'slash-commands', engine ?? 'all'],
     queryFn: () => kanbanApi.getSlashCommandSettings(engine ?? undefined),
     enabled: !!engine,
-    staleTime: Infinity,
+    staleTime: STALE_TIME.CONFIG,
   })
 }
 
@@ -427,7 +437,7 @@ export function useEngineAvailability(enabled = false) {
     queryKey: queryKeys.engineAvailability(),
     queryFn: () => kanbanApi.getEngineAvailability(),
     enabled,
-    staleTime: 60 * 1000,
+    staleTime: STALE_TIME.STANDARD,
   })
 }
 
@@ -436,7 +446,7 @@ export function useEngineProfiles(enabled = false) {
     queryKey: queryKeys.engineProfiles(),
     queryFn: () => kanbanApi.getEngineProfiles(),
     enabled,
-    staleTime: Infinity,
+    staleTime: STALE_TIME.CONFIG,
   })
 }
 
@@ -445,7 +455,7 @@ export function useEngineSettings(enabled = false) {
     queryKey: queryKeys.engineSettings(),
     queryFn: () => kanbanApi.getEngineSettings(),
     enabled,
-    staleTime: 30_000,
+    staleTime: STALE_TIME.STANDARD,
   })
 }
 
@@ -505,7 +515,7 @@ export function useWorkspacePath(enabled = false) {
     queryKey: queryKeys.workspacePath(),
     queryFn: () => kanbanApi.getWorkspacePath(),
     enabled,
-    staleTime: Infinity,
+    staleTime: STALE_TIME.CONFIG,
   })
 }
 
@@ -526,7 +536,7 @@ export function useLogPageSize(enabled = false) {
     queryKey: queryKeys.logPageSize(),
     queryFn: () => kanbanApi.getLogPageSize(),
     enabled,
-    staleTime: Infinity,
+    staleTime: STALE_TIME.CONFIG,
   })
 }
 
@@ -547,7 +557,7 @@ export function useWorktreeAutoCleanup(enabled = false) {
     queryKey: queryKeys.worktreeAutoCleanup(),
     queryFn: () => kanbanApi.getWorktreeAutoCleanup(),
     enabled,
-    staleTime: Infinity,
+    staleTime: STALE_TIME.CONFIG,
   })
 }
 
@@ -570,7 +580,7 @@ export function useMaxConcurrentExecutions(enabled = false) {
     queryKey: queryKeys.maxConcurrentExecutions(),
     queryFn: () => kanbanApi.getMaxConcurrentExecutions(),
     enabled,
-    staleTime: Infinity,
+    staleTime: STALE_TIME.CONFIG,
   })
 }
 
@@ -593,7 +603,7 @@ export function useServerInfo(enabled = false) {
     queryKey: queryKeys.serverInfo(),
     queryFn: () => kanbanApi.getServerInfo(),
     enabled,
-    staleTime: Infinity,
+    staleTime: STALE_TIME.CONFIG,
   })
 }
 
@@ -615,7 +625,7 @@ export function useMcpSettings(enabled = false) {
     queryKey: queryKeys.mcpSettings(),
     queryFn: () => kanbanApi.getMcpSettings(),
     enabled,
-    staleTime: Infinity,
+    staleTime: STALE_TIME.CONFIG,
   })
 }
 
@@ -639,7 +649,7 @@ export function useSystemLogs(enabled = false, lines = 200) {
     queryKey: queryKeys.systemLogs(),
     queryFn: () => kanbanApi.getSystemLogs(lines),
     enabled,
-    staleTime: 10_000,
+    staleTime: STALE_TIME.FREQUENT,
   })
 }
 
@@ -660,7 +670,7 @@ export function useCleanupStats(enabled = false) {
     queryKey: queryKeys.cleanupStats(),
     queryFn: () => kanbanApi.getCleanupStats(),
     enabled,
-    staleTime: 30_000,
+    staleTime: STALE_TIME.STANDARD,
   })
 }
 
@@ -683,7 +693,7 @@ export function useDeletedIssues(enabled = false) {
     queryKey: queryKeys.deletedIssues(),
     queryFn: () => kanbanApi.getDeletedIssues(),
     enabled,
-    staleTime: 30_000,
+    staleTime: STALE_TIME.STANDARD,
   })
 }
 
@@ -706,7 +716,7 @@ export function useSystemInfo(enabled = false) {
     queryKey: queryKeys.systemInfo(),
     queryFn: () => kanbanApi.getSystemInfo(),
     enabled,
-    staleTime: 30_000,
+    staleTime: STALE_TIME.STANDARD,
   })
 }
 
@@ -717,7 +727,7 @@ export function useVersionInfo(enabled = false) {
     queryKey: queryKeys.upgradeVersion(),
     queryFn: () => kanbanApi.getVersionInfo(),
     enabled,
-    staleTime: Infinity,
+    staleTime: STALE_TIME.CONFIG,
   })
 }
 
@@ -726,7 +736,7 @@ export function useUpgradeEnabled(enabled = false) {
     queryKey: queryKeys.upgradeEnabled(),
     queryFn: () => kanbanApi.getUpgradeEnabled(),
     enabled,
-    staleTime: 30_000,
+    staleTime: STALE_TIME.STANDARD,
   })
 }
 
@@ -745,7 +755,7 @@ export function useUpgradeCheck(enabled = false) {
     queryKey: queryKeys.upgradeCheck(),
     queryFn: () => kanbanApi.getUpgradeCheck(),
     enabled,
-    staleTime: 60_000,
+    staleTime: STALE_TIME.STANDARD,
   })
 }
 
@@ -777,7 +787,7 @@ export function useDownloadStatus(enabled = false) {
     queryKey: queryKeys.upgradeDownloadStatus(),
     queryFn: () => kanbanApi.getDownloadStatus(),
     enabled,
-    staleTime: 5_000,
+    staleTime: STALE_TIME.FREQUENT,
     refetchInterval: (query) => {
       const data = query.state.data
       return data?.status === 'downloading' || data?.status === 'verifying' ? 1000 : false
@@ -826,6 +836,7 @@ export function useProjectFiles(root: string | null | undefined, path: string, e
     queryKey: queryKeys.projectFiles(root ?? null, path, hideIgnored),
     queryFn: () => kanbanApi.listFiles(root!, path || undefined, hideIgnored),
     enabled: !!root && enabled,
+    staleTime: STALE_TIME.STANDARD,
   })
 }
 
@@ -858,6 +869,7 @@ export function useAllProcesses(enabled = true) {
     queryKey: queryKeys.allProcesses(),
     queryFn: () => kanbanApi.getAllProcesses(),
     enabled,
+    staleTime: STALE_TIME.FREQUENT,
     refetchInterval: 5000,
   })
 }
@@ -885,7 +897,7 @@ export function useWebhooks(enabled = false) {
     queryKey: queryKeys.webhooks(),
     queryFn: () => kanbanApi.getWebhooks(),
     enabled,
-    staleTime: 30_000,
+    staleTime: STALE_TIME.STANDARD,
   })
 }
 
@@ -939,7 +951,7 @@ export function useWebhookDeliveries(id: string, enabled = false) {
     queryKey: queryKeys.webhookDeliveries(id),
     queryFn: () => kanbanApi.getWebhookDeliveries(id),
     enabled: !!id && enabled,
-    staleTime: 10_000,
+    staleTime: STALE_TIME.FREQUENT,
   })
 }
 
@@ -963,6 +975,7 @@ export function useCronJobs() {
   return useQuery({
     queryKey: queryKeys.cronJobs(),
     queryFn: () => kanbanApi.getCronJobs(),
+    staleTime: STALE_TIME.STANDARD,
   })
 }
 
@@ -971,5 +984,6 @@ export function useCronJobLogs(jobId: string | null) {
     queryKey: queryKeys.cronJobLogs(jobId ?? ''),
     queryFn: () => kanbanApi.getCronJobLogs(jobId!),
     enabled: !!jobId,
+    staleTime: STALE_TIME.STANDARD,
   })
 }
