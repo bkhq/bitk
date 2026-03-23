@@ -1,7 +1,7 @@
-import { runLogCleanup } from '../tasks/log-cleanup'
-import { runUploadCleanup } from '../tasks/upload-cleanup'
-import { runWorktreeCleanup } from '../tasks/worktree-cleanup'
-import { registerAction } from './registry'
+import { registerAction } from '../registry'
+import { runLogCleanup } from './log-cleanup'
+import { runUploadCleanup } from './upload-cleanup'
+import { runWorktreeCleanup } from './worktree-cleanup'
 
 registerAction('upload-cleanup', {
   description: 'Remove uploaded files older than 7 days',

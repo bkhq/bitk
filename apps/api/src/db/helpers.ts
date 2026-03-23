@@ -342,7 +342,7 @@ export async function backfillSortOrders(): Promise<void> {
 // --- Worktree auto-cleanup default seeding ---
 
 export async function ensureWorktreeAutoCleanupDefault(): Promise<void> {
-  const { WORKTREE_AUTO_CLEANUP_KEY } = await import('../cron/tasks/worktree-cleanup')
+  const { WORKTREE_AUTO_CLEANUP_KEY } = await import('../cron/actions/builtins/worktree-cleanup')
   const existing = await getAppSetting(WORKTREE_AUTO_CLEANUP_KEY)
   if (existing === null) {
     await setAppSetting(WORKTREE_AUTO_CLEANUP_KEY, 'true')

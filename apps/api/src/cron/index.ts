@@ -7,7 +7,7 @@ import { logger } from '@/logger'
 import './actions'
 import type { TaskConfig } from './executor'
 import { executeTask } from './executor'
-import { runWorktreeCleanup } from './tasks/worktree-cleanup'
+import { runWorktreeCleanup } from './actions/builtins/worktree-cleanup'
 
 /** Default job definitions seeded on first startup. Key = action name. */
 const DEFAULT_JOBS: Record<string, { cron: string }> = {
