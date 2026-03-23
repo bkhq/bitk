@@ -1,48 +1,49 @@
-import type { IssueActionDef, IssueActionHandler } from './types'
+import type { ActionDef, ActionHandler } from './types'
 
-const issueActions = new Map<string, IssueActionDef>()
+const actions = new Map<string, ActionDef>()
 
-export function registerIssueAction(
-  name: string,
-  def: IssueActionDef,
-): void {
-  issueActions.set(name, def)
+export function registerAction(name: string, def: ActionDef): void {
+  if (actions.has(name)) {
+    throw new Error(`Cron action "${name}" is already registered`)
+  }
+  actions.set(name, def)
 }
 
-export function getIssueAction(name: string): IssueActionDef | undefined {
-  return issueActions.get(name)
+export function getAction(name: string): ActionDef | undefined {
+  return actions.get(name)
 }
 
-export function getIssueActionNames(): string[] {
-  return [...issueActions.keys()]
+export function getActionHandler(name: string): ActionHandler | undefined {
+  return actions.get(name)?.handler
 }
 
-export function getIssueActionHandler(name: string): IssueActionHandler | undefined {
-  return issueActions.get(name)?.handler
+export function getActionNames(): string[] {
+  return [...actions.keys()]
 }
 
-export function getIssueActionsHelp(): string {
+export function getActionsHelp(): string {
   const lines: string[] = []
-  for (const [name, def] of issueActions) {
+  for (const [name, def] of actions) {
+    const cat = def.category ? `[${def.category}]` : ''
     const required = def.requiredFields?.length
       ? ` (requires: ${def.requiredFields.join(', ')})`
       : ''
-    lines.push(`  - ${name}: ${def.description}${required}`)
+    lines.push(`  - ${name} ${cat}: ${def.description}${required}`)
   }
   return lines.join('\n')
 }
 
-export function validateIssueActionConfig(
+export function validateActionConfig(
   action: string,
   config: Record<string, unknown>,
 ): string | null {
-  const def = issueActions.get(action)
+  const def = actions.get(action)
   if (!def) {
-    return `Unknown issue action: "${action}". Available: ${getIssueActionNames().join(', ')}`
+    return `Unknown action: "${action}". Available: ${getActionNames().join(', ')}`
   }
 
   for (const field of def.requiredFields ?? []) {
-    if (!config[field]) {
+    if (config[field] == null || config[field] === '') {
       return `taskConfig.${field} is required for action "${action}"`
     }
   }

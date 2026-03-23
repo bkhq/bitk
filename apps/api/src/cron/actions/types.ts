@@ -1,23 +1,13 @@
-import type { IssueRow } from '@/routes/issues/_shared'
+/** Generic action handler — receives raw config, self-resolves context */
+export type ActionHandler = (config: Record<string, unknown>) => Promise<string>
 
-export interface IssueActionContext {
-  project: {
-    id: string
-    directory: string | null
-    systemPrompt: string | null
-    envVars: string | null
-  }
-  issue: IssueRow
-  config: Record<string, unknown>
-}
-
-export type IssueActionHandler = (ctx: IssueActionContext) => Promise<string>
-
-export interface IssueActionDef {
+export interface ActionDef {
   /** Human-readable description for MCP tool help */
   description: string
-  /** Required fields in taskConfig (beyond projectId/issueId) */
+  /** Category tag (e.g. 'builtin', 'issue', 'project', 'external') */
+  category?: string
+  /** Required fields in taskConfig */
   requiredFields?: string[]
   /** The handler function */
-  handler: IssueActionHandler
+  handler: ActionHandler
 }

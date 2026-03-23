@@ -4,10 +4,9 @@ import * as z from 'zod'
 import { db } from '@/db'
 import { cronJobLogs, cronJobs } from '@/db/schema'
 import { logger } from '@/logger'
-import { getIssueActionsHelp, validateIssueActionConfig } from './actions'
+import { getActionsHelp, validateActionConfig } from './actions'
 import { executeTask } from './executor'
 import { getBaker, syncJob } from './index'
-import { getBuiltinHandler } from './registry'
 import { serializeJob } from './serialize'
 import type { TaskConfig } from './executor'
 
@@ -34,26 +33,6 @@ function findJob(identifier: string) {
     .where(and(eq(cronJobs.isDeleted, 0), eq(cronJobs.name, identifier)))
     .all()
   return byName ?? null
-}
-
-function validateTaskConfig(taskType: string, config: TaskConfig, jobName: string): string | null {
-  switch (taskType) {
-    case 'builtin': {
-      const handlerName = config.handler ?? jobName
-      if (!getBuiltinHandler(handlerName)) {
-        return `Unknown builtin handler: "${handlerName}". Available: upload-cleanup, worktree-cleanup, log-cleanup`
-      }
-      return null
-    }
-    case 'issue': {
-      if (!config.projectId) return 'taskConfig.projectId is required for issue tasks'
-      if (!config.issueId) return 'taskConfig.issueId is required for issue tasks'
-      if (!config.action) return 'taskConfig.action is required for issue tasks'
-      return validateIssueActionConfig(config.action as string, config)
-    }
-    default:
-      return `Unsupported task type: "${taskType}". Available: builtin, issue`
-  }
 }
 
 export function registerCronMcpTools(server: McpServer): void {
@@ -92,20 +71,16 @@ export function registerCronMcpTools(server: McpServer): void {
       '  - Presets: @every_minute, @hourly, @daily, @weekly, @monthly, @yearly',
       '  - Custom: @every_5_minutes, @at_12:00, @on_monday, @between_9_17',
       '',
-      'Task types:',
-      '  - builtin: run a built-in handler (upload-cleanup, worktree-cleanup, log-cleanup)',
-      '  - issue: perform an action on an issue. taskConfig requires: { projectId, issueId, action, ...action-params }',
-      '',
-      'Issue actions (taskConfig.action):',
-      getIssueActionsHelp(),
+      'Available actions:',
+      getActionsHelp(),
     ].join('\n'),
     inputSchema: z.object({
       name: z.string().min(1).max(100).describe('Unique job name'),
       cron: z.string().min(1).describe('Cron expression or preset'),
-      taskType: z.enum(['builtin', 'issue']).describe('Task type'),
-      taskConfig: z.record(z.string(), z.unknown()).optional().describe('Task configuration (JSON object)'),
+      action: z.string().min(1).describe('Action to execute (e.g. upload-cleanup, issue-follow-up)'),
+      config: z.record(z.string(), z.unknown()).optional().describe('Action configuration (JSON object, action-specific params)'),
     }),
-  }, async ({ name, cron, taskType, taskConfig }) => {
+  }, async ({ name, cron, action, config: rawConfig }) => {
     // Check name uniqueness
     const existing = findJob(name)
     if (existing) {
@@ -122,25 +97,25 @@ export function registerCronMcpTools(server: McpServer): void {
       return errorResult(`Invalid cron expression: ${cron}`)
     }
 
-    const config = (taskConfig ?? {}) as TaskConfig
+    const taskConfig: TaskConfig = { action, ...(rawConfig ?? {}) }
 
-    // Validate taskConfig based on taskType
-    const validationError = validateTaskConfig(taskType, config, name)
+    // Validate action + config
+    const validationError = validateActionConfig(action, taskConfig)
     if (validationError) return errorResult(validationError)
 
-    // Insert into DB
+    // Insert into DB (taskType stored as category tag for display)
     const [row] = db.insert(cronJobs).values({
       name,
       cron,
-      taskType,
-      taskConfig: JSON.stringify(config),
+      taskType: action,
+      taskConfig: JSON.stringify(taskConfig),
       enabled: true,
     }).returning().all()
 
     // Sync to Baker
     syncJob(name)
 
-    logger.info({ name, cron, taskType }, 'cron_job_created_via_mcp')
+    logger.info({ name, cron, action }, 'cron_job_created_via_mcp')
     return textResult(serializeJob(row))
   })
 
@@ -199,7 +174,7 @@ export function registerCronMcpTools(server: McpServer): void {
     }
 
     const config: TaskConfig = JSON.parse(row.taskConfig)
-    await executeTask(row.id, row.name, row.taskType, config)
+    await executeTask(row.id, row.name, config)
 
     // Get the latest log for this job
     const [log] = db

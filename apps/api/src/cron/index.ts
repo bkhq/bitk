@@ -3,25 +3,17 @@ import Baker from 'cronbake'
 import { db } from '@/db'
 import { cronJobs } from '@/db/schema'
 import { logger } from '@/logger'
+// Import actions to trigger self-registration before any job loads
+import './actions'
 import type { TaskConfig } from './executor'
 import { executeTask } from './executor'
-import { getBuiltinNames } from './registry'
 import { runWorktreeCleanup } from './tasks/worktree-cleanup'
 
-/** Builtin job definitions: name → { cron, taskConfig } */
-const BUILTIN_JOBS: Record<string, { cron: string, taskConfig: TaskConfig }> = {
-  'upload-cleanup': {
-    cron: '0 0 * * * *', // every hour
-    taskConfig: { handler: 'upload-cleanup' },
-  },
-  'worktree-cleanup': {
-    cron: '0 */30 * * * *', // every 30 minutes
-    taskConfig: { handler: 'worktree-cleanup' },
-  },
-  'log-cleanup': {
-    cron: '0 0 3 * * *', // daily at 3 AM
-    taskConfig: { handler: 'log-cleanup' },
-  },
+/** Default job definitions seeded on first startup. Key = action name. */
+const DEFAULT_JOBS: Record<string, { cron: string }> = {
+  'upload-cleanup': { cron: '0 0 * * * *' }, // every hour
+  'worktree-cleanup': { cron: '0 */30 * * * *' }, // every 30 minutes
+  'log-cleanup': { cron: '0 0 3 * * *' }, // daily at 3 AM
 }
 
 let baker: Baker | null = null
@@ -31,27 +23,24 @@ export function getBaker(): Baker {
   return baker
 }
 
-/** Ensure builtin jobs exist in DB (insert if missing) */
-function ensureBuiltinJobs(): void {
-  for (const name of getBuiltinNames()) {
-    const def = BUILTIN_JOBS[name]
-    if (!def) continue
-
+/** Ensure default jobs exist in DB (insert if missing) */
+function ensureDefaultJobs(): void {
+  for (const [action, def] of Object.entries(DEFAULT_JOBS)) {
     const [existing] = db
       .select({ id: cronJobs.id })
       .from(cronJobs)
-      .where(and(eq(cronJobs.name, name), eq(cronJobs.isDeleted, 0)))
+      .where(and(eq(cronJobs.name, action), eq(cronJobs.isDeleted, 0)))
       .all()
 
     if (!existing) {
       db.insert(cronJobs).values({
-        name,
+        name: action,
         cron: def.cron,
         taskType: 'builtin',
-        taskConfig: JSON.stringify(def.taskConfig),
+        taskConfig: JSON.stringify({ action }),
         enabled: true,
       }).run()
-      logger.info({ name }, 'cron_builtin_job_created')
+      logger.info({ name: action }, 'cron_default_job_created')
     }
   }
 }
@@ -68,7 +57,7 @@ function registerJob(
     cron: row.cron as any,
     overrunProtection: true,
     callback: async () => {
-      await executeTask(row.id, row.name, row.taskType, config)
+      await executeTask(row.id, row.name, config)
     },
     onError: (error: Error) => {
       logger.error({ jobName: row.name, err: error }, 'cron_job_callback_error')
@@ -129,8 +118,8 @@ export function startCron(): () => void {
     },
   })
 
-  // Ensure builtin jobs exist in DB
-  ensureBuiltinJobs()
+  // Ensure default jobs exist in DB
+  ensureDefaultJobs()
 
   // Load all enabled jobs
   const count = loadJobsFromDb(baker)
