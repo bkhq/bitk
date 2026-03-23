@@ -14,6 +14,7 @@ import {
   ArchiveRestore,
   Check,
   ChevronDown,
+  Clock,
   Copy,
   Eye,
   FolderOpen,
@@ -379,6 +380,19 @@ function MobileHomeMenu({
                 {t('notes.title')}
               </button>
 
+              {/* Cron */}
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false)
+                  void navigate('/cron')
+                }}
+                className="flex items-center gap-3 w-full px-4 min-h-[48px] text-sm text-foreground/80 hover:bg-accent/50 active:bg-accent transition-colors"
+              >
+                <Clock className="h-4.5 w-4.5 text-muted-foreground" />
+                {t('cron.title')}
+              </button>
+
               {/* Settings */}
               <button
                 type="button"
@@ -440,6 +454,16 @@ function DesktopHeaderControls({
         aria-label={t('notes.title')}
       >
         <StickyNote className="h-4 w-4" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8 text-muted-foreground"
+        onClick={() => navigate('/cron')}
+        aria-label={t('cron.title')}
+        title={t('cron.title')}
+      >
+        <Clock className="h-4 w-4" />
       </Button>
       <Button
         variant="ghost"

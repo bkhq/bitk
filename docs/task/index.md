@@ -175,3 +175,7 @@
 - [x] **BUG-014 删除原生 Claude stdout transcript fallback** `P1` - owner: codex - plan: `PLAN-024` - file: `docs/task/BUG-014.md`
 - [x] **BUG-015 创建任务工作树默认关闭** `P2` - owner: codex - file: `docs/task/BUG-015.md`
 - [x] **BUG-016 全量修复仓库现有 tsc 错误** `P1` - owner: codex - plan: `PLAN-025` - file: `docs/task/BUG-016.md`
+
+## Cron
+
+- [x] **CRON-001 Integrate cronbake and add MCP cron interface** `P1` - owner: claude - plan: `PLAN-029` - file: `docs/task/CRON-001.md`

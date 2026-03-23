@@ -10,7 +10,7 @@ import { logger } from '@/logger'
  *
  * NOTE: Worktree cleanup is NOT done here. Worktrees are preserved across
  * completed/failed settlements so follow-ups can reuse them. Cleanup is
- * handled by the periodic background job in jobs/worktree-cleanup.ts.
+ * handled by the periodic cron job in cron/tasks/worktree-cleanup.ts.
  *
  * IMPORTANT: emitIssueSettled() MUST always fire — the SSE route filters
  * terminal states from the 'state' subscriber and only sends them via the

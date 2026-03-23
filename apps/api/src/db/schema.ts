@@ -187,6 +187,45 @@ export const webhookDeliveries = sqliteTable(
   ],
 )
 
+export const cronJobs = sqliteTable(
+  'cron_jobs',
+  {
+    id: shortId(),
+    name: text('name').notNull(),
+    cron: text('cron').notNull(),
+    taskType: text('task_type').notNull(), // 'builtin' | 'issue-execute' | 'issue-follow-up'
+    taskConfig: text('task_config').notNull(), // JSON
+    enabled: integer('enabled', { mode: 'boolean' }).notNull().default(true),
+    ...commonFields,
+  },
+  table => [
+    // Partial unique index managed by migration 0015 (WHERE is_deleted = 0)
+    // so deleted job names can be reused
+    index('cron_jobs_enabled_idx').on(table.enabled),
+  ],
+)
+
+export const cronJobLogs = sqliteTable(
+  'cron_job_logs',
+  {
+    id: id(),
+    jobId: text('job_id')
+      .notNull()
+      .references(() => cronJobs.id),
+    startedAt: integer('started_at', { mode: 'timestamp' }).notNull(),
+    finishedAt: integer('finished_at', { mode: 'timestamp' }),
+    durationMs: integer('duration_ms'),
+    status: text('status').notNull(), // 'success' | 'failed' | 'running'
+    result: text('result'),
+    error: text('error'),
+  },
+  table => [
+    index('cron_job_logs_job_id_idx').on(table.jobId),
+    index('cron_job_logs_job_id_started_at_idx').on(table.jobId, table.startedAt),
+    index('cron_job_logs_status_idx').on(table.status),
+  ],
+)
+
 export const issuesLogsToolsCall = sqliteTable(
   'issues_logs_tools_call',
   {

@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-03-23 11:30 [progress]
+
+CRON-001 / PLAN-029: Integrate cronbake cron module with MCP interface
+
+- Added `cronbake` dependency for process-level cron scheduling
+- New `cron_jobs` and `cron_job_logs` database tables (migration `0014_add_cron_jobs.sql`)
+- New `apps/api/src/cron/` module: Baker singleton, builtin task registry, execution logging
+- Migrated `upload-cleanup` (hourly) and `worktree-cleanup` (every 30 min) from `setInterval` to cronbake
+- Deleted old `apps/api/src/jobs/` directory
+- 6 new MCP tools: `cron-list`, `cron-create`, `cron-delete`, `cron-trigger`, `cron-pause`/`cron-resume`, `cron-get-logs`
+- `cron-get-logs` supports cursor-based pagination and status filtering
+- Unified startup/shutdown: single `startCron()`/`stopCron()` replaces multiple stop functions
+- Builtin jobs auto-seeded into DB on first startup
+
 ## 2026-03-15 03:00 [progress]
 
 FEAT-004 / PLAN-024: Issue context menu and export

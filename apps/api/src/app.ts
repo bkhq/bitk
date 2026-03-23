@@ -6,6 +6,7 @@ import { getEngineDiscovery } from './engines/startup-probe'
 import { httpLogger, logger } from './logger'
 import { apiRoutes, engineRoutes, eventRoutes, settingsRoutes } from './routes'
 import mcpRoute from './routes/mcp'
+import cronRoute from './routes/cron'
 import notesRoutes from './routes/notes'
 import terminalRoute from './routes/terminal'
 
@@ -37,6 +38,7 @@ app.route('/api/engines', engineRoutes)
 app.route('/api/events', eventRoutes)
 app.route('/api/settings', settingsRoutes)
 app.route('/api/notes', notesRoutes)
+app.route('/api/cron', cronRoute)
 app.route('/api/mcp', mcpRoute)
 app.route('/api', terminalRoute)
 

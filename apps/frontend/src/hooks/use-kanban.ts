@@ -41,6 +41,8 @@ export const queryKeys = {
   mcpSettings: () => ['settings', 'mcpSettings'] as const,
   webhooks: () => ['settings', 'webhooks'] as const,
   webhookDeliveries: (id: string) => ['settings', 'webhooks', id, 'deliveries'] as const,
+  cronJobs: () => ['cron', 'jobs'] as const,
+  cronJobLogs: (jobId: string) => ['cron', 'jobs', jobId, 'logs'] as const,
 }
 
 export function useProjects() {
@@ -950,5 +952,24 @@ export function useTestWebhook() {
         queryKey: queryKeys.webhookDeliveries(id),
       })
     },
+  })
+}
+
+// ============================================================
+// Cron
+// ============================================================
+
+export function useCronJobs() {
+  return useQuery({
+    queryKey: queryKeys.cronJobs(),
+    queryFn: () => kanbanApi.getCronJobs(),
+  })
+}
+
+export function useCronJobLogs(jobId: string | null) {
+  return useQuery({
+    queryKey: queryKeys.cronJobLogs(jobId ?? ''),
+    queryFn: () => kanbanApi.getCronJobLogs(jobId!),
+    enabled: !!jobId,
   })
 }

@@ -559,5 +559,26 @@
     "invalidState": "状态参数无效，请重新登录",
     "backToLogin": "返回登录",
     "logout": "退出登录"
+  },
+  "cron": {
+    "title": "定时任务",
+    "schedule": "调度",
+    "taskType": "类型",
+    "status": "状态",
+    "nextExecution": "下次执行",
+    "lastRun": "上次执行",
+    "enabled": "启用",
+    "disabled": "禁用",
+    "noJobs": "暂无定时任务",
+    "logs": "执行日志",
+    "noLogs": "暂无执行日志",
+    "duration": "耗时",
+    "result": "结果",
+    "error": "错误",
+    "success": "成功",
+    "failed": "失败",
+    "running": "运行中",
+    "loadMore": "加载更多",
+    "backToJobs": "返回任务列表"
   }
 }

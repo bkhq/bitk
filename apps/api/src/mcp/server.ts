@@ -7,6 +7,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { customAlphabet } from 'nanoid'
 import * as z from 'zod'
 import { cacheDel, cacheDelByPrefix } from '@/cache'
+import { registerCronMcpTools } from '@/cron/mcp'
 import { db } from '@/db'
 import { findProject, getAppSetting, getDefaultEngine, getEngineDefaultModel, getServerUrl } from '@/db/helpers'
 import { issues as issuesTable, projects as projectsTable } from '@/db/schema'
@@ -909,6 +910,10 @@ export function createMcpServer(): McpServer {
       })),
     })
   })
+
+  // ==================== Cron Tools ====================
+
+  registerCronMcpTools(server)
 
   return server
 }

@@ -559,5 +559,26 @@
     "invalidState": "Invalid state parameter — please try logging in again",
     "backToLogin": "Back to login",
     "logout": "Logout"
+  },
+  "cron": {
+    "title": "Cron Jobs",
+    "schedule": "Schedule",
+    "taskType": "Type",
+    "status": "Status",
+    "nextExecution": "Next Run",
+    "lastRun": "Last Run",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "noJobs": "No cron jobs registered",
+    "logs": "Execution Logs",
+    "noLogs": "No execution logs",
+    "duration": "Duration",
+    "result": "Result",
+    "error": "Error",
+    "success": "Success",
+    "failed": "Failed",
+    "running": "Running",
+    "loadMore": "Load more",
+    "backToJobs": "Back to jobs"
   }
 }

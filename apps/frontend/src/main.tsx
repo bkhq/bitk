@@ -56,6 +56,7 @@ const KanbanPage = lazy(() => import('./pages/KanbanPage'))
 const IssueDetailPage = lazy(() => import('./pages/IssueDetailPage'))
 const ReviewPage = lazy(() => import('./pages/ReviewPage'))
 const TerminalPage = lazy(() => import('./pages/TerminalPage'))
+const CronPage = lazy(() => import('./pages/CronPage'))
 const LoginPage = lazy(() => import('./pages/LoginPage'))
 const LoginCallbackPage = lazy(() => import('./pages/LoginCallbackPage'))
 const LazyTerminalDrawer = lazy(() =>
@@ -263,6 +264,16 @@ if (!rootElement.innerHTML) {
                     <AuthGate>
                       <ErrorBoundary>
                         <TerminalPage />
+                      </ErrorBoundary>
+                    </AuthGate>
+                  )}
+                />
+                <Route
+                  path="/cron"
+                  element={(
+                    <AuthGate>
+                      <ErrorBoundary>
+                        <CronPage />
                       </ErrorBoundary>
                     </AuthGate>
                   )}

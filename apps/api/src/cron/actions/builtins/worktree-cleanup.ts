@@ -9,9 +9,6 @@ import { logger } from '@/logger'
 
 export const WORKTREE_AUTO_CLEANUP_KEY = 'worktree:autoCleanup'
 
-/** Default interval: every 30 minutes */
-const DEFAULT_INTERVAL_MS = 30 * 60 * 1000
-
 /** Only clean up worktrees for issues that have been done for at least 1 day */
 const DONE_AGE_MS = 24 * 60 * 60 * 1000
 
@@ -23,15 +20,15 @@ async function isAutoCleanupEnabled(): Promise<boolean> {
   return value === 'true'
 }
 
-async function runWorktreeCleanup(): Promise<void> {
-  if (!(await isAutoCleanupEnabled())) return
+export async function runWorktreeCleanup(): Promise<string> {
+  if (!(await isAutoCleanupEnabled())) return 'skipped (auto-cleanup disabled)'
 
   const worktreeBaseDir = WORKTREE_BASE
   let projectEntries: import('node:fs').Dirent[]
   try {
     projectEntries = await readdir(worktreeBaseDir, { withFileTypes: true })
   } catch {
-    return // No worktree directory at all
+    return 'skipped (no worktree directory)'
   }
 
   const projectDirNames = projectEntries
@@ -39,9 +36,8 @@ async function runWorktreeCleanup(): Promise<void> {
     .map(e => e.name)
     .slice(0, MAX_BATCH)
 
-  if (projectDirNames.length === 0) return
+  if (projectDirNames.length === 0) return 'no projects with worktrees'
 
-  // Batch-fetch all project directories upfront to avoid N+1 queries
   const projectRows = await db
     .select({ id: projectsTable.id, directory: projectsTable.directory })
     .from(projectsTable)
@@ -54,7 +50,6 @@ async function runWorktreeCleanup(): Promise<void> {
   for (const projectDirName of projectDirNames) {
     const projectWorktreeDir = join(worktreeBaseDir, projectDirName)
 
-    // List worktree subdirectories (issue IDs)
     let issueEntries: import('node:fs').Dirent[]
     try {
       issueEntries = await readdir(projectWorktreeDir, { withFileTypes: true })
@@ -69,7 +64,6 @@ async function runWorktreeCleanup(): Promise<void> {
 
     if (issueIds.length === 0) continue
 
-    // Batch-query DB: find issues that are done + not deleted + use worktree + statusUpdatedAt <= cutoff
     const doneIssues = await db
       .select({
         id: issuesTable.id,
@@ -83,7 +77,6 @@ async function runWorktreeCleanup(): Promise<void> {
           eq(issuesTable.isDeleted, 0),
           eq(issuesTable.useWorktree, true),
           lte(issuesTable.statusUpdatedAt, cutoff),
-          // Only clean worktrees when no active session exists
           or(
             isNull(issuesTable.sessionStatus),
             notInArray(issuesTable.sessionStatus, ['running', 'pending']),
@@ -98,7 +91,6 @@ async function runWorktreeCleanup(): Promise<void> {
 
     for (const issue of doneIssues) {
       const worktreePath = join(projectWorktreeDir, issue.id)
-
       try {
         await removeWorktree(baseDir, worktreePath)
         cleaned++
@@ -118,18 +110,5 @@ async function runWorktreeCleanup(): Promise<void> {
   if (cleaned > 0) {
     logger.info({ cleaned }, 'worktree_auto_cleanup_done')
   }
-}
-
-export function startWorktreeCleanup(intervalMs = DEFAULT_INTERVAL_MS): () => void {
-  // Run once immediately on startup to clean stale worktrees from before restart
-  void runWorktreeCleanup().catch((err) => {
-    logger.error({ err }, 'worktree_cleanup_job_error')
-  })
-  const timer = setInterval(() => {
-    void runWorktreeCleanup().catch((err) => {
-      logger.error({ err }, 'worktree_cleanup_job_error')
-    })
-  }, intervalMs)
-  if (timer && typeof timer === 'object' && 'unref' in timer) timer.unref()
-  return () => clearInterval(timer)
+  return `cleaned ${cleaned} worktrees`
 }

@@ -13,8 +13,7 @@ import {
   stopPeriodicReconciliation,
 } from './engines/reconciler'
 import { startChangesSummaryWatcher, stopChangesSummaryWatcher } from './events/changes-summary'
-import { startUploadCleanup } from './jobs/upload-cleanup'
-import { startWorktreeCleanup } from './jobs/worktree-cleanup'
+import { startCron } from './cron'
 import { logger } from './logger'
 import { acquirePidLock, releasePidLock } from './pid-lock'
 import { APP_DIR, ROOT_DIR } from './root'
@@ -149,19 +148,15 @@ const http = Bun.serve({
 
 printStartupBanner(listenHost, listenPort)
 
-// Start periodic upload cleanup (removes files older than 7 days)
-const stopUploadCleanup = startUploadCleanup()
-
-// Start periodic worktree cleanup (removes worktrees for done issues older than 1 day)
-const stopWorktreeCleanup = startWorktreeCleanup()
+// Start cron scheduler (replaces individual setInterval jobs)
+const stopCron = startCron()
 
 // Register shutdown callback for upgrade restarts (stops server + cancels engines)
 registerShutdownForUpgrade(async () => {
   stopChangesSummaryWatcher()
   stopSettledReconciliation()
   stopPeriodicReconciliation()
-  stopUploadCleanup()
-  stopWorktreeCleanup()
+  stopCron()
   stopPeriodicCheck()
   stopDeliveryCleanup()
   await issueEngine.cancelAll()
@@ -200,8 +195,7 @@ async function shutdown(signal: string) {
   stopChangesSummaryWatcher()
   stopSettledReconciliation()
   stopPeriodicReconciliation()
-  stopUploadCleanup()
-  stopWorktreeCleanup()
+  stopCron()
   stopPeriodicCheck()
   stopDeliveryCleanup()
 

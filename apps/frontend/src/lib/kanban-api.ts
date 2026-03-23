@@ -23,6 +23,44 @@ import type {
 } from '@/types/kanban'
 import { clearToken, getToken } from './auth'
 
+// Cron types (frontend-only, matches backend REST response shape)
+export interface CronJob {
+  id: string
+  name: string
+  cron: string
+  taskType: string
+  taskConfig: Record<string, unknown>
+  enabled: boolean
+  status: string
+  nextExecution: string | null
+  lastRun: {
+    status: string
+    startedAt: string
+    durationMs: number | null
+    result: string | null
+    error: string | null
+  } | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CronJobLog {
+  id: string
+  startedAt: string
+  finishedAt: string | null
+  durationMs: number | null
+  status: string
+  result: string | null
+  error: string | null
+}
+
+export interface CronJobLogsResponse {
+  jobName: string
+  logs: CronJobLog[]
+  hasMore: boolean
+  nextCursor: string | null
+}
+
 function authHeaders(): Record<string, string> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' }
   const token = getToken()
@@ -518,4 +556,15 @@ export const kanbanApi = {
   updateNote: (id: string, data: { title?: string, content?: string, isPinned?: boolean }) =>
     patch<Note>(`/api/notes/${id}`, data),
   deleteNote: (id: string) => del<{ id: string }>(`/api/notes/${id}`),
+
+  // Cron
+  getCronJobs: () => get<CronJob[]>('/api/cron'),
+  getCronJobLogs: (jobId: string, opts?: { status?: string, limit?: number, cursor?: string }) => {
+    const params = new URLSearchParams()
+    if (opts?.status) params.set('status', opts.status)
+    if (opts?.limit) params.set('limit', String(opts.limit))
+    if (opts?.cursor) params.set('cursor', opts.cursor)
+    const qs = params.toString()
+    return get<CronJobLogsResponse>(`/api/cron/${jobId}/logs${qs ? `?${qs}` : ''}`)
+  },
 }

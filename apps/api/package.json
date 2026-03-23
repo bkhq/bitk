@@ -24,6 +24,7 @@
     "@hono/zod-validator": "^0.7.6",
     "@modelcontextprotocol/sdk": "^1.27.1",
     "consola": "^3.4.2",
+    "cronbake": "^0.4.0",
     "drizzle-orm": "^0.45.1",
     "hono": "^4.12.1",
     "jittered-fractional-indexing": "^1.0.1",
