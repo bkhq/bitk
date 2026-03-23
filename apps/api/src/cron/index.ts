@@ -6,6 +6,7 @@ import { logger } from '@/logger'
 import type { TaskConfig } from './executor'
 import { executeTask } from './executor'
 import { getBuiltinNames } from './registry'
+import { runWorktreeCleanup } from './tasks/worktree-cleanup'
 
 /** Builtin job definitions: name → { cron, taskConfig } */
 const BUILTIN_JOBS: Record<string, { cron: string, taskConfig: TaskConfig }> = {
@@ -136,6 +137,11 @@ export function startCron(): () => void {
 
   // Start all jobs
   baker.bakeAll()
+
+  // Run worktree cleanup once immediately on startup (matches old startWorktreeCleanup behavior)
+  void runWorktreeCleanup().catch((err) => {
+    logger.error({ err }, 'worktree_cleanup_startup_error')
+  })
 
   logger.info({ jobCount: count }, 'cron_scheduler_started')
 

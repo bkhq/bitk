@@ -6,6 +6,7 @@ import { cronJobLogs, cronJobs } from '@/db/schema'
 import { logger } from '@/logger'
 import { executeTask } from './executor'
 import { getBaker, syncJob } from './index'
+import { getBuiltinHandler } from './registry'
 import { serializeJob } from './serialize'
 import type { TaskConfig } from './executor'
 
@@ -94,7 +95,16 @@ export function registerCronMcpTools(server: McpServer): void {
       return errorResult(`Invalid cron expression: ${cron}`)
     }
 
+    // Validate taskType and handler
+    if (taskType !== 'builtin') {
+      return errorResult(`Unsupported task type: "${taskType}". Only "builtin" is currently supported.`)
+    }
+
     const config = taskConfig ?? {}
+    const handlerName = (config as TaskConfig).handler ?? name
+    if (!getBuiltinHandler(handlerName)) {
+      return errorResult(`Unknown builtin handler: "${handlerName}". Available: upload-cleanup, worktree-cleanup, log-cleanup`)
+    }
 
     // Insert into DB
     const [row] = db.insert(cronJobs).values({
@@ -154,6 +164,17 @@ export function registerCronMcpTools(server: McpServer): void {
   }, async ({ job }) => {
     const row = findJob(job)
     if (!row) return errorResult('Job not found')
+
+    // Try to trigger through Baker (respects overrunProtection)
+    const baker = getBaker()
+    try {
+      const status = baker.getStatus(row.name)
+      if (status === 'running') {
+        return errorResult(`Job "${row.name}" is already running (overrun protection active)`)
+      }
+    } catch {
+      // Job not in Baker, proceed with direct execution
+    }
 
     const config: TaskConfig = JSON.parse(row.taskConfig)
     await executeTask(row.id, row.name, row.taskType, config)

@@ -199,7 +199,8 @@ export const cronJobs = sqliteTable(
     ...commonFields,
   },
   table => [
-    uniqueIndex('cron_jobs_name_uniq').on(table.name),
+    // Partial unique index managed by migration 0015 (WHERE is_deleted = 0)
+    // so deleted job names can be reused
     index('cron_jobs_enabled_idx').on(table.enabled),
   ],
 )
