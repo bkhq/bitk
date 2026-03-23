@@ -59,7 +59,7 @@ export async function verifyAcpCommand(
     const { code, stdout, stderr } = await runCommand(
       [...cmd, ...versionArgs],
       {
-        env: safeEnv({ NPM_CONFIG_LOGLEVEL: 'error' }),
+        env: safeEnv({ NPM_CONFIG_LOGLEVEL: 'error' }, 'acp'),
         stderr: 'pipe',
         timeout: 15000,
       },
@@ -175,7 +175,7 @@ export async function queryScopedAcpModelsFromRegistry(
   const models = await queryAcpModels({
     cmd: getAcpLaunchCommandFromRegistry(agentId, registry),
     workingDir,
-    env: safeEnv({ NPM_CONFIG_LOGLEVEL: 'error' }),
+    env: safeEnv({ NPM_CONFIG_LOGLEVEL: 'error' }, 'acp'),
   })
 
   return models.map(model => ({

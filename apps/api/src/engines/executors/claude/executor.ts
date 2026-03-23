@@ -165,7 +165,7 @@ export class ClaudeCodeExecutor implements EngineExecutor {
         stdin: 'ignore',
         stdout: 'pipe',
         stderr: 'pipe',
-        env: safeEnv(resolved.env),
+        env: safeEnv(resolved.env, 'claude-code'),
       })
 
       const timer = setTimeout(() => proc.kill(), 10000)

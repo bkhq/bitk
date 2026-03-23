@@ -113,7 +113,7 @@ export function spawnAcpChild(
   return nodeSpawn(program!, args, {
     cwd,
     stdio: ['pipe', 'pipe', 'pipe'],
-    env: safeEnv(extraEnv),
+    env: safeEnv(extraEnv, 'acp'),
     detached: true,
   })
 }
