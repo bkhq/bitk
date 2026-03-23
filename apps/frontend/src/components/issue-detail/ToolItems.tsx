@@ -10,7 +10,7 @@ import {
   Users,
   Wrench,
 } from 'lucide-react'
-import { useCallback, useState } from 'react'
+import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getCommandPreview } from '@/lib/command-preview'
 import {
@@ -481,34 +481,88 @@ function getGroupSummaryLabel(
   return parts.length > 0 ? parts.join(', ') : `${count} tool calls`
 }
 
-function ToolItemRenderer({ item, idx }: { item: ToolGroupItem, idx: number }) {
+function ToolItemRenderer({ item }: { item: ToolGroupItem }) {
   const kind = item.action.toolAction?.kind
   const toolName = getItemToolName(item)
-  if (toolName === 'Agent') {
-    return <AgentToolItem key={item.action.messageId ?? `ti-${idx}`} item={item} />
-  }
-  if (kind === 'file-edit' || kind === 'file-read') {
-    return <FileToolItem key={item.action.messageId ?? `ti-${idx}`} item={item} />
-  }
-  if (kind === 'command-run') {
-    return <CommandToolItem key={item.action.messageId ?? `ti-${idx}`} item={item} />
-  }
-  if (kind === 'search') {
-    return <SearchToolItem key={item.action.messageId ?? `ti-${idx}`} item={item} />
-  }
-  return <GenericToolItem key={item.action.messageId ?? `ti-${idx}`} item={item} />
+  if (toolName === 'Agent') return <AgentToolItem item={item} />
+  if (kind === 'file-edit' || kind === 'file-read') return <FileToolItem item={item} />
+  if (kind === 'command-run') return <CommandToolItem item={item} />
+  if (kind === 'search') return <SearchToolItem item={item} />
+  return <GenericToolItem item={item} />
 }
+
+const DEFAULT_VISIBLE_COUNT = 3
+
+const MemoizedToolItemRenderer = memo(ToolItemRenderer)
 
 export function ToolGroupMessage({ message }: { message: ToolGroupChatMessage }) {
   const { t } = useTranslation()
   const { items, stats, count, description } = message
   const statsLabel = getGroupSummaryLabel(stats, count, t)
+  const bodyId = `tg-body-${message.id}`
+
+  // isOpen: controls body visibility after streaming ends (header click)
+  // expanded: controls item truncation (show more/less) within the body
+  const [isOpen, setIsOpen] = useState(true)
+  const [expanded, setExpanded] = useState(false)
+
+  // Group is actively streaming when the last tool call has no result yet.
+  // Completed groups always have all results paired via resultMap in useChatMessages.
+  const isStreaming = items.length > 0 && items.at(-1)?.result === null
+
+  // Ref for click handler to avoid stale-closure on streaming→completed boundary.
+  const isStreamingRef = useRef(isStreaming)
+  isStreamingRef.current = isStreaming
+
+  // Track whether this group was ever in streaming state.
+  // Historical (already completed) groups skip the auto-collapse on mount.
+  const wasEverStreamingRef = useRef(isStreaming)
+  if (isStreaming) wasEverStreamingRef.current = true
+
+  // Auto-collapse when streaming ends. Debounce 500ms to avoid flicker
+  // between consecutive tool-action/result pairs within the same group.
+  useEffect(() => {
+    if (!isStreaming && wasEverStreamingRef.current) {
+      const timer = setTimeout(() => {
+        // Re-check via ref — streaming may have resumed during the delay
+        if (!isStreamingRef.current) {
+          setIsOpen(false)
+          setExpanded(false)
+        }
+      }, 500)
+      return () => clearTimeout(timer)
+    }
+  }, [isStreaming])
+
+  // During streaming: always show body (auto-expand)
+  // After streaming: user controls via isOpen
+  const bodyVisible = isStreaming || isOpen
+
+  const hasMore = items.length > DEFAULT_VISIBLE_COUNT
+  // No truncation during streaming (show all items in real-time)
+  const shouldTruncate = bodyVisible && hasMore && !expanded && !isStreaming
+  const visibleItems = shouldTruncate ? items.slice(0, DEFAULT_VISIBLE_COUNT) : items
+  const truncatedCount = items.length - DEFAULT_VISIBLE_COUNT
+
+  const handleHeaderClick = useCallback(() => {
+    // During streaming, body is auto-expanded — header click is a no-op
+    if (!isStreamingRef.current) {
+      setIsOpen(v => !v)
+    }
+  }, [])
 
   return (
     <div className="py-1.5 animate-message-enter">
-      <details open className="border border-border/60 bg-card/50 group/tg">
-        <summary className="flex w-full items-center gap-2 px-3 py-2 text-xs text-muted-foreground cursor-pointer list-none select-none bg-muted/60">
-          <ChevronRight className="h-3 w-3 shrink-0 transition-transform group-open/tg:rotate-90" />
+      <div className="border border-border/60 bg-card/50">
+        <button
+          type="button"
+          onClick={handleHeaderClick}
+          aria-expanded={bodyVisible}
+          aria-controls={bodyId}
+          aria-disabled={isStreaming || undefined}
+          className="flex w-full items-center gap-2 px-3 py-2 text-xs text-muted-foreground cursor-pointer select-none bg-muted/60"
+        >
+          <ChevronRight className={`h-3 w-3 shrink-0 transition-transform ${bodyVisible ? 'rotate-90' : ''}`} />
           <span className="truncate">{description || statsLabel}</span>
           {description
             ? (
@@ -517,13 +571,39 @@ export function ToolGroupMessage({ message }: { message: ToolGroupChatMessage })
                 </span>
               )
             : null}
-        </summary>
-        <div className="divide-y divide-border/50">
-          {items.map((item, idx) => (
-            <ToolItemRenderer key={item.action.messageId ?? `ti-${idx}`} item={item} idx={idx} />
-          ))}
-        </div>
-      </details>
+        </button>
+        {bodyVisible
+          ? (
+              <div id={bodyId} role="region" className="divide-y divide-border/50">
+                {visibleItems.map((item, idx) => (
+                  <MemoizedToolItemRenderer key={item.action.messageId ?? item.action.toolDetail?.toolCallId ?? `ti-${idx}`} item={item} />
+                ))}
+                {shouldTruncate
+                  ? (
+                      <button
+                        type="button"
+                        className="w-full px-3 py-1.5 text-[11px] text-muted-foreground/70 hover:text-muted-foreground hover:bg-muted/40 transition-colors text-center cursor-pointer"
+                        onClick={() => setExpanded(true)}
+                      >
+                        {t('session.tool.showMore', { count: truncatedCount })}
+                      </button>
+                    )
+                  : null}
+                {hasMore && expanded && !isStreaming
+                  ? (
+                      <button
+                        type="button"
+                        className="w-full px-3 py-1.5 text-[11px] text-muted-foreground/70 hover:text-muted-foreground hover:bg-muted/40 transition-colors text-center cursor-pointer"
+                        onClick={() => setExpanded(false)}
+                      >
+                        {t('session.tool.showLess')}
+                      </button>
+                    )
+                  : null}
+              </div>
+            )
+          : null}
+      </div>
     </div>
   )
 }

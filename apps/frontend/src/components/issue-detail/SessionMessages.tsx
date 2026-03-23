@@ -1,6 +1,6 @@
 import type { ChatMessage, NormalizedLogEntry, TaskPlanChatMessage } from '@bkd/shared'
 import { CheckCircle2, ChevronDown, Circle, ListTodo, Loader2 } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { memo, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useChatMessages } from '@/hooks/use-chat-messages'
 import { useViewModeStore } from '@/stores/view-mode-store'
@@ -10,7 +10,7 @@ import { ToolGroupMessage } from './ToolItems'
 
 // ── ChatMessage renderer ─────────────────────────────────
 
-function ChatMessageRow({ message }: { message: ChatMessage }) {
+const ChatMessageRow = memo(function ChatMessageRow({ message }: { message: ChatMessage }) {
   switch (message.type) {
     case 'user': {
       if (message.status === 'command') {
@@ -53,7 +53,7 @@ function ChatMessageRow({ message }: { message: ChatMessage }) {
     default:
       return null
   }
-}
+})
 
 // ── Task Plan ────────────────────────────────────────────
 

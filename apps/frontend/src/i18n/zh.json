@@ -231,7 +231,8 @@
       "webFetch": "获取 URL",
       "taskPlan": "任务计划",
       "fullCommand": "完整命令",
-      "showLess": "收起"
+      "showLess": "收起",
+      "showMore": "展开更多 ({{count}})"
     },
     "restart": "重启",
     "restarting": "重启中...",

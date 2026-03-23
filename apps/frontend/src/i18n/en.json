@@ -231,7 +231,8 @@
       "webFetch": "Fetch URL",
       "taskPlan": "Task Plan",
       "fullCommand": "Full Command",
-      "showLess": "Show less"
+      "showLess": "Show less",
+      "showMore": "Show {{count}} more"
     },
     "restart": "Restart",
     "restarting": "Restarting...",
