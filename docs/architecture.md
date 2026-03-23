@@ -2,17 +2,18 @@
 
 ## Overview
 
-BitK is a Kanban application for managing AI coding agents. Issues on the board are assigned to CLI-based AI engines (Claude Code, Codex, Gemini) that execute autonomously in the user's workspace.
+BKD is a Kanban application for managing autonomous AI coding agents. Issues on the board are assigned to CLI-based AI engines (Claude Code, Codex, Gemini CLI) that execute in the user's workspace. The system handles process orchestration, streaming log aggregation, real-time SSE updates, cron scheduling, and self-upgrades.
 
-The project is a **Bun Workspaces monorepo** with three packages:
+**Bun Workspaces monorepo** with four packages:
 
-| Package           | Name            | Purpose                 |
-| ----------------- | --------------- | ----------------------- |
-| `apps/api`        | `@bkd/api`      | Bun/Hono backend server |
-| `apps/frontend`   | `@bkd/frontend` | React/Vite frontend     |
-| `packages/shared` | `@bkd/shared`   | Shared TypeScript types |
+| Package | Name | Purpose |
+|---------|------|---------|
+| `apps/api` | `@bkd/api` | Bun/Hono backend server |
+| `apps/frontend` | `@bkd/frontend` | React/Vite frontend SPA |
+| `packages/shared` | `@bkd/shared` | Shared TypeScript types |
+| `packages/tsconfig` | `@bkd/tsconfig` | Shared TS configs (base, hono, react, utils) |
 
-Supporting packages: `packages/tsconfig` (shared TS configs: `base`, `hono`, `react`, `utils`).
+**Dependency flow:** `@bkd/api` and `@bkd/frontend` both depend on `@bkd/shared`. Shared versions managed via Catalogs in root `package.json`.
 
 ---
 
@@ -22,104 +23,95 @@ Supporting packages: `packages/tsconfig` (shared TS configs: `base`, `hono`, `re
 
 - **Runtime**: Bun with `Bun.serve()` (`idleTimeout: 60`, WebSocket support)
 - **Router**: Hono mounted at `/api` via `app.ts`
-- **Logging**: pino (structured HTTP request logging via custom middleware)
-- **Static serving**: three modes:
-  - **Compiled mode**: assets embedded in binary via `static-assets.ts`
-  - **Package mode**: files from `APP_DIR/public/`
-  - **Dev mode**: files from `apps/frontend/dist/`
+- **Logging**: pino (structured HTTP request logging)
+- **Caching**: In-process LRU+TTL Map (max 500 entries, 5-min sweep)
+- **Static serving**: three modes — embedded (compiled binary), `APP_DIR/public/` (package), `apps/frontend/dist/` (dev)
 
 ### Middleware (`app.ts`)
 
 1. `secureHeaders()` — security response headers
 2. `compress()` — gzip/deflate (skipped for SSE routes)
 3. `httpLogger()` — pino-based request logging
-4. `@hono/zod-validator` — Zod schema validation on all POST/PATCH routes
+4. `authMiddleware()` — protects `/api/*` when `AUTH_ENABLED` (OIDC/token)
 5. Global error handler — returns `{ success: false, error }` envelope
+6. `@hono/zod-validator` — Zod schema validation on all POST/PATCH routes
 
 ### Database (`db/`)
 
-SQLite via `bun:sqlite` + Drizzle ORM. Configured with WAL mode, foreign keys, 64 MB cache, 256 MB mmap, `busy_timeout=15000`.
+SQLite via `bun:sqlite` + Drizzle ORM. WAL mode, foreign keys, 64 MB cache, 256 MB mmap, `busy_timeout=15000`. Migrations auto-apply on startup.
 
-Migrations auto-apply on startup from filesystem, `APP_DIR/migrations/`, or embedded (compiled binary).
-
-**ID conventions:**
-
-- `shortId()` — 8-char nanoid (projects, issues)
-- `id()` — ULID (logs, attachments, tool calls)
+**ID conventions:** `shortId()` (8-char nanoid) for projects/issues; `id()` (ULID) for logs/attachments/tool calls.
 
 **Tables:**
 
-| Table                 | Key Fields                                                                                                                                                                                       | Notes                                          |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------- |
-| `projects`            | `id`, `name`, `alias` (unique), `directory`, `repositoryUrl`                                                                                                                                     | Top-level container                            |
-| `issues`              | `id`, `projectId`, `statusId`, `issueNumber`, `title`, `priority`, `sortOrder`, `parentIssueId`, `useWorktree`, `engineType`, `sessionStatus`, `prompt`, `externalSessionId`, `model`, `devMode` | Core entity; check constraint on status values |
-| `issueLogs`           | `id` (ULID), `issueId`, `turnIndex`, `entryIndex`, `entryType`, `content`, `metadata`                                                                                                            | AI conversation log entries                    |
-| `issuesLogsToolsCall` | `id` (ULID), `logId`, `issueId`, `toolName`, `toolCallId`, `kind`, `isResult`, `raw`                                                                                                             | Tool action detail records                     |
-| `attachments`         | `id` (ULID), `issueId`, `logId`, `originalName`, `storedName`, `mimeType`, `size`, `storagePath`                                                                                                 | File uploads                                   |
-| `appSettings`         | `key` (PK), `value`                                                                                                                                                                              | Key-value store for server settings            |
+| Table | Key Fields | Notes |
+|-------|-----------|-------|
+| `projects` | `id`, `name`, `alias` (unique), `directory`, `repositoryUrl`, `systemPrompt`, `envVars` | Top-level container; supports archive |
+| `issues` | `id`, `projectId`, `statusId`, `issueNumber`, `title`, `tags`, `parentIssueId`, `useWorktree`, `isPinned`, `keepAlive`, `engineType`, `sessionStatus`, `model`, `externalSessionId`, `totalInputTokens`, `totalOutputTokens`, `totalCostUsd` | Core entity; CHECK constraint on status |
+| `issueLogs` | `id` (ULID), `issueId`, `turnIndex`, `entryIndex`, `entryType`, `content`, `metadata`, `visible` | Conversation log entries |
+| `issuesLogsToolsCall` | `id` (ULID), `logId`, `issueId`, `toolName`, `toolCallId`, `kind`, `isResult`, `raw` | Tool action detail records |
+| `attachments` | `id` (ULID), `issueId`, `logId`, `originalName`, `storedName`, `mimeType`, `size` | File uploads |
+| `appSettings` | `key` (PK), `value` | Key-value store for server config |
+| `notes` | `id` (ULID), `title`, `content`, `isPinned` | User notes |
+| `webhooks` | `id` (ULID), `channel`, `url`, `secret`, `events`, `isActive` | Webhook endpoints |
+| `webhookDeliveries` | `id`, `webhookId`, `dedupKey`, `statusCode`, `success`, `duration` | Delivery audit trail |
+| `cronJobs` | `id`, `name`, `cron`, `taskType`, `taskConfig`, `enabled` | Scheduled jobs |
+| `cronJobLogs` | `id`, `jobId`, `status`, `result`, `error`, `durationMs` | Job execution logs |
 
 All tables share `commonFields`: `createdAt`, `updatedAt`, `isDeleted` (soft delete).
-
-**Caching** (`cache.ts`): in-process LRU + TTL cache (Map-based, max 500 entries, 5-minute sweep). Used by DB helpers for projects, settings, and engine discovery.
-
-**Settings** stored in `appSettings`:
-
-- `workspace:defaultPath`, `defaultEngine`, `engine:<type>:defaultModel`
-- `probe:engines`, `probe:models` (persisted engine discovery)
-- `engine:slashCommands:<type>`, `upgrade:enabled`, `upgrade:lastCheckResult`
-- `writeFilter:rules`, `worktree:autoCleanup`
 
 ### Statuses (`config.ts`)
 
 Hardcoded constants — no DB table:
 
-| Status    | Color     | Sort |
-| --------- | --------- | ---- |
-| `todo`    | `#6b7280` | 0    |
-| `working` | `#3b82f6` | 1    |
-| `review`  | `#f59e0b` | 2    |
-| `done`    | `#22c55e` | 3    |
+| Status | Color | Sort |
+|--------|-------|------|
+| `todo` | `#6b7280` | 0 |
+| `working` | `#3b82f6` | 1 |
+| `review` | `#f59e0b` | 2 |
+| `done` | `#22c55e` | 3 |
 
 ### API Routes (`routes/`)
 
-**Core routes** (all issue routes scoped under `/api/projects/:projectId/`):
+**Issue routes** (all project-scoped under `/api/projects/:projectId/`):
 
-| Route                                | Methods            | File                                                      | Description                      |
-| ------------------------------------ | ------------------ | --------------------------------------------------------- | -------------------------------- |
-| `/api/projects`                      | GET, POST          | `projects.ts`                                             | List/create projects             |
-| `/api/projects/:id`                  | GET, PATCH, DELETE | `projects.ts`                                             | Get/update/soft-delete project   |
-| `/api/.../issues`                    | GET, POST          | `issues/query.ts`, `issues/create.ts`                     | List/create issues               |
-| `/api/.../issues/bulk`               | PATCH              | `issues/create.ts`                                        | Bulk update status/sort/priority |
-| `/api/.../issues/:id`                | GET, PATCH, DELETE | `issues/query.ts`, `issues/update.ts`, `issues/delete.ts` | Single issue CRUD                |
-| `/api/.../issues/:id/execute`        | POST               | `issues/command.ts`                                       | Start AI engine execution        |
-| `/api/.../issues/:id/follow-up`      | POST               | `issues/message.ts`                                       | Follow-up to active session      |
-| `/api/.../issues/:id/restart`        | POST               | `issues/command.ts`                                       | Restart session                  |
-| `/api/.../issues/:id/cancel`         | POST               | `issues/command.ts`                                       | Cancel active session            |
-| `/api/.../issues/:id/messages`       | POST               | `issues/message.ts`                                       | Queue pending message            |
-| `/api/.../issues/:id/logs`           | GET                | `issues/logs.ts`                                          | Paginated logs (cursor-based)    |
-| `/api/.../issues/:id/logs/filter/*`  | GET                | `issues/logs.ts`                                          | Filtered logs (path key/value)   |
-| `/api/.../issues/:id/attachments`    | GET, POST          | `issues/attachments.ts`                                   | File upload (multipart)          |
-| `/api/.../issues/:id/changes`        | GET                | `issues/changes.ts`                                       | Git diff stats                   |
-| `/api/.../issues/:id/title/generate` | POST               | `issues/title.ts`                                         | AI-generated title               |
-| `/api/.../issues/:id/slash-commands` | GET                | `issues/command.ts`                                       | Slash commands for engine        |
+| Route | Methods | File | Description |
+|-------|---------|------|-------------|
+| `/api/projects` | GET, POST | `projects.ts` | List/create projects |
+| `/api/projects/:id` | GET, PATCH, DELETE | `projects.ts` | Get/update/soft-delete project |
+| `/api/.../issues` | GET, POST | `issues/query.ts`, `create.ts` | List/create issues |
+| `/api/.../issues/bulk` | PATCH | `issues/create.ts` | Bulk update status/sort |
+| `/api/.../issues/:id` | GET, PATCH, DELETE | `issues/query.ts`, `update.ts`, `delete.ts` | Single issue CRUD |
+| `/api/.../issues/:id/execute` | POST | `issues/command.ts` | Start AI engine execution |
+| `/api/.../issues/:id/follow-up` | POST | `issues/message.ts` | Follow-up to active session |
+| `/api/.../issues/:id/restart` | POST | `issues/command.ts` | Restart session |
+| `/api/.../issues/:id/cancel` | POST | `issues/command.ts` | Cancel active session |
+| `/api/.../issues/:id/messages` | POST | `issues/message.ts` | Queue pending message |
+| `/api/.../issues/:id/logs` | GET | `issues/logs.ts` | Paginated logs (cursor-based) |
+| `/api/.../issues/:id/logs/filter/*` | GET | `issues/logs.ts` | Filtered logs (path key/value) |
+| `/api/.../issues/:id/attachments` | GET, POST | `issues/attachments.ts` | File upload (multipart) |
+| `/api/.../issues/:id/changes` | GET | `issues/changes.ts` | Git diff stats |
+| `/api/.../issues/:id/duplicate` | POST | `issues/duplicate.ts` | Clone issue |
+| `/api/.../issues/:id/export` | GET | `issues/export.ts` | Export as JSON/TXT |
+| `/api/.../issues/:id/title/generate` | POST | `issues/title.ts` | AI-generated title |
 
 **System routes:**
 
-| Route                    | Methods                  | File            | Description                                     |
-| ------------------------ | ------------------------ | --------------- | ----------------------------------------------- |
-| `/api/health`            | GET                      | `api.ts`        | DB health + version                             |
-| `/api/engines/available` | GET                      | `engines.ts`    | Engine discovery (cached)                       |
-| `/api/engines/probe`     | POST                     | `engines.ts`    | Force live engine re-probe                      |
-| `/api/engines/settings`  | GET                      | `engines.ts`    | Default engine + models                         |
-| `/api/events`            | GET                      | `events.ts`     | Global SSE endpoint                             |
-| `/api/settings/*`        | GET, PATCH, PUT          | `settings.ts`   | Workspace path, filter rules, worktree settings |
-| `/api/upgrade/*`         | GET, POST, PATCH, DELETE | `upgrade.ts`    | Self-upgrade pipeline                           |
-| `/api/terminal/ws`       | WS                       | `terminal.ts`   | WebSocket terminal                              |
-| `/api/files/*`           | GET                      | `files.ts`      | File browsing                                   |
-| `/api/filesystem/*`      | GET, POST                | `filesystem.ts` | Directory navigation                            |
-| `/api/git/*`             | GET                      | `git.ts`        | Git operations                                  |
-| `/api/processes/*`       | GET, DELETE              | `processes.ts`  | Active process management                       |
-| `/api/worktrees/*`       | GET, DELETE              | `worktrees.ts`  | Worktree management                             |
+| Route | Methods | File | Description |
+|-------|---------|------|-------------|
+| `/api/health` | GET | `api.ts` | DB health + version |
+| `/api/engines/*` | GET, POST | `engines.ts` | Engine discovery, models, probe |
+| `/api/events` | GET | `events.ts` | Global SSE endpoint |
+| `/api/settings/*` | GET, PATCH | `settings/` | App settings (8 sub-routes) |
+| `/api/terminal/ws` | WS | `terminal.ts` | WebSocket terminal |
+| `/api/files/*` | GET, POST | `files.ts` | File operations, chunked upload |
+| `/api/filesystem/*` | GET | `filesystem.ts` | Directory listing |
+| `/api/git/*` | GET | `git.ts` | Git status, diff |
+| `/api/processes/*` | GET, DELETE | `processes.ts` | Active engine processes |
+| `/api/worktrees/*` | GET, DELETE | `worktrees.ts` | Worktree management |
+| `/api/cron/*` | GET, POST, PATCH, DELETE | `cron.ts` | Cron job management |
+| `/api/notes/*` | GET, POST, PATCH, DELETE | `notes.ts` | Notes CRUD |
+| `/api/mcp/*` | GET, POST | `mcp.ts` | MCP server routes |
 
 ### Engine System (`engines/`)
 
@@ -127,146 +119,143 @@ The most complex subsystem — bridges API routes and CLI-based AI agents.
 
 #### Engine Types & Protocols
 
-| Engine        | Protocol      | CLI                                                | Behavior                                                         |
-| ------------- | ------------- | -------------------------------------------------- | ---------------------------------------------------------------- |
-| `claude-code` | `stream-json` | `claude` binary or `npx @anthropic-ai/claude-code` | Streaming JSON over stdout; process exits after each turn        |
-| `codex`       | `json-rpc`    | `npx @openai/codex app-server`                     | JSONL JSON-RPC over stdio; process **stays alive** between turns |
-| `acp`         | `acp`         | selected by `model` prefix                         | ACP protocol; currently routes to Gemini CLI or Codex ACP        |
-| `echo`        | —             | —                                                  | Test/stub executor                                               |
+| Engine | Protocol | CLI | Behavior |
+|--------|----------|-----|----------|
+| `claude-code` | `stream-json` | `claude` binary | Streaming JSON over stdout; process exits after each turn |
+| `codex` | `json-rpc` | `codex app-server` | JSONL JSON-RPC over stdio; process **stays alive** between turns |
+| `acp` | `acp` | Selected by `model` prefix | ACP protocol; routes to Gemini/Codex/Claude by `acp:<agent>:<model>` |
+| `echo` | — | — | Test/stub executor |
 
 Each executor implements `EngineExecutor`: `spawn`, `spawnFollowUp`, `cancel`, `getAvailability`, `getModels`, `normalizeLog`.
 
+#### Directory Structure
+
+```
+engines/
+├── types.ts                    — Core types, EngineExecutor interface
+├── process-manager.ts          — Generic subprocess lifecycle manager
+├── startup-probe.ts            — Engine discovery (3-tier cache)
+├── reconciler.ts               — Stale session cleanup safety net
+├── spawn.ts                    — node:child_process wrapper
+├── engine-store.ts             — Executor registry
+├── executors/
+│   ├── claude/
+│   │   ├── executor.ts         — Main Claude Code executor
+│   │   ├── protocol.ts         — Stream-JSON protocol handler
+│   │   ├── normalizer.ts       — Log normalization
+│   │   ├── normalizer-types.ts — Type definitions
+│   │   └── normalizer-tool.ts  — Tool call parsing
+│   ├── codex/
+│   │   ├── executor.ts         — Codex executor (long-lived process)
+│   │   ├── protocol.ts         — JSON-RPC protocol handler
+│   │   └── normalizer.ts       — Log normalization (most complex)
+│   ├── acp/
+│   │   ├── executor.ts         — ACP executor
+│   │   ├── protocol-handler.ts — ACP protocol logic
+│   │   ├── normalizer.ts       — Log normalization
+│   │   ├── transport.ts        — Subprocess/event bridge
+│   │   ├── acp-client.ts       — ACP client facade
+│   │   └── agents/             — Per-agent configs (gemini, codex, claude)
+│   └── echo/
+│       └── executor.ts         — Test stub
+└── issue/
+    ├── engine.ts               — IssueEngine singleton facade
+    ├── orchestration/          — execute, follow-up, restart, cancel
+    ├── lifecycle/              — spawn, completion, settlement
+    ├── streams/                — Async stdout consumer, log classification
+    ├── persistence/            — DB writes for logs + tool calls
+    ├── pipeline/               — Token aggregation, failure detection, auto-title
+    ├── state/                  — State machine actions
+    ├── process/                — Per-issue lock (chained Promises)
+    ├── store/                  — Execution store, message rebuilder
+    └── utils/                  — Worktree, visibility, normalizer factory
+```
+
 #### Process Manager (`process-manager.ts`)
 
-Generic `ProcessManager<TMeta>` for any `Bun.spawn` subprocess:
+Generic `ProcessManager<TMeta>` for subprocess lifecycle:
 
 - State machine: `spawning → running → completed/failed/cancelled`
 - Groups processes by issue ID; supports `terminateGroup()`
 - Graceful interrupt → SIGKILL after 5s timeout
 - Auto-cleanup of terminal entries after 5 min; GC sweep every 10 min
-- Event system: `onStateChange()`, `onExit()`
 
 #### Issue Engine Layer (`engines/issue/`)
 
-`IssueEngine` singleton — the orchestration facade between routes and executors:
+`IssueEngine` singleton — orchestration facade between routes and executors:
 
 ```
-routes/ → IssueEngine → executor.spawn() → ProcessManager → Bun.spawn()
-                      ← streams/consumer ← stdout/stderr
-                      → persistence/ → DB
-                      → events/ → SSE
+Route handler → IssueEngine.executeIssue() → acquires per-issue lock
+  → updates DB (sessionStatus='running') → executor.spawn() → ProcessManager.register()
+  → consumeStream() (async generator over stdout) → persistence/ (DB) + events/ (SSE)
+  → monitorCompletion() → settleIssue() (status → 'review')
 ```
 
-Key sub-modules:
+#### State Axes
 
-- **`orchestration/`** — `execute.ts`, `follow-up.ts`, `restart.ts`, `cancel.ts`
-- **`lifecycle/`** — Spawn (with session fallback), completion monitoring (auto-retry on failure, pending message coalescence), settlement
-- **`streams/`** — Stdout consumption via async generator, log classification, stderr drain
-- **`persistence/`** — Write normalized log entries + tool calls to DB
-- **`state/`** — State machine actions on managed processes
-- **`process/lock.ts`** — Per-issue serial lock via chained Promises (prevents concurrent ops on same issue)
-- **`utils/worktree.ts`** — Git worktree management at `.worktrees/<projectId>/<issueId>/`
-- **`engine-store.ts`** — Issue session field persistence
+| Axis | Field | Values | Owner |
+|------|-------|--------|-------|
+| Board workflow | `issues.statusId` | `todo`, `working`, `review`, `done` | Routes + reconciler |
+| Session lifecycle | `issues.sessionStatus` | `pending`, `running`, `completed`, `failed`, `cancelled` | IssueEngine |
+| Subprocess | ProcessManager state | `spawning`, `running`, `completed`, `failed`, `cancelled` | ProcessManager |
+
+#### Concurrency Control
+
+- **Per-issue mutex** (`withIssueLock`): Promise-chain lock keyed by `issueId`, queue depth cap (10), acquire timeout (30s), execution timeout (120s)
+- **Probe dedup** (`startup-probe.ts`): `probeInFlight` ensures concurrent callers share one probe
 
 #### Reconciler (`reconciler.ts`)
 
 Safety net for stale sessions:
-
 - **Startup**: marks `running`/`pending` sessions as `failed`; moves orphaned `working` issues to `review`
-- **Periodic**: runs every 60s to catch orphaned working issues
-- **Event-driven**: reconciles 1s after each issue settlement
+- **Periodic**: every 60s
+- **Event-driven**: 1s after each issue settlement
 
 #### Engine Discovery (`startup-probe.ts`)
 
-Three-tier caching: memory (10 min TTL) → DB (`appSettings`) → live probe (15s per-engine timeout). Each executor's `getAvailability()` and `getModels()` called in parallel.
+Three-tier caching: memory (10 min) → DB (`appSettings`) → live probe (15s timeout, parallel).
 
-### Process/State Orchestration Deep Dive
+### Cron System (`cron/`)
 
-BitK runtime behavior depends on three coordinated state axes:
+Powered by `cronbake` scheduler:
 
-| Axis                 | Field / Source                   | Values                                                    | Owner                               |
-| -------------------- | -------------------------------- | --------------------------------------------------------- | ----------------------------------- |
-| Board workflow       | `issues.statusId`                | `todo`, `working`, `review`, `done`                       | Route layer + reconciler            |
-| Session lifecycle    | `issues.sessionStatus`           | `pending`, `running`, `completed`, `failed`, `cancelled`  | IssueEngine orchestration/lifecycle |
-| Subprocess lifecycle | `ProcessManager` in-memory state | `spawning`, `running`, `completed`, `failed`, `cancelled` | ProcessManager + executor events    |
-
-#### Critical Transition Paths
-
-1. **Enter `working`**
-   - Trigger: issue create/update/bulk update.
-   - Behavior: route marks `sessionStatus=pending`, then `executeIssue()` spawns process, transitions to `running`.
-   - Guard: workspace path containment check prevents out-of-root execution.
-
-2. **Follow-up while active**
-   - Trigger: `/follow-up` or `/messages`.
-   - Behavior: if process is active, prompt is queued in memory (`pendingInputs`) or persisted as DB pending message (route-level fallback).
-   - Guard: `busyAction` (`queue`/`cancel`) controls whether current turn is interrupted.
-
-3. **Turn/process completion**
-   - Trigger: `monitorCompletion()` and `handleTurnCompletion()`.
-   - Behavior: settles process/session state, optionally auto-flushes pending messages, then moves issue to `review` when terminal.
-   - Guard: settlement races are avoided with `turnSettled` and per-issue lock.
-
-4. **Deletion**
-   - Trigger: delete issue/project APIs.
-   - Behavior: force terminate active issue processes before soft delete.
-   - Guard: termination failure aborts deletion (`500`) to avoid orphaned runtime state.
-
-#### Concurrency Control
-
-- **Per-issue mutex** (`withIssueLock`):
-  - Promise-chain lock keyed by `issueId`
-  - Queue depth cap (`MAX_QUEUE_DEPTH=10`)
-  - Acquire timeout (`30s`) + execution timeout (`120s`)
-  - Timeout path restores previous lock tail to avoid dropping a still-running lock chain
-- **Probe dedup** (`startup-probe.ts`):
-  - `probeInFlight` ensures concurrent discovery callers share one live probe
-  - Result is persisted to both in-memory cache and DB settings
-
-#### Failure Rollback Guarantees
-
-- `executeIssue()` spawn failure: session reverted to `failed` and failure event emitted.
-- `restartIssue()` spawn failure: session reverted/preserved to `failed` and failure event emitted.
-- Pending flush failure: pending message metadata remains retryable (no premature dispatch).
-- Auto-execute precondition failure (workspace boundary): issue transitions from `pending` to `failed`.
-
-#### Deep Test Coverage Matrix
-
-| Area                                 | Representative tests                                                                                                           | Intent                                                                                        |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
-| Lock serialization and queue control | `apps/api/test/issue-lock.test.ts`                                                                                             | Verify per-issue mutual exclusion, queue-limit rejection, timeout cleanup behavior            |
-| Probe dedup and cache semantics      | `apps/api/test/startup-probe.test.ts`                                                                                          | Verify concurrent callers trigger one live probe and cache/DB clearing re-enables fresh probe |
-| Spawn failure rollback               | `apps/api/test/api-process-state-regression.test.ts`                                                                           | Ensure execute/restart failures do not leave stuck `pending/running` session state            |
-| Pending-message loss prevention      | `apps/api/test/api-pending-messages.test.ts`                                                                                   | Ensure pending messages remain retryable on follow-up flush failure                           |
-| Deletion safety                      | `apps/api/test/api-process-state-regression.test.ts`, `apps/api/test/api-issues.test.ts`, `apps/api/test/api-projects.test.ts` | Ensure terminate-before-delete semantics and soft-delete visibility constraints               |
+- **Built-in jobs**: `upload-cleanup` (hourly), `log-cleanup`, `worktree-cleanup` (30 min)
+- **Issue jobs**: `issue-execute`, `issue-follow-up`, `issue-close`, `issue-check-status`
+- Tables: `cronJobs` + `cronJobLogs`
+- MCP integration: cron jobs exposed as MCP tools for AI agents
 
 ### Event System (`events/`)
 
 **SSE endpoint** (`GET /api/events`) — single global stream via Hono `streamSSE`:
 
-- Event types: `log`, `state`, `done`, `issue-updated`, `changes-summary`, `heartbeat` (15s interval)
+- Event types: `log`, `state`, `done`, `issue-updated`, `changes-summary`, `heartbeat` (15s)
 - Subscribes to: `IssueEngine.onLog`, `.onStateChange`, `.onIssueSettled`, `onIssueUpdated`, `onChangesSummary`
-- Disconnect detection via `AbortSignal`
 
-**`changes-summary.ts`**: runs `git status --porcelain` + `git diff --numstat` after each issue settles; pushes stats to SSE.
-
-### Background Jobs (`jobs/`)
-
-| Job                | Interval | Description                                                                           |
-| ------------------ | -------- | ------------------------------------------------------------------------------------- |
-| `upload-cleanup`   | 1 hour   | Deletes files in `data/uploads/` older than 7 days                                    |
-| `worktree-cleanup` | 30 min   | Removes worktrees for `done` issues (>1 day); gated by `worktree:autoCleanup` setting |
+**`changes-summary.ts`**: runs `git status/diff` after each issue settles; pushes file change stats via SSE.
 
 ### Self-Upgrade System (`upgrade/`)
 
-Full self-upgrade pipeline polling GitHub Releases (`repos/bkhq/bkd/releases/latest`) every 1 hour:
+Polls GitHub Releases (`repos/bkhq/bkd/releases/latest`) every 1h:
 
-- Detects platform asset suffix (`linux-x64`, `linux-arm64`, `darwin-arm64`)
 - **Binary mode**: downloads compiled binary, spawns on restart
-- **Package mode** (`APP_DIR != null`): downloads `.tar.gz`, extracts to `data/app/v{version}/`, writes `version.json`, re-execs launcher
-- SHA-256 checksum verification mandatory (aborts if checksum unavailable)
-- Downloads to `data/updates/` with `.tmp` suffix, atomic rename to final path
-- Restart: graceful shutdown → `process.exit(0)` with detached child for new binary
+- **Package mode**: downloads `.tar.gz`, extracts to `data/app/v{version}/`
+- Mandatory SHA-256 checksum verification
+- Downloads to `data/updates/` with `.tmp` suffix, atomic rename
+
+### Webhook System (`webhooks/`)
+
+- Channels: `webhook` (HTTP POST) and `telegram` (bot API)
+- Events: issue status changes, session state changes
+- Delivery audit trail in `webhookDeliveries` table
+- Deduplication via `dedupKey`
+
+### MCP Server (`mcp/`)
+
+Model Context Protocol server exposing BKD operations as tools:
+
+- Project/issue CRUD, execute/follow-up/cancel
+- Engine listing, process management
+- Cron job management
 
 ---
 
@@ -279,162 +268,132 @@ Full self-upgrade pipeline polling GitHub Releases (`repos/bkhq/bkd/releases/lat
 - **Routing**: react-router-dom v7 (all pages lazy-loaded)
 - **Server state**: TanStack React Query v5 (`staleTime: 30s`, `retry: 1`)
 - **Local UI state**: Zustand stores
-- **Drag & drop**: @dnd-kit/react
+- **Drag & drop**: @atlaskit/pragmatic-drag-and-drop
 - **Syntax highlighting**: Shiki (slim bundle via custom Vite plugin)
-- **i18n**: i18next + react-i18next (Chinese default, English fallback)
+- **Terminal**: xterm.js 6.0 + WebSocket
+- **i18n**: i18next + react-i18next (Chinese default, English)
 - **Path alias**: `@/*` → `src/*`
 - **Dev proxy**: Vite forwards `/api/*` to `localhost:3010`
 
 ### Routes
 
-| Path                                   | Page              | Description                               |
-| -------------------------------------- | ----------------- | ----------------------------------------- |
-| `/`                                    | `HomePage`        | Project dashboard (grid of project cards) |
-| `/projects/:projectId`                 | `KanbanPage`      | Kanban board with drag-and-drop columns   |
-| `/projects/:projectId/issues`          | `IssueDetailPage` | Three-panel layout: list + chat + diff    |
-| `/projects/:projectId/issues/:issueId` | `IssueDetailPage` | Specific issue chat view                  |
-| `/terminal`                            | `TerminalPage`    | Full-page xterm.js terminal               |
+| Path | Page | Description |
+|------|------|-------------|
+| `/` | `HomePage` | Project dashboard |
+| `/projects/:projectId` | `KanbanPage` | Kanban board with drag-and-drop |
+| `/projects/:projectId/issues[/:issueId]` | `IssueDetailPage` | Three-panel: list + chat + diff |
+| `/review[/:projectAlias/:issueId]` | `ReviewPage` | Review queue |
+| `/terminal` | `TerminalPage` | Full-page terminal |
+| `/cron` | `CronPage` | Cron job management |
+| `/login[/callback]` | `LoginPage` | OAuth/token login |
 
-Three global drawers (lazy-mounted): `TerminalDrawer`, `FileBrowserDrawer`, `ProcessManagerDrawer`.
+Four global drawers (lazy-mounted): `TerminalDrawer`, `FileBrowserDrawer`, `ProcessManagerDrawer`, `NotesDrawer`.
 
 ### Component Architecture
 
 ```
 components/
-├── ui/              ← shadcn/ui primitives (Button, Dialog, Badge, etc.)
-├── kanban/          ← Kanban board: columns, cards, sidebar, create dialog
-│   ├── AppSidebar.tsx       — Icon sidebar (projects, tools, settings)
-│   ├── KanbanBoard.tsx      — DnD provider, syncs board store, renders columns
-│   ├── KanbanColumn.tsx     — Droppable status column
-│   ├── KanbanCard.tsx       — Sortable issue card
-│   ├── KanbanHeader.tsx     — Search, filters, view-mode toggle
-│   ├── IssuePanel.tsx       — Desktop side panel for selected issue
-│   └── CreateIssueDialog.tsx — Issue creation modal
-├── issue-detail/    ← Issue detail page: chat, diff, issue list
-│   ├── ChatArea.tsx         — Title bar + ChatBody + DiffPanel
-│   ├── ChatBody.tsx         — Log stream + metadata + input
-│   ├── ChatInput.tsx        — Rich input (attachments, slash commands, model selector)
-│   ├── SessionMessages.tsx  — Renders NormalizedLogEntry list
-│   ├── LogEntry.tsx         — Single log entry renderer
-│   ├── MarkdownContent.tsx  — Markdown + Shiki code blocks
-│   ├── IssueListPanel.tsx   — Scrollable issue list
-│   ├── IssueDetail.tsx      — Status/priority selectors, execution controls
-│   ├── DiffPanel.tsx        — Resizable git diff viewer
-│   └── SubIssueDialog.tsx   — Sub-issue creation
-├── files/           ← File browser (breadcrumbs, list, viewer)
+├── ui/              ← shadcn/ui primitives (25+ components)
+├── kanban/          ← Board: columns, cards, sidebar, create dialog, header
+├── issue-detail/    ← Chat area, log entries, tool items, diff panel, markdown
+├── files/           ← File browser: breadcrumbs, directory listing, file viewer
 ├── terminal/        ← xterm.js WebSocket terminal
-└── processes/       ← Active engine process list
+├── processes/       ← Active engine process list
+├── notes/           ← Notes drawer and editor
+└── settings/        ← Webhook, cleanup, upgrade settings
 ```
-
-Top-level components: `AppSettingsDialog`, `CreateProjectDialog`, `ProjectSettingsDialog`, `DirectoryPicker`, `ErrorBoundary`, `EngineIcons`.
 
 ### State Management
 
-**React Query** — all server state:
-
-Query key factory (`queryKeys`) covers: `projects`, `issues`, `issueChanges`, `childIssues`, `slashCommands`, `engineAvailability`, `engineProfiles`, `engineSettings`, `projectFiles`, `projectProcesses`, `upgradeVersion`, `upgradeCheck`, etc.
-
-Mutation hooks: `useCreateProject`, `useUpdateIssue`, `useBulkUpdateIssues` (optimistic + rollback), `useExecuteIssue`, `useFollowUpIssue`, `useCancelIssue`, `useRestartIssue`, `useAutoTitleIssue`, `useCheckForUpdates`, `useDownloadUpdate`, `useRestartWithUpgrade`, etc.
+**React Query** — all server state. Query key factory (`queryKeys`) covers projects, issues, changes, engines, settings, cron, etc.
 
 **Zustand stores** — pure client UI state:
 
-| Store                    | State                                                       |
-| ------------------------ | ----------------------------------------------------------- |
-| `board-store`            | `groupedItems` by status, `isDragging` (pauses server sync) |
-| `panel-store`            | Side panel open/closed, width, create dialog state          |
-| `view-mode-store`        | Kanban/list toggle (persisted in localStorage)              |
-| `terminal-store`         | Terminal drawer open/minimized/fullscreen, width            |
-| `terminal-session-store` | xterm.js instance, WebSocket, session ID                    |
-| `file-browser-store`     | File browser drawer state, current path, `hideIgnored`      |
-| `process-manager-store`  | Process manager drawer state                                |
+| Store | State |
+|-------|-------|
+| `board-store` | Grouped items by status, `isDragging` (pauses server sync) |
+| `panel-store` | Side panel open/closed, width, create dialog |
+| `view-mode-store` | Kanban/list toggle (persisted in localStorage) |
+| `terminal-store` | Terminal drawer state |
+| `terminal-session-store` | xterm.js instance, WebSocket, session ID |
+| `file-browser-store` | File browser drawer, current path |
+| `process-manager-store` | Process manager drawer |
+| `notes-store` | Notes drawer state |
+| `server-store` | Server name, URL |
 
 ### Real-Time Data Flow
 
 ```
-Server (IssueEngine) → SSE /api/events → EventBus (singleton EventSource)
-                                           ├── log events → useIssueStream → liveLogs state
-                                           ├── state events → sessionStatus update
-                                           ├── done events → React Query invalidation
-                                           ├── issue-updated → projects query invalidation
-                                           └── changes-summary → useChangesSummary
+Server (IssueEngine)
+    ↓
+SSE /api/events
+    ↓
+EventBus singleton (lib/event-bus.ts)
+    ├── log events     → useIssueStream() → liveLogs (capped 500, ULID dedup)
+    ├── state events   → sessionStatus update
+    ├── done events    → React Query invalidation
+    ├── issue-updated  → projects/issues query invalidation
+    └── changes-summary → useChangesSummary()
 ```
 
-`EventBus` (`lib/event-bus.ts`): single `EventSource` to `/api/events` with exponential backoff reconnection and 35s heartbeat watchdog.
+**EventBus**: single `EventSource` with exponential backoff reconnection and 35s heartbeat watchdog. On reconnect: invalidates all queries.
 
-`useIssueStream`: the most complex hook — fetches historical logs via HTTP, subscribes to SSE for real-time updates. Manages two arrays (`liveLogs` capped at 500, `olderLogs` for pagination). ULID-based deduplication.
+**useIssueStream**: fetches historical logs via HTTP, subscribes to SSE for real-time. Two arrays: `liveLogs` (capped 500) and `olderLogs` (pagination). ULID dedup.
 
 ### API Client (`lib/kanban-api.ts`)
 
-Plain object of typed async functions. Internal helpers (`get`, `post`, `patch`, `del`, `postFormData`) call `fetch`, parse `{ success, data, error }` envelope, throw on failure. Covers all endpoint groups: projects, issues, session commands, logs, engines, settings, upgrade, files, processes.
-
-### i18n
-
-Two locales: `zh` (Chinese, default), `en` (English). Language persisted in `localStorage`. Utility functions `tStatus()` and `tPriority()` translate status/priority names.
+Typed async functions wrapping all backend endpoints. Internal helpers (`get`, `post`, `patch`, `del`, `postFormData`) parse `{ success, data, error }` envelope. Auth token included when present; 401 triggers redirect.
 
 ---
 
 ## Shared Types (`packages/shared/`)
 
-Single source of truth for types consumed by both backend and frontend. Key exports:
+Single source of truth consumed by both backend and frontend:
 
-- **Domain**: `Project`, `Issue`, `Priority`, `EngineType`, `PermissionMode`, `BusyAction`, `SessionStatus`
-- **Logs**: `NormalizedLogEntry`, `LogEntryType`, `ToolAction`, `ToolDetail`, `CommandCategory`, `FileChange`
-- **Engine**: `EngineAvailability`, `EngineModel`, `EngineDiscoveryResult`, `EngineProfile`, `EngineSettings`, `ProbeResult`
-- **API**: `ApiResponse<T>`, `ExecuteIssueRequest`, `ExecuteIssueResponse`, `IssueLogsResponse`, `IssueChangesResponse`
-- **Files**: `FileEntry`, `DirectoryListing`, `FileContent`, `FileListingResult`
+- **Domain**: `Project`, `Issue`, `EngineType`, `SessionStatus`, `Priority`, `PermissionMode`, `BusyAction`
+- **Logs**: `NormalizedLogEntry`, `LogEntryType`, `ChatMessage` (8 variants), `ToolAction`, `ToolDetail`
+- **Engine**: `EngineAvailability`, `EngineModel`, `EngineDiscoveryResult`, `EngineProfile`, `ProbeResult`
+- **API**: `ApiResponse<T>`, `ExecuteIssueRequest`, `IssueLogsResponse`, `IssueChangesResponse`
+- **Files**: `FileEntry`, `DirectoryListing`, `FileContent`
 - **Processes**: `ProcessInfo`, `ProjectProcessesResponse`
 
-Frontend re-exports all types via `types/kanban.ts`.
+Frontend re-exports via `types/kanban.ts`.
 
 ---
 
 ## Build & Distribution
 
-### Development
-
-`bun run dev` starts both API (port 3010) and Vite (port 3000) in parallel. Vite proxies `/api/*` to the API server.
-
 ### Three Distribution Modes
 
 **1. Full binary** (`bun run compile`):
-
-- Builds Vite frontend
-- Embeds all assets into `static-assets.ts` via `import ... with { type: "file" }`
+- Builds Vite frontend → embeds assets into `static-assets.ts`
 - Embeds Drizzle migrations into `embedded-migrations.ts`
 - Compiles to standalone binary (~105 MB) via `bun build --compile`
 - SHA-256 checksum generated
 
 **2. Launcher binary** (`bun run compile:launcher`):
-
 - Compiles only `scripts/launcher.ts` (~90 MB)
 - At runtime: reads `data/app/version.json`, loads server from `data/app/v{version}/`
-- Auto-downloads latest release if no local version exists
-- Security: URL allowlist, 50 MB cap, mandatory SHA-256 verification
+- Auto-downloads latest release if no local version; URL allowlist, 50 MB cap, SHA-256 verify
 
 **3. App package** (`bun run package`):
-
-- Bundles server via `bun build` → `server.js`
-- Creates `.tar.gz` (~1 MB) containing `server.js`, `public/`, `migrations/`, `version.json`
+- Bundles server → `server.js`, creates `.tar.gz` (~1 MB)
+- Contains `server.js`, `public/`, `migrations/`, `version.json`
 - Used with launcher binary for incremental updates
 
 ### CI/CD (`.github/workflows/`)
 
-| Workflow       | Trigger         | Purpose                                                         |
-| -------------- | --------------- | --------------------------------------------------------------- |
-| `ci.yml`       | PRs to `main`   | Lint + format check (no test execution)                         |
-| `release.yml`  | `v*` tags       | Build full binary (3 platforms) + app package → GitHub Release  |
+| Workflow | Trigger | Purpose |
+|----------|---------|---------|
+| `ci.yml` | PRs to `main` | Lint + format check |
+| `release.yml` | `v*` tags | Build full binary (3 platforms) + app package → GitHub Release |
 | `launcher.yml` | Manual dispatch | Build launcher binary (3 platforms) → `launcher-v1` pre-release |
 
-Release platforms: `linux-x64`, `linux-arm64`, `darwin-arm64`. All builds include SHA-256 checksum verification.
+Platforms: `linux-x64`, `linux-arm64`, `darwin-arm64`.
 
----
+### Database Migrations
 
-## Tooling
-
-- **Linting/Formatting**: @antfu/eslint-config (`eslint.config.js`) — no semicolons, single quotes, 2-space indent
-- **Frontend tests**: vitest + @testing-library/react
-- **Backend tests**: `bun:test` with preload for isolated temp DB
-- **TypeScript**: shared configs in `packages/tsconfig` (strict mode, ESNext target)
+16 migrations in `apps/api/drizzle/` (0000–0015). Auto-applied on startup. Sources: filesystem, `APP_DIR/migrations/`, or embedded (compiled binary).
 
 ---
 
@@ -442,11 +401,40 @@ Release platforms: `linux-x64`, `linux-arm64`, `darwin-arm64`. All builds includ
 
 1. **API response envelope**: `{ success: true, data: T } | { success: false, error: string }`
 2. **Soft deletion**: all entities use `isDeleted` flag, never hard-deleted
-3. **Per-issue operation lock**: chained Promises prevent concurrent execute/follow-up/restart on same issue
-4. **Optimistic UI**: drag-and-drop uses board store for immediate visual feedback; server sync pauses during drag
-5. **Three-tier engine discovery cache**: memory → DB → live probe (prevents slow startup)
+3. **Per-issue operation lock**: chained Promises prevent concurrent execute/follow-up/restart
+4. **Optimistic UI**: drag-and-drop uses board store for immediate feedback; sync pauses during drag
+5. **Three-tier engine discovery cache**: memory → DB → live probe
 6. **Event-driven invalidation**: SSE events trigger targeted React Query cache invalidation
-7. **Pending message coalescence**: messages queued while AI is busy are merged into a single follow-up on process exit
-8. **Auto-retry**: failed sessions retry up to max limit with exponential backoff
-9. **Reconciliation**: startup + periodic + event-driven safety net for orphaned sessions
-10. **Immutable session IDs**: `externalSessionId` (UUID for Claude, thread ID for Codex) enables session continuity across follow-ups
+7. **Pending message coalescence**: messages queued while AI is busy merge into single follow-up on exit
+8. **Reconciliation**: startup + periodic + event-driven safety net for orphaned sessions
+9. **Immutable session IDs**: `externalSessionId` enables session continuity across follow-ups
+10. **Auto-retry**: failed sessions retry up to max limit
+
+---
+
+## Deployment Constraints
+
+- **Single instance**: in-memory state (process manager, caches) does not replicate
+- **Stateful**: subprocess tracking requires stable PID space
+- **SQLite**: excellent for single-machine, not horizontally scalable for writes
+- **Long-lived processes**: Codex engine keeps processes alive between turns
+
+---
+
+## Tech Stack Summary
+
+| Layer | Technology |
+|-------|-----------|
+| Runtime | Bun |
+| Backend | Hono |
+| Database | SQLite + Drizzle ORM |
+| Frontend | React 19 + Vite 7 |
+| Styling | Tailwind CSS v4 + shadcn/ui |
+| Drag & Drop | @atlaskit/pragmatic-drag-and-drop |
+| Terminal | xterm.js 6.0 |
+| Syntax | Shiki 4.0 |
+| Cron | cronbake |
+| i18n | i18next |
+| Linting | @antfu/eslint-config |
+| AI Engines | Claude Code, OpenAI Codex, ACP (Gemini/Codex/Claude) |
+| MCP | @modelcontextprotocol/sdk |
