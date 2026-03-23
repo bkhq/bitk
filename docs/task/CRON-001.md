@@ -1,6 +1,6 @@
 # CRON-001 Integrate cronbake and add MCP cron interface
 
-- **status**: in_progress
+- **status**: completed
 - **priority**: P1
 - **owner**: claude
 - **createdAt**: 2026-03-23 11:20

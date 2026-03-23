@@ -31,4 +31,4 @@
 - [x] **PLAN-026 删除原生 Claude stdout transcript fallback** - task: `BUG-014` - owner: codex - file: `docs/plan/PLAN-026.md`
 - [x] **PLAN-027 完整仓库模块化审计** - task: `AUDIT-028` - owner: codex - file: `docs/plan/PLAN-027.md`
 - [ ] **PLAN-028 OAuth PKCE Authentication** - task: `AUTH-001` - owner: claude - file: `docs/plan/PLAN-028.md`
-- [-] **PLAN-029 Integrate cronbake cron module with MCP interface** - task: `CRON-001` - owner: claude - file: `docs/plan/PLAN-029.md`
+- [x] **PLAN-029 Integrate cronbake cron module with MCP interface** - task: `CRON-001` - owner: claude - file: `docs/plan/PLAN-029.md`

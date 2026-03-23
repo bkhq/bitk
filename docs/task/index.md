@@ -178,4 +178,4 @@
 
 ## Cron
 
-- [-] **CRON-001 Integrate cronbake and add MCP cron interface** `P1` - owner: claude - plan: `PLAN-029` - file: `docs/task/CRON-001.md`
+- [x] **CRON-001 Integrate cronbake and add MCP cron interface** `P1` - owner: claude - plan: `PLAN-029` - file: `docs/task/CRON-001.md`
