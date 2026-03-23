@@ -8,6 +8,8 @@ export interface ActionDef {
   category?: string
   /** Required fields in taskConfig */
   requiredFields?: string[]
+  /** Optional deep validation at cron-create time (e.g. verify refs exist) */
+  validate?: (config: Record<string, unknown>) => Promise<string | null>
   /** The handler function */
   handler: ActionHandler
 }

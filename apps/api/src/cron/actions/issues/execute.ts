@@ -1,13 +1,16 @@
+import { resolve } from 'node:path'
+import { getAppSetting } from '@/db/helpers'
 import { issueEngine } from '@/engines/issue'
 import type { EngineType } from '@/engines/types'
 import { ensureWorking, parseProjectEnvVars } from '@/routes/issues/_shared'
 import { registerAction } from '../registry'
-import { resolveIssue } from './resolver'
+import { resolveIssue, validateIssueRefs } from './resolver'
 
 registerAction('issue-execute', {
   description: 'Start AI engine execution on an issue',
   category: 'issue',
   requiredFields: ['projectId', 'issueId', 'prompt'],
+  validate: validateIssueRefs,
   async handler(config) {
     const { project, issue } = await resolveIssue(config)
     const prompt = config.prompt as string
@@ -20,6 +23,19 @@ registerAction('issue-execute', {
     const guard = await ensureWorking(issue)
     if (!guard.ok) throw new Error(guard.reason!)
 
+    // SEC-016: Validate working directory within workspace root
+    const workingDir = project.directory || undefined
+    if (workingDir) {
+      const workspaceRoot = await getAppSetting('workspace:defaultPath')
+      if (workspaceRoot && workspaceRoot !== '/') {
+        const resolvedRoot = resolve(workspaceRoot)
+        const resolvedDir = resolve(workingDir)
+        if (!resolvedDir.startsWith(`${resolvedRoot}/`) && resolvedDir !== resolvedRoot) {
+          throw new Error('Project directory is outside the configured workspace')
+        }
+      }
+    }
+
     const engineType = ((config.engineType as string) ?? issue.engineType ?? 'claude-code') as EngineType
     const basePrompt = project.systemPrompt ? `${project.systemPrompt}\n\n${prompt}` : prompt
     const envVars = parseProjectEnvVars(project.envVars)
@@ -27,7 +43,7 @@ registerAction('issue-execute', {
     const result = await issueEngine.executeIssue(issue.id, {
       engineType,
       prompt: basePrompt,
-      workingDir: project.directory || undefined,
+      workingDir,
       model: (config.model as string) ?? issue.model ?? undefined,
       envVars,
     })

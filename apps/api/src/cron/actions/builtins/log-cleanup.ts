@@ -7,16 +7,33 @@ import { logger } from '@/logger'
 const MAX_LOGS_PER_JOB = 1000
 
 export async function runLogCleanup(): Promise<string> {
+  // Include all jobs (even soft-deleted) to clean up orphaned logs
   const jobs = db
-    .select({ id: cronJobs.id })
+    .select({ id: cronJobs.id, isDeleted: cronJobs.isDeleted })
     .from(cronJobs)
-    .where(eq(cronJobs.isDeleted, 0))
     .all()
 
   let totalDeleted = 0
 
   for (const job of jobs) {
-    // Get the ID of the Nth newest log for this job
+    // For soft-deleted jobs, purge all logs
+    if (job.isDeleted) {
+      const [{ cnt }] = db
+        .select({ cnt: countFn() })
+        .from(cronJobLogs)
+        .where(eq(cronJobLogs.jobId, job.id))
+        .all()
+
+      if (cnt > 0) {
+        db.delete(cronJobLogs)
+          .where(eq(cronJobLogs.jobId, job.id))
+          .run()
+        totalDeleted += cnt
+      }
+      continue
+    }
+
+    // For active jobs, keep the latest N logs
     const keepIds = db
       .select({ id: cronJobLogs.id })
       .from(cronJobLogs)
@@ -28,21 +45,19 @@ export async function runLogCleanup(): Promise<string> {
 
     if (keepIds.length < MAX_LOGS_PER_JOB) continue
 
-    // Delete logs older than the Nth newest
     const oldest = keepIds.at(-1)!
-
-    // Count rows to delete before deleting (single atomic read in SQLite WAL)
     const [{ cnt }] = db
       .select({ cnt: countFn() })
       .from(cronJobLogs)
       .where(and(eq(cronJobLogs.jobId, job.id), lt(cronJobLogs.id, oldest)))
       .all()
 
-    db.delete(cronJobLogs)
-      .where(and(eq(cronJobLogs.jobId, job.id), lt(cronJobLogs.id, oldest)))
-      .run()
-
-    totalDeleted += cnt
+    if (cnt > 0) {
+      db.delete(cronJobLogs)
+        .where(and(eq(cronJobLogs.jobId, job.id), lt(cronJobLogs.id, oldest)))
+        .run()
+      totalDeleted += cnt
+    }
   }
 
   if (totalDeleted > 0) {

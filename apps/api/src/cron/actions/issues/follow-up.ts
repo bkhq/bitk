@@ -1,12 +1,13 @@
 import { issueEngine } from '@/engines/issue'
 import { ensureWorking } from '@/routes/issues/_shared'
 import { registerAction } from '../registry'
-import { resolveIssue } from './resolver'
+import { resolveIssue, validateIssueRefs } from './resolver'
 
 registerAction('issue-follow-up', {
   description: 'Send a follow-up message to an issue',
   category: 'issue',
   requiredFields: ['projectId', 'issueId', 'prompt'],
+  validate: validateIssueRefs,
   async handler(config) {
     const { project, issue } = await resolveIssue(config)
     const prompt = config.prompt as string

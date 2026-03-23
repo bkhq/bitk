@@ -97,10 +97,11 @@ export function registerCronMcpTools(server: McpServer): void {
       return errorResult(`Invalid cron expression: ${cron}`)
     }
 
-    const taskConfig: TaskConfig = { action, ...(rawConfig ?? {}) }
+    // Spread rawConfig first, then force action to prevent override from config body
+    const taskConfig: TaskConfig = { ...(rawConfig ?? {}), action }
 
     // Validate action + config
-    const validationError = validateActionConfig(action, taskConfig)
+    const validationError = await validateActionConfig(action, taskConfig)
     if (validationError) return errorResult(validationError)
 
     // Insert into DB (taskType = category from action definition)
@@ -163,15 +164,15 @@ export function registerCronMcpTools(server: McpServer): void {
     const row = findJob(job)
     if (!row) return errorResult('Job not found')
 
-    // Try to trigger through Baker (respects overrunProtection)
-    const baker = getBaker()
+    // Check Baker's overrun protection before direct execution
     try {
-      const status = baker.getStatus(row.name)
+      const b = getBaker()
+      const status = b.getStatus(row.name)
       if (status === 'running') {
         return errorResult(`Job "${row.name}" is already running (overrun protection active)`)
       }
     } catch {
-      // Job not in Baker, proceed with direct execution
+      // Job not in Baker (disabled or unloaded), proceed with direct execution
     }
 
     let config: TaskConfig

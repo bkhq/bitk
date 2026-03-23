@@ -1,10 +1,11 @@
 import { registerAction } from '../registry'
-import { resolveIssue } from './resolver'
+import { resolveIssue, validateIssueRefs } from './resolver'
 
 registerAction('issue-check-status', {
   description: 'Check current status of an issue (useful for monitoring)',
   category: 'issue',
   requiredFields: ['projectId', 'issueId'],
+  validate: validateIssueRefs,
   async handler(config) {
     const { issue } = await resolveIssue(config)
 

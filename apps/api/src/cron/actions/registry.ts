@@ -33,10 +33,10 @@ export function getActionsHelp(): string {
   return lines.join('\n')
 }
 
-export function validateActionConfig(
+export async function validateActionConfig(
   action: string,
   config: Record<string, unknown>,
-): string | null {
+): Promise<string | null> {
   const def = actions.get(action)
   if (!def) {
     return `Unknown action: "${action}". Available: ${getActionNames().join(', ')}`
@@ -46,6 +46,11 @@ export function validateActionConfig(
     if (config[field] == null || config[field] === '') {
       return `taskConfig.${field} is required for action "${action}"`
     }
+  }
+
+  // Run action-specific deep validation (e.g. verify refs exist)
+  if (def.validate) {
+    return def.validate(config)
   }
 
   return null

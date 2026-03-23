@@ -30,3 +30,16 @@ export async function resolveIssue(config: Record<string, unknown>) {
 
   return { project, issue }
 }
+
+/**
+ * Validate that projectId + issueId exist.
+ * Used as ActionDef.validate at cron-create time.
+ */
+export async function validateIssueRefs(config: Record<string, unknown>): Promise<string | null> {
+  try {
+    await resolveIssue(config)
+    return null
+  } catch (err) {
+    return err instanceof Error ? err.message : String(err)
+  }
+}
