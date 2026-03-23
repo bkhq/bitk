@@ -1,5 +1,6 @@
 import { stat } from 'node:fs/promises'
 import { resolve } from 'node:path'
+import { getAppSetting } from '@/db/helpers'
 import { runCommand } from '@/engines/spawn'
 import { zValidator } from '@hono/zod-validator'
 import { Hono } from 'hono'
@@ -32,6 +33,16 @@ git.post(
   async (c) => {
     const { directory } = c.req.valid('json')
     const dir = resolve(directory)
+
+    // SEC-030: Validate directory is within workspace root
+    const workspaceRoot = await getAppSetting('workspace:defaultPath')
+    if (workspaceRoot && workspaceRoot !== '/') {
+      const resolvedWorkspace = resolve(workspaceRoot)
+      const isInside = dir === resolvedWorkspace || dir.startsWith(`${resolvedWorkspace}/`)
+      if (!isInside) {
+        return c.json({ success: false, error: 'Directory is outside the configured workspace' }, 403)
+      }
+    }
 
     // Check directory exists
     try {
