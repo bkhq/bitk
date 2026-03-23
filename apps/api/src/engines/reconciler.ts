@@ -16,6 +16,7 @@ import { issueEngine } from './issue'
 // ---------- Constants ----------
 
 const RECONCILE_INTERVAL_MS = 60 * 1000 // 1 minute
+const PENDING_TIMEOUT_MS = 60 * 1000 // 60 seconds — max time for pending before marking failed
 
 // ---------- Core reconciliation logic ----------
 
@@ -33,11 +34,14 @@ export async function reconcileStaleWorkingIssues(): Promise<number> {
       id: issuesTable.id,
       projectId: issuesTable.projectId,
       sessionStatus: issuesTable.sessionStatus,
+      updatedAt: issuesTable.updatedAt,
     })
     .from(issuesTable)
     .where(and(eq(issuesTable.statusId, 'working'), eq(issuesTable.isDeleted, 0)))
 
   if (staleIssues.length === 0) return 0
+
+  const now = new Date()
 
   // Partition stale issues into those needing session status fix vs just statusId fix
   const needsSessionFix: string[] = []
@@ -47,11 +51,21 @@ export async function reconcileStaleWorkingIssues(): Promise<number> {
   for (const issue of staleIssues) {
     if (hasActiveProcess(issue.id)) continue
 
-    // Skip issues that are still being spawned. The 'pending' status means
+    // Skip issues that are still being spawned — unless they've been pending
+    // for longer than PENDING_TIMEOUT_MS. The 'pending' status means
     // executeIssue has been triggered but the process hasn't registered in
     // ProcessManager yet (worktree creation can take 3-7 seconds). Moving
-    // these to review would race with the spawn pipeline.
-    if (issue.sessionStatus === 'pending') continue
+    // these to review would race with the spawn pipeline. However, if spawn
+    // crashes after setting 'pending', the issue would be stuck indefinitely
+    // without this timeout.
+    if (issue.sessionStatus === 'pending') {
+      const pendingAge = now.getTime() - (issue.updatedAt?.getTime() ?? 0)
+      if (pendingAge < PENDING_TIMEOUT_MS) continue
+      logger.warn(
+        { issueId: issue.id, pendingAgeSec: Math.round(pendingAge / 1000) },
+        'reconciler_pending_timeout',
+      )
+    }
 
     const isTerminal =
       issue.sessionStatus === 'completed' ||
@@ -82,7 +96,6 @@ export async function reconcileStaleWorkingIssues(): Promise<number> {
   if (stillReconciledIssues.length === 0) return 0
 
   // Batch update in a single transaction
-  const now = new Date()
   await db.transaction(async (tx) => {
     if (stillNeedsSessionFix.length > 0) {
       await tx
