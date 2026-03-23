@@ -35,6 +35,32 @@ function findJob(identifier: string) {
   return byName ?? null
 }
 
+function validateTaskConfig(taskType: string, config: TaskConfig, jobName: string): string | null {
+  switch (taskType) {
+    case 'builtin': {
+      const handlerName = config.handler ?? jobName
+      if (!getBuiltinHandler(handlerName)) {
+        return `Unknown builtin handler: "${handlerName}". Available: upload-cleanup, worktree-cleanup, log-cleanup`
+      }
+      return null
+    }
+    case 'issue-follow-up': {
+      if (!config.projectId) return 'taskConfig.projectId is required for issue-follow-up'
+      if (!config.issueId) return 'taskConfig.issueId is required for issue-follow-up'
+      if (!config.prompt) return 'taskConfig.prompt is required for issue-follow-up'
+      return null
+    }
+    case 'issue-execute': {
+      if (!config.projectId) return 'taskConfig.projectId is required for issue-execute'
+      if (!config.issueId) return 'taskConfig.issueId is required for issue-execute'
+      if (!config.prompt) return 'taskConfig.prompt is required for issue-execute'
+      return null
+    }
+    default:
+      return `Unsupported task type: "${taskType}"`
+  }
+}
+
 export function registerCronMcpTools(server: McpServer): void {
   // ==================== cron-list ====================
 
@@ -65,17 +91,23 @@ export function registerCronMcpTools(server: McpServer): void {
     title: 'Create Cron Job',
     description: [
       'Create a new scheduled cron job.',
-      'Supported cron formats:',
+      '',
+      'Cron formats:',
       '  - 6-field: "second minute hour dayOfMonth month dayOfWeek"',
       '  - Presets: @every_minute, @hourly, @daily, @weekly, @monthly, @yearly',
       '  - Custom: @every_5_minutes, @at_12:00, @on_monday, @between_9_17',
+      '',
       'Task types:',
-      '  - builtin: run a built-in handler (upload-cleanup, worktree-cleanup)',
+      '  - builtin: run a built-in handler (upload-cleanup, worktree-cleanup, log-cleanup)',
+      '  - issue-follow-up: send a follow-up message to an existing issue on schedule',
+      '    taskConfig: { projectId, issueId, prompt, model? }',
+      '  - issue-execute: trigger execution on an existing issue on schedule',
+      '    taskConfig: { projectId, issueId, prompt, engineType?, model? }',
     ].join('\n'),
     inputSchema: z.object({
       name: z.string().min(1).max(100).describe('Unique job name'),
       cron: z.string().min(1).describe('Cron expression or preset'),
-      taskType: z.string().describe('Task type: builtin'),
+      taskType: z.enum(['builtin', 'issue-follow-up', 'issue-execute']).describe('Task type'),
       taskConfig: z.record(z.string(), z.unknown()).optional().describe('Task configuration (JSON object)'),
     }),
   }, async ({ name, cron, taskType, taskConfig }) => {
@@ -95,16 +127,11 @@ export function registerCronMcpTools(server: McpServer): void {
       return errorResult(`Invalid cron expression: ${cron}`)
     }
 
-    // Validate taskType and handler
-    if (taskType !== 'builtin') {
-      return errorResult(`Unsupported task type: "${taskType}". Only "builtin" is currently supported.`)
-    }
+    const config = (taskConfig ?? {}) as TaskConfig
 
-    const config = taskConfig ?? {}
-    const handlerName = (config as TaskConfig).handler ?? name
-    if (!getBuiltinHandler(handlerName)) {
-      return errorResult(`Unknown builtin handler: "${handlerName}". Available: upload-cleanup, worktree-cleanup, log-cleanup`)
-    }
+    // Validate taskConfig based on taskType
+    const validationError = validateTaskConfig(taskType, config, name)
+    if (validationError) return errorResult(validationError)
 
     // Insert into DB
     const [row] = db.insert(cronJobs).values({

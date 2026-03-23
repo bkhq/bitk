@@ -28,10 +28,16 @@ export async function runLogCleanup(): Promise<string> {
 
     if (keepIds.length < MAX_LOGS_PER_JOB) continue
 
+    // Count before delete
+    const [{ count: beforeCount }] = db
+      .select({ count: sql<number>`count(*)` })
+      .from(cronJobLogs)
+      .where(eq(cronJobLogs.jobId, job.id))
+      .all()
+
     // Delete logs older than the Nth newest
     const oldest = keepIds.at(-1)!
-    const result = db
-      .delete(cronJobLogs)
+    db.delete(cronJobLogs)
       .where(
         and(
           eq(cronJobLogs.jobId, job.id),
@@ -40,7 +46,7 @@ export async function runLogCleanup(): Promise<string> {
       )
       .run()
 
-    totalDeleted += result.changes
+    totalDeleted += beforeCount - MAX_LOGS_PER_JOB
   }
 
   if (totalDeleted > 0) {
