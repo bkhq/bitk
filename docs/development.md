@@ -179,12 +179,11 @@ GET/POST/DEL   /api/worktrees/*         ← Git worktree management
 
 The engine layer is the most complex part of the backend:
 
-- **`types.ts`** — Central types: `EngineType` (`claude-code` | `codex` | `acp` | `echo`), `EngineExecutor` interface
-- **`executors/`** — One per engine (`claude/`, `codex/`, `acp/`, `echo/`), each implementing `EngineExecutor`
+- **`types.ts`** — Central types: `EngineType` (`claude-code` | `codex` | `acp`), `EngineExecutor` interface
+- **`executors/`** — One per engine (`claude/`, `codex/`, `acp/`), each implementing `EngineExecutor`
   - Claude Code: `stream-json` protocol (process exits after each turn)
   - Codex: `json-rpc` protocol (subprocess stays alive between turns)
   - ACP: `acp` protocol (routes to Gemini/Codex by `acp:<agent>:<model>`)
-  - Echo: test/stub executor
 - **`process-manager.ts`** — Process lifecycle, concurrency limits, auto-cleanup
 - **`issue/`** — Issue-scoped orchestration (bridge between routes and executors)
 - **`reconciler.ts`** — Startup + periodic reconciliation (marks stale sessions as failed)

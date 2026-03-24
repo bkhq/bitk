@@ -309,21 +309,9 @@ Priority legend: **P1** = Critical path (data integrity/security), **P2** = High
 
 ## 6. Summary
 
-### ⚠️ P0: Echo Engine Removed — 63 Test References Are Stale
+### ✅ P0 Resolved: Echo Engine Removed, Tests Migrated to Mock Codex
 
-`engineType: 'echo'` appears 63 times across 10 backend test files, but `EchoExecutor` is no longer registered in the engine registry. Tests that write this value to the DB still pass, but execution integration tests cannot route through the registry. **All `'echo'` references must be migrated to `'codex'`** (with a `CodexExecutor` stub) before adding new execution tests.
-
-Affected files:
-- `test/api-execution.test.ts` (16 occurrences)
-- `test/api-pending-messages.test.ts` (12)
-- `test/followup-reconciliation.test.ts` (9)
-- `test/api-status-transitions.test.ts` (9)
-- `test/api-issues.test.ts` (5)
-- `test/startup-probe.test.ts` (5)
-- `test/api-process-state-regression.test.ts` (3)
-- `test/turn-completion-regression.test.ts` (2)
-- `test/reconciler.test.ts` (1)
-- `test/pending-messages-unit.test.ts` (1)
+All `engineType: 'echo'` references have been migrated to `engineType: 'codex'`. Tests now use `MockCodexExecutor` (in `test/mock-codex-executor.ts`) which overrides the real `CodexExecutor` registration in the test preload.
 
 | Metric | Value | Target | Gap |
 |--------|-------|--------|-----|

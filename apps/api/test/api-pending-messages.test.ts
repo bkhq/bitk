@@ -52,7 +52,7 @@ describe('Follow-up queuing on todo issues', () => {
       await post<Issue>(`/api/projects/${projectId}/issues`, {
         title: 'Queue Test',
         statusId: 'todo',
-        engineType: 'echo',
+        engineType: 'codex',
         model: 'auto',
       }),
     )
@@ -75,7 +75,7 @@ describe('Follow-up queuing on todo issues', () => {
       await post<Issue>(`/api/projects/${projectId}/issues`, {
         title: 'Pending Log Test',
         statusId: 'todo',
-        engineType: 'echo',
+        engineType: 'codex',
         model: 'auto',
       }),
     )
@@ -99,7 +99,7 @@ describe('Follow-up queuing on todo issues', () => {
       await post<Issue>(`/api/projects/${projectId}/issues`, {
         title: 'Multi Queue Test',
         statusId: 'todo',
-        engineType: 'echo',
+        engineType: 'codex',
         model: 'auto',
       }),
     )
@@ -135,7 +135,7 @@ describe('Pending messages consumed on transition to working', () => {
       await post<Issue>(`/api/projects/${projectId}/issues`, {
         title: 'PATCH Consume Test',
         statusId: 'todo',
-        engineType: 'echo',
+        engineType: 'codex',
         model: 'auto',
       }),
     )
@@ -174,7 +174,7 @@ describe('Pending messages consumed on transition to working', () => {
       await post<Issue>(`/api/projects/${projectId}/issues`, {
         title: 'Bulk Consume Test',
         statusId: 'todo',
-        engineType: 'echo',
+        engineType: 'codex',
         model: 'auto',
       }),
     )
@@ -210,7 +210,7 @@ describe('Pending messages consumed on transition to working', () => {
       await post<Issue>(`/api/projects/${projectId}/issues`, {
         title: 'Done Queue Consume Test',
         statusId: 'done',
-        engineType: 'echo',
+        engineType: 'codex',
         model: 'auto',
       }),
     )
@@ -264,7 +264,7 @@ describe('No message duplication after pending consumption', () => {
       await post<Issue>(`/api/projects/${projectId}/issues`, {
         title: 'Dedup Test',
         statusId: 'todo',
-        engineType: 'echo',
+        engineType: 'codex',
         model: 'auto',
       }),
     )
@@ -312,7 +312,7 @@ describe('Flush pending messages for existing sessions', () => {
       await post<Issue>(`/api/projects/${projectId}/issues`, {
         title: 'Flush Test',
         statusId: 'working',
-        engineType: 'echo',
+        engineType: 'codex',
         model: 'auto',
       }),
     )
@@ -360,7 +360,7 @@ describe('Flush pending messages for existing sessions', () => {
       await post<Issue>(`/api/projects/${projectId}/issues`, {
         title: 'Flush Failure Preserve Test',
         statusId: 'working',
-        engineType: 'echo',
+        engineType: 'codex',
         model: 'auto',
       }),
     )
@@ -409,7 +409,7 @@ describe('Flush pending messages for existing sessions', () => {
       await post<Issue>(`/api/projects/${projectId}/issues`, {
         title: 'Running Guard Test',
         statusId: 'todo',
-        engineType: 'echo',
+        engineType: 'codex',
         model: 'auto',
       }),
     )
@@ -442,7 +442,7 @@ describe('Execute endpoint consumes pending messages', () => {
       await post<Issue>(`/api/projects/${projectId}/issues`, {
         title: 'Execute Consume Test',
         statusId: 'todo',
-        engineType: 'echo',
+        engineType: 'codex',
         model: 'auto',
       }),
     )
@@ -485,7 +485,7 @@ describe('Restart guards', () => {
       await post<Issue>(`/api/projects/${projectId}/issues`, {
         title: 'Restart Guard Test',
         statusId: 'working',
-        engineType: 'echo',
+        engineType: 'codex',
         model: 'auto',
       }),
     )

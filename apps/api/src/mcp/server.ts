@@ -100,7 +100,7 @@ async function resolveEngineAndModel(engineType?: string, model?: string) {
   let resolvedModel = model ?? null
 
   if (!resolvedEngine) {
-    resolvedEngine = ((await getDefaultEngine()) || 'echo') as string
+    resolvedEngine = ((await getDefaultEngine()) || 'claude-code') as string
   }
   if (!resolvedModel) {
     const savedModel = await getEngineDefaultModel(resolvedEngine)

@@ -30,7 +30,6 @@ const ENGINE_API_KEYS: Record<string, string[]> = {
   'claude-code': ['ANTHROPIC_API_KEY'],
   'codex': ['OPENAI_API_KEY', 'CODEX_API_KEY'],
   'acp': ['GOOGLE_API_KEY', 'GEMINI_API_KEY', 'OPENAI_API_KEY', 'CODEX_API_KEY', 'ANTHROPIC_API_KEY'],
-  'echo': [],
 }
 
 const ALL_API_KEYS = new Set([

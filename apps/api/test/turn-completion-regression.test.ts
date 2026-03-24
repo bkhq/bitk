@@ -38,7 +38,7 @@ async function createWorkingIssue(title: string) {
       statusId: 'working',
       issueNumber,
       title,
-      engineType: 'echo',
+      engineType: 'codex',
       sessionStatus: 'running',
       prompt: title,
       externalSessionId: `sess-${Date.now()}`,
@@ -70,7 +70,7 @@ describe('turn completion pending-flush regression', () => {
     const managed: ManagedProcess = {
       executionId,
       issueId: issue.id,
-      engineType: 'echo',
+      engineType: 'codex',
       process: {
         subprocess: { exited: Promise.resolve(0) },
       } as any,

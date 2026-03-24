@@ -24,9 +24,9 @@ if (!existsSync(testDir)) {
 // Store path for cleanup
 ;(globalThis as any).__TEST_DB_PATH = testDbPath
 
-// Register echo executor for tests (removed from production registry)
+// Override codex executor with mock for tests (no real subprocess)
 // eslint-disable-next-line antfu/no-top-level-await
 const { engineRegistry } = await import('@/engines/executors')
 // eslint-disable-next-line antfu/no-top-level-await
-const { EchoExecutor } = await import('@/engines/executors/echo/executor')
-;(engineRegistry as any).register(new EchoExecutor())
+const { MockCodexExecutor } = await import('./mock-codex-executor')
+;(engineRegistry as any).register(new MockCodexExecutor())

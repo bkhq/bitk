@@ -49,14 +49,14 @@ describe('POST /api/projects/:projectId/issues', () => {
       title: 'Full Issue',
       statusId: 'working',
       description: 'Detailed description',
-      engineType: 'echo',
+      engineType: 'codex',
       model: 'auto',
     })
     expect(result.status).toBe(202)
     const data = expectSuccess(result)
     expect(data.title).toBe('Full Issue')
     expect(data.statusId).toBe('working')
-    expect(data.engineType).toBe('echo')
+    expect(data.engineType).toBe('codex')
     expect(data.model).toBe('auto')
   })
 
@@ -64,7 +64,7 @@ describe('POST /api/projects/:projectId/issues', () => {
     const result = await post<Issue>(`/api/projects/${projectId}/issues`, {
       title: 'Auto Execute',
       statusId: 'working',
-      engineType: 'echo',
+      engineType: 'codex',
     })
     expect(result.status).toBe(202)
     const data = expectSuccess(result)
@@ -76,7 +76,7 @@ describe('POST /api/projects/:projectId/issues', () => {
     const result = await post<Issue>(`/api/projects/${projectId}/issues`, {
       title: 'My Task Title',
       statusId: 'todo',
-      engineType: 'echo',
+      engineType: 'codex',
     })
     const data = expectSuccess(result)
     expect(data.prompt).toBe('My Task Title')
@@ -87,7 +87,7 @@ describe('POST /api/projects/:projectId/issues', () => {
       title: 'Title',
       statusId: 'todo',
       description: 'Details here',
-      engineType: 'echo',
+      engineType: 'codex',
     })
     const data = expectSuccess(result)
     expect(data.prompt).toBe('Title')

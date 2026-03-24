@@ -27,12 +27,12 @@ describe('Auto-execute on issue creation', () => {
     const result = await createTestIssue(projectId, {
       title: 'Auto Exec Test',
       statusId: 'working',
-      engineType: 'echo',
+      engineType: 'codex',
     })
     expect(result.status).toBe(202)
     const data = expectSuccess(result) as Issue
     expect(data.sessionStatus).toBe('pending')
-    expect(data.engineType).toBe('echo')
+    expect(data.engineType).toBe('codex')
     expect(data.prompt).toBe('Auto Exec Test')
   })
 
@@ -40,7 +40,7 @@ describe('Auto-execute on issue creation', () => {
     const result = await createTestIssue(projectId, {
       title: 'Todo No Exec',
       statusId: 'todo',
-      engineType: 'echo',
+      engineType: 'codex',
     })
     expect(result.status).toBe(201)
     const data = expectSuccess(result) as Issue
@@ -52,7 +52,7 @@ describe('Auto-execute on issue creation', () => {
       await createTestIssue(projectId, {
         title: 'Wait For Complete',
         statusId: 'working',
-        engineType: 'echo',
+        engineType: 'codex',
       }),
     ) as Issue
     const issueId = data.id
@@ -74,7 +74,7 @@ describe('Auto-execute on issue creation', () => {
       await createTestIssue(projectId, {
         title: 'Turn Check',
         statusId: 'working',
-        engineType: 'echo',
+        engineType: 'codex',
       }),
     ) as Issue
 
@@ -101,7 +101,7 @@ describe('Auto-execute on issue creation', () => {
         title: 'With Desc',
         description: 'Extra details',
         statusId: 'working',
-        engineType: 'echo',
+        engineType: 'codex',
       }),
     ) as Issue
     expect(data.prompt).toBe('With Desc')
@@ -114,7 +114,7 @@ describe('POST /api/projects/:projectId/issues/:id/execute', () => {
       await createTestIssue(projectId, {
         title: 'Manual Exec',
         statusId: 'working',
-        engineType: 'echo',
+        engineType: 'codex',
       }),
     ) as Issue
 
@@ -127,7 +127,7 @@ describe('POST /api/projects/:projectId/issues/:id/execute', () => {
     // Now manually execute again
     const result = await post<{ executionId: string, issueId: string }>(
       `/api/projects/${projectId}/issues/${issue.id}/execute`,
-      { engineType: 'echo', prompt: 'Manual prompt' },
+      { engineType: 'codex', prompt: 'Manual prompt' },
     )
     expect(result.status).toBe(200)
     const data = expectSuccess(result)
@@ -142,7 +142,7 @@ describe('POST /api/projects/:projectId/issues/:id/follow-up', () => {
       await createTestIssue(projectId, {
         title: 'Follow Up Test',
         statusId: 'working',
-        engineType: 'echo',
+        engineType: 'codex',
       }),
     ) as Issue
 
@@ -168,7 +168,7 @@ describe('POST /api/projects/:projectId/issues/:id/follow-up', () => {
       await createTestIssue(projectId, {
         title: 'Model Follow Up',
         statusId: 'working',
-        engineType: 'echo',
+        engineType: 'codex',
       }),
     ) as Issue
 
@@ -190,7 +190,7 @@ describe('POST /api/projects/:projectId/issues/:id/follow-up', () => {
       await createTestIssue(projectId, {
         title: 'Model Switch Follow Up',
         statusId: 'working',
-        engineType: 'echo',
+        engineType: 'codex',
       }),
     ) as Issue
 
@@ -211,7 +211,7 @@ describe('POST /api/projects/:projectId/issues/:id/follow-up', () => {
       await createTestIssue(projectId, {
         title: 'Empty Follow Up',
         statusId: 'working',
-        engineType: 'echo',
+        engineType: 'codex',
       }),
     ) as Issue
 
@@ -233,7 +233,7 @@ describe('POST /api/projects/:projectId/issues/:id/cancel', () => {
       await createTestIssue(projectId, {
         title: 'Cancel Test',
         statusId: 'working',
-        engineType: 'echo',
+        engineType: 'codex',
       }),
     ) as Issue
 
@@ -253,7 +253,7 @@ describe('POST /api/projects/:projectId/issues/:id/restart', () => {
       await createTestIssue(projectId, {
         title: 'Restart Test',
         statusId: 'working',
-        engineType: 'echo',
+        engineType: 'codex',
       }),
     ) as Issue
 
@@ -289,7 +289,7 @@ describe('GET /api/projects/:projectId/issues/:id/logs (after execution)', () =>
       await createTestIssue(projectId, {
         title: 'Logs List Test',
         statusId: 'working',
-        engineType: 'echo',
+        engineType: 'codex',
       }),
     ) as Issue
 
@@ -314,7 +314,7 @@ describe('GET /api/projects/:projectId/issues/:id/logs', () => {
       await createTestIssue(projectId, {
         title: 'Logs Test',
         statusId: 'working',
-        engineType: 'echo',
+        engineType: 'codex',
       }),
     ) as Issue
 

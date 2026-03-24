@@ -126,7 +126,6 @@ The most complex subsystem — bridges API routes and CLI-based AI agents.
 | `claude-code` | `stream-json` | `claude` binary | Streaming JSON over stdout; process exits after each turn |
 | `codex` | `json-rpc` | `codex app-server` | JSONL JSON-RPC over stdio; process **stays alive** between turns |
 | `acp` | `acp` | Selected by `model` prefix | ACP protocol; routes to Gemini/Codex/Claude by `acp:<agent>:<model>` |
-| `echo` | — | — | Test/stub executor |
 
 Each executor implements `EngineExecutor`: `spawn`, `spawnFollowUp`, `cancel`, `getAvailability`, `getModels`, `normalizeLog`.
 
@@ -158,8 +157,6 @@ engines/
 │   │   ├── transport.ts        — Subprocess/event bridge
 │   │   ├── acp-client.ts       — ACP client facade
 │   │   └── agents/             — Per-agent configs (gemini, codex, claude)
-│   └── echo/
-│       └── executor.ts         — Test stub
 └── issue/
     ├── engine.ts               — IssueEngine singleton facade
     ├── orchestration/          — execute, follow-up, restart, cancel

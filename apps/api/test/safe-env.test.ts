@@ -97,15 +97,6 @@ describe('safeEnv', () => {
       expect(env.CODEX_API_KEY).toBe('test-codex-key')
     })
 
-    test('echo gets no API keys', () => {
-      const env = safeEnv(undefined, 'echo')
-      expect(env.ANTHROPIC_API_KEY).toBeUndefined()
-      expect(env.OPENAI_API_KEY).toBeUndefined()
-      expect(env.GOOGLE_API_KEY).toBeUndefined()
-      expect(env.GEMINI_API_KEY).toBeUndefined()
-      expect(env.CODEX_API_KEY).toBeUndefined()
-    })
-
     test('no engineType passes all API keys (backward compat)', () => {
       const env = safeEnv()
       expect(env.ANTHROPIC_API_KEY).toBe('test-anthropic-key')
