@@ -8,6 +8,7 @@ import { httpLogger, logger } from './logger'
 import { apiRoutes, engineRoutes, eventRoutes, settingsRoutes } from './routes'
 import mcpRoute from './routes/mcp'
 import cronRoute from './routes/cron'
+import docsRoute from './routes/docs'
 import notesRoutes from './routes/notes'
 import terminalRoute from './routes/terminal'
 
@@ -56,6 +57,10 @@ app.use(httpLogger())
 
 // --- Auth routes (public, must be before auth middleware) ---
 app.route('/api/auth', authRoutes)
+
+// --- API docs (public, before auth middleware) ---
+app.route('/api/docs', docsRoute)
+app.get('/api/openapi.json', c => c.redirect('/api/docs/openapi.json'))
 
 // --- Auth middleware (protects all routes below when AUTH_ENABLED=true) ---
 app.use('/api/*', authMiddleware())
