@@ -585,6 +585,9 @@
     "failed": "失败",
     "running": "运行中",
     "loadMore": "加载更多",
-    "backToJobs": "返回任务列表"
+    "backToJobs": "返回任务列表",
+    "taskConfig": "任务配置",
+    "deleted": "已删除",
+    "deletedJobs": "已删除的任务"
   }
 }

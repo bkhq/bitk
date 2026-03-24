@@ -14,12 +14,11 @@ const logsQuerySchema = z.object({
   cursor: z.string().optional(),
 })
 
-// GET /api/cron — list all cron jobs
+// GET /api/cron — list all cron jobs (including soft-deleted)
 cronRoute.get('/', (c) => {
   const rows = db
     .select()
     .from(cronJobs)
-    .where(eq(cronJobs.isDeleted, 0))
     .all()
 
   return c.json({ success: true, data: rows.map(serializeJob) })
@@ -30,11 +29,11 @@ cronRoute.get('/:jobId/logs', zValidator('query', logsQuerySchema), (c) => {
   const jobId = c.req.param('jobId')
   const { status, limit, cursor } = c.req.valid('query')
 
-  // Verify job exists
+  // Verify job exists (including soft-deleted — allow viewing logs for deleted jobs)
   const [job] = db
     .select()
     .from(cronJobs)
-    .where(and(eq(cronJobs.id, jobId), eq(cronJobs.isDeleted, 0)))
+    .where(eq(cronJobs.id, jobId))
     .all()
 
   if (!job) {

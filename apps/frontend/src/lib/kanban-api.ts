@@ -53,6 +53,7 @@ export interface CronJob {
     result: string | null
     error: string | null
   } | null
+  isDeleted: boolean
   createdAt: string
   updatedAt: string
 }

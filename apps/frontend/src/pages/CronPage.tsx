@@ -2,21 +2,26 @@ import {
   ArrowLeft,
   Calendar,
   CheckCircle2,
+  ChevronRight,
   Clock,
-  Home,
   Loader2,
+  StickyNote,
+  TerminalSquare,
   Timer,
+  Trash2,
   XCircle,
 } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { AppLogo } from '@/components/AppLogo'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useCronJobLogs, useCronJobs } from '@/hooks/use-kanban'
 import type { CronJob, CronJobLog } from '@/lib/kanban-api'
+import { useNotesStore } from '@/stores/notes-store'
+import { useTerminalStore } from '@/stores/terminal-store'
 
 function formatDuration(ms: number | null): string {
   if (ms === null) return '-'
@@ -70,9 +75,11 @@ function StatusBadge({ status }: { status: string }) {
 function CronJobList({
   jobs,
   onSelectJob,
+  isDeletedView,
 }: {
   jobs: CronJob[]
   onSelectJob: (job: CronJob) => void
+  isDeletedView?: boolean
 }) {
   const { t } = useTranslation()
 
@@ -94,34 +101,43 @@ function CronJobList({
           style={{ animationDelay: `${index * 60}ms` }}
         >
           <Card
-            className="h-full bg-card/70 hover:bg-card cursor-pointer transition-all hover:shadow-md hover:border-primary/20 group"
+            className={`h-full cursor-pointer transition-all hover:shadow-md group ${isDeletedView ? 'bg-card/40 opacity-70 hover:opacity-100 hover:bg-card/60' : 'bg-card/70 hover:bg-card hover:border-primary/20'}`}
             onClick={() => onSelectJob(job)}
           >
             <CardHeader className="pb-2">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
-                  <CardTitle className="text-base group-hover:text-primary transition-colors truncate">
+                  <CardTitle className={`text-base transition-colors truncate ${isDeletedView ? 'line-through text-muted-foreground group-hover:text-foreground' : 'group-hover:text-primary'}`}>
                     {job.name}
                   </CardTitle>
                   <p className="mt-0.5 text-xs text-muted-foreground font-mono">
                     {job.cron}
                   </p>
                 </div>
-                <StatusBadge status={job.enabled ? job.status : 'disabled'} />
+                {isDeletedView
+                  ? (
+                      <Badge variant="secondary" className="bg-muted text-muted-foreground">
+                        <Trash2 className="mr-1 h-3 w-3" />
+                        {t('cron.deleted')}
+                      </Badge>
+                    )
+                  : <StatusBadge status={job.enabled ? job.status : 'disabled'} />}
               </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-1.5 text-xs text-muted-foreground">
-                <div className="flex items-center gap-1.5">
-                  <Clock className="h-3 w-3 shrink-0" />
-                  <span>
-                    {t('cron.nextExecution')}
-                    :
-                  </span>
-                  <span className="ml-auto font-mono truncate">
-                    {job.nextExecution ? formatTime(job.nextExecution) : '-'}
-                  </span>
-                </div>
+                {!isDeletedView && (
+                  <div className="flex items-center gap-1.5">
+                    <Clock className="h-3 w-3 shrink-0" />
+                    <span>
+                      {t('cron.nextExecution')}
+                      :
+                    </span>
+                    <span className="ml-auto font-mono truncate">
+                      {job.nextExecution ? formatTime(job.nextExecution) : '-'}
+                    </span>
+                  </div>
+                )}
                 {job.lastRun && (
                   <div className="flex items-center gap-1.5">
                     <Timer className="h-3 w-3 shrink-0" />
@@ -151,6 +167,35 @@ function CronJobList({
 
 /* -- Log list view ---------------------------------------- */
 
+function TaskConfigView({ config }: { config: Record<string, unknown> }) {
+  const { t } = useTranslation()
+  const entries = Object.entries(config)
+  if (entries.length === 0) return null
+
+  return (
+    <div className="mt-4 mb-6">
+      <h3 className="text-sm font-medium mb-2">{t('cron.taskConfig')}</h3>
+      <Card className="bg-muted/30">
+        <CardContent className="py-3 px-4">
+          <div className="space-y-1.5">
+            {entries.map(([key, value]) => (
+              <div key={key} className="flex items-start gap-2 text-xs">
+                <span className="font-mono text-muted-foreground shrink-0">
+                  {key}
+                  :
+                </span>
+                <span className="font-mono break-all">
+                  {typeof value === 'object' ? JSON.stringify(value) : String(value)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
 function CronJobLogView({ job, onBack }: { job: CronJob, onBack: () => void }) {
   const { t } = useTranslation()
   const { data, isLoading } = useCronJobLogs(job.id)
@@ -166,12 +211,20 @@ function CronJobLogView({ job, onBack }: { job: CronJob, onBack: () => void }) {
         {t('cron.backToJobs')}
       </button>
 
-      <div className="mb-6">
-        <h2 className="text-lg font-semibold">{job.name}</h2>
+      <div className="mb-4">
+        <div className="flex items-center gap-2">
+          <h2 className="text-lg font-semibold">{job.name}</h2>
+          {job.isDeleted && (
+            <Badge variant="secondary" className="bg-muted text-muted-foreground">
+              <Trash2 className="mr-1 h-3 w-3" />
+              {t('cron.deleted')}
+            </Badge>
+          )}
+        </div>
         <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
           <span className="font-mono">{job.cron}</span>
-          <StatusBadge status={job.enabled ? job.status : 'disabled'} />
-          {job.nextExecution && (
+          {!job.isDeleted && <StatusBadge status={job.enabled ? job.status : 'disabled'} />}
+          {job.nextExecution && !job.isDeleted && (
             <span className="text-xs">
               {t('cron.nextExecution')}
               :
@@ -180,6 +233,8 @@ function CronJobLogView({ job, onBack }: { job: CronJob, onBack: () => void }) {
           )}
         </div>
       </div>
+
+      <TaskConfigView config={job.taskConfig} />
 
       <h3 className="text-sm font-medium mb-3">{t('cron.logs')}</h3>
 
@@ -204,15 +259,38 @@ function CronJobLogView({ job, onBack }: { job: CronJob, onBack: () => void }) {
 
 function LogEntry({ log }: { log: CronJobLog }) {
   const { t } = useTranslation()
+  const [expanded, setExpanded] = useState(false)
+  const hasDetail = !!(log.result || log.error)
 
   return (
-    <Card className="bg-card/50">
+    <Card
+      className={`bg-card/50 ${hasDetail ? 'cursor-pointer' : ''}`}
+      onClick={() => hasDetail && setExpanded(!expanded)}
+      onKeyDown={hasDetail
+        ? (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              setExpanded(!expanded)
+            }
+          }
+        : undefined}
+      tabIndex={hasDetail ? 0 : undefined}
+      role={hasDetail ? 'button' : undefined}
+      aria-expanded={hasDetail ? expanded : undefined}
+    >
       <CardContent className="py-3 px-4">
         <div className="flex items-center gap-3">
           <StatusBadge status={log.status} />
           <span className="text-xs text-muted-foreground font-mono">
             {formatTime(log.startedAt)}
           </span>
+          {log.finishedAt && (
+            <span className="text-xs text-muted-foreground">
+              →
+              {' '}
+              {formatTime(log.finishedAt)}
+            </span>
+          )}
           {log.durationMs !== null && (
             <span className="text-xs text-muted-foreground">
               {t('cron.duration')}
@@ -220,16 +298,39 @@ function LogEntry({ log }: { log: CronJobLog }) {
               {formatDuration(log.durationMs)}
             </span>
           )}
+          {hasDetail && (
+            <ChevronRight className={`ml-auto h-3.5 w-3.5 text-muted-foreground transition-transform ${expanded ? 'rotate-90' : ''}`} />
+          )}
         </div>
-        {log.result && (
+        {!expanded && log.result && (
           <p className="mt-1.5 text-xs text-muted-foreground font-mono truncate">
             {log.result}
           </p>
         )}
-        {log.error && (
+        {!expanded && log.error && (
           <p className="mt-1.5 text-xs text-red-500 font-mono truncate">
             {log.error}
           </p>
+        )}
+        {expanded && (
+          <div className="mt-3 space-y-2">
+            {log.result && (
+              <div>
+                <p className="text-[10px] font-medium text-muted-foreground mb-1">{t('cron.result')}</p>
+                <pre className="text-xs font-mono text-foreground whitespace-pre-wrap break-all bg-muted/40 rounded px-2.5 py-2">
+                  {log.result}
+                </pre>
+              </div>
+            )}
+            {log.error && (
+              <div>
+                <p className="text-[10px] font-medium text-red-500 mb-1">{t('cron.error')}</p>
+                <pre className="text-xs font-mono text-red-500 whitespace-pre-wrap break-all bg-red-500/5 rounded px-2.5 py-2">
+                  {log.error}
+                </pre>
+              </div>
+            )}
+          </div>
         )}
       </CardContent>
     </Card>
@@ -240,33 +341,53 @@ function LogEntry({ log }: { log: CronJobLog }) {
 
 export default function CronPage() {
   const { t } = useTranslation()
-  const navigate = useNavigate()
   const { data: jobs, isLoading } = useCronJobs()
   const [selectedJob, setSelectedJob] = useState<CronJob | null>(null)
+  const [showDeleted, setShowDeleted] = useState(false)
+
+  const activeJobs = jobs?.filter(j => !j.isDeleted) ?? []
+  const deletedJobs = jobs?.filter(j => j.isDeleted) ?? []
 
   return (
     <main className="min-h-screen text-foreground animate-page-enter">
       <section className="mx-auto max-w-6xl px-4 py-6 md:px-6 md:py-12">
         {/* Header */}
         <div className="mb-6 flex items-center gap-3 md:mb-8">
-          <AppLogo className="h-9 w-9" />
+          <Link to="/" aria-label={t('sidebar.home')}>
+            <AppLogo className="h-9 w-9" />
+          </Link>
           <h1 className="text-xl font-semibold tracking-tight md:text-2xl">
             {t('cron.title')}
           </h1>
           {jobs && (
             <Badge variant="secondary" className="ml-1">
-              {jobs.length}
+              {activeJobs.length}
+              {deletedJobs.length > 0 && (
+                <span className="text-muted-foreground/60 ml-0.5">
+                  +
+                  {deletedJobs.length}
+                </span>
+              )}
             </Badge>
           )}
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-2">
             <Button
               variant="ghost"
               size="icon"
               className="h-8 w-8 text-muted-foreground"
-              onClick={() => navigate('/')}
-              aria-label={t('sidebar.home')}
+              onClick={useTerminalStore.getState().toggle}
+              aria-label={t('terminal.title')}
             >
-              <Home className="h-4 w-4" />
+              <TerminalSquare className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-muted-foreground"
+              onClick={useNotesStore.getState().toggle}
+              aria-label={t('notes.title')}
+            >
+              <StickyNote className="h-4 w-4" />
             </Button>
           </div>
         </div>
@@ -296,10 +417,35 @@ export default function CronPage() {
             onBack={() => setSelectedJob(null)}
           />
         ) : (
-          <CronJobList
-            jobs={jobs ?? []}
-            onSelectJob={setSelectedJob}
-          />
+          <>
+            <CronJobList
+              jobs={activeJobs}
+              onSelectJob={setSelectedJob}
+            />
+            {deletedJobs.length > 0 && (
+              <div className="mt-8">
+                <button
+                  type="button"
+                  onClick={() => setShowDeleted(!showDeleted)}
+                  className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4"
+                >
+                  <ChevronRight className={`h-4 w-4 transition-transform ${showDeleted ? 'rotate-90' : ''}`} />
+                  <Trash2 className="h-3.5 w-3.5" />
+                  {t('cron.deletedJobs')}
+                  <Badge variant="secondary" className="ml-1 text-xs">
+                    {deletedJobs.length}
+                  </Badge>
+                </button>
+                {showDeleted && (
+                  <CronJobList
+                    jobs={deletedJobs}
+                    onSelectJob={setSelectedJob}
+                    isDeletedView
+                  />
+                )}
+              </div>
+            )}
+          </>
         )}
       </section>
     </main>

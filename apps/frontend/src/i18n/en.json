@@ -585,6 +585,9 @@
     "failed": "Failed",
     "running": "Running",
     "loadMore": "Load more",
-    "backToJobs": "Back to jobs"
+    "backToJobs": "Back to jobs",
+    "taskConfig": "Task Configuration",
+    "deleted": "Deleted",
+    "deletedJobs": "Deleted Jobs"
   }
 }

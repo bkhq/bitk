@@ -10,8 +10,9 @@ export interface SerializedCronJob {
   enabled: boolean
   status: string
   nextExecution: string | null
-  createdAt: Date
-  updatedAt: Date
+  isDeleted: boolean
+  createdAt: string
+  updatedAt: string
 }
 
 export function serializeJob(row: typeof cronJobs.$inferSelect): SerializedCronJob {
@@ -43,7 +44,8 @@ export function serializeJob(row: typeof cronJobs.$inferSelect): SerializedCronJ
     enabled: row.enabled,
     status,
     nextExecution,
-    createdAt: row.createdAt,
-    updatedAt: row.updatedAt,
+    isDeleted: row.isDeleted === 1,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
   }
 }
