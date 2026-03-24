@@ -2,11 +2,70 @@
   "openapi": "3.1.0",
   "info": {
     "title": "BKD API",
-    "version": "dev"
+    "description": "Kanban board for managing AI coding agents. Issues are assigned to CLI-based AI engines (Claude Code, Codex, Gemini CLI) that execute autonomously.",
+    "version": "dev",
+    "license": {
+      "name": "MIT"
+    }
   },
   "servers": [
     {
-      "url": "/api"
+      "url": "/",
+      "description": "Default"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Meta",
+      "description": "Health, status, and runtime information"
+    },
+    {
+      "name": "Projects",
+      "description": "Project CRUD and lifecycle"
+    },
+    {
+      "name": "Issues",
+      "description": "Issue CRUD, bulk updates, and duplication"
+    },
+    {
+      "name": "Issue Commands",
+      "description": "Execute, follow-up, restart, cancel AI sessions"
+    },
+    {
+      "name": "Issue Logs",
+      "description": "Retrieve and filter issue conversation logs"
+    },
+    {
+      "name": "Engines",
+      "description": "AI engine discovery, settings, and models"
+    },
+    {
+      "name": "Cron",
+      "description": "Scheduled job management"
+    },
+    {
+      "name": "Events",
+      "description": "Server-Sent Events for real-time updates"
+    },
+    {
+      "name": "Processes",
+      "description": "Active engine process management"
+    },
+    {
+      "name": "Worktrees",
+      "description": "Git worktree management per project"
+    },
+    {
+      "name": "Notes",
+      "description": "Scratch notes"
+    },
+    {
+      "name": "Settings",
+      "description": "Application settings and configuration"
+    },
+    {
+      "name": "Webhooks",
+      "description": "Webhook notification management"
     }
   ],
   "components": {
@@ -357,7 +416,8 @@
           },
           "engineType": {
             "type": "string",
-            "description": "claude-code | codex | acp | acp:*"
+            "pattern": "^(claude-code|codex|acp(:.+)?)$",
+            "description": "claude-code | codex | acp | acp:<agent>:<model>"
           },
           "model": {
             "type": "string",
@@ -482,7 +542,8 @@
         "properties": {
           "engineType": {
             "type": "string",
-            "description": "claude-code | codex | acp | acp:*"
+            "pattern": "^(claude-code|codex|acp(:.+)?)$",
+            "description": "claude-code | codex | acp | acp:<agent>:<model>"
           },
           "prompt": {
             "type": "string",
@@ -1822,6 +1883,16 @@
         ],
         "summary": "List issues in project",
         "operationId": "listIssues",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "projectId",
+            "in": "path"
+          }
+        ],
         "responses": {
           "200": {
             "description": "Issue list",
@@ -1850,6 +1921,16 @@
                 }
               }
             }
+          },
+          "404": {
+            "description": "Project not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         }
       },
@@ -1859,6 +1940,16 @@
         ],
         "summary": "Create issue",
         "operationId": "createIssue",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "projectId",
+            "in": "path"
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -1928,6 +2019,16 @@
                 }
               }
             }
+          },
+          "404": {
+            "description": "Project not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -1940,6 +2041,14 @@
         "summary": "Get issue",
         "operationId": "getIssue",
         "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "projectId",
+            "in": "path"
+          },
           {
             "schema": {
               "type": "string"
@@ -1994,6 +2103,14 @@
         "summary": "Update issue",
         "operationId": "updateIssue",
         "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "projectId",
+            "in": "path"
+          },
           {
             "schema": {
               "type": "string"
@@ -2062,6 +2179,14 @@
               "type": "string"
             },
             "required": true,
+            "name": "projectId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
             "name": "issueId",
             "in": "path"
           }
@@ -2120,6 +2245,16 @@
         ],
         "summary": "Bulk update issues",
         "operationId": "bulkUpdateIssues",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "projectId",
+            "in": "path"
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -2157,6 +2292,16 @@
                 }
               }
             }
+          },
+          "404": {
+            "description": "Project not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -2169,6 +2314,14 @@
         "summary": "Duplicate issue",
         "operationId": "duplicateIssue",
         "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "projectId",
+            "in": "path"
+          },
           {
             "schema": {
               "type": "string"
@@ -2213,6 +2366,16 @@
                 }
               }
             }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -2225,6 +2388,14 @@
         "summary": "Start AI execution on issue",
         "operationId": "executeIssue",
         "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "projectId",
+            "in": "path"
+          },
           {
             "schema": {
               "type": "string"
@@ -2279,6 +2450,16 @@
               }
             }
           },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "404": {
             "description": "Issue not found",
             "content": {
@@ -2300,6 +2481,14 @@
         "summary": "Restart failed session",
         "operationId": "restartIssue",
         "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "projectId",
+            "in": "path"
+          },
           {
             "schema": {
               "type": "string"
@@ -2371,6 +2560,14 @@
               "type": "string"
             },
             "required": true,
+            "name": "projectId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
             "name": "issueId",
             "in": "path"
           }
@@ -2395,13 +2592,13 @@
                         "issueId": {
                           "type": "string"
                         },
-                        "cancelled": {
-                          "type": "boolean"
+                        "status": {
+                          "type": "string"
                         }
                       },
                       "required": [
                         "issueId",
-                        "cancelled"
+                        "status"
                       ]
                     }
                   },
@@ -2409,6 +2606,16 @@
                     "success",
                     "data"
                   ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Cancel failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -2434,6 +2641,14 @@
         "summary": "List available slash commands",
         "operationId": "getSlashCommands",
         "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "projectId",
+            "in": "path"
+          },
           {
             "schema": {
               "type": "string"
@@ -2490,6 +2705,14 @@
         "summary": "Get issue logs (paginated)",
         "operationId": "getIssueLogs",
         "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "projectId",
+            "in": "path"
+          },
           {
             "schema": {
               "type": "string"
@@ -2577,6 +2800,14 @@
               "type": "string"
             },
             "required": true,
+            "name": "projectId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
             "name": "issueId",
             "in": "path"
           },
@@ -2611,6 +2842,16 @@
                     "success",
                     "data"
                   ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -2740,6 +2981,16 @@
           },
           "404": {
             "description": "Worktree not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Delete failed",
             "content": {
               "application/json": {
                 "schema": {
@@ -3996,10 +4247,16 @@
                       "type": "object",
                       "properties": {
                         "name": {
-                          "type": "string"
+                          "type": [
+                            "string",
+                            "null"
+                          ]
                         },
                         "url": {
-                          "type": "string"
+                          "type": [
+                            "string",
+                            "null"
+                          ]
                         }
                       },
                       "required": [
@@ -4123,6 +4380,16 @@
                     "success",
                     "data"
                   ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid engine type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -4270,6 +4537,16 @@
                     "success",
                     "data"
                   ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -4507,6 +4784,16 @@
                 }
               }
             }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         }
       },
@@ -4547,6 +4834,16 @@
                     "success",
                     "data"
                   ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -4615,6 +4912,16 @@
                 }
               }
             }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         }
       },
@@ -4670,6 +4977,16 @@
           },
           "404": {
             "description": "Note not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
             "content": {
               "application/json": {
                 "schema": {
@@ -5218,6 +5535,16 @@
           },
           "409": {
             "description": "Job already running",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
             "content": {
               "application/json": {
                 "schema": {

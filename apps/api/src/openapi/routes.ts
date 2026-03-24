@@ -935,7 +935,7 @@ export const getServerInfo = createRoute({
   tags: ['Settings'],
   summary: 'Get server name and URL',
   operationId: 'getServerInfo',
-  responses: { 200: successResponse(z.object({ name: z.string(), url: z.string() }), 'Server info') },
+  responses: { 200: successResponse(z.object({ name: z.string().nullable(), url: z.string().nullable() }), 'Server info') },
 })
 
 export const setServerInfo = createRoute({
