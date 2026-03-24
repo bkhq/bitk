@@ -1,4 +1,5 @@
 import { OpenAPIHono } from '@hono/zod-openapi'
+import { swaggerUI } from '@hono/swagger-ui'
 import { compress } from 'hono/compress'
 import { cors } from 'hono/cors'
 import { secureHeaders } from 'hono/secure-headers'
@@ -6,11 +7,11 @@ import { authMiddleware, authRoutes } from './auth'
 import { getEngineDiscovery } from './engines/startup-probe'
 import { httpLogger, logger } from './logger'
 import { apiRoutes, engineRoutes, eventRoutes, settingsRoutes } from './routes'
-import mcpRoute from './routes/mcp'
 import cronRoute from './routes/cron'
-import docsRoute from './routes/docs'
+import mcpRoute from './routes/mcp'
 import notesRoutes from './routes/notes'
 import terminalRoute from './routes/terminal'
+import { VERSION } from './version'
 
 const app = new OpenAPIHono()
 
@@ -59,7 +60,32 @@ app.use(httpLogger())
 app.route('/api/auth', authRoutes)
 
 // --- API docs (public, before auth middleware) ---
-app.route('/api/docs', docsRoute)
+app.get('/api/docs', swaggerUI({ url: '/api/docs/openapi.json' }))
+app.doc31('/api/docs/openapi.json', {
+  openapi: '3.1.0',
+  info: {
+    title: 'BKD API',
+    description: 'Kanban board for managing AI coding agents. Issues are assigned to CLI-based AI engines (Claude Code, Codex, Gemini CLI) that execute autonomously.',
+    version: VERSION,
+    license: { name: 'MIT' },
+  },
+  servers: [{ url: '/api', description: 'API base' }],
+  tags: [
+    { name: 'Meta', description: 'Health, status, and runtime information' },
+    { name: 'Projects', description: 'Project CRUD and lifecycle' },
+    { name: 'Issues', description: 'Issue CRUD, bulk updates, and duplication' },
+    { name: 'Issue Commands', description: 'Execute, follow-up, restart, cancel AI sessions' },
+    { name: 'Issue Logs', description: 'Retrieve and filter issue conversation logs' },
+    { name: 'Engines', description: 'AI engine discovery, settings, and models' },
+    { name: 'Cron', description: 'Scheduled job management' },
+    { name: 'Events', description: 'Server-Sent Events for real-time updates' },
+    { name: 'Processes', description: 'Active engine process management' },
+    { name: 'Worktrees', description: 'Git worktree management per project' },
+    { name: 'Notes', description: 'Scratch notes' },
+    { name: 'Settings', description: 'Application settings and configuration' },
+    { name: 'Webhooks', description: 'Webhook notification management' },
+  ],
+})
 app.get('/api/openapi.json', c => c.redirect('/api/docs/openapi.json'))
 
 // --- Auth middleware (protects all routes below when AUTH_ENABLED=true) ---

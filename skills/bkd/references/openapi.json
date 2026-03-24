@@ -2,70 +2,11 @@
   "openapi": "3.1.0",
   "info": {
     "title": "BKD API",
-    "description": "Kanban board for managing AI coding agents. Issues are assigned to CLI-based AI engines (Claude Code, Codex, Gemini CLI) that execute autonomously.",
-    "version": "dev",
-    "license": {
-      "name": "MIT"
-    }
+    "version": "dev"
   },
   "servers": [
     {
-      "url": "/api",
-      "description": "API base"
-    }
-  ],
-  "tags": [
-    {
-      "name": "Meta",
-      "description": "Health, status, and runtime information"
-    },
-    {
-      "name": "Projects",
-      "description": "Project CRUD and lifecycle"
-    },
-    {
-      "name": "Issues",
-      "description": "Issue CRUD, bulk updates, and duplication"
-    },
-    {
-      "name": "Issue Commands",
-      "description": "Execute, follow-up, restart, cancel AI sessions"
-    },
-    {
-      "name": "Issue Logs",
-      "description": "Retrieve and filter issue conversation logs"
-    },
-    {
-      "name": "Engines",
-      "description": "AI engine discovery, settings, and models"
-    },
-    {
-      "name": "Cron",
-      "description": "Scheduled job management"
-    },
-    {
-      "name": "Events",
-      "description": "Server-Sent Events for real-time updates"
-    },
-    {
-      "name": "Processes",
-      "description": "Active engine process management"
-    },
-    {
-      "name": "Worktrees",
-      "description": "Git worktree management per project"
-    },
-    {
-      "name": "Notes",
-      "description": "Scratch notes"
-    },
-    {
-      "name": "Settings",
-      "description": "Application settings and configuration"
-    },
-    {
-      "name": "Webhooks",
-      "description": "Webhook notification management"
+      "url": "/api"
     }
   ],
   "components": {
@@ -566,45 +507,6 @@
           "prompt"
         ]
       },
-      "FollowUp": {
-        "type": "object",
-        "properties": {
-          "prompt": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 32768
-          },
-          "model": {
-            "type": "string",
-            "pattern": "^[\\w./:\\-[\\]]{1,160}$"
-          },
-          "permissionMode": {
-            "type": "string",
-            "enum": [
-              "auto",
-              "supervised",
-              "plan"
-            ]
-          },
-          "busyAction": {
-            "type": "string",
-            "enum": [
-              "queue",
-              "cancel"
-            ]
-          },
-          "meta": {
-            "type": "boolean"
-          },
-          "displayPrompt": {
-            "type": "string",
-            "maxLength": 500
-          }
-        },
-        "required": [
-          "prompt"
-        ]
-      },
       "CategorizedCommands": {
         "type": "object",
         "properties": {
@@ -803,6 +705,107 @@
           "unstaged"
         ]
       },
+      "WorktreeEntry": {
+        "type": "object",
+        "properties": {
+          "issueId": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "branch": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "issueId",
+          "path",
+          "branch"
+        ]
+      },
+      "ProcessInfo": {
+        "type": "object",
+        "properties": {
+          "executionId": {
+            "type": "string"
+          },
+          "issueId": {
+            "type": "string"
+          },
+          "issueTitle": {
+            "type": "string"
+          },
+          "issueNumber": {
+            "type": "integer"
+          },
+          "projectId": {
+            "type": "string"
+          },
+          "projectAlias": {
+            "type": "string"
+          },
+          "projectName": {
+            "type": "string"
+          },
+          "engineType": {
+            "type": "string"
+          },
+          "processState": {
+            "type": "string"
+          },
+          "model": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "startedAt": {
+            "type": "string"
+          },
+          "turnInFlight": {
+            "type": "boolean"
+          },
+          "spawnCommand": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "lastIdleAt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "pid": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "executionId",
+          "issueId",
+          "issueTitle",
+          "issueNumber",
+          "projectId",
+          "projectAlias",
+          "projectName",
+          "engineType",
+          "processState",
+          "model",
+          "startedAt",
+          "turnInFlight",
+          "spawnCommand",
+          "lastIdleAt",
+          "pid"
+        ]
+      },
       "EngineDiscoveryResult": {
         "type": "object",
         "properties": {
@@ -977,222 +980,6 @@
           "models",
           "duration"
         ]
-      },
-      "CronJob": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "cron": {
-            "type": "string"
-          },
-          "taskType": {
-            "type": "string"
-          },
-          "taskConfig": {
-            "type": "object",
-            "additionalProperties": {}
-          },
-          "enabled": {
-            "type": "boolean"
-          },
-          "lastRun": {
-            "type": [
-              "object",
-              "null"
-            ],
-            "additionalProperties": {}
-          },
-          "createdAt": {
-            "type": "string"
-          },
-          "updatedAt": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "name",
-          "cron",
-          "taskType",
-          "taskConfig",
-          "enabled",
-          "lastRun",
-          "createdAt",
-          "updatedAt"
-        ]
-      },
-      "CreateCronJob": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 100
-          },
-          "cron": {
-            "type": "string",
-            "minLength": 1
-          },
-          "action": {
-            "type": "string",
-            "minLength": 1
-          },
-          "config": {
-            "type": "object",
-            "additionalProperties": {}
-          }
-        },
-        "required": [
-          "name",
-          "cron",
-          "action"
-        ]
-      },
-      "ProcessInfo": {
-        "type": "object",
-        "properties": {
-          "executionId": {
-            "type": "string"
-          },
-          "issueId": {
-            "type": "string"
-          },
-          "issueTitle": {
-            "type": "string"
-          },
-          "issueNumber": {
-            "type": "integer"
-          },
-          "projectId": {
-            "type": "string"
-          },
-          "projectAlias": {
-            "type": "string"
-          },
-          "projectName": {
-            "type": "string"
-          },
-          "engineType": {
-            "type": "string"
-          },
-          "processState": {
-            "type": "string"
-          },
-          "model": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "startedAt": {
-            "type": "string"
-          },
-          "turnInFlight": {
-            "type": "boolean"
-          },
-          "spawnCommand": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "lastIdleAt": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "pid": {
-            "type": [
-              "integer",
-              "null"
-            ]
-          }
-        },
-        "required": [
-          "executionId",
-          "issueId",
-          "issueTitle",
-          "issueNumber",
-          "projectId",
-          "projectAlias",
-          "projectName",
-          "engineType",
-          "processState",
-          "model",
-          "startedAt",
-          "turnInFlight",
-          "spawnCommand",
-          "lastIdleAt",
-          "pid"
-        ]
-      },
-      "Note": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "title": {
-            "type": "string"
-          },
-          "content": {
-            "type": "string"
-          },
-          "isPinned": {
-            "type": "boolean"
-          },
-          "createdAt": {
-            "type": "string"
-          },
-          "updatedAt": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "title",
-          "content",
-          "isPinned",
-          "createdAt",
-          "updatedAt"
-        ]
-      },
-      "CreateNote": {
-        "type": "object",
-        "properties": {
-          "title": {
-            "type": "string",
-            "maxLength": 500,
-            "default": ""
-          },
-          "content": {
-            "type": "string",
-            "maxLength": 100000,
-            "default": ""
-          }
-        }
-      },
-      "UpdateNote": {
-        "type": "object",
-        "properties": {
-          "title": {
-            "type": "string",
-            "maxLength": 500
-          },
-          "content": {
-            "type": "string",
-            "maxLength": 100000
-          },
-          "isPinned": {
-            "type": "boolean"
-          }
-        }
       },
       "WriteFilterRule": {
         "type": "object",
@@ -1413,227 +1200,148 @@
           "createdAt"
         ]
       },
-      "WorktreeEntry": {
+      "Note": {
         "type": "object",
         "properties": {
-          "issueId": {
+          "id": {
             "type": "string"
           },
-          "path": {
+          "title": {
             "type": "string"
           },
-          "branch": {
-            "type": [
-              "string",
-              "null"
-            ]
+          "content": {
+            "type": "string"
+          },
+          "isPinned": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
           }
         },
         "required": [
-          "issueId",
-          "path",
-          "branch"
+          "id",
+          "title",
+          "content",
+          "isPinned",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "CreateNote": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 500,
+            "default": ""
+          },
+          "content": {
+            "type": "string",
+            "maxLength": 100000,
+            "default": ""
+          }
+        }
+      },
+      "UpdateNote": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "content": {
+            "type": "string",
+            "maxLength": 100000
+          },
+          "isPinned": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CronJob": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "cron": {
+            "type": "string"
+          },
+          "taskType": {
+            "type": "string"
+          },
+          "taskConfig": {
+            "type": "object",
+            "additionalProperties": {}
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "lastRun": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": {}
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "cron",
+          "taskType",
+          "taskConfig",
+          "enabled",
+          "lastRun",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "CreateCronJob": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "cron": {
+            "type": "string",
+            "minLength": 1
+          },
+          "action": {
+            "type": "string",
+            "minLength": 1
+          },
+          "config": {
+            "type": "object",
+            "additionalProperties": {}
+          }
+        },
+        "required": [
+          "name",
+          "cron",
+          "action"
         ]
       }
     },
     "parameters": {}
   },
   "paths": {
-    "/": {
-      "get": {
-        "tags": [
-          "Meta"
-        ],
-        "summary": "API root",
-        "operationId": "getApiRoot",
-        "responses": {
-          "200": {
-            "description": "API info",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "enum": [
-                        true
-                      ]
-                    },
-                    "data": {
-                      "type": "object",
-                      "properties": {
-                        "name": {
-                          "type": "string"
-                        },
-                        "status": {
-                          "type": "string"
-                        },
-                        "routes": {
-                          "type": "array",
-                          "items": {
-                            "type": "string"
-                          }
-                        }
-                      },
-                      "required": [
-                        "name",
-                        "status",
-                        "routes"
-                      ]
-                    }
-                  },
-                  "required": [
-                    "success",
-                    "data"
-                  ]
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/health": {
-      "get": {
-        "tags": [
-          "Meta"
-        ],
-        "summary": "Health check",
-        "operationId": "getHealth",
-        "responses": {
-          "200": {
-            "description": "Health status",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "enum": [
-                        true
-                      ]
-                    },
-                    "data": {
-                      "type": "object",
-                      "properties": {
-                        "status": {
-                          "type": "string"
-                        },
-                        "version": {
-                          "type": "string"
-                        },
-                        "commit": {
-                          "type": "string"
-                        },
-                        "db": {
-                          "type": "string"
-                        },
-                        "timestamp": {
-                          "type": "string"
-                        }
-                      },
-                      "required": [
-                        "status",
-                        "version",
-                        "commit",
-                        "db",
-                        "timestamp"
-                      ]
-                    }
-                  },
-                  "required": [
-                    "success",
-                    "data"
-                  ]
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/status": {
-      "get": {
-        "tags": [
-          "Meta"
-        ],
-        "summary": "Detailed server status",
-        "operationId": "getStatus",
-        "responses": {
-          "200": {
-            "description": "Server status",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "enum": [
-                        true
-                      ]
-                    },
-                    "data": {
-                      "type": "object",
-                      "properties": {
-                        "uptime": {
-                          "type": "number"
-                        },
-                        "memory": {
-                          "type": "object",
-                          "properties": {
-                            "rss": {
-                              "type": "integer"
-                            },
-                            "heapUsed": {
-                              "type": "integer"
-                            },
-                            "heapTotal": {
-                              "type": "integer"
-                            }
-                          },
-                          "required": [
-                            "rss",
-                            "heapUsed",
-                            "heapTotal"
-                          ]
-                        },
-                        "db": {
-                          "type": "object",
-                          "properties": {
-                            "ok": {
-                              "type": "boolean"
-                            },
-                            "error": {
-                              "type": "string"
-                            }
-                          },
-                          "required": [
-                            "ok"
-                          ]
-                        }
-                      },
-                      "required": [
-                        "uptime",
-                        "memory",
-                        "db"
-                      ]
-                    }
-                  },
-                  "required": [
-                    "success",
-                    "data"
-                  ]
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/projects": {
+    "/api/projects": {
       "get": {
         "tags": [
           "Projects"
@@ -1749,7 +1457,7 @@
         }
       }
     },
-    "/projects/sort": {
+    "/api/projects/sort": {
       "patch": {
         "tags": [
           "Projects"
@@ -1804,7 +1512,7 @@
         }
       }
     },
-    "/projects/{projectId}": {
+    "/api/projects/{projectId}": {
       "get": {
         "tags": [
           "Projects"
@@ -1995,7 +1703,7 @@
         }
       }
     },
-    "/projects/{projectId}/archive": {
+    "/api/projects/{projectId}/archive": {
       "post": {
         "tags": [
           "Projects"
@@ -2051,7 +1759,7 @@
         }
       }
     },
-    "/projects/{projectId}/unarchive": {
+    "/api/projects/{projectId}/unarchive": {
       "post": {
         "tags": [
           "Projects"
@@ -2107,7 +1815,7 @@
         }
       }
     },
-    "/projects/{projectId}/issues": {
+    "/api/projects/{projectId}/issues": {
       "get": {
         "tags": [
           "Issues"
@@ -2224,55 +1932,7 @@
         }
       }
     },
-    "/projects/{projectId}/issues/bulk": {
-      "patch": {
-        "tags": [
-          "Issues"
-        ],
-        "summary": "Bulk update issues",
-        "operationId": "bulkUpdateIssues",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/BulkUpdate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Updated issues",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "enum": [
-                        true
-                      ]
-                    },
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/Issue"
-                      }
-                    }
-                  },
-                  "required": [
-                    "success",
-                    "data"
-                  ]
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/projects/{projectId}/issues/{issueId}": {
+    "/api/projects/{projectId}/issues/{issueId}": {
       "get": {
         "tags": [
           "Issues"
@@ -2453,7 +2113,55 @@
         }
       }
     },
-    "/projects/{projectId}/issues/{issueId}/duplicate": {
+    "/api/projects/{projectId}/issues/bulk": {
+      "patch": {
+        "tags": [
+          "Issues"
+        ],
+        "summary": "Bulk update issues",
+        "operationId": "bulkUpdateIssues",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated issues",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Issue"
+                      }
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projects/{projectId}/issues/{issueId}/duplicate": {
       "post": {
         "tags": [
           "Issues"
@@ -2509,7 +2217,7 @@
         }
       }
     },
-    "/projects/{projectId}/issues/{issueId}/execute": {
+    "/api/projects/{projectId}/issues/{issueId}/execute": {
       "post": {
         "tags": [
           "Issue Commands"
@@ -2584,82 +2292,7 @@
         }
       }
     },
-    "/projects/{projectId}/issues/{issueId}/follow-up": {
-      "post": {
-        "tags": [
-          "Issue Commands"
-        ],
-        "summary": "Send follow-up message",
-        "operationId": "followUpIssue",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "issueId",
-            "in": "path"
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/FollowUp"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Follow-up sent",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "enum": [
-                        true
-                      ]
-                    },
-                    "data": {
-                      "$ref": "#/components/schemas/ExecuteIssueResponse"
-                    }
-                  },
-                  "required": [
-                    "success",
-                    "data"
-                  ]
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Issue not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/projects/{projectId}/issues/{issueId}/restart": {
+    "/api/projects/{projectId}/issues/{issueId}/restart": {
       "post": {
         "tags": [
           "Issue Commands"
@@ -2725,7 +2358,7 @@
         }
       }
     },
-    "/projects/{projectId}/issues/{issueId}/cancel": {
+    "/api/projects/{projectId}/issues/{issueId}/cancel": {
       "post": {
         "tags": [
           "Issue Commands"
@@ -2793,7 +2426,7 @@
         }
       }
     },
-    "/projects/{projectId}/issues/{issueId}/slash-commands": {
+    "/api/projects/{projectId}/issues/{issueId}/slash-commands": {
       "get": {
         "tags": [
           "Issue Commands"
@@ -2849,7 +2482,7 @@
         }
       }
     },
-    "/projects/{projectId}/issues/{issueId}/logs": {
+    "/api/projects/{projectId}/issues/{issueId}/logs": {
       "get": {
         "tags": [
           "Issue Logs"
@@ -2931,7 +2564,7 @@
         }
       }
     },
-    "/projects/{projectId}/issues/{issueId}/changes": {
+    "/api/projects/{projectId}/issues/{issueId}/changes": {
       "get": {
         "tags": [
           "Issue Logs"
@@ -2995,7 +2628,449 @@
         }
       }
     },
-    "/engines/available": {
+    "/api/projects/{projectId}/worktrees": {
+      "get": {
+        "tags": [
+          "Worktrees"
+        ],
+        "summary": "List worktrees for project",
+        "operationId": "listWorktrees",
+        "responses": {
+          "200": {
+            "description": "Worktree list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/WorktreeEntry"
+                      }
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Project not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projects/{projectId}/worktrees/{issueId}": {
+      "delete": {
+        "tags": [
+          "Worktrees"
+        ],
+        "summary": "Force-delete a worktree",
+        "operationId": "deleteWorktree",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "issueId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "issueId": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "issueId"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid issueId",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Worktree not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/processes": {
+      "get": {
+        "tags": [
+          "Processes"
+        ],
+        "summary": "List active engine processes",
+        "operationId": "listProcesses",
+        "responses": {
+          "200": {
+            "description": "Active processes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "processes": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/ProcessInfo"
+                          }
+                        }
+                      },
+                      "required": [
+                        "processes"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/processes/{issueId}/terminate": {
+      "post": {
+        "tags": [
+          "Processes"
+        ],
+        "summary": "Terminate engine process for issue",
+        "operationId": "terminateProcess",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "issueId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Terminated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "issueId": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "issueId",
+                        "status"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Failed to terminate",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Issue not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api": {
+      "get": {
+        "tags": [
+          "Meta"
+        ],
+        "summary": "API root",
+        "operationId": "getApiRoot",
+        "responses": {
+          "200": {
+            "description": "API info",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string"
+                        },
+                        "routes": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "status",
+                        "routes"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/health": {
+      "get": {
+        "tags": [
+          "Meta"
+        ],
+        "summary": "Health check",
+        "operationId": "getHealth",
+        "responses": {
+          "200": {
+            "description": "Health status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string"
+                        },
+                        "version": {
+                          "type": "string"
+                        },
+                        "commit": {
+                          "type": "string"
+                        },
+                        "db": {
+                          "type": "string"
+                        },
+                        "timestamp": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "status",
+                        "version",
+                        "commit",
+                        "db",
+                        "timestamp"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/status": {
+      "get": {
+        "tags": [
+          "Meta"
+        ],
+        "summary": "Detailed server status",
+        "operationId": "getStatus",
+        "responses": {
+          "200": {
+            "description": "Server status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "uptime": {
+                          "type": "number"
+                        },
+                        "memory": {
+                          "type": "object",
+                          "properties": {
+                            "rss": {
+                              "type": "integer"
+                            },
+                            "heapUsed": {
+                              "type": "integer"
+                            },
+                            "heapTotal": {
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "rss",
+                            "heapUsed",
+                            "heapTotal"
+                          ]
+                        },
+                        "db": {
+                          "type": "object",
+                          "properties": {
+                            "ok": {
+                              "type": "boolean"
+                            },
+                            "error": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "ok"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "uptime",
+                        "memory",
+                        "db"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/engines/available": {
       "get": {
         "tags": [
           "Engines"
@@ -3031,7 +3106,7 @@
         }
       }
     },
-    "/engines/profiles": {
+    "/api/engines/profiles": {
       "get": {
         "tags": [
           "Engines"
@@ -3070,7 +3145,7 @@
         }
       }
     },
-    "/engines/settings": {
+    "/api/engines/settings": {
       "get": {
         "tags": [
           "Engines"
@@ -3106,7 +3181,7 @@
         }
       }
     },
-    "/engines/default-engine": {
+    "/api/engines/default-engine": {
       "patch": {
         "tags": [
           "Engines"
@@ -3177,7 +3252,7 @@
         }
       }
     },
-    "/engines/{engineType}/settings": {
+    "/api/engines/{engineType}/settings": {
       "patch": {
         "tags": [
           "Engines"
@@ -3263,7 +3338,7 @@
         }
       }
     },
-    "/engines/{engineType}/hidden-models": {
+    "/api/engines/{engineType}/hidden-models": {
       "patch": {
         "tags": [
           "Engines"
@@ -3355,7 +3430,7 @@
         }
       }
     },
-    "/engines/{engineType}/models": {
+    "/api/engines/{engineType}/models": {
       "get": {
         "tags": [
           "Engines"
@@ -3439,7 +3514,7 @@
         }
       }
     },
-    "/engines/probe": {
+    "/api/engines/probe": {
       "post": {
         "tags": [
           "Engines"
@@ -3475,7 +3550,1138 @@
         }
       }
     },
-    "/cron/actions": {
+    "/api/settings/workspace-path": {
+      "get": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Get workspace path",
+        "operationId": "getWorkspacePath",
+        "responses": {
+          "200": {
+            "description": "Workspace path",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "path": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "path"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Set workspace path",
+        "operationId": "setWorkspacePath",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1024
+                  }
+                },
+                "required": [
+                  "path"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "path": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "path"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid path",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/settings/write-filter-rules": {
+      "get": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Get write filter rules",
+        "operationId": "getWriteFilterRules",
+        "responses": {
+          "200": {
+            "description": "Rules",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/WriteFilterRule"
+                      }
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Replace all write filter rules",
+        "operationId": "setWriteFilterRules",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "rules": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/WriteFilterRule"
+                    }
+                  }
+                },
+                "required": [
+                  "rules"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/WriteFilterRule"
+                      }
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/settings/log-page-size": {
+      "get": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Get log page size",
+        "operationId": "getLogPageSize",
+        "responses": {
+          "200": {
+            "description": "Page size",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "size": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "size"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Set log page size",
+        "operationId": "setLogPageSize",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "size": {
+                    "type": "integer",
+                    "minimum": 5,
+                    "maximum": 200
+                  }
+                },
+                "required": [
+                  "size"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "size": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "size"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/settings/max-concurrent-executions": {
+      "get": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Get max concurrent executions",
+        "operationId": "getMaxConcurrent",
+        "responses": {
+          "200": {
+            "description": "Value",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "value": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "value"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Set max concurrent executions",
+        "operationId": "setMaxConcurrent",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "value": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 50
+                  }
+                },
+                "required": [
+                  "value"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "value": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "value"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/settings/server-info": {
+      "get": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Get server name and URL",
+        "operationId": "getServerInfo",
+        "responses": {
+          "200": {
+            "description": "Server info",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string"
+                        },
+                        "url": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "url"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Update server name and/or URL",
+        "operationId": "setServerInfo",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  "url": {
+                    "type": "string",
+                    "maxLength": 1024
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string"
+                        },
+                        "url": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "url"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/settings/slash-commands": {
+      "get": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Get cached slash commands",
+        "operationId": "getGlobalSlashCommands",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "engine",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Categorized commands",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/CategorizedCommands"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/settings/webhooks": {
+      "get": {
+        "tags": [
+          "Webhooks"
+        ],
+        "summary": "List webhooks",
+        "operationId": "listWebhooks",
+        "responses": {
+          "200": {
+            "description": "Webhook list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Webhook"
+                      }
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Webhooks"
+        ],
+        "summary": "Create webhook",
+        "operationId": "createWebhook",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateWebhook"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created webhook",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Webhook"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/settings/webhooks/{webhookId}": {
+      "patch": {
+        "tags": [
+          "Webhooks"
+        ],
+        "summary": "Update webhook",
+        "operationId": "updateWebhook",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "webhookId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateWebhook"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated webhook",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Webhook"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Webhook not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Webhooks"
+        ],
+        "summary": "Soft-delete webhook",
+        "operationId": "deleteWebhook",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "webhookId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Webhook not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/settings/webhooks/{webhookId}/deliveries": {
+      "get": {
+        "tags": [
+          "Webhooks"
+        ],
+        "summary": "List webhook deliveries (last 50)",
+        "operationId": "getWebhookDeliveries",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "webhookId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deliveries",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/WebhookDelivery"
+                      }
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Webhook not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/settings/webhooks/{webhookId}/test": {
+      "post": {
+        "tags": [
+          "Webhooks"
+        ],
+        "summary": "Send test webhook delivery",
+        "operationId": "testWebhook",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "webhookId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sent",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "sent": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "sent"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Webhook not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/notes": {
+      "get": {
+        "tags": [
+          "Notes"
+        ],
+        "summary": "List notes",
+        "operationId": "listNotes",
+        "responses": {
+          "200": {
+            "description": "Note list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Note"
+                      }
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Notes"
+        ],
+        "summary": "Create note",
+        "operationId": "createNote",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateNote"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created note",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Note"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/notes/{noteId}": {
+      "patch": {
+        "tags": [
+          "Notes"
+        ],
+        "summary": "Update note",
+        "operationId": "updateNote",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "noteId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateNote"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated note",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Note"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Note not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Notes"
+        ],
+        "summary": "Soft-delete note",
+        "operationId": "deleteNote",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "noteId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Note not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cron/actions": {
       "get": {
         "tags": [
           "Cron"
@@ -3520,7 +4726,7 @@
         }
       }
     },
-    "/cron": {
+    "/api/cron": {
       "get": {
         "tags": [
           "Cron"
@@ -3684,7 +4890,7 @@
         }
       }
     },
-    "/cron/{jobId}": {
+    "/api/cron/{jobId}": {
       "delete": {
         "tags": [
           "Cron"
@@ -3752,7 +4958,7 @@
         }
       }
     },
-    "/cron/{jobId}/logs": {
+    "/api/cron/{jobId}/logs": {
       "get": {
         "tags": [
           "Cron"
@@ -3909,7 +5115,7 @@
         }
       }
     },
-    "/cron/{jobId}/trigger": {
+    "/api/cron/{jobId}/trigger": {
       "post": {
         "tags": [
           "Cron"
@@ -4023,7 +5229,7 @@
         }
       }
     },
-    "/cron/{jobId}/pause": {
+    "/api/cron/{jobId}/pause": {
       "post": {
         "tags": [
           "Cron"
@@ -4091,7 +5297,7 @@
         }
       }
     },
-    "/cron/{jobId}/resume": {
+    "/api/cron/{jobId}/resume": {
       "post": {
         "tags": [
           "Cron"
@@ -4148,1407 +5354,6 @@
           },
           "404": {
             "description": "Job not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/events": {
-      "get": {
-        "tags": [
-          "Events"
-        ],
-        "summary": "Server-Sent Events stream",
-        "description": "Real-time event stream. Event types: log, log-updated, log-removed, tool-progress, tool-group, state, done, issue-updated, changes-summary, heartbeat (15s).",
-        "operationId": "getEventStream",
-        "responses": {
-          "200": {
-            "description": "SSE stream",
-            "content": {
-              "text/event-stream": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/processes": {
-      "get": {
-        "tags": [
-          "Processes"
-        ],
-        "summary": "List active engine processes",
-        "operationId": "listProcesses",
-        "responses": {
-          "200": {
-            "description": "Active processes",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "enum": [
-                        true
-                      ]
-                    },
-                    "data": {
-                      "type": "object",
-                      "properties": {
-                        "processes": {
-                          "type": "array",
-                          "items": {
-                            "$ref": "#/components/schemas/ProcessInfo"
-                          }
-                        }
-                      },
-                      "required": [
-                        "processes"
-                      ]
-                    }
-                  },
-                  "required": [
-                    "success",
-                    "data"
-                  ]
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/processes/{issueId}/terminate": {
-      "post": {
-        "tags": [
-          "Processes"
-        ],
-        "summary": "Terminate engine process for issue",
-        "operationId": "terminateProcess",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "issueId",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Terminated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "enum": [
-                        true
-                      ]
-                    },
-                    "data": {
-                      "type": "object",
-                      "properties": {
-                        "issueId": {
-                          "type": "string"
-                        },
-                        "status": {
-                          "type": "string"
-                        }
-                      },
-                      "required": [
-                        "issueId",
-                        "status"
-                      ]
-                    }
-                  },
-                  "required": [
-                    "success",
-                    "data"
-                  ]
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Failed to terminate",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Issue not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/notes": {
-      "get": {
-        "tags": [
-          "Notes"
-        ],
-        "summary": "List notes",
-        "operationId": "listNotes",
-        "responses": {
-          "200": {
-            "description": "Note list",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "enum": [
-                        true
-                      ]
-                    },
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/Note"
-                      }
-                    }
-                  },
-                  "required": [
-                    "success",
-                    "data"
-                  ]
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "Notes"
-        ],
-        "summary": "Create note",
-        "operationId": "createNote",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateNote"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Created note",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "enum": [
-                        true
-                      ]
-                    },
-                    "data": {
-                      "$ref": "#/components/schemas/Note"
-                    }
-                  },
-                  "required": [
-                    "success",
-                    "data"
-                  ]
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/notes/{noteId}": {
-      "patch": {
-        "tags": [
-          "Notes"
-        ],
-        "summary": "Update note",
-        "operationId": "updateNote",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "noteId",
-            "in": "path"
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateNote"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Updated note",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "enum": [
-                        true
-                      ]
-                    },
-                    "data": {
-                      "$ref": "#/components/schemas/Note"
-                    }
-                  },
-                  "required": [
-                    "success",
-                    "data"
-                  ]
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Note not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "Notes"
-        ],
-        "summary": "Soft-delete note",
-        "operationId": "deleteNote",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "noteId",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Deleted",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "enum": [
-                        true
-                      ]
-                    },
-                    "data": {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "string"
-                        }
-                      },
-                      "required": [
-                        "id"
-                      ]
-                    }
-                  },
-                  "required": [
-                    "success",
-                    "data"
-                  ]
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Note not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/settings/workspace-path": {
-      "get": {
-        "tags": [
-          "Settings"
-        ],
-        "summary": "Get workspace path",
-        "operationId": "getWorkspacePath",
-        "responses": {
-          "200": {
-            "description": "Workspace path",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "enum": [
-                        true
-                      ]
-                    },
-                    "data": {
-                      "type": "object",
-                      "properties": {
-                        "path": {
-                          "type": "string"
-                        }
-                      },
-                      "required": [
-                        "path"
-                      ]
-                    }
-                  },
-                  "required": [
-                    "success",
-                    "data"
-                  ]
-                }
-              }
-            }
-          }
-        }
-      },
-      "patch": {
-        "tags": [
-          "Settings"
-        ],
-        "summary": "Set workspace path",
-        "operationId": "setWorkspacePath",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "path": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 1024
-                  }
-                },
-                "required": [
-                  "path"
-                ]
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Updated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "enum": [
-                        true
-                      ]
-                    },
-                    "data": {
-                      "type": "object",
-                      "properties": {
-                        "path": {
-                          "type": "string"
-                        }
-                      },
-                      "required": [
-                        "path"
-                      ]
-                    }
-                  },
-                  "required": [
-                    "success",
-                    "data"
-                  ]
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid path",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/settings/server-info": {
-      "get": {
-        "tags": [
-          "Settings"
-        ],
-        "summary": "Get server name and URL",
-        "operationId": "getServerInfo",
-        "responses": {
-          "200": {
-            "description": "Server info",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "enum": [
-                        true
-                      ]
-                    },
-                    "data": {
-                      "type": "object",
-                      "properties": {
-                        "name": {
-                          "type": "string"
-                        },
-                        "url": {
-                          "type": "string"
-                        }
-                      },
-                      "required": [
-                        "name",
-                        "url"
-                      ]
-                    }
-                  },
-                  "required": [
-                    "success",
-                    "data"
-                  ]
-                }
-              }
-            }
-          }
-        }
-      },
-      "patch": {
-        "tags": [
-          "Settings"
-        ],
-        "summary": "Update server name and/or URL",
-        "operationId": "setServerInfo",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "name": {
-                    "type": "string",
-                    "maxLength": 128
-                  },
-                  "url": {
-                    "type": "string",
-                    "maxLength": 1024
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Updated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "enum": [
-                        true
-                      ]
-                    },
-                    "data": {
-                      "type": "object",
-                      "properties": {
-                        "name": {
-                          "type": "string"
-                        },
-                        "url": {
-                          "type": "string"
-                        }
-                      },
-                      "required": [
-                        "name",
-                        "url"
-                      ]
-                    }
-                  },
-                  "required": [
-                    "success",
-                    "data"
-                  ]
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/settings/log-page-size": {
-      "get": {
-        "tags": [
-          "Settings"
-        ],
-        "summary": "Get log page size",
-        "operationId": "getLogPageSize",
-        "responses": {
-          "200": {
-            "description": "Page size",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "enum": [
-                        true
-                      ]
-                    },
-                    "data": {
-                      "type": "object",
-                      "properties": {
-                        "size": {
-                          "type": "integer"
-                        }
-                      },
-                      "required": [
-                        "size"
-                      ]
-                    }
-                  },
-                  "required": [
-                    "success",
-                    "data"
-                  ]
-                }
-              }
-            }
-          }
-        }
-      },
-      "patch": {
-        "tags": [
-          "Settings"
-        ],
-        "summary": "Set log page size",
-        "operationId": "setLogPageSize",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "size": {
-                    "type": "integer",
-                    "minimum": 5,
-                    "maximum": 200
-                  }
-                },
-                "required": [
-                  "size"
-                ]
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Updated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "enum": [
-                        true
-                      ]
-                    },
-                    "data": {
-                      "type": "object",
-                      "properties": {
-                        "size": {
-                          "type": "integer"
-                        }
-                      },
-                      "required": [
-                        "size"
-                      ]
-                    }
-                  },
-                  "required": [
-                    "success",
-                    "data"
-                  ]
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/settings/max-concurrent-executions": {
-      "get": {
-        "tags": [
-          "Settings"
-        ],
-        "summary": "Get max concurrent executions",
-        "operationId": "getMaxConcurrent",
-        "responses": {
-          "200": {
-            "description": "Value",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "enum": [
-                        true
-                      ]
-                    },
-                    "data": {
-                      "type": "object",
-                      "properties": {
-                        "value": {
-                          "type": "integer"
-                        }
-                      },
-                      "required": [
-                        "value"
-                      ]
-                    }
-                  },
-                  "required": [
-                    "success",
-                    "data"
-                  ]
-                }
-              }
-            }
-          }
-        }
-      },
-      "patch": {
-        "tags": [
-          "Settings"
-        ],
-        "summary": "Set max concurrent executions",
-        "operationId": "setMaxConcurrent",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "value": {
-                    "type": "integer",
-                    "minimum": 1,
-                    "maximum": 50
-                  }
-                },
-                "required": [
-                  "value"
-                ]
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Updated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "enum": [
-                        true
-                      ]
-                    },
-                    "data": {
-                      "type": "object",
-                      "properties": {
-                        "value": {
-                          "type": "integer"
-                        }
-                      },
-                      "required": [
-                        "value"
-                      ]
-                    }
-                  },
-                  "required": [
-                    "success",
-                    "data"
-                  ]
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/settings/write-filter-rules": {
-      "get": {
-        "tags": [
-          "Settings"
-        ],
-        "summary": "Get write filter rules",
-        "operationId": "getWriteFilterRules",
-        "responses": {
-          "200": {
-            "description": "Rules",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "enum": [
-                        true
-                      ]
-                    },
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/WriteFilterRule"
-                      }
-                    }
-                  },
-                  "required": [
-                    "success",
-                    "data"
-                  ]
-                }
-              }
-            }
-          }
-        }
-      },
-      "put": {
-        "tags": [
-          "Settings"
-        ],
-        "summary": "Replace all write filter rules",
-        "operationId": "setWriteFilterRules",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "rules": {
-                    "type": "array",
-                    "items": {
-                      "$ref": "#/components/schemas/WriteFilterRule"
-                    }
-                  }
-                },
-                "required": [
-                  "rules"
-                ]
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Updated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "enum": [
-                        true
-                      ]
-                    },
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/WriteFilterRule"
-                      }
-                    }
-                  },
-                  "required": [
-                    "success",
-                    "data"
-                  ]
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/settings/slash-commands": {
-      "get": {
-        "tags": [
-          "Settings"
-        ],
-        "summary": "Get cached slash commands",
-        "operationId": "getGlobalSlashCommands",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": false,
-            "name": "engine",
-            "in": "query"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Categorized commands",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "enum": [
-                        true
-                      ]
-                    },
-                    "data": {
-                      "$ref": "#/components/schemas/CategorizedCommands"
-                    }
-                  },
-                  "required": [
-                    "success",
-                    "data"
-                  ]
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/settings/webhooks": {
-      "get": {
-        "tags": [
-          "Webhooks"
-        ],
-        "summary": "List webhooks",
-        "operationId": "listWebhooks",
-        "responses": {
-          "200": {
-            "description": "Webhook list",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "enum": [
-                        true
-                      ]
-                    },
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/Webhook"
-                      }
-                    }
-                  },
-                  "required": [
-                    "success",
-                    "data"
-                  ]
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "Webhooks"
-        ],
-        "summary": "Create webhook",
-        "operationId": "createWebhook",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateWebhook"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Created webhook",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "enum": [
-                        true
-                      ]
-                    },
-                    "data": {
-                      "$ref": "#/components/schemas/Webhook"
-                    }
-                  },
-                  "required": [
-                    "success",
-                    "data"
-                  ]
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Validation error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/settings/webhooks/{webhookId}": {
-      "patch": {
-        "tags": [
-          "Webhooks"
-        ],
-        "summary": "Update webhook",
-        "operationId": "updateWebhook",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "webhookId",
-            "in": "path"
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateWebhook"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Updated webhook",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "enum": [
-                        true
-                      ]
-                    },
-                    "data": {
-                      "$ref": "#/components/schemas/Webhook"
-                    }
-                  },
-                  "required": [
-                    "success",
-                    "data"
-                  ]
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Webhook not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "Webhooks"
-        ],
-        "summary": "Soft-delete webhook",
-        "operationId": "deleteWebhook",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "webhookId",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Deleted",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "enum": [
-                        true
-                      ]
-                    },
-                    "data": {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "string"
-                        }
-                      },
-                      "required": [
-                        "id"
-                      ]
-                    }
-                  },
-                  "required": [
-                    "success",
-                    "data"
-                  ]
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Webhook not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/settings/webhooks/{webhookId}/deliveries": {
-      "get": {
-        "tags": [
-          "Webhooks"
-        ],
-        "summary": "List webhook deliveries (last 50)",
-        "operationId": "getWebhookDeliveries",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "webhookId",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Deliveries",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "enum": [
-                        true
-                      ]
-                    },
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/WebhookDelivery"
-                      }
-                    }
-                  },
-                  "required": [
-                    "success",
-                    "data"
-                  ]
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Webhook not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/settings/webhooks/{webhookId}/test": {
-      "post": {
-        "tags": [
-          "Webhooks"
-        ],
-        "summary": "Send test webhook delivery",
-        "operationId": "testWebhook",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "webhookId",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Sent",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "enum": [
-                        true
-                      ]
-                    },
-                    "data": {
-                      "type": "object",
-                      "properties": {
-                        "sent": {
-                          "type": "boolean"
-                        }
-                      },
-                      "required": [
-                        "sent"
-                      ]
-                    }
-                  },
-                  "required": [
-                    "success",
-                    "data"
-                  ]
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Webhook not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/projects/{projectId}/worktrees": {
-      "get": {
-        "tags": [
-          "Worktrees"
-        ],
-        "summary": "List worktrees for project",
-        "operationId": "listWorktrees",
-        "responses": {
-          "200": {
-            "description": "Worktree list",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "enum": [
-                        true
-                      ]
-                    },
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/WorktreeEntry"
-                      }
-                    }
-                  },
-                  "required": [
-                    "success",
-                    "data"
-                  ]
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Project not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/projects/{projectId}/worktrees/{issueId}": {
-      "delete": {
-        "tags": [
-          "Worktrees"
-        ],
-        "summary": "Force-delete a worktree",
-        "operationId": "deleteWorktree",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "issueId",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Deleted",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "enum": [
-                        true
-                      ]
-                    },
-                    "data": {
-                      "type": "object",
-                      "properties": {
-                        "issueId": {
-                          "type": "string"
-                        }
-                      },
-                      "required": [
-                        "issueId"
-                      ]
-                    }
-                  },
-                  "required": [
-                    "success",
-                    "data"
-                  ]
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid issueId",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Worktree not found",
             "content": {
               "application/json": {
                 "schema": {
