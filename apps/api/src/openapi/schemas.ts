@@ -137,7 +137,7 @@ export const CreateIssueSchema = z.object({
   statusId: statusIdEnum,
   useWorktree: z.boolean().optional(),
   keepAlive: z.boolean().optional(),
-  engineType: z.string().optional().openapi({ description: 'claude-code | codex | acp | acp:*' }),
+  engineType: z.string().regex(/^(claude-code|codex|acp(:.+)?)$/).optional().openapi({ description: 'claude-code | codex | acp | acp:<agent>:<model>' }),
   model: z.string().regex(/^[\w./:\-[\]]{1,160}$/).optional(),
   permissionMode: z.enum(['auto', 'supervised', 'plan']).optional(),
 }).openapi('CreateIssue')
@@ -173,7 +173,7 @@ export const BulkUpdateSchema = z.object({
 }).openapi('BulkUpdate')
 
 export const ExecuteIssueSchema = z.object({
-  engineType: z.string().openapi({ description: 'claude-code | codex | acp | acp:*' }),
+  engineType: z.string().regex(/^(claude-code|codex|acp(:.+)?)$/).openapi({ description: 'claude-code | codex | acp | acp:<agent>:<model>' }),
   prompt: z.string().min(1).max(32768),
   model: z.string().regex(/^[\w./:\-[\]]{1,160}$/).optional(),
   permissionMode: z.enum(['auto', 'supervised', 'plan']).optional(),

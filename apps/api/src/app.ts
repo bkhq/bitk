@@ -69,7 +69,7 @@ app.doc31('/api/docs/openapi.json', {
     version: VERSION,
     license: { name: 'MIT' },
   },
-  servers: [{ url: '/api', description: 'API base' }],
+  servers: [{ url: '/', description: 'Default' }],
   tags: [
     { name: 'Meta', description: 'Health, status, and runtime information' },
     { name: 'Projects', description: 'Project CRUD and lifecycle' },

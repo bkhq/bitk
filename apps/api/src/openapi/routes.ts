@@ -214,12 +214,16 @@ export const unarchiveProject = createRoute({
 
 // ── Issues ─────────────────────────────────────────────
 
+const projectParam = z.object({ projectId: z.string() })
+const projectIssueParams = z.object({ projectId: z.string(), issueId: z.string() })
+
 export const listIssues = createRoute({
   method: 'get',
   path: '/',
   tags: ['Issues'],
   summary: 'List issues in project',
   operationId: 'listIssues',
+  request: { params: projectParam },
   responses: {
     200: successResponse(z.array(IssueSchema), 'Issue list'),
     404: errorResponse('Project not found'),
@@ -232,7 +236,10 @@ export const createIssue = createRoute({
   tags: ['Issues'],
   summary: 'Create issue',
   operationId: 'createIssue',
-  request: { body: { content: { 'application/json': { schema: CreateIssueSchema } } } },
+  request: {
+    params: projectParam,
+    body: { content: { 'application/json': { schema: CreateIssueSchema } } },
+  },
   responses: {
     201: successResponse(IssueSchema, 'Created issue'),
     202: successResponse(IssueSchema, 'Created and executing'),
@@ -247,7 +254,7 @@ export const getIssue = createRoute({
   tags: ['Issues'],
   summary: 'Get issue',
   operationId: 'getIssue',
-  request: { params: z.object({ issueId: z.string() }) },
+  request: { params: projectIssueParams },
   responses: {
     200: successResponse(IssueSchema, 'Issue'),
     404: errorResponse('Issue not found'),
@@ -261,7 +268,7 @@ export const updateIssue = createRoute({
   summary: 'Update issue',
   operationId: 'updateIssue',
   request: {
-    params: z.object({ issueId: z.string() }),
+    params: projectIssueParams,
     body: { content: { 'application/json': { schema: UpdateIssueSchema } } },
   },
   responses: {
@@ -276,7 +283,7 @@ export const deleteIssue = createRoute({
   tags: ['Issues'],
   summary: 'Soft-delete issue',
   operationId: 'deleteIssue',
-  request: { params: z.object({ issueId: z.string() }) },
+  request: { params: projectIssueParams },
   responses: {
     200: successResponse(z.object({ id: z.string() }), 'Deleted'),
     404: errorResponse('Issue not found'),
@@ -289,7 +296,10 @@ export const bulkUpdateIssues = createRoute({
   tags: ['Issues'],
   summary: 'Bulk update issues',
   operationId: 'bulkUpdateIssues',
-  request: { body: { content: { 'application/json': { schema: BulkUpdateSchema } } } },
+  request: {
+    params: projectParam,
+    body: { content: { 'application/json': { schema: BulkUpdateSchema } } },
+  },
   responses: {
     200: successResponse(z.array(IssueSchema), 'Updated issues'),
     404: errorResponse('Project not found'),
@@ -302,7 +312,7 @@ export const duplicateIssue = createRoute({
   tags: ['Issues'],
   summary: 'Duplicate issue',
   operationId: 'duplicateIssue',
-  request: { params: z.object({ issueId: z.string() }) },
+  request: { params: projectIssueParams },
   responses: {
     201: successResponse(IssueSchema, 'Duplicated issue'),
     404: errorResponse('Issue not found'),
@@ -319,7 +329,7 @@ export const executeIssue = createRoute({
   summary: 'Start AI execution on issue',
   operationId: 'executeIssue',
   request: {
-    params: z.object({ issueId: z.string() }),
+    params: projectIssueParams,
     body: { content: { 'application/json': { schema: ExecuteIssueSchema } } },
   },
   responses: {
@@ -337,7 +347,7 @@ export const followUpIssue = createRoute({
   summary: 'Send follow-up message',
   operationId: 'followUpIssue',
   request: {
-    params: z.object({ issueId: z.string() }),
+    params: projectIssueParams,
     body: { content: { 'application/json': { schema: FollowUpSchema } } },
   },
   responses: {
@@ -353,7 +363,7 @@ export const restartIssue = createRoute({
   tags: ['Issue Commands'],
   summary: 'Restart failed session',
   operationId: 'restartIssue',
-  request: { params: z.object({ issueId: z.string() }) },
+  request: { params: projectIssueParams },
   responses: {
     200: successResponse(ExecuteIssueResponseSchema, 'Restarted'),
     400: errorResponse('Bad request'),
@@ -367,7 +377,7 @@ export const cancelIssue = createRoute({
   tags: ['Issue Commands'],
   summary: 'Cancel active session',
   operationId: 'cancelIssue',
-  request: { params: z.object({ issueId: z.string() }) },
+  request: { params: projectIssueParams },
   responses: {
     200: successResponse(z.object({ issueId: z.string(), status: z.string() }), 'Cancelled'),
     400: errorResponse('Cancel failed'),
@@ -381,7 +391,7 @@ export const getSlashCommands = createRoute({
   tags: ['Issue Commands'],
   summary: 'List available slash commands',
   operationId: 'getSlashCommands',
-  request: { params: z.object({ issueId: z.string() }) },
+  request: { params: projectIssueParams },
   responses: {
     200: successResponse(CategorizedCommandsSchema, 'Slash commands'),
     404: errorResponse('Issue not found'),
@@ -397,7 +407,7 @@ export const getIssueLogs = createRoute({
   summary: 'Get issue logs (paginated)',
   operationId: 'getIssueLogs',
   request: {
-    params: z.object({ issueId: z.string() }),
+    params: projectIssueParams,
     query: z.object({
       cursor: z.string().optional(),
       before: z.string().optional(),
@@ -417,7 +427,7 @@ export const getIssueChanges = createRoute({
   summary: 'Get file changes for issue',
   operationId: 'getIssueChanges',
   request: {
-    params: z.object({ issueId: z.string() }),
+    params: projectIssueParams,
     query: z.object({ path: z.string().optional() }),
   },
   responses: {
