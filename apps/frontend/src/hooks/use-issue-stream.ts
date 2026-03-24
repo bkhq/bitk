@@ -100,8 +100,10 @@ export function useIssueStream({
   const olderCursorRef = useRef<string | null>(null)
   const liveLogsRef = useRef<NormalizedLogEntry[]>([])
   const olderLogsRef = useRef<NormalizedLogEntry[]>([])
-  /** True once a live-log trim has established a pagination cursor.
-   *  Prevents the initial HTTP fetch from overwriting it with a stale server cursor. */
+  /**
+   * True once a live-log trim has established a pagination cursor.
+   *  Prevents the initial HTTP fetch from overwriting it with a stale server cursor.
+   */
   const trimCursorSetRef = useRef(false)
 
   // ---- MessageId-based dedup tracking ----
