@@ -1,9 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-let getTokenMock: ReturnType<typeof vi.fn>
+const { getTokenMock } = vi.hoisted(() => ({
+  getTokenMock: vi.fn<() => string | null>(),
+}))
 
 vi.mock('@/lib/auth', () => ({
-  getToken: (...args: unknown[]) => getTokenMock(...args),
+  getToken: getTokenMock,
 }))
 
 // Minimal EventSource stub
@@ -54,7 +56,8 @@ describe('eventBus', () => {
 
   beforeEach(async () => {
     vi.useFakeTimers()
-    getTokenMock = vi.fn().mockReturnValue(null)
+    getTokenMock.mockReset()
+    getTokenMock.mockReturnValue(null)
     MockEventSource.reset()
 
     // Stub global EventSource

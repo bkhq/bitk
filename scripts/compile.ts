@@ -32,7 +32,9 @@ async function atomicWrite(filePath: string, content: string): Promise<void> {
     await Bun.write(tmp, content)
     renameSync(tmp, filePath)
   } catch (err) {
-    try { unlinkSync(tmp) } catch {}
+    try {
+      unlinkSync(tmp)
+    } catch {}
     throw err
   }
 }
@@ -180,11 +182,15 @@ if (compileMode === 'launcher') {
   function restoreStubFiles() {
     if (existsSync(STATIC_BACKUP)) {
       copyFileSync(STATIC_BACKUP, STATIC_FILE)
-      try { unlinkSync(STATIC_BACKUP) } catch {}
+      try {
+        unlinkSync(STATIC_BACKUP)
+      } catch {}
     }
     if (existsSync(MIGRATIONS_BACKUP)) {
       copyFileSync(MIGRATIONS_BACKUP, MIGRATIONS_FILE)
-      try { unlinkSync(MIGRATIONS_BACKUP) } catch {}
+      try {
+        unlinkSync(MIGRATIONS_BACKUP)
+      } catch {}
     }
   }
 

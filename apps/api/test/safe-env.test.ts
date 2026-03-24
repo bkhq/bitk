@@ -2,6 +2,14 @@ import process from 'node:process'
 import { beforeAll, describe, expect, test } from 'bun:test'
 import { safeEnv } from '@/engines/safe-env'
 
+function requireProcessEnv(key: 'PATH' | 'HOME'): string {
+  const value = process.env[key]
+  if (!value) {
+    throw new Error(`${key} must be set for safeEnv tests`)
+  }
+  return value
+}
+
 // Ensure test API keys are set so we can verify filtering
 beforeAll(() => {
   process.env.ANTHROPIC_API_KEY = 'test-anthropic-key'
@@ -15,13 +23,13 @@ describe('safeEnv', () => {
   describe('protected key filtering', () => {
     test('blocks user-supplied PATH override', () => {
       const env = safeEnv({ PATH: '/malicious/bin' })
-      expect(env.PATH).toBe(process.env.PATH)
+      expect(env.PATH).toBe(requireProcessEnv('PATH'))
       expect(env.PATH).not.toBe('/malicious/bin')
     })
 
     test('blocks user-supplied HOME override', () => {
       const env = safeEnv({ HOME: '/tmp/evil' })
-      expect(env.HOME).toBe(process.env.HOME)
+      expect(env.HOME).toBe(requireProcessEnv('HOME'))
     })
 
     test('blocks user-supplied ANTHROPIC_API_KEY override', () => {
@@ -54,8 +62,8 @@ describe('safeEnv', () => {
         ANTHROPIC_API_KEY: 'evil',
         SAFE_VAR: 'allowed',
       })
-      expect(env.PATH).toBe(process.env.PATH)
-      expect(env.HOME).toBe(process.env.HOME)
+      expect(env.PATH).toBe(requireProcessEnv('PATH'))
+      expect(env.HOME).toBe(requireProcessEnv('HOME'))
       expect(env.ANTHROPIC_API_KEY).toBe('test-anthropic-key')
       expect(env.SAFE_VAR).toBe('allowed')
     })
@@ -111,8 +119,8 @@ describe('safeEnv', () => {
   describe('basic allowlisting', () => {
     test('includes PATH and HOME from process.env', () => {
       const env = safeEnv()
-      expect(env.PATH).toBe(process.env.PATH)
-      expect(env.HOME).toBe(process.env.HOME)
+      expect(env.PATH).toBe(requireProcessEnv('PATH'))
+      expect(env.HOME).toBe(requireProcessEnv('HOME'))
     })
 
     test('excludes non-allowlisted process.env vars', () => {

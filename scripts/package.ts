@@ -28,7 +28,9 @@ async function atomicWrite(filePath: string, content: string): Promise<void> {
     await Bun.write(tmp, content)
     renameSync(tmp, filePath)
   } catch (err) {
-    try { unlinkSync(tmp) } catch {}
+    try {
+      unlinkSync(tmp)
+    } catch {}
     throw err
   }
 }

@@ -298,6 +298,28 @@ describe('PATCH /api/projects/:projectId/issues/bulk', () => {
     expect(Array.isArray(data)).toBe(true)
     expect(data.length).toBe(2)
   })
+
+  test('rejects duplicate issue ids in a single bulk payload', async () => {
+    const issue = expectSuccess(
+      await post<Issue>(`/api/projects/${projectId}/issues`, {
+        title: 'Bulk Duplicate',
+        statusId: 'todo',
+      }),
+    )
+
+    const result = await patch<Issue[]>(`/api/projects/${projectId}/issues/bulk`, {
+      updates: [
+        { id: issue.id, statusId: 'working', sortOrder: 'a0' },
+        { id: issue.id, statusId: 'done', sortOrder: 'a1' },
+      ],
+    })
+
+    expect(result.status).toBe(400)
+    expect(result.json.success).toBe(false)
+    if (!result.json.success) {
+      expect(result.json.error).toContain('Duplicate issue id in bulk updates')
+    }
+  })
 })
 
 describe('DELETE /api/projects/:projectId/issues/:id', () => {

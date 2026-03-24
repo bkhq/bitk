@@ -11,7 +11,7 @@ import { ToolGroupMessage } from './ToolItems'
 
 // ── ChatMessage renderer ─────────────────────────────────
 
-const ChatMessageRow = memo(function ChatMessageRow({ message }: { message: ChatMessage }) {
+const ChatMessageRow = memo(({ message }: { message: ChatMessage }) => {
   switch (message.type) {
     case 'user': {
       if (message.status === 'command') {

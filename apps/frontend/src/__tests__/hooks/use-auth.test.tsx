@@ -57,7 +57,7 @@ function ProtectedApp() {
   )
 }
 
-describe('AuthGate fail-closed behaviour', () => {
+describe('authGate fail-closed behaviour', () => {
   beforeEach(() => {
     vi.mocked(getToken).mockReturnValue(null)
   })

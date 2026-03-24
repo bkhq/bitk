@@ -46,6 +46,20 @@ export const bulkUpdateSchema = z.object({
         sortOrder: z.string().min(1).max(50).regex(fractionalKeyRegex).optional(),
       }),
     )
+    .superRefine((updates, ctx) => {
+      const seen = new Set<string>()
+      for (const [index, update] of updates.entries()) {
+        if (seen.has(update.id)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Duplicate issue id in bulk updates',
+            path: [index, 'id'],
+          })
+          continue
+        }
+        seen.add(update.id)
+      }
+    })
     .max(1000),
 })
 
