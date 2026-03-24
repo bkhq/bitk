@@ -98,24 +98,24 @@ cronRoute.openapi(R.createCronJob, async (c) => {
 
   // Check name uniqueness
   if (findJob(name)) {
-    return c.json({ success: false, error: `Job with name "${name}" already exists` }, 409)
+    return c.json({ success: false, error: `Job with name "${name}" already exists` }, 409 as const)
   }
 
   // Validate cron expression
   try {
     const { Cron } = await import('cronbake')
     if (!Cron.isValid(cron as any)) {
-      return c.json({ success: false, error: `Invalid cron expression: ${cron}` }, 400)
+      return c.json({ success: false, error: `Invalid cron expression: ${cron}` }, 400 as const)
     }
   } catch {
-    return c.json({ success: false, error: `Invalid cron expression: ${cron}` }, 400)
+    return c.json({ success: false, error: `Invalid cron expression: ${cron}` }, 400 as const)
   }
 
   // Build and validate task config
   const taskConfig: TaskConfig = { ...(rawConfig ?? {}), action }
   const validationError = await validateActionConfig(action, taskConfig)
   if (validationError) {
-    return c.json({ success: false, error: validationError }, 400)
+    return c.json({ success: false, error: validationError }, 400 as const)
   }
 
   const actionDef = getAction(action)
@@ -131,14 +131,14 @@ cronRoute.openapi(R.createCronJob, async (c) => {
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
     if (msg.includes('UNIQUE constraint')) {
-      return c.json({ success: false, error: `Job with name "${name}" already exists` }, 409)
+      return c.json({ success: false, error: `Job with name "${name}" already exists` }, 409 as const)
     }
     throw err
   }
 
   syncJob(name)
   logger.info({ name, cron, action }, 'cron_job_created')
-  return c.json({ success: true, data: serializeJob(row) }, 201)
+  return c.json({ success: true, data: serializeJob(row) }, 201 as const)
 })
 
 // DELETE /api/cron/:jobId — soft-delete a cron job (by ID or name)
@@ -146,7 +146,7 @@ cronRoute.openapi(R.deleteCronJob, (c) => {
   const jobId = c.req.param('jobId')
   const row = findJob(jobId)
   if (!row) {
-    return c.json({ success: false, error: 'Job not found' }, 404)
+    return c.json({ success: false, error: 'Job not found' }, 404 as const)
   }
 
   db.update(cronJobs)
@@ -163,7 +163,7 @@ cronRoute.openapi(R.deleteCronJob, (c) => {
   }
 
   logger.info({ name: row.name }, 'cron_job_deleted')
-  return c.json({ success: true, data: { deleted: true, name: row.name } })
+  return c.json({ success: true, data: { deleted: true, name: row.name } }, 200 as const)
 })
 
 // GET /api/cron/:jobId/logs — get logs for a specific job
@@ -179,7 +179,7 @@ cronRoute.openapi(R.getCronJobLogs, (c) => {
     .all()
 
   if (!job) {
-    return c.json({ success: false, error: 'Job not found' }, 404)
+    return c.json({ success: false, error: 'Job not found' }, 404 as const)
   }
 
   const pageLimit = limit ?? 20
@@ -211,8 +211,8 @@ cronRoute.openapi(R.getCronJobLogs, (c) => {
       jobName: job.name,
       logs: page.map(log => ({
         id: log.id,
-        startedAt: log.startedAt,
-        finishedAt: log.finishedAt,
+        startedAt: log.startedAt.toISOString(),
+        finishedAt: log.finishedAt ? log.finishedAt.toISOString() : null,
         durationMs: log.durationMs,
         status: log.status,
         result: log.result,
@@ -221,7 +221,7 @@ cronRoute.openapi(R.getCronJobLogs, (c) => {
       hasMore,
       nextCursor,
     },
-  })
+  }, 200 as const)
 })
 
 // POST /api/cron/:jobId/trigger — manually trigger a cron job
@@ -229,7 +229,7 @@ cronRoute.openapi(R.triggerCronJob, async (c) => {
   const jobId = c.req.param('jobId')
   const row = findJob(jobId)
   if (!row) {
-    return c.json({ success: false, error: 'Job not found' }, 404)
+    return c.json({ success: false, error: 'Job not found' }, 404 as const)
   }
 
   // Check overrun protection
@@ -237,7 +237,7 @@ cronRoute.openapi(R.triggerCronJob, async (c) => {
     const b = getBaker()
     const status = b.getStatus(row.name)
     if (status === 'running') {
-      return c.json({ success: false, error: `Job "${row.name}" is already running` }, 409)
+      return c.json({ success: false, error: `Job "${row.name}" is already running` }, 409 as const)
     }
   } catch {
     // Job not in Baker, proceed
@@ -247,7 +247,7 @@ cronRoute.openapi(R.triggerCronJob, async (c) => {
   try {
     config = JSON.parse(row.taskConfig)
   } catch {
-    return c.json({ success: false, error: `Job "${row.name}" has corrupt taskConfig` }, 500)
+    return c.json({ success: false, error: `Job "${row.name}" has corrupt taskConfig` }, 500 as const)
   }
 
   const logId = await executeTask(row.id, row.name, config)
@@ -267,7 +267,7 @@ cronRoute.openapi(R.triggerCronJob, async (c) => {
         ? { status: log.status, durationMs: log.durationMs, result: log.result, error: log.error }
         : null,
     },
-  })
+  }, 200 as const)
 })
 
 // POST /api/cron/:jobId/pause — pause a cron job
@@ -275,7 +275,7 @@ cronRoute.openapi(R.pauseCronJob, (c) => {
   const jobId = c.req.param('jobId')
   const row = findJob(jobId)
   if (!row) {
-    return c.json({ success: false, error: 'Job not found' }, 404)
+    return c.json({ success: false, error: 'Job not found' }, 404 as const)
   }
 
   db.update(cronJobs)
@@ -289,7 +289,7 @@ cronRoute.openapi(R.pauseCronJob, (c) => {
     // Job may not be in Baker
   }
 
-  return c.json({ success: true, data: { paused: true, name: row.name } })
+  return c.json({ success: true, data: { paused: true, name: row.name } }, 200 as const)
 })
 
 // POST /api/cron/:jobId/resume — resume a paused cron job
@@ -297,7 +297,7 @@ cronRoute.openapi(R.resumeCronJob, (c) => {
   const jobId = c.req.param('jobId')
   const row = findJob(jobId)
   if (!row) {
-    return c.json({ success: false, error: 'Job not found' }, 404)
+    return c.json({ success: false, error: 'Job not found' }, 404 as const)
   }
 
   db.update(cronJobs)
@@ -307,7 +307,7 @@ cronRoute.openapi(R.resumeCronJob, (c) => {
 
   syncJob(row.name)
 
-  return c.json({ success: true, data: { resumed: true, name: row.name } })
+  return c.json({ success: true, data: { resumed: true, name: row.name } }, 200 as const)
 })
 
 export default cronRoute

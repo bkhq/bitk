@@ -23,7 +23,7 @@ update.openapi(R.bulkUpdateIssues, async (c) => {
   const projectId = c.req.param('projectId')!
   const project = await findProject(projectId)
   if (!project) {
-    return c.json({ success: false, error: 'Project not found' }, 404)
+    return c.json({ success: false, error: 'Project not found' }, 404 as const)
   }
 
   const body = c.req.valid('json')
@@ -168,7 +168,7 @@ update.openapi(R.bulkUpdateIssues, async (c) => {
     success: true,
     data: updated,
     ...(skippedIds.length > 0 ? { skipped: skippedIds } : {}),
-  })
+  }, 200 as const)
 })
 
 // PATCH /api/projects/:projectId/issues/:issueId — Update single issue
@@ -176,7 +176,7 @@ update.openapi(R.updateIssue, async (c) => {
   const projectId = c.req.param('projectId')!
   const project = await findProject(projectId)
   if (!project) {
-    return c.json({ success: false, error: 'Project not found' }, 404)
+    return c.json({ success: false, error: 'Project not found' }, 404 as const)
   }
 
   const issueId = c.req.param('issueId')!
@@ -191,7 +191,7 @@ update.openapi(R.updateIssue, async (c) => {
       ),
     )
   if (!existing) {
-    return c.json({ success: false, error: 'Issue not found' }, 404)
+    return c.json({ success: false, error: 'Issue not found' }, 404 as const)
   }
 
   const body = c.req.valid('json')
@@ -214,7 +214,7 @@ update.openapi(R.updateIssue, async (c) => {
   }
 
   if (Object.keys(updates).length === 0) {
-    return c.json({ success: true, data: serializeIssue(existing) })
+    return c.json({ success: true, data: serializeIssue(existing) }, 200 as const)
   }
 
   // Check if transitioning to working → trigger execution or flush
@@ -239,7 +239,7 @@ update.openapi(R.updateIssue, async (c) => {
     .where(eq(issuesTable.id, issueId))
     .returning()
   if (!row) {
-    return c.json({ success: false, error: 'Issue not found' }, 404)
+    return c.json({ success: false, error: 'Issue not found' }, 404 as const)
   }
 
   // Invalidate issue cache after update
@@ -271,7 +271,7 @@ update.openapi(R.updateIssue, async (c) => {
     })
   }
 
-  return c.json({ success: true, data: serializeIssue(row) })
+  return c.json({ success: true, data: serializeIssue(row) }, 200 as const)
 })
 
 export default update

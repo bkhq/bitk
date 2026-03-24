@@ -16,13 +16,13 @@ duplicate.openapi(R.duplicateIssue, async (c) => {
   const projectId = c.req.param('projectId')!
   const project = await findProject(projectId)
   if (!project) {
-    return c.json({ success: false, error: 'Project not found' }, 404)
+    return c.json({ success: false, error: 'Project not found' }, 404 as const)
   }
 
   const issueId = c.req.param('issueId')!
   const source = await getProjectOwnedIssue(project.id, issueId)
   if (!source) {
-    return c.json({ success: false, error: 'Issue not found' }, 404)
+    return c.json({ success: false, error: 'Issue not found' }, 404 as const)
   }
 
   const [newIssue] = await db.transaction(async (tx) => {
@@ -115,10 +115,10 @@ duplicate.openapi(R.duplicateIssue, async (c) => {
   await cacheDelByPrefix(`projectIssueIds:${project.id}`)
 
   if (!newIssue) {
-    return c.json({ success: false, error: 'Failed to create issue' }, 500)
+    return c.json({ success: false, error: 'Failed to create issue' }, 500 as const)
   }
 
-  return c.json({ success: true, data: serializeIssue(newIssue) }, 201)
+  return c.json({ success: true, data: serializeIssue(newIssue) }, 201 as const)
 })
 
 export default duplicate

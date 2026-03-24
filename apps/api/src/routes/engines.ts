@@ -72,10 +72,10 @@ engines.openapi(R.setDefaultEngine, async (c) => {
   const { defaultEngine } = c.req.valid('json')
   const parsed = engineTypeOrAcpEnum.safeParse(defaultEngine)
   if (!parsed.success) {
-    return c.json({ success: false, error: 'Invalid engine type' }, 400)
+    return c.json({ success: false, error: 'Invalid engine type' }, 400 as const)
   }
   await setDefaultEngine(defaultEngine)
-  return c.json({ success: true, data: { defaultEngine } })
+  return c.json({ success: true, data: { defaultEngine } }, 200 as const)
 })
 
 // PATCH /api/engines/:engineType/settings — Upsert default model for an engine type
@@ -83,12 +83,12 @@ engines.openapi(R.setEngineModel, async (c) => {
   const rawType = c.req.param('engineType')
   const parsed = engineTypeOrAcpEnum.safeParse(rawType)
   if (!parsed.success) {
-    return c.json({ success: false, error: `Unknown engine type: ${rawType}` }, 400)
+    return c.json({ success: false, error: `Unknown engine type: ${rawType}` }, 400 as const)
   }
   const engineType = parsed.data
   const { defaultModel } = c.req.valid('json')
   await setEngineDefaultModel(engineType, defaultModel)
-  return c.json({ success: true, data: { engineType, defaultModel } })
+  return c.json({ success: true, data: { engineType, defaultModel } }, 200 as const)
 })
 
 // PATCH /api/engines/:engineType/hidden-models — Update hidden models for an engine type
@@ -96,12 +96,12 @@ engines.openapi(R.setHiddenModels, async (c) => {
   const rawType = c.req.param('engineType')
   const parsed = engineTypeOrAcpEnum.safeParse(rawType)
   if (!parsed.success) {
-    return c.json({ success: false, error: `Unknown engine type: ${rawType}` }, 400)
+    return c.json({ success: false, error: `Unknown engine type: ${rawType}` }, 400 as const)
   }
   const engineType = parsed.data
   const { hiddenModels } = c.req.valid('json')
   await setEngineHiddenModels(engineType, hiddenModels)
-  return c.json({ success: true, data: { engineType, hiddenModels } })
+  return c.json({ success: true, data: { engineType, hiddenModels } }, 200 as const)
 })
 
 // GET /api/engines/:engineType/models — List available models for an engine
@@ -109,14 +109,14 @@ engines.openapi(R.getEngineModels, async (c) => {
   const rawType = c.req.param('engineType')
   const parsed = engineTypeOrAcpEnum.safeParse(rawType)
   if (!parsed.success) {
-    return c.json({ success: false, error: `Unknown engine type: ${rawType}` }, 400)
+    return c.json({ success: false, error: `Unknown engine type: ${rawType}` }, 400 as const)
   }
   const engineType = parsed.data
   // For virtual ACP types, resolve to base 'acp' executor
   const lookupType = engineType.startsWith('acp:') ? 'acp' : engineType
   const executor = engineRegistry.get(lookupType as typeof ENGINE_TYPES[number])
   if (!executor) {
-    return c.json({ success: false, error: `Unknown engine type: ${engineType}` }, 404)
+    return c.json({ success: false, error: `Unknown engine type: ${engineType}` }, 404 as const)
   }
 
   const allModels = await getEngineModels(lookupType as typeof ENGINE_TYPES[number])
@@ -129,7 +129,7 @@ engines.openapi(R.getEngineModels, async (c) => {
   return c.json({
     success: true,
     data: { engineType, defaultModel, models },
-  })
+  }, 200 as const)
 })
 
 // POST /api/engines/probe — Force a live re-probe of all engines

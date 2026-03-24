@@ -69,11 +69,11 @@ worktrees.openapi(R.listWorktrees, async (c) => {
   const projectId = c.req.param('projectId')!
   const project = await findProject(projectId)
   if (!project) {
-    return c.json({ success: false, error: 'Project not found' }, 404)
+    return c.json({ success: false, error: 'Project not found' }, 404 as const)
   }
 
   const entries = await listProjectWorktrees(project.id)
-  return c.json({ success: true, data: entries })
+  return c.json({ success: true, data: entries }, 200 as const)
 })
 
 // DELETE /api/projects/:projectId/worktrees/:issueId — Force delete a worktree
@@ -81,14 +81,14 @@ worktrees.openapi(R.deleteWorktree, async (c) => {
   const projectId = c.req.param('projectId')!
   const project = await findProject(projectId)
   if (!project) {
-    return c.json({ success: false, error: 'Project not found' }, 404)
+    return c.json({ success: false, error: 'Project not found' }, 404 as const)
   }
 
   const issueId = c.req.param('issueId')!
 
   // Validate issueId format to prevent path traversal
   if (!VALID_ID.test(issueId)) {
-    return c.json({ success: false, error: 'Invalid issueId' }, 400)
+    return c.json({ success: false, error: 'Invalid issueId' }, 400 as const)
   }
 
   const baseWorktreeDir = resolve(join(WORKTREE_BASE, project.id))
@@ -96,17 +96,17 @@ worktrees.openapi(R.deleteWorktree, async (c) => {
 
   // Ensure resolved path stays within the project worktree directory
   if (!worktreePath.startsWith(baseWorktreeDir + sep) && worktreePath !== baseWorktreeDir) {
-    return c.json({ success: false, error: 'Invalid issueId' }, 400)
+    return c.json({ success: false, error: 'Invalid issueId' }, 400 as const)
   }
 
   // Verify the worktree directory exists
   try {
     const s = await stat(worktreePath)
     if (!s.isDirectory()) {
-      return c.json({ success: false, error: 'Worktree not found' }, 404)
+      return c.json({ success: false, error: 'Worktree not found' }, 404 as const)
     }
   } catch {
-    return c.json({ success: false, error: 'Worktree not found' }, 404)
+    return c.json({ success: false, error: 'Worktree not found' }, 404 as const)
   }
 
   const baseDir = project.directory ? resolve(project.directory) : process.cwd()
@@ -119,10 +119,10 @@ worktrees.openapi(R.deleteWorktree, async (c) => {
       { projectId: project.id, issueId, worktreePath, err },
       'worktree_force_delete_failed',
     )
-    return c.json({ success: false, error: 'Failed to delete worktree' }, 500)
+    return c.json({ success: false, error: 'Failed to delete worktree' }, 500 as const)
   }
 
-  return c.json({ success: true, data: { issueId } })
+  return c.json({ success: true, data: { issueId } }, 200 as const)
 })
 
 export default worktrees

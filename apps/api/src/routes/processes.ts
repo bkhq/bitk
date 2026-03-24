@@ -89,12 +89,12 @@ processes.openapi(R.terminateProcess, async (c) => {
     )
 
   if (!issue) {
-    return c.json({ success: false, error: 'Issue not found' }, 404)
+    return c.json({ success: false, error: 'Issue not found' }, 404 as const)
   }
 
   try {
     await issueEngine.terminateProcess(issueId)
-    return c.json({ success: true, data: { issueId, status: 'terminated' } })
+    return c.json({ success: true, data: { issueId, status: 'terminated' } }, 200 as const)
   } catch (error) {
     logger.error({ issueId, error }, 'terminate_process_failed')
     return c.json(
@@ -102,7 +102,7 @@ processes.openapi(R.terminateProcess, async (c) => {
         success: false,
         error: 'Failed to terminate process',
       },
-      400,
+      400 as const,
     )
   }
 })

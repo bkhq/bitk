@@ -222,6 +222,7 @@ export const listIssues = createRoute({
   operationId: 'listIssues',
   responses: {
     200: successResponse(z.array(IssueSchema), 'Issue list'),
+    404: errorResponse('Project not found'),
   },
 })
 
@@ -236,6 +237,7 @@ export const createIssue = createRoute({
     201: successResponse(IssueSchema, 'Created issue'),
     202: successResponse(IssueSchema, 'Created and executing'),
     400: errorResponse('Validation error'),
+    404: errorResponse('Project not found'),
   },
 })
 
@@ -290,6 +292,7 @@ export const bulkUpdateIssues = createRoute({
   request: { body: { content: { 'application/json': { schema: BulkUpdateSchema } } } },
   responses: {
     200: successResponse(z.array(IssueSchema), 'Updated issues'),
+    404: errorResponse('Project not found'),
   },
 })
 
@@ -303,6 +306,7 @@ export const duplicateIssue = createRoute({
   responses: {
     201: successResponse(IssueSchema, 'Duplicated issue'),
     404: errorResponse('Issue not found'),
+    500: errorResponse('Internal error'),
   },
 })
 
@@ -321,6 +325,7 @@ export const executeIssue = createRoute({
   responses: {
     200: successResponse(ExecuteIssueResponseSchema, 'Execution started'),
     400: errorResponse('Bad request'),
+    403: errorResponse('Forbidden'),
     404: errorResponse('Issue not found'),
   },
 })
@@ -364,7 +369,8 @@ export const cancelIssue = createRoute({
   operationId: 'cancelIssue',
   request: { params: z.object({ issueId: z.string() }) },
   responses: {
-    200: successResponse(z.object({ issueId: z.string(), cancelled: z.boolean() }), 'Cancelled'),
+    200: successResponse(z.object({ issueId: z.string(), status: z.string() }), 'Cancelled'),
+    400: errorResponse('Cancel failed'),
     404: errorResponse('Issue not found'),
   },
 })
@@ -416,6 +422,7 @@ export const getIssueChanges = createRoute({
   },
   responses: {
     200: successResponse(IssueChangesResponseSchema, 'File changes'),
+    400: errorResponse('Bad request'),
     404: errorResponse('Issue not found'),
   },
 })
@@ -645,6 +652,7 @@ export const triggerCronJob = createRoute({
     }), 'Triggered'),
     404: errorResponse('Job not found'),
     409: errorResponse('Job already running'),
+    500: errorResponse('Internal error'),
   },
 })
 
@@ -743,6 +751,7 @@ export const deleteWorktree = createRoute({
     200: successResponse(z.object({ issueId: z.string() }), 'Deleted'),
     400: errorResponse('Invalid issueId'),
     404: errorResponse('Worktree not found'),
+    500: errorResponse('Delete failed'),
   },
 })
 
@@ -756,6 +765,7 @@ export const listNotes = createRoute({
   operationId: 'listNotes',
   responses: {
     200: successResponse(z.array(NoteSchema), 'Note list'),
+    500: errorResponse('Internal error'),
   },
 })
 
@@ -768,6 +778,7 @@ export const createNote = createRoute({
   request: { body: { content: { 'application/json': { schema: CreateNoteSchema } } } },
   responses: {
     201: successResponse(NoteSchema, 'Created note'),
+    500: errorResponse('Internal error'),
   },
 })
 
@@ -784,6 +795,7 @@ export const updateNote = createRoute({
   responses: {
     200: successResponse(NoteSchema, 'Updated note'),
     404: errorResponse('Note not found'),
+    500: errorResponse('Internal error'),
   },
 })
 
@@ -797,6 +809,7 @@ export const deleteNote = createRoute({
   responses: {
     200: successResponse(z.object({ id: z.string() }), 'Deleted'),
     404: errorResponse('Note not found'),
+    500: errorResponse('Internal error'),
   },
 })
 
@@ -838,6 +851,7 @@ export const updateWebhook = createRoute({
   },
   responses: {
     200: successResponse(WebhookSchema, 'Updated webhook'),
+    400: errorResponse('Validation error'),
     404: errorResponse('Webhook not found'),
   },
 })
@@ -990,5 +1004,8 @@ export const getGlobalSlashCommands = createRoute({
   summary: 'Get cached slash commands',
   operationId: 'getGlobalSlashCommands',
   request: { query: z.object({ engine: z.string().optional() }) },
-  responses: { 200: successResponse(CategorizedCommandsSchema, 'Categorized commands') },
+  responses: {
+    200: successResponse(CategorizedCommandsSchema, 'Categorized commands'),
+    400: errorResponse('Invalid engine type'),
+  },
 })

@@ -39,7 +39,7 @@ webhooksRoute.openapi(R.listWebhooks, async (c) => {
     .where(eq(webhooks.isDeleted, 0))
     .orderBy(desc(webhooks.createdAt))
 
-  return c.json({ success: true, data: rows.map(serializeWebhook) })
+  return c.json({ success: true, data: rows.map(serializeWebhook) }, 200 as const)
 })
 
 // POST /api/settings/webhooks
@@ -53,23 +53,23 @@ webhooksRoute.openapi(R.createWebhook, async (c) => {
     try {
       const parsed = new URL(body.url)
       if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-        return c.json({ success: false, error: 'URL must use http or https protocol' }, 400)
+        return c.json({ success: false, error: 'URL must use http or https protocol' }, 400 as const)
       }
     } catch {
-      return c.json({ success: false, error: 'Invalid URL format' }, 400)
+      return c.json({ success: false, error: 'Invalid URL format' }, 400 as const)
     }
 
     // Async SSRF check — resolve DNS and reject private addresses
     const result = await validateWebhookUrl(body.url)
     if (!result.ok) {
-      return c.json({ success: false, error: result.error }, 400)
+      return c.json({ success: false, error: result.error ?? 'Invalid URL' }, 400 as const)
     }
   } else if (channel === 'telegram') {
     if (!body.secret || body.secret.trim().length === 0) {
-      return c.json({ success: false, error: 'Bot token is required for Telegram' }, 400)
+      return c.json({ success: false, error: 'Bot token is required for Telegram' }, 400 as const)
     }
     if (!/^-?\d+$/.test(body.url.trim())) {
-      return c.json({ success: false, error: 'Chat ID must be a numeric value' }, 400)
+      return c.json({ success: false, error: 'Chat ID must be a numeric value' }, 400 as const)
     }
   }
 
@@ -84,7 +84,7 @@ webhooksRoute.openapi(R.createWebhook, async (c) => {
     })
     .returning()
 
-  return c.json({ success: true, data: serializeWebhook(row!) }, 201)
+  return c.json({ success: true, data: serializeWebhook(row!) }, 201 as const)
 })
 
 // PATCH /api/settings/webhooks/:webhookId
@@ -96,7 +96,7 @@ webhooksRoute.openapi(R.updateWebhook, async (c) => {
     .where(and(eq(webhooks.id, webhookId), eq(webhooks.isDeleted, 0)))
 
   if (!existing) {
-    return c.json({ success: false, error: 'Webhook not found' }, 404)
+    return c.json({ success: false, error: 'Webhook not found' }, 404 as const)
   }
 
   const body = c.req.valid('json')
@@ -111,15 +111,15 @@ webhooksRoute.openapi(R.updateWebhook, async (c) => {
   if (effectiveChannel === 'webhook' && body.url !== undefined) {
     const result = await validateWebhookUrl(effectiveUrl)
     if (!result.ok) {
-      return c.json({ success: false, error: result.error }, 400)
+      return c.json({ success: false, error: result.error ?? 'Invalid URL' }, 400 as const)
     }
   }
   if (effectiveChannel === 'telegram') {
     if (!effectiveSecret) {
-      return c.json({ success: false, error: 'Bot token is required for Telegram' }, 400)
+      return c.json({ success: false, error: 'Bot token is required for Telegram' }, 400 as const)
     }
     if (body.url !== undefined && !/^-?\d+$/.test(effectiveUrl.trim())) {
-      return c.json({ success: false, error: 'Chat ID must be a numeric value' }, 400)
+      return c.json({ success: false, error: 'Chat ID must be a numeric value' }, 400 as const)
     }
   }
 
@@ -134,12 +134,12 @@ webhooksRoute.openapi(R.updateWebhook, async (c) => {
   if (body.isActive !== undefined) updates.isActive = body.isActive
 
   if (Object.keys(updates).length === 0) {
-    return c.json({ success: true, data: serializeWebhook(existing) })
+    return c.json({ success: true, data: serializeWebhook(existing) }, 200 as const)
   }
 
   const [updated] = await db.update(webhooks).set(updates).where(eq(webhooks.id, webhookId)).returning()
 
-  return c.json({ success: true, data: serializeWebhook(updated!) })
+  return c.json({ success: true, data: serializeWebhook(updated!) }, 200 as const)
 })
 
 // DELETE /api/settings/webhooks/:webhookId
@@ -151,12 +151,12 @@ webhooksRoute.openapi(R.deleteWebhook, async (c) => {
     .where(and(eq(webhooks.id, webhookId), eq(webhooks.isDeleted, 0)))
 
   if (!existing) {
-    return c.json({ success: false, error: 'Webhook not found' }, 404)
+    return c.json({ success: false, error: 'Webhook not found' }, 404 as const)
   }
 
   await db.update(webhooks).set({ isDeleted: 1 }).where(eq(webhooks.id, webhookId))
 
-  return c.json({ success: true, data: { id: webhookId } })
+  return c.json({ success: true, data: { id: webhookId } }, 200 as const)
 })
 
 // GET /api/settings/webhooks/:webhookId/deliveries
@@ -168,7 +168,7 @@ webhooksRoute.openapi(R.getWebhookDeliveries, async (c) => {
     .where(and(eq(webhooks.id, webhookId), eq(webhooks.isDeleted, 0)))
 
   if (!existing) {
-    return c.json({ success: false, error: 'Webhook not found' }, 404)
+    return c.json({ success: false, error: 'Webhook not found' }, 404 as const)
   }
 
   const rows = await db
@@ -191,7 +191,7 @@ webhooksRoute.openapi(R.getWebhookDeliveries, async (c) => {
       duration: r.duration,
       createdAt: r.createdAt.toISOString(),
     })),
-  })
+  }, 200 as const)
 })
 
 // POST /api/settings/webhooks/:webhookId/test — delivers only to the target webhook
@@ -203,7 +203,7 @@ webhooksRoute.openapi(R.testWebhook, async (c) => {
     .where(and(eq(webhooks.id, webhookId), eq(webhooks.isDeleted, 0)))
 
   if (!existing) {
-    return c.json({ success: false, error: 'Webhook not found' }, 404)
+    return c.json({ success: false, error: 'Webhook not found' }, 404 as const)
   }
 
   await deliver(
@@ -225,7 +225,7 @@ webhooksRoute.openapi(R.testWebhook, async (c) => {
     },
   )
 
-  return c.json({ success: true, data: { sent: true } })
+  return c.json({ success: true, data: { sent: true } }, 200 as const)
 })
 
 export default webhooksRoute

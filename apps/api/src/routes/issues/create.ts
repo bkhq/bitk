@@ -23,7 +23,7 @@ create.openapi(R.createIssue, async (c) => {
   const projectId = c.req.param('projectId')!
   const project = await findProject(projectId)
   if (!project) {
-    return c.json({ success: false, error: 'Project not found' }, 404)
+    return c.json({ success: false, error: 'Project not found' }, 404 as const)
   }
 
   const body = c.req.valid('json')
@@ -131,7 +131,7 @@ create.openapi(R.createIssue, async (c) => {
       )
     }
 
-    return c.json({ success: true, data: serializeIssue(newIssue!) }, shouldExecute ? 202 : 201)
+    return c.json({ success: true, data: serializeIssue(newIssue!) }, (shouldExecute ? 202 : 201) as 201 | 202)
   } catch (error) {
     logger.warn(
       {
@@ -145,7 +145,7 @@ create.openapi(R.createIssue, async (c) => {
         success: false,
         error: 'Failed to create issue',
       },
-      400,
+      400 as const,
     )
   }
 })

@@ -39,14 +39,14 @@ general.openapi(R.setWorkspacePath, async (c) => {
   try {
     const s = await stat(resolved)
     if (!s.isDirectory()) {
-      return c.json({ success: false, error: 'Path is not a directory' }, 400)
+      return c.json({ success: false, error: 'Path is not a directory' }, 400 as const)
     }
   } catch {
-    return c.json({ success: false, error: 'Path does not exist' }, 400)
+    return c.json({ success: false, error: 'Path does not exist' }, 400 as const)
   }
 
   await setAppSetting(WORKSPACE_PATH_KEY, resolved)
-  return c.json({ success: true, data: { path: resolved } })
+  return c.json({ success: true, data: { path: resolved } }, 200 as const)
 })
 
 // --- Write Filter Rules ---
@@ -235,7 +235,7 @@ general.openapi(R.getGlobalSlashCommands, async (c) => {
   const validEngines = ['claude-code', 'codex', 'acp']
   const rawEngine = c.req.query('engine')
   if (rawEngine && !validEngines.includes(rawEngine) && !rawEngine.startsWith('acp:')) {
-    return c.json({ success: false, error: `Invalid engine type: ${rawEngine}` }, 400)
+    return c.json({ success: false, error: `Invalid engine type: ${rawEngine}` }, 400 as const)
   }
   const engine = rawEngine as import('@/engines/types').EngineType | undefined
   let categorized = getCachedCategorizedCommands(engine)
@@ -249,7 +249,7 @@ general.openapi(R.getGlobalSlashCommands, async (c) => {
     await refreshSlashCommandsCache()
     categorized = getCachedCategorizedCommands(engine)
   }
-  return c.json({ success: true, data: categorized })
+  return c.json({ success: true, data: categorized }, 200 as const)
 })
 
 // --- MCP Settings ---

@@ -16,7 +16,7 @@ del.openapi(R.deleteIssue, async (c) => {
   const projectId = c.req.param('projectId')!
   const project = await findProject(projectId)
   if (!project) {
-    return c.json({ success: false, error: 'Project not found' }, 404)
+    return c.json({ success: false, error: 'Project not found' }, 404 as const)
   }
 
   const issueId = c.req.param('issueId')!
@@ -31,7 +31,7 @@ del.openapi(R.deleteIssue, async (c) => {
       ),
     )
   if (!existing) {
-    return c.json({ success: false, error: 'Issue not found' }, 404)
+    return c.json({ success: false, error: 'Issue not found' }, 404 as const)
   }
 
   // Best-effort terminate: try to kill active processes before soft-delete.
@@ -84,7 +84,7 @@ del.openapi(R.deleteIssue, async (c) => {
   }
   void webhookDispatch('issue.deleted', webhookPayload, `issue.deleted:${issueId}`)
 
-  return c.json({ success: true, data: { id: issueId } })
+  return c.json({ success: true, data: { id: issueId } }, 200 as const)
 })
 
 export default del

@@ -144,15 +144,15 @@ const changes = createOpenAPIRouter()
 changes.openapi(R.getIssueChanges, async (c) => {
   const projectId = c.req.param('projectId')!
   const project = await findProject(projectId)
-  if (!project) return c.json({ success: false, error: 'Project not found' }, 404)
+  if (!project) return c.json({ success: false, error: 'Project not found' }, 404 as const)
 
   const issueId = c.req.param('issueId')!
   const issue = await getProjectOwnedIssue(project.id, issueId)
-  if (!issue) return c.json({ success: false, error: 'Issue not found' }, 404)
+  if (!issue) return c.json({ success: false, error: 'Issue not found' }, 404 as const)
 
   const projectRoot = await resolveProjectDir(project.id)
   if (!projectRoot) {
-    return c.json({ success: false, error: 'Project directory is not configured' }, 400)
+    return c.json({ success: false, error: 'Project directory is not configured' }, 400 as const)
   }
   const root = await resolveIssueDir(project.id, issueId, issue.useWorktree, projectRoot)
   const gitRepo = await isGitRepo(root)
@@ -160,7 +160,7 @@ changes.openapi(R.getIssueChanges, async (c) => {
     return c.json({
       success: true,
       data: { root, gitRepo: false, files: [], additions: 0, deletions: 0 },
-    })
+    }, 200 as const)
   }
 
   const { files, timedOut } = await listChangedFiles(root)
@@ -169,7 +169,7 @@ changes.openapi(R.getIssueChanges, async (c) => {
     return c.json({
       success: true,
       data: { root, gitRepo: true, files: [], additions: 0, deletions: 0, timedOut: true },
-    })
+    }, 200 as const)
   }
 
   const filesWithStats = await Promise.all(
@@ -183,7 +183,7 @@ changes.openapi(R.getIssueChanges, async (c) => {
   return c.json({
     success: true,
     data: { root, gitRepo: true, files: filesWithStats, additions, deletions },
-  })
+  }, 200 as const)
 })
 
 // GET /api/projects/:projectId/issues/:id/changes/file?path=... — Get file patch from workspace

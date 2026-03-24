@@ -19,19 +19,19 @@ command.openapi(R.executeIssue, async (c) => {
   const projectId = c.req.param('projectId')!
   const project = await findProject(projectId)
   if (!project) {
-    return c.json({ success: false, error: 'Project not found' }, 404)
+    return c.json({ success: false, error: 'Project not found' }, 404 as const)
   }
 
   const issueId = c.req.param('issueId')!
   const issue = await getProjectOwnedIssue(project.id, issueId)
   if (!issue) {
-    return c.json({ success: false, error: 'Issue not found' }, 404)
+    return c.json({ success: false, error: 'Issue not found' }, 404 as const)
   }
 
   const body = c.req.valid('json')
   const prompt = normalizePrompt(body.prompt)
   if (!prompt) {
-    return c.json({ success: false, error: 'Prompt is required' }, 400)
+    return c.json({ success: false, error: 'Prompt is required' }, 400 as const)
   }
 
   // Resolve workingDir from project.directory
@@ -52,7 +52,7 @@ command.openapi(R.executeIssue, async (c) => {
             success: false,
             error: 'Project directory is outside the configured workspace',
           },
-          403,
+          403 as const,
         )
       }
     }
@@ -65,14 +65,14 @@ command.openapi(R.executeIssue, async (c) => {
           success: false,
           error: `Failed to create project directory: ${resolvedDir}`,
         },
-        400,
+        400 as const,
       )
     }
 
     try {
       const s = await stat(resolvedDir)
       if (!s.isDirectory()) {
-        return c.json({ success: false, error: 'Project directory is not a directory' }, 400)
+        return c.json({ success: false, error: 'Project directory is not a directory' }, 400 as const)
       }
     } catch {
       return c.json(
@@ -80,7 +80,7 @@ command.openapi(R.executeIssue, async (c) => {
           success: false,
           error: `Project directory is unavailable: ${resolvedDir}`,
         },
-        400,
+        400 as const,
       )
     }
     effectiveWorkingDir = resolvedDir
@@ -89,7 +89,7 @@ command.openapi(R.executeIssue, async (c) => {
   try {
     const guard = await ensureWorking(issue)
     if (!guard.ok) {
-      return c.json({ success: false, error: guard.reason! }, 400)
+      return c.json({ success: false, error: guard.reason! }, 400 as const)
     }
     // Prepend project-level system prompt if configured
     const basePrompt = project.systemPrompt ? `${project.systemPrompt}\n\n${prompt}` : prompt
@@ -109,7 +109,7 @@ command.openapi(R.executeIssue, async (c) => {
         issueId,
         messageId: result.messageId,
       },
-    })
+    }, 200 as const)
   } catch (error) {
     logger.warn(
       {
@@ -126,7 +126,7 @@ command.openapi(R.executeIssue, async (c) => {
         success: false,
         error: 'Operation failed',
       },
-      400,
+      400 as const,
     )
   }
 })
@@ -136,25 +136,25 @@ command.openapi(R.restartIssue, async (c) => {
   const projectId = c.req.param('projectId')!
   const project = await findProject(projectId)
   if (!project) {
-    return c.json({ success: false, error: 'Project not found' }, 404)
+    return c.json({ success: false, error: 'Project not found' }, 404 as const)
   }
 
   const issueId = c.req.param('issueId')!
   const issue = await getProjectOwnedIssue(project.id, issueId)
   if (!issue) {
-    return c.json({ success: false, error: 'Issue not found' }, 404)
+    return c.json({ success: false, error: 'Issue not found' }, 404 as const)
   }
 
   try {
     const guard = await ensureWorking(issue)
     if (!guard.ok) {
-      return c.json({ success: false, error: guard.reason! }, 400)
+      return c.json({ success: false, error: guard.reason! }, 400 as const)
     }
     const result = await issueEngine.restartIssue(issueId)
     return c.json({
       success: true,
       data: { executionId: result.executionId, issueId },
-    })
+    }, 200 as const)
   } catch (error) {
     logger.warn(
       {
@@ -169,7 +169,7 @@ command.openapi(R.restartIssue, async (c) => {
         success: false,
         error: 'Operation failed',
       },
-      400,
+      400 as const,
     )
   }
 })
@@ -179,18 +179,18 @@ command.openapi(R.cancelIssue, async (c) => {
   const projectId = c.req.param('projectId')!
   const project = await findProject(projectId)
   if (!project) {
-    return c.json({ success: false, error: 'Project not found' }, 404)
+    return c.json({ success: false, error: 'Project not found' }, 404 as const)
   }
 
   const issueId = c.req.param('issueId')!
   const issue = await getProjectOwnedIssue(project.id, issueId)
   if (!issue) {
-    return c.json({ success: false, error: 'Issue not found' }, 404)
+    return c.json({ success: false, error: 'Issue not found' }, 404 as const)
   }
 
   try {
     const status = await issueEngine.cancelIssue(issueId)
-    return c.json({ success: true, data: { issueId, status } })
+    return c.json({ success: true, data: { issueId, status } }, 200 as const)
   } catch (error) {
     logger.warn(
       {
@@ -205,7 +205,7 @@ command.openapi(R.cancelIssue, async (c) => {
         success: false,
         error: 'Operation failed',
       },
-      400,
+      400 as const,
     )
   }
 })
@@ -215,18 +215,18 @@ command.openapi(R.getSlashCommands, async (c) => {
   const projectId = c.req.param('projectId')!
   const project = await findProject(projectId)
   if (!project) {
-    return c.json({ success: false, error: 'Project not found' }, 404)
+    return c.json({ success: false, error: 'Project not found' }, 404 as const)
   }
 
   const issueId = c.req.param('issueId')!
   const issue = await getProjectOwnedIssue(project.id, issueId)
   if (!issue) {
-    return c.json({ success: false, error: 'Issue not found' }, 404)
+    return c.json({ success: false, error: 'Issue not found' }, 404 as const)
   }
 
   const engineType = (issue.engineType as import('@/engines/types').EngineType) ?? undefined
   const categorized = issueEngine.getCategorizedCommands(issueId, engineType)
-  return c.json({ success: true, data: categorized })
+  return c.json({ success: true, data: categorized }, 200 as const)
 })
 
 export default command
