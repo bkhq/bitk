@@ -37,23 +37,38 @@ List detected engines and their models. Uses 3-tier cache (memory -> DB -> live 
 
 ## GET /api/engines/profiles
 
-List engine profiles.
+List engine profiles. ACP engines are expanded into per-agent profiles (e.g. `acp:gemini`, `acp:codex`).
+
+**Response:** `EngineProfile[]`
 
 ## GET /api/engines/settings
 
-Get engine default settings.
+Get all engine settings: default engine, per-engine default models, and hidden models.
 
-**Response:** `{ defaultEngine, engines: { [engineType]: { defaultModel } } }`
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "defaultEngine": "claude-code",
+    "engines": {
+      "claude-code": { "defaultModel": "sonnet", "hiddenModels": [] },
+      "codex": { "defaultModel": "o3" }
+    }
+  }
+}
+```
 
 ## PATCH /api/engines/default-engine
 
-Set the global default engine.
+Set the global default engine. Accepts base types (`claude-code`, `codex`, `acp`) and virtual ACP types (`acp:gemini`).
 
-**Request Body:** `{ defaultEngine: "claude-code" | "codex" | "acp" | "echo" }`
+**Request Body:** `{ defaultEngine: string }`
 
 ## GET /api/engines/:engineType/models
 
-List models for a specific engine.
+List models for a specific engine. For virtual ACP types (e.g. `acp:codex`), filters to only models matching the agent prefix.
 
 **Response:** `{ engineType, defaultModel, models }`
 
@@ -63,6 +78,14 @@ Set an engine's default model.
 
 **Request Body:** `{ defaultModel: string }`
 
+## PATCH /api/engines/:engineType/hidden-models
+
+Update hidden models for an engine type.
+
+**Request Body:** `{ hiddenModels: string[] }` (max 500 items, each matching `/^[\w./:\-[\]]{1,160}$/`)
+
 ## POST /api/engines/probe
 
-Force live re-probe of all engines.
+Force live re-probe of all engines. Bypasses cache.
+
+**Response:** `{ engines, models }`

@@ -2,13 +2,13 @@
 
 ## GET /api/projects/:projectId/issues/:id/logs
 
-Get paginated issue logs (all types).
+Get paginated issue logs (all types). Default page size is configurable via the `log-page-size` setting.
 
 | Query Param | Type | Description |
 |---|---|---|
 | `cursor` | `string` (ULID) | Cursor for forward pagination |
 | `before` | `string` (ULID) | Cursor for backward pagination |
-| `limit` | `number` (1-1000) | Page size (default: 30) |
+| `limit` | `number` (1-1000) | Page size (default: from settings or 30) |
 
 **Response:**
 

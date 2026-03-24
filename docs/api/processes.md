@@ -1,8 +1,10 @@
 # Processes
 
-## GET /api/projects/:projectId/processes
+Process routes are global (not project-scoped).
 
-List active engine processes for a project.
+## GET /api/processes
+
+List all active engine processes across all projects.
 
 **Response:**
 
@@ -15,6 +17,9 @@ List active engine processes for a project.
       "issueId": "...",
       "issueTitle": "...",
       "issueNumber": 1,
+      "projectId": "...",
+      "projectAlias": "...",
+      "projectName": "...",
       "engineType": "claude-code",
       "processState": "running",
       "model": "...",
@@ -22,15 +27,14 @@ List active engine processes for a project.
       "turnInFlight": true,
       "spawnCommand": "...",
       "lastIdleAt": "...",
-      "pid": 12345,
-      "transcriptPath": "..."
+      "pid": 12345
     }]
   }
 }
 ```
 
-## POST /api/projects/:projectId/processes/:issueId/terminate
+## POST /api/processes/:issueId/terminate
 
-Terminate an engine process.
+Terminate an engine process. Validates that the issue exists and its project is not deleted.
 
 **Response:** `{ issueId, status: "terminated" }`

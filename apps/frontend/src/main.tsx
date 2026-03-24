@@ -25,8 +25,6 @@ const queryClient = new QueryClient({
   },
 })
 
-// Global SSE connection — connects once at startup, client-side filtering
-eventBus.connect()
 // Invalidate all queries on SSE reconnect so stale statuses get refreshed
 eventBus.onConnectionChange((connected) => {
   if (connected) queryClient.invalidateQueries()
@@ -136,6 +134,33 @@ function NotesDrawerMount() {
   )
 }
 
+/**
+ * EventBusManager: Gates SSE connection on auth state.
+ * - Auth disabled → connect immediately.
+ * - Auth enabled + authenticated → connect.
+ * - Auth enabled + unauthenticated → disconnect (no reconnect loop).
+ */
+function EventBusManager() {
+  const { authEnabled, isAuthenticated, isLoading } = useAuth()
+
+  useEffect(() => {
+    if (isLoading) return
+
+    const shouldConnect = !authEnabled || isAuthenticated
+    if (shouldConnect) {
+      eventBus.connect()
+    } else {
+      eventBus.disconnect()
+    }
+
+    return () => {
+      eventBus.disconnect()
+    }
+  }, [authEnabled, isAuthenticated, isLoading])
+
+  return null
+}
+
 function ServerConfigLoader() {
   const { data } = useSystemInfo(true)
   const setServerInfo = useServerStore(s => s.setServerInfo)
@@ -157,12 +182,28 @@ function ServerConfigLoader() {
  * When auth is disabled, render children directly.
  */
 function AuthGate({ children }: { children: React.ReactNode }) {
-  const { authEnabled, isAuthenticated, isLoading } = useAuth()
+  const { authEnabled, isAuthenticated, isLoading, isError } = useAuth()
 
   if (isLoading) {
     return (
       <div className="flex h-full items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    )
+  }
+
+  // Config fetch failed → block rendering (fail closed, never fail open)
+  if (isError) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-3 text-muted-foreground">
+        <p className="text-sm">Unable to verify authentication configuration.</p>
+        <button
+          type="button"
+          className="rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground hover:bg-primary/90"
+          onClick={() => window.location.reload()}
+        >
+          Retry
+        </button>
       </div>
     )
   }
@@ -287,6 +328,7 @@ if (!rootElement.innerHTML) {
           <ProcessManagerDrawerMount />
           <NotesDrawerMount />
           <Toaster position="top-center" />
+          <EventBusManager />
           <ServerConfigLoader />
         </ErrorBoundary>
       </BrowserRouter>

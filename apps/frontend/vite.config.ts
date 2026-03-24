@@ -90,7 +90,13 @@ const config = defineConfig(() => {
     server: {
       port: devPort,
       host: devHost,
-      allowedHosts: true,
+      // Restrict allowed hosts to prevent DNS rebinding attacks.
+      // Extend via VITE_ALLOWED_HOSTS (comma-separated) for custom domains.
+      allowedHosts: [
+        'localhost',
+        '127.0.0.1',
+        ...(process.env.VITE_ALLOWED_HOSTS?.split(',').map(h => h.trim()).filter(Boolean) ?? []),
+      ],
       proxy: {
         '/api': {
           target: `http://localhost:${apiPort}`,

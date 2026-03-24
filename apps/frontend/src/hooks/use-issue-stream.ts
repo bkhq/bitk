@@ -100,6 +100,9 @@ export function useIssueStream({
   const olderCursorRef = useRef<string | null>(null)
   const liveLogsRef = useRef<NormalizedLogEntry[]>([])
   const olderLogsRef = useRef<NormalizedLogEntry[]>([])
+  /** True once a live-log trim has established a pagination cursor.
+   *  Prevents the initial HTTP fetch from overwriting it with a stale server cursor. */
+  const trimCursorSetRef = useRef(false)
 
   // ---- MessageId-based dedup tracking ----
   // O(1) lookup instead of scanning the entire array on every append.
@@ -138,6 +141,7 @@ export function useIssueStream({
     activeExecutionRef.current = null
     seenIdsRef.current.clear()
     seenContentKeysRef.current.clear()
+    trimCursorSetRef.current = false
   }, [])
 
   /** Clear logs and re-fetch from server. */
@@ -172,8 +176,28 @@ export function useIssueStream({
         const next = [...prev, incoming]
         if (next.length > MAX_LIVE_LOGS) {
           const trimmed = next.slice(next.length - MAX_LIVE_LOGS)
+          // Remove evicted entries from seen sets so loadOlderLogs can
+          // restore them later via pagination instead of silently dropping them.
+          const evicted = next.slice(0, next.length - MAX_LIVE_LOGS)
+          for (const entry of evicted) {
+            if (entry.messageId) {
+              seenIdsRef.current.delete(entry.messageId)
+            } else {
+              seenContentKeysRef.current.delete(contentKey(entry))
+            }
+          }
           liveLogsRef.current = trimmed
           setHasOlderLogs(true)
+          // Always update the pagination cursor to the oldest remaining live entry
+          // so loadOlderLogs fetches entries before this point (including evicted ones).
+          // This must run on every trim, not just the first, to keep the cursor fresh.
+          const oldestRemaining = trimmed.find(e => e.messageId)
+          if (oldestRemaining?.messageId) {
+            olderCursorRef.current = oldestRemaining.messageId
+          }
+          // Mark that the trim has established a cursor so the initial HTTP fetch
+          // does not overwrite it with a stale server-provided cursor.
+          trimCursorSetRef.current = true
           return trimmed
         }
         liveLogsRef.current = next
@@ -359,8 +383,12 @@ export function useIssueStream({
 
         olderLogsRef.current = []
         setOlderLogs([])
-        setHasOlderLogs(data.hasMore)
-        olderCursorRef.current = data.nextCursor
+        setHasOlderLogs(data.hasMore || trimCursorSetRef.current)
+        // Only use the server-provided cursor if a live-log trim hasn't
+        // already established a more accurate cursor from the SSE stream.
+        if (!trimCursorSetRef.current) {
+          olderCursorRef.current = data.nextCursor
+        }
       })
       .catch((err) => {
         console.warn('Failed to fetch issue logs:', err)

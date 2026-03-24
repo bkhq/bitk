@@ -23,6 +23,8 @@ const BASE_RECONNECT_DELAY = 1_000
 const INITIAL_RETRY_DELAY = 1_500
 // Watchdog fires if no heartbeat received within 2x server interval + buffer
 const HEARTBEAT_WATCHDOG_MS = 35_000
+// Stop reconnecting after this many consecutive failures without a successful connection
+const MAX_INITIAL_FAILURES = 5
 
 class EventBus {
   private es: EventSource | null = null
@@ -36,6 +38,7 @@ class EventBus {
   private reconnectDelay = BASE_RECONNECT_DELAY
   private connected = false
   private hasConnectedOnce = false
+  private consecutiveFailures = 0
 
   connect(): void {
     if (this.es) return
@@ -48,6 +51,7 @@ class EventBus {
     es.onopen = () => {
       this.connected = true
       this.hasConnectedOnce = true
+      this.consecutiveFailures = 0
       this.reconnectDelay = BASE_RECONNECT_DELAY
       this.notifyConnectionChange(true)
       this.resetHeartbeatWatchdog(es)
@@ -166,6 +170,14 @@ class EventBus {
       this.connected = false
       this.notifyConnectionChange(false)
 
+      this.consecutiveFailures++
+
+      // Before first successful connection: stop after repeated failures
+      // (likely auth rejection — caller must re-invoke connect() when auth state changes)
+      if (!this.hasConnectedOnce && this.consecutiveFailures >= MAX_INITIAL_FAILURES) {
+        return
+      }
+
       // Before first successful connection: fast fixed-interval retry
       // After first connection: exponential backoff for reconnections
       const delay = this.hasConnectedOnce ? this.reconnectDelay : INITIAL_RETRY_DELAY
@@ -191,6 +203,7 @@ class EventBus {
     }
     this.connected = false
     this.hasConnectedOnce = false
+    this.consecutiveFailures = 0
     this.reconnectDelay = BASE_RECONNECT_DELAY
     this.notifyConnectionChange(false)
   }

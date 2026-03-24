@@ -15,11 +15,23 @@
  *   bun scripts/package.ts --skip-frontend
  *   bun scripts/package.ts --outfile bkd-app-v0.0.6.tar.gz
  */
-import { cpSync, existsSync, mkdirSync, rmSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, renameSync, rmSync, unlinkSync } from 'node:fs'
 import { resolve } from 'node:path'
 import process from 'node:process'
 import { parseArgs } from 'node:util'
 import { Glob } from 'bun'
+
+/** Write to a .tmp sibling then atomically rename to the final path. */
+async function atomicWrite(filePath: string, content: string): Promise<void> {
+  const tmp = `${filePath}.tmp`
+  try {
+    await Bun.write(tmp, content)
+    renameSync(tmp, filePath)
+  } catch (err) {
+    try { unlinkSync(tmp) } catch {}
+    throw err
+  }
+}
 
 const { values: args } = parseArgs({
   options: {
@@ -160,7 +172,7 @@ const versionJson = {
   commit,
   builtAt: new Date().toISOString(),
 }
-await Bun.write(resolve(STAGE, 'version.json'), JSON.stringify(versionJson, null, 2))
+await atomicWrite(resolve(STAGE, 'version.json'), JSON.stringify(versionJson, null, 2))
 step('Generated version.json')
 
 // --- 7. Create tar.gz archive ---
@@ -194,7 +206,7 @@ const checksumFile = resolve(OUT_DIR, 'checksums.txt')
 const archiveName = outfile.split('/').pop() ?? 'bkd-app.tar.gz'
 const entry = `${sha256}  ${archiveName}\n`
 const existing = existsSync(checksumFile) ? await Bun.file(checksumFile).text() : ''
-await Bun.write(checksumFile, existing + entry)
+await atomicWrite(checksumFile, existing + entry)
 step(`SHA-256: ${sha256}`)
 step(`Checksum file: ${checksumFile}`)
 

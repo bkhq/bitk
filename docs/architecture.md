@@ -4,6 +4,8 @@
 
 BKD is a Kanban application for managing autonomous AI coding agents. Issues on the board are assigned to CLI-based AI engines (Claude Code, Codex, Gemini CLI) that execute in the user's workspace. The system handles process orchestration, streaming log aggregation, real-time SSE updates, cron scheduling, and self-upgrades.
 
+**Deployment assumption:** BKD is currently designed as a single-user application. The backend, frontend, SSE event model, workspace access model, and settings surface assume one trusted operator per deployment. It is not currently designed as a multi-tenant or per-project-isolated system for mutually untrusted users. This assumption is especially important for features such as the global SSE stream, shared process visibility, workspace browsing, and settings management. If BKD is extended to support multi-user deployments in the future, server-side authorization boundaries will need to be added explicitly.
+
 **Bun Workspaces monorepo** with four packages:
 
 | Package | Name | Purpose |
@@ -227,6 +229,8 @@ Powered by `cronbake` scheduler:
 ### Event System (`events/`)
 
 **SSE endpoint** (`GET /api/events`) — single global stream via Hono `streamSSE`:
+
+**Single-user assumption:** `/api/events` is intentionally implemented as one global event stream with client-side filtering. This is an explicit tradeoff under the current single-user deployment model, where all visible issue activity belongs to the same trusted operator. It should not be interpreted as a multi-user authorization boundary.
 
 - Event types: `log`, `state`, `done`, `issue-updated`, `changes-summary`, `heartbeat` (15s)
 - Subscribes to: `IssueEngine.onLog`, `.onStateChange`, `.onIssueSettled`, `onIssueUpdated`, `onChangesSummary`

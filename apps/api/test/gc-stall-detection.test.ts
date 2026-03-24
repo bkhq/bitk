@@ -1,4 +1,4 @@
-import { describe, expect, mock, test } from 'bun:test'
+import { afterEach, describe, expect, mock, test } from 'bun:test'
 import {
   IDLE_TIMEOUT_MS,
   STALL_INTERRUPT_GRACE_MS,
@@ -8,6 +8,18 @@ import {
 import type { EngineContext } from '@/engines/issue/context'
 import { gcSweep } from '@/engines/issue/gc'
 import type { ManagedProcess } from '@/engines/issue/types'
+
+// Mock emitDiagnosticLog to prevent FK errors from the persistence pipeline.
+// When the full test suite runs, earlier tests instantiate IssueEngine which
+// registers the log pipeline globally. emitDiagnosticLog emits onto appEvents,
+// and the pipeline's persist stage tries to insert into issueLogs — but the
+// fake issue IDs used here don't exist in the DB, causing FK violations that
+// are silently swallowed by persistLogEntry's catch block.
+const mockEmitDiagnosticLog = mock()
+mock.module('@/engines/issue/diagnostic', () => ({
+  emitDiagnosticLog: mockEmitDiagnosticLog,
+  emitErrorLog: mock(),
+}))
 
 /**
  * GC sweep stall detection tests — verifies:
@@ -86,6 +98,10 @@ function makeContext(entries: MockEntry[]): {
 // ---------- Tests ----------
 
 describe('gcSweep — stream stall detection', () => {
+  afterEach(() => {
+    mockEmitDiagnosticLog.mockClear()
+  })
+
   test('Tier 1: detects stall and sets stallDetectedAt (non-destructive)', () => {
     const stalledAt = new Date(Date.now() - STREAM_STALL_TIMEOUT_MS - 60_000)
     const managed = makeManagedProcess({
@@ -103,6 +119,13 @@ describe('gcSweep — stream stall detection', () => {
     // stallDetectedAt should be set, stallProbeAt should NOT
     expect(managed.stallDetectedAt).toBeDefined()
     expect(managed.stallProbeAt).toBeUndefined()
+    // Diagnostic log emitted for stall detection
+    expect(mockEmitDiagnosticLog).toHaveBeenCalledWith(
+      'issue-1',
+      'exec-1',
+      expect.stringContaining('stall detected'),
+      expect.objectContaining({ event: 'stall_detected' }),
+    )
   })
 
   test('Tier 2: sends interrupt after liveness grace period', () => {
@@ -130,6 +153,13 @@ describe('gcSweep — stream stall detection', () => {
     expect(forceKillCalls).not.toContain('exec-1')
     expect(managed.stallProbeAt).toBeDefined()
     expect(interruptMock).toHaveBeenCalled()
+    // Diagnostic log emitted for interrupt probe
+    expect(mockEmitDiagnosticLog).toHaveBeenCalledWith(
+      'issue-1',
+      'exec-1',
+      expect.stringContaining('interrupt probe'),
+      expect.objectContaining({ event: 'stall_probe' }),
+    )
   })
 
   test('Tier 3: kills process if no response after interrupt grace period', () => {
@@ -157,6 +187,13 @@ describe('gcSweep — stream stall detection', () => {
     gcSweep(ctx)
 
     expect(forceKillCalls).toContain('exec-1')
+    // Diagnostic log emitted for force kill
+    expect(mockEmitDiagnosticLog).toHaveBeenCalledWith(
+      'issue-1',
+      'exec-1',
+      expect.stringContaining('force kill'),
+      expect.objectContaining({ event: 'stall_force_kill' }),
+    )
   })
 
   test('Tier 1: immediately kills dead process', () => {
@@ -177,6 +214,13 @@ describe('gcSweep — stream stall detection', () => {
 
     // Dead process should be terminated immediately at Tier 1
     expect(forceKillCalls).toContain('exec-dead')
+    // Diagnostic log emitted for dead process detection
+    expect(mockEmitDiagnosticLog).toHaveBeenCalledWith(
+      'issue-dead',
+      'exec-dead',
+      expect.stringContaining('process already dead'),
+      expect.objectContaining({ event: 'stall_process_dead' }),
+    )
   })
 
   test('does NOT kill process with recent stream activity', () => {
@@ -192,6 +236,7 @@ describe('gcSweep — stream stall detection', () => {
     gcSweep(ctx)
 
     expect(forceKillCalls).not.toContain('exec-2')
+    expect(mockEmitDiagnosticLog).not.toHaveBeenCalled()
   })
 
   test('does NOT detect stall at exactly STREAM_STALL_TIMEOUT_MS (boundary)', () => {
@@ -209,6 +254,7 @@ describe('gcSweep — stream stall detection', () => {
 
     expect(forceKillCalls).not.toContain('exec-3')
     expect(managed.stallDetectedAt).toBeUndefined()
+    expect(mockEmitDiagnosticLog).not.toHaveBeenCalled()
   })
 
   test('kills idle process after IDLE_TIMEOUT_MS (existing behavior)', () => {
@@ -225,6 +271,8 @@ describe('gcSweep — stream stall detection', () => {
     gcSweep(ctx)
 
     expect(forceKillCalls).toContain('exec-4')
+    // Idle timeout does not emit diagnostic logs
+    expect(mockEmitDiagnosticLog).not.toHaveBeenCalled()
   })
 
   test('does NOT kill idle process within IDLE_TIMEOUT_MS', () => {
@@ -258,6 +306,7 @@ describe('gcSweep — stream stall detection', () => {
     gcSweep(ctx)
 
     expect(forceKillCalls).not.toContain('exec-ka')
+    expect(mockEmitDiagnosticLog).not.toHaveBeenCalled()
   })
 
   test('handles multiple processes — detects stalled, skips active and idle', () => {
@@ -295,6 +344,14 @@ describe('gcSweep — stream stall detection', () => {
     // Others untouched
     expect(forceKillCalls).not.toContain('exec-active')
     expect(forceKillCalls).not.toContain('exec-idle')
+    // Only the stalled process emits a diagnostic
+    expect(mockEmitDiagnosticLog).toHaveBeenCalledTimes(1)
+    expect(mockEmitDiagnosticLog).toHaveBeenCalledWith(
+      'issue-stalled',
+      'exec-stalled',
+      expect.stringContaining('stall detected'),
+      expect.objectContaining({ event: 'stall_detected' }),
+    )
   })
 
   test('handles multiple processes — kills stalled after full escalation, skips others', () => {
@@ -339,6 +396,14 @@ describe('gcSweep — stream stall detection', () => {
     expect(forceKillCalls).toContain('exec-stalled')
     expect(forceKillCalls).not.toContain('exec-active')
     expect(forceKillCalls).not.toContain('exec-idle')
+    // Only the stalled process emits a diagnostic
+    expect(mockEmitDiagnosticLog).toHaveBeenCalledTimes(1)
+    expect(mockEmitDiagnosticLog).toHaveBeenCalledWith(
+      'issue-stalled',
+      'exec-stalled',
+      expect.stringContaining('force kill'),
+      expect.objectContaining({ event: 'stall_force_kill' }),
+    )
   })
 
   test('does NOT detect or kill process within stall timeout', () => {
@@ -355,5 +420,6 @@ describe('gcSweep — stream stall detection', () => {
     expect(forceKillCalls).not.toContain('exec-recovered')
     expect(managed.stallDetectedAt).toBeUndefined()
     expect(managed.stallProbeAt).toBeUndefined()
+    expect(mockEmitDiagnosticLog).not.toHaveBeenCalled()
   })
 })

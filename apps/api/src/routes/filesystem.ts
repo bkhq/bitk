@@ -1,4 +1,4 @@
-import { mkdir, readdir } from 'node:fs/promises'
+import { mkdir, readdir, realpath } from 'node:fs/promises'
 import { basename, dirname, resolve } from 'node:path'
 import { zValidator } from '@hono/zod-validator'
 import { Hono } from 'hono'
@@ -8,6 +8,29 @@ import { getAppSetting } from '@/db/helpers'
 /** Check that `target` is inside `root` (or equals it). */
 function isInsideRoot(target: string, root: string): boolean {
   return target === root || target.startsWith(`${root}/`)
+}
+
+/**
+ * Verify that the real on-disk path (following symlinks) stays inside root.
+ * Prevents symlink traversal attacks where a symlink inside the workspace
+ * points to a directory outside of it.
+ */
+async function verifyRealPath(target: string, root: string): Promise<boolean> {
+  try {
+    const realTarget = await realpath(target)
+    const realRoot = await realpath(root)
+    return isInsideRoot(realTarget, realRoot)
+  } catch {
+    // If target doesn't exist, check parent directory
+    const parent = resolve(target, '..')
+    try {
+      const realParent = await realpath(parent)
+      const realRoot = await realpath(root)
+      return isInsideRoot(realParent, realRoot)
+    } catch {
+      return false
+    }
+  }
 }
 
 const filesystem = new Hono()
@@ -22,6 +45,11 @@ filesystem.get('/dirs', async (c) => {
   // SEC-022: Restrict to workspace root (unless root is '/')
   if (resolvedRoot && resolvedRoot !== '/' && !isInsideRoot(current, resolvedRoot)) {
     return c.json({ success: false, error: 'Path is outside the configured workspace' }, 403)
+  }
+
+  // SEC: Verify real path after symlink resolution stays inside workspace
+  if (resolvedRoot && resolvedRoot !== '/' && !await verifyRealPath(current, resolvedRoot)) {
+    return c.json({ success: false, error: 'Path escapes workspace via symlink' }, 403)
   }
 
   // Compute parent — clamp to workspace root
@@ -83,6 +111,10 @@ filesystem.post(
       const resolvedRoot = resolve(workspaceRoot)
       if (!isInsideRoot(target, resolvedRoot)) {
         return c.json({ success: false, error: 'Path is outside the configured workspace' }, 403)
+      }
+      // SEC: Verify parent real path after symlink resolution stays inside workspace
+      if (!await verifyRealPath(resolve(parentPath), resolvedRoot)) {
+        return c.json({ success: false, error: 'Path escapes workspace via symlink' }, 403)
       }
     }
 

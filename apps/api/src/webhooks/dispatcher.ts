@@ -11,6 +11,7 @@ import {
 } from '@/db/schema'
 import { appEvents } from '@/events'
 import { logger } from '@/logger'
+import { validateWebhookUrl } from '@/utils/url-safety'
 
 interface WebhookRow {
   id: string
@@ -234,6 +235,14 @@ async function deliverWebhook(
   response: string | null
   success: boolean
 }> {
+  // Defense-in-depth: re-validate at delivery time to catch DNS rebinding
+  // between the time the URL was stored and now.
+  const check = await validateWebhookUrl(webhook.url)
+  if (!check.ok) {
+    logger.warn({ webhookId: webhook.id, url: webhook.url, error: check.error }, 'webhook_ssrf_blocked')
+    return { statusCode: null, response: `SSRF blocked: ${check.error}`, success: false }
+  }
+
   const body = JSON.stringify(payload)
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
