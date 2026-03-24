@@ -93,3 +93,4 @@
 - [ ] **AUDIT-026 SSE writeSSE serialization failure not logged** `P3`
 - [ ] **AUDIT-027 No global rate limiting** `P3`
 - [ ] **AUDIT-032 FileBrowserPage implemented but unreachable from router** `P3`
+- [x] **AUDIT-073 Multi-agent comprehensive repository review (2026-03-23)** `P1` - file: `docs/task/AUDIT-073.md`

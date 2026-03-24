@@ -13,3 +13,4 @@
 ## Drafted
 
 - [ ] **PLAN-028 OAuth PKCE Authentication** - task: `AUTH-001`
+- [x] **PLAN-030 Comprehensive repository review** - task: `AUDIT-073` - file: `docs/plan/PLAN-030.md`
