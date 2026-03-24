@@ -79,7 +79,7 @@
 - [ ] **AUDIT-068 Compile script mutates tracked source files in place** `P2`
 - [ ] **AUDIT-069 CI/release workflow actions not pinned to SHA** `P2`
 - [ ] **AUDIT-070 Upload cleanup symlinks could cause out-of-directory deletion** `P2`
-- [ ] **AUDIT-071 Vite dev server allowedHosts:true disables host validation** `P2`
+- [x] **AUDIT-071 Vite dev server allowedHosts:true disables host validation** `P2`
 - [ ] **AUDIT-072 No GitHub API rate limit handling in upgrade checker** `P2`
 
 ## Audit — LOW (P3)
