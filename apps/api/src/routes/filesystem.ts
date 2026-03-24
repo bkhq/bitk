@@ -1,8 +1,8 @@
 import { mkdir, readdir, realpath } from 'node:fs/promises'
 import { basename, dirname, resolve } from 'node:path'
 import { zValidator } from '@hono/zod-validator'
-import { Hono } from 'hono'
 import * as z from 'zod'
+import { createOpenAPIRouter } from '@/openapi/hono'
 import { getAppSetting } from '@/db/helpers'
 
 /** Check that `target` is inside `root` (or equals it). */
@@ -33,7 +33,7 @@ async function verifyRealPath(target: string, root: string): Promise<boolean> {
   }
 }
 
-const filesystem = new Hono()
+const filesystem = createOpenAPIRouter()
 
 filesystem.get('/dirs', async (c) => {
   const workspaceRoot = await getAppSetting('workspace:defaultPath')

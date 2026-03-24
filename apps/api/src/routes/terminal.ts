@@ -1,7 +1,7 @@
 import { zValidator } from '@hono/zod-validator'
-import { Hono } from 'hono'
 import { upgradeWebSocket } from 'hono/bun'
 import * as z from 'zod'
+import { createOpenAPIRouter } from '@/openapi/hono'
 import { ProcessManager } from '@/engines/process-manager'
 import { spawnNodeSync } from '@/engines/spawn'
 import type { Subprocess } from '@/engines/spawn'
@@ -129,7 +129,7 @@ if (typeof expiryTimer === 'object' && 'unref' in expiryTimer) {
 
 // --- Routes ---
 
-const app = new Hono()
+const app = createOpenAPIRouter()
 
 // GET /terminal/:id — Check if a terminal session is alive
 // NOTE: /terminal/ws/:id below has a static 'ws' segment that Hono's trie router

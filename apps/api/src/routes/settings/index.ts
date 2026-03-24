@@ -1,4 +1,4 @@
-import { Hono } from 'hono'
+import { createOpenAPIRouter } from '@/openapi/hono'
 import about from './about'
 import cleanup from './cleanup'
 import general from './general'
@@ -7,7 +7,7 @@ import systemLogs from './system-logs'
 import upgrade from './upgrade'
 import webhooksRoute from './webhooks'
 
-const settings = new Hono()
+const settings = createOpenAPIRouter()
 
 settings.route('/', general)
 settings.route('/', systemLogs)

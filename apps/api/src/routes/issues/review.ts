@@ -1,10 +1,10 @@
 import { and, desc, eq } from 'drizzle-orm'
-import { Hono } from 'hono'
+import { createOpenAPIRouter } from '@/openapi/hono'
 import { db } from '@/db'
 import { issues as issuesTable, projects as projectsTable } from '@/db/schema'
 import { serializeIssue } from './_shared'
 
-const review = new Hono()
+const review = createOpenAPIRouter()
 
 // GET /api/issues/review — List all review issues across all projects
 review.get('/', async (c) => {

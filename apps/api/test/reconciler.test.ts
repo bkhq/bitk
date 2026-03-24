@@ -40,7 +40,7 @@ async function createDirectIssue(overrides: {
       statusId: overrides.statusId,
       issueNumber: num,
       title: overrides.title ?? `Reconciler Test Issue ${num}`,
-      engineType: 'echo',
+      engineType: 'codex',
       sessionStatus: overrides.sessionStatus ?? null,
       prompt: 'test prompt',
       model: 'auto',

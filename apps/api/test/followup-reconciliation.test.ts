@@ -53,7 +53,7 @@ describe('Follow-up queuing behavior', () => {
       await post<Issue>(`/api/projects/${projectId}/issues`, {
         title: 'Queuing Test',
         statusId: 'todo',
-        engineType: 'echo',
+        engineType: 'codex',
         model: 'auto',
       }),
     )
@@ -85,7 +85,7 @@ describe('Follow-up queuing behavior', () => {
       await post<Issue>(`/api/projects/${projectId}/issues`, {
         title: 'Multi Queuing Test',
         statusId: 'todo',
-        engineType: 'echo',
+        engineType: 'codex',
         model: 'auto',
       }),
     )
@@ -124,7 +124,7 @@ describe('Pending messages are consumed on transition to working', () => {
       await post<Issue>(`/api/projects/${projectId}/issues`, {
         title: 'Consume on Working Test',
         statusId: 'todo',
-        engineType: 'echo',
+        engineType: 'codex',
         model: 'auto',
       }),
     )
@@ -174,7 +174,7 @@ describe('Execution completion moves issue to review', () => {
       await post<Issue>(`/api/projects/${projectId}/issues`, {
         title: 'Auto Review Test',
         statusId: 'working',
-        engineType: 'echo',
+        engineType: 'codex',
         model: 'auto',
       }),
     )
@@ -198,7 +198,7 @@ describe('Execution completion moves issue to review', () => {
       await post<Issue>(`/api/projects/${projectId}/issues`, {
         title: 'Review Cycle Test',
         statusId: 'working',
-        engineType: 'echo',
+        engineType: 'codex',
         model: 'auto',
       }),
     )
@@ -236,7 +236,7 @@ describe('Stale working issue auto-correction', () => {
       await post<Issue>(`/api/projects/${projectId}/issues`, {
         title: 'Stale Working Test',
         statusId: 'working',
-        engineType: 'echo',
+        engineType: 'codex',
         model: 'auto',
       }),
     )
@@ -275,7 +275,7 @@ describe('Stale working issue auto-correction', () => {
       await post<Issue>(`/api/projects/${projectId}/issues`, {
         title: 'Startup Reconcile Test',
         statusId: 'working',
-        engineType: 'echo',
+        engineType: 'codex',
         model: 'auto',
       }),
     )
@@ -314,7 +314,7 @@ describe('Follow-up collects and merges pending messages', () => {
       await post<Issue>(`/api/projects/${projectId}/issues`, {
         title: 'Execute Merge Test',
         statusId: 'todo',
-        engineType: 'echo',
+        engineType: 'codex',
         model: 'auto',
       }),
     )
@@ -355,7 +355,7 @@ describe('Follow-up collects and merges pending messages', () => {
       await post<Issue>(`/api/projects/${projectId}/issues`, {
         title: 'Idle Follow-up Test',
         statusId: 'working',
-        engineType: 'echo',
+        engineType: 'codex',
         model: 'auto',
       }),
     )

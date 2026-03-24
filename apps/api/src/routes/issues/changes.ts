@@ -1,10 +1,11 @@
 import { stat } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { runCommand } from '@/engines/spawn'
-import { Hono } from 'hono'
 import { findProject } from '@/db/helpers'
 import { checkOversized, countTextLines, isPathInsideRoot, resolveIssueDir } from '@/utils/changes'
 import { isGitRepo } from '@/utils/git'
+import { createOpenAPIRouter } from '@/openapi/hono'
+import * as R from '@/openapi/routes'
 import { getProjectOwnedIssue } from './_shared'
 
 // ---------- Types ----------
@@ -137,21 +138,21 @@ async function summarizeFileLines(
 
 // ---------- Routes ----------
 
-const changes = new Hono()
+const changes = createOpenAPIRouter()
 
-// GET /api/projects/:projectId/issues/:id/changes — Get changed files from git workspace
-changes.get('/:id/changes', async (c) => {
+// GET /api/projects/:projectId/issues/:issueId/changes — Get changed files from git workspace
+changes.openapi(R.getIssueChanges, async (c) => {
   const projectId = c.req.param('projectId')!
   const project = await findProject(projectId)
-  if (!project) return c.json({ success: false, error: 'Project not found' }, 404)
+  if (!project) return c.json({ success: false, error: 'Project not found' }, 404 as const)
 
-  const issueId = c.req.param('id')!
+  const issueId = c.req.param('issueId')!
   const issue = await getProjectOwnedIssue(project.id, issueId)
-  if (!issue) return c.json({ success: false, error: 'Issue not found' }, 404)
+  if (!issue) return c.json({ success: false, error: 'Issue not found' }, 404 as const)
 
   const projectRoot = await resolveProjectDir(project.id)
   if (!projectRoot) {
-    return c.json({ success: false, error: 'Project directory is not configured' }, 400)
+    return c.json({ success: false, error: 'Project directory is not configured' }, 400 as const)
   }
   const root = await resolveIssueDir(project.id, issueId, issue.useWorktree, projectRoot)
   const gitRepo = await isGitRepo(root)
@@ -159,7 +160,7 @@ changes.get('/:id/changes', async (c) => {
     return c.json({
       success: true,
       data: { root, gitRepo: false, files: [], additions: 0, deletions: 0 },
-    })
+    }, 200 as const)
   }
 
   const { files, timedOut } = await listChangedFiles(root)
@@ -168,7 +169,7 @@ changes.get('/:id/changes', async (c) => {
     return c.json({
       success: true,
       data: { root, gitRepo: true, files: [], additions: 0, deletions: 0, timedOut: true },
-    })
+    }, 200 as const)
   }
 
   const filesWithStats = await Promise.all(
@@ -182,10 +183,11 @@ changes.get('/:id/changes', async (c) => {
   return c.json({
     success: true,
     data: { root, gitRepo: true, files: filesWithStats, additions, deletions },
-  })
+  }, 200 as const)
 })
 
 // GET /api/projects/:projectId/issues/:id/changes/file?path=... — Get file patch from workspace
+// Stays as regular route since it's a sub-route not covered by OpenAPI
 changes.get('/:id/changes/file', async (c) => {
   const projectId = c.req.param('projectId')!
   const project = await findProject(projectId)

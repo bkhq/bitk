@@ -1,13 +1,13 @@
 import { resolve } from 'node:path'
 import { and, eq } from 'drizzle-orm'
-import { Hono } from 'hono'
+import { createOpenAPIRouter } from '@/openapi/hono'
 import { db } from '@/db'
 import { findProject } from '@/db/helpers'
 import { attachments } from '@/db/schema'
 import { UPLOAD_DIR } from '@/uploads'
 import { getProjectOwnedIssue } from './_shared'
 
-const attachmentsRouter = new Hono()
+const attachmentsRouter = createOpenAPIRouter()
 
 // GET /api/projects/:projectId/issues/:id/attachments/:attachmentId — Serve attachment file
 attachmentsRouter.get('/:id/attachments/:attachmentId', async (c) => {

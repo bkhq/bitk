@@ -33,7 +33,7 @@ async function createIssueInStatus(statusId: string, title = `Issue ${statusId} 
     await post<Issue>(`/api/projects/${projectId}/issues`, {
       title,
       statusId: 'todo',
-      engineType: 'echo',
+      engineType: 'codex',
       model: 'auto',
     }),
   )
@@ -85,7 +85,7 @@ describe('Execute status guards', () => {
   test('rejects execute on todo issue with 400', async () => {
     const issue = await createIssueInStatus('todo')
     const result = await post<unknown>(`/api/projects/${projectId}/issues/${issue.id}/execute`, {
-      engineType: 'echo',
+      engineType: 'codex',
       prompt: 'test',
     })
     expect(result.status).toBe(400)
@@ -98,7 +98,7 @@ describe('Execute status guards', () => {
   test('rejects execute on done issue with 400', async () => {
     const issue = await createIssueInStatus('done')
     const result = await post<unknown>(`/api/projects/${projectId}/issues/${issue.id}/execute`, {
-      engineType: 'echo',
+      engineType: 'codex',
       prompt: 'test',
     })
     expect(result.status).toBe(400)
@@ -114,7 +114,7 @@ describe('Execute status guards', () => {
 
     const result = await post<{ executionId: string, issueId: string }>(
       `/api/projects/${projectId}/issues/${issue.id}/execute`,
-      { engineType: 'echo', prompt: 'test from review' },
+      { engineType: 'codex', prompt: 'test from review' },
     )
     expect(result.status).toBe(200)
 
@@ -197,7 +197,7 @@ describe('Auto-move to review after AI completion', () => {
       await post<Issue>(`/api/projects/${projectId}/issues`, {
         title: 'Auto Review Test',
         statusId: 'working',
-        engineType: 'echo',
+        engineType: 'codex',
         model: 'auto',
       }),
     )
@@ -223,7 +223,7 @@ describe('Auto-move to review after AI completion', () => {
       await post<Issue>(`/api/projects/${projectId}/issues`, {
         title: 'Patch Move Test',
         statusId: 'todo',
-        engineType: 'echo',
+        engineType: 'codex',
         model: 'auto',
       }),
     )
@@ -254,7 +254,7 @@ describe('Auto-move to review after AI completion', () => {
       await post<Issue>(`/api/projects/${projectId}/issues`, {
         title: 'Bulk Move Test',
         statusId: 'todo',
-        engineType: 'echo',
+        engineType: 'codex',
         model: 'auto',
       }),
     )
@@ -281,7 +281,7 @@ describe('Auto-move to review after AI completion', () => {
       await post<Issue>(`/api/projects/${projectId}/issues`, {
         title: 'Review Cycle Test',
         statusId: 'working',
-        engineType: 'echo',
+        engineType: 'codex',
         model: 'auto',
       }),
     )
@@ -330,7 +330,7 @@ describe('SSE issue-updated events', () => {
       await post<Issue>(`/api/projects/${projectId}/issues`, {
         title: 'SSE Event Test',
         statusId: 'working',
-        engineType: 'echo',
+        engineType: 'codex',
         model: 'auto',
       }),
     )

@@ -1,12 +1,12 @@
 // @ts-nocheck -- @modelcontextprotocol/sdk subpath exports may not resolve under Bun monorepo hoisting
-import { Hono } from 'hono'
 import { getConnInfo } from 'hono/bun'
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js'
 import { createMcpServer } from '@/mcp/server'
+import { createOpenAPIRouter } from '@/openapi/hono'
 import { getAppSetting } from '@/db/helpers'
 import { logger } from '@/logger'
 
-const mcpRoute = new Hono()
+const mcpRoute = createOpenAPIRouter()
 
 // --- Session store with size cap and TTL eviction ---
 

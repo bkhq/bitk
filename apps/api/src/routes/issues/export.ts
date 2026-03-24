@@ -1,6 +1,6 @@
 import { and, asc, eq, inArray } from 'drizzle-orm'
-import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
+import { createOpenAPIRouter } from '@/openapi/hono'
 import * as z from 'zod'
 import { db } from '@/db'
 import { findProject } from '@/db/helpers'
@@ -10,7 +10,7 @@ import type { NormalizedLogEntry } from '@/engines/types'
 import { rawToToolAction } from '@/engines/issue/persistence/tool-detail'
 import { getProjectOwnedIssue } from './_shared'
 
-const exportRoute = new Hono()
+const exportRoute = createOpenAPIRouter()
 
 function getAllLogs(issueId: string): NormalizedLogEntry[] {
   const rows = db

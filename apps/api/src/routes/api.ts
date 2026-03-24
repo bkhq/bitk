@@ -1,4 +1,5 @@
-import { Hono } from 'hono'
+import { createOpenAPIRouter } from '@/openapi/hono'
+import * as R from '@/openapi/routes'
 import { checkDbHealth } from '@/db'
 import { COMMIT, VERSION } from '@/version'
 import files from './files'
@@ -10,7 +11,7 @@ import processes from './processes'
 import projects from './projects'
 import worktrees from './worktrees'
 
-const apiRoutes = new Hono()
+const apiRoutes = createOpenAPIRouter()
 
 // DB-backed routes
 apiRoutes.route('/projects', projects)
@@ -106,7 +107,7 @@ function getRuntimeInfo() {
   }
 }
 
-apiRoutes.get('/', (c) => {
+apiRoutes.openapi(R.getApiRoot, (c) => {
   return c.json({
     success: true,
     data: {
@@ -117,7 +118,7 @@ apiRoutes.get('/', (c) => {
   })
 })
 
-apiRoutes.get('/health', async (c) => {
+apiRoutes.openapi(R.getHealth, async (c) => {
   const dbHealth = await checkDbHealth()
   return c.json({
     success: true,
@@ -131,7 +132,7 @@ apiRoutes.get('/health', async (c) => {
   })
 })
 
-apiRoutes.get('/status', async (c) => {
+apiRoutes.openapi(R.getStatus, async (c) => {
   const dbHealth = await checkDbHealth()
   const memUsage = process.memoryUsage()
   return c.json({

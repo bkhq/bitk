@@ -26,6 +26,7 @@
 
 ## Audit — HIGH (P1)
 
+- [x] **AUDIT-074 PR-104 pull request review documentation** `P1` - file: `docs/task/AUDIT-074.md`
 - [ ] **AUDIT-005 Engine domain data memory leak** `P1`
 - [ ] **AUDIT-006 Reconciler check scope too narrow** `P1`
 - [ ] **AUDIT-007 Reconciler vs spawn race condition** `P1`
@@ -93,4 +94,7 @@
 - [ ] **AUDIT-026 SSE writeSSE serialization failure not logged** `P3`
 - [ ] **AUDIT-027 No global rate limiting** `P3`
 - [ ] **AUDIT-032 FileBrowserPage implemented but unreachable from router** `P3`
+- [x] **DOC-002 Restore issue cron action details in bkd skill** `P2` - file: `docs/task/DOC-002.md`
+- [x] **SKILL-001 Standardize bkd skill package** `P2` - file: `docs/task/SKILL-001.md`
+- [x] **DOC-001 Fix bkd skill API examples** `P2` - file: `docs/task/DOC-001.md`
 - [x] **AUDIT-073 Multi-agent comprehensive repository review (2026-03-23)** `P1` - file: `docs/task/AUDIT-073.md`

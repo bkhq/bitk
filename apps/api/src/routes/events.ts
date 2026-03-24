@@ -1,12 +1,12 @@
-import { Hono } from 'hono'
 import { streamSSE } from 'hono/streaming'
+import { createOpenAPIRouter } from '@/openapi/hono'
 import { isVisible } from '@/engines/issue/utils/visibility'
 import { appEvents } from '@/events'
 import { logger } from '@/logger'
 
 const TERMINAL = new Set(['completed', 'failed', 'cancelled'])
 
-const events = new Hono()
+const events = createOpenAPIRouter()
 
 // GET /api/events — Global SSE stream
 // Broadcasts all issue events. Client-side filtering by project/issue.

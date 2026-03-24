@@ -1,18 +1,19 @@
 import { and, desc, eq } from 'drizzle-orm'
-import { Hono } from 'hono'
 import { db } from '@/db'
 import { findProject } from '@/db/helpers'
 import { issues as issuesTable } from '@/db/schema'
+import { createOpenAPIRouter } from '@/openapi/hono'
+import * as R from '@/openapi/routes'
 import { getProjectOwnedIssue, serializeIssue } from './_shared'
 
-const query = new Hono()
+const query = createOpenAPIRouter()
 
 // GET /api/projects/:projectId/issues — List issues
-query.get('/', async (c) => {
+query.openapi(R.listIssues, async (c) => {
   const projectId = c.req.param('projectId')!
   const project = await findProject(projectId)
   if (!project) {
-    return c.json({ success: false, error: 'Project not found' }, 404)
+    return c.json({ success: false, error: 'Project not found' }, 404 as const)
   }
 
   const rows = await db
@@ -24,27 +25,27 @@ query.get('/', async (c) => {
   return c.json({
     success: true,
     data: rows.map(r => serializeIssue(r)),
-  })
+  }, 200 as const)
 })
 
-// GET /api/projects/:projectId/issues/:id — Get single issue
-query.get('/:id', async (c) => {
+// GET /api/projects/:projectId/issues/:issueId — Get single issue
+query.openapi(R.getIssue, async (c) => {
   const projectId = c.req.param('projectId')!
   const project = await findProject(projectId)
   if (!project) {
-    return c.json({ success: false, error: 'Project not found' }, 404)
+    return c.json({ success: false, error: 'Project not found' }, 404 as const)
   }
 
-  const issueId = c.req.param('id')!
+  const issueId = c.req.param('issueId')!
   const issue = await getProjectOwnedIssue(project.id, issueId)
   if (!issue) {
-    return c.json({ success: false, error: 'Issue not found' }, 404)
+    return c.json({ success: false, error: 'Issue not found' }, 404 as const)
   }
 
   return c.json({
     success: true,
     data: serializeIssue(issue),
-  })
+  }, 200 as const)
 })
 
 export default query

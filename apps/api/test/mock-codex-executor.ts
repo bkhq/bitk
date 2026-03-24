@@ -11,12 +11,13 @@ import type {
 } from '@/engines/types'
 
 /**
- * Echo — a mock engine that is always available.
+ * MockCodexExecutor — a mock codex engine for testing.
+ * Registers as 'codex' and overrides the real CodexExecutor in tests.
  * No real subprocess is spawned. It writes stream-json directly
- * into in-memory ReadableStreams, useful for UI dev and testing.
+ * into in-memory ReadableStreams.
  */
 
-const ECHO_MODELS: EngineModel[] = [{ id: 'auto', name: 'Auto', isDefault: true }]
+const MOCK_MODELS: EngineModel[] = [{ id: 'gpt-mock', name: 'GPT Mock', isDefault: true }]
 
 const encoder = new TextEncoder()
 
@@ -38,7 +39,7 @@ function createMockProcess(prompt: string): SpawnedProcess {
       controller.enqueue(
         jsonLine({
           type: 'system',
-          message: 'Echo engine ready',
+          message: 'Mock codex engine ready',
           timestamp: ts(),
         }),
       )
@@ -54,7 +55,7 @@ function createMockProcess(prompt: string): SpawnedProcess {
         jsonLine({
           type: 'assistant',
           message: {
-            id: `echo-${Date.now()}`,
+            id: `mock-${Date.now()}`,
             content: [{ type: 'text', text: prompt }],
           },
           timestamp: ts(),
@@ -67,7 +68,7 @@ function createMockProcess(prompt: string): SpawnedProcess {
         jsonLine({
           type: 'result',
           result: prompt,
-          session_id: `echo-${Date.now()}`,
+          session_id: `mock-${Date.now()}`,
           cost_usd: 0,
           input_tokens: prompt.length,
           output_tokens: prompt.length,
@@ -107,8 +108,8 @@ function createMockProcess(prompt: string): SpawnedProcess {
   }
 }
 
-export class EchoExecutor implements EngineExecutor {
-  readonly engineType = 'echo' as const
+export class MockCodexExecutor implements EngineExecutor {
+  readonly engineType = 'codex' as const
   readonly protocol = 'stream-json' as const
   readonly capabilities: EngineCapability[] = ['session-fork']
 
@@ -126,15 +127,15 @@ export class EchoExecutor implements EngineExecutor {
 
   async getAvailability(): Promise<EngineAvailability> {
     return {
-      engineType: 'echo',
+      engineType: 'codex',
       installed: true,
-      version: '1.0.0',
+      version: '0.0.0-mock',
       authStatus: 'authenticated',
     }
   }
 
   async getModels(): Promise<EngineModel[]> {
-    return ECHO_MODELS
+    return MOCK_MODELS
   }
 
   normalizeLog(rawLine: string): NormalizedLogEntry | null {

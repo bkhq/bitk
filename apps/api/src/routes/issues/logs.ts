@@ -1,9 +1,10 @@
 import type { Context } from 'hono'
-import { Hono } from 'hono'
 import { findProject, getAppSetting } from '@/db/helpers'
 import { issueEngine } from '@/engines/issue'
 import { DEFAULT_LOG_PAGE_SIZE, LOG_PAGE_SIZE_KEY } from '@/engines/issue/constants'
 import type { LogQueryOpts } from '@/engines/issue/persistence/queries'
+import { createOpenAPIRouter } from '@/openapi/hono'
+import * as R from '@/openapi/routes'
 import { getProjectOwnedIssue, serializeIssue } from './_shared'
 
 /** Allowed entry types that callers can filter by. */
@@ -155,13 +156,13 @@ function queryAndRespond(c: Context, issue: Awaited<ReturnType<typeof getProject
 }
 
 /** Validate project + issue ownership, return both or error response. */
-async function resolveIssue(c: Context) {
+async function resolveIssue(c: Context, paramName: string = 'issueId') {
   const projectId = c.req.param('projectId')!
   const project = await findProject(projectId)
   if (!project) {
     return { error: c.json({ success: false, error: 'Project not found' }, 404) }
   }
-  const issueId = c.req.param('id')!
+  const issueId = c.req.param(paramName)!
   const issue = await getProjectOwnedIssue(project.id, issueId)
   if (!issue) {
     return { error: c.json({ success: false, error: 'Issue not found' }, 404) }
@@ -169,19 +170,40 @@ async function resolveIssue(c: Context) {
   return { issue, issueId }
 }
 
-const logs = new Hono()
+const logs = createOpenAPIRouter()
 
-// GET /:id/logs — All logs (default)
-logs.get('/:id/logs', async (c) => {
-  const resolved = await resolveIssue(c)
-  if ('error' in resolved) return resolved.error
+// GET /:issueId/logs — All logs (default)
+logs.openapi(R.getIssueLogs, async (c) => {
+  const projectId = c.req.param('projectId')!
+  const project = await findProject(projectId)
+  if (!project) {
+    return c.json({ success: false, error: 'Project not found' }, 404 as const)
+  }
+  const issueId = c.req.param('issueId')!
+  const issue = await getProjectOwnedIssue(project.id, issueId)
+  if (!issue) {
+    return c.json({ success: false, error: 'Issue not found' }, 404 as const)
+  }
   const pagination = await parsePagination(c)
-  return queryAndRespond(c, resolved.issue, resolved.issueId, pagination)
+  const result = issueEngine.getLogs(issueId, pagination)
+  const isReverse = !pagination.cursor
+  const cursorEntry = isReverse ? result.entries[0] : result.entries.at(-1)
+  const nextCursor = result.hasMore && cursorEntry?.messageId ? cursorEntry.messageId : null
+  return c.json({
+    success: true,
+    data: {
+      issue: serializeIssue(issue),
+      logs: result.entries,
+      nextCursor,
+      hasMore: result.hasMore,
+    },
+  }, 200 as const)
 })
 
 // GET /:id/logs/filter/* — Filtered logs with path-based key/value pairs
+// Stays as regular route since it uses wildcard pattern
 logs.get('/:id/logs/filter/*', async (c) => {
-  const resolved = await resolveIssue(c)
+  const resolved = await resolveIssue(c, 'id')
   if ('error' in resolved) return resolved.error
 
   const filterPath = c.req.param('*')

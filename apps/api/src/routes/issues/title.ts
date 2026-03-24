@@ -1,11 +1,11 @@
-import { Hono } from 'hono'
+import { createOpenAPIRouter } from '@/openapi/hono'
 import { findProject } from '@/db/helpers'
 import { issueEngine } from '@/engines/issue'
 import { AUTO_TITLE_PROMPT } from '@/engines/issue/title'
 import { logger } from '@/logger'
 import { ensureWorking, getProjectOwnedIssue } from './_shared'
 
-const title = new Hono()
+const title = createOpenAPIRouter()
 
 // POST /api/projects/:projectId/issues/:id/auto-title — Trigger AI auto-title
 title.post('/:id/auto-title', async (c) => {

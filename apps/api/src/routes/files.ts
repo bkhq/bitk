@@ -3,7 +3,7 @@ import { basename, resolve } from 'node:path'
 import { getAppSetting } from '@/db/helpers'
 import { runCommand } from '@/engines/spawn'
 import type { Context } from 'hono'
-import { Hono } from 'hono'
+import { createOpenAPIRouter } from '@/openapi/hono'
 
 interface FileEntry {
   name: string
@@ -339,7 +339,7 @@ async function handleSave(c: Context, relativePath: string) {
   }
 }
 
-const files = new Hono()
+const files = createOpenAPIRouter()
 
 // GET /files/show?root=... — root directory listing
 files.get('/show', c => handleShow(c, '.'))

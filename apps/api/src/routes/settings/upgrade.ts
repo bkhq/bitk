@@ -1,5 +1,4 @@
 import { zValidator } from '@hono/zod-validator'
-import { Hono } from 'hono'
 import * as z from 'zod'
 import { logger } from '@/logger'
 import {
@@ -14,6 +13,7 @@ import {
   listDownloadedUpdates,
   setUpgradeEnabled,
 } from '@/upgrade/service'
+import { createOpenAPIRouter } from '@/openapi/hono'
 import { VALID_FILE_NAME_RE } from '@/upgrade/utils'
 
 const ALLOWED_DOWNLOAD_HOSTS = new Set(['github.com', 'objects.githubusercontent.com'])
@@ -35,7 +35,7 @@ const upgradeFileNameSchema = z
   .max(255)
   .regex(VALID_FILE_NAME_RE, 'File name must match bkd-<type>-v<version> format')
 
-const upgrade = new Hono()
+const upgrade = createOpenAPIRouter()
 
 // GET /api/settings/upgrade/version — current version info
 upgrade.get('/version', (c) => {

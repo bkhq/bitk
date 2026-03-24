@@ -1,10 +1,10 @@
 import { existsSync } from 'node:fs'
 import { stat, truncate } from 'node:fs/promises'
 import { join } from 'node:path'
-import { Hono } from 'hono'
+import { createOpenAPIRouter } from '@/openapi/hono'
 import { ROOT_DIR } from '@/root'
 
-const systemLogs = new Hono()
+const systemLogs = createOpenAPIRouter()
 
 const LOG_FILE = join(ROOT_DIR, 'data', 'logs', 'bkd.log')
 

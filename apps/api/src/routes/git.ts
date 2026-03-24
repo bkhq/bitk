@@ -3,8 +3,8 @@ import { resolve } from 'node:path'
 import { getAppSetting } from '@/db/helpers'
 import { runCommand } from '@/engines/spawn'
 import { zValidator } from '@hono/zod-validator'
-import { Hono } from 'hono'
 import * as z from 'zod'
+import { createOpenAPIRouter } from '@/openapi/hono'
 
 const detectRemoteSchema = z.object({
   directory: z.string().min(1).max(1000),
@@ -14,7 +14,7 @@ async function runGit(args: string[], cwd: string): Promise<{ code: number, stdo
   return runCommand(['git', ...args], { cwd })
 }
 
-const git = new Hono()
+const git = createOpenAPIRouter()
 
 // POST /api/git/detect-remote — Detect git remote URL from a directory
 git.post(

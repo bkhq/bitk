@@ -1,4 +1,4 @@
-import { Hono } from 'hono'
+import { createOpenAPIRouter } from '@/openapi/hono'
 import { db } from '@/db'
 import { findProject } from '@/db/helpers'
 import { getPendingMessages, upsertPendingMessage } from '@/db/pending-messages'
@@ -158,7 +158,7 @@ async function upsertAndNotify(
 
 // ---------- Route ----------
 
-const message = new Hono()
+const message = createOpenAPIRouter()
 
 // POST /api/projects/:projectId/issues/:id/follow-up — Follow-up
 message.post('/:id/follow-up', async (c) => {

@@ -1,4 +1,4 @@
-import { Hono } from 'hono'
+import { createOpenAPIRouter } from '@/openapi/hono'
 import attachments from './attachments'
 import changes from './changes'
 import command from './command'
@@ -12,7 +12,7 @@ import query from './query'
 import title from './title'
 import update from './update'
 
-const issues = new Hono()
+const issues = createOpenAPIRouter()
 issues.route('/', query)
 issues.route('/', create)
 issues.route('/', update)

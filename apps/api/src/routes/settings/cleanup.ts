@@ -3,7 +3,6 @@ import { readdir, rm, stat } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import { zValidator } from '@hono/zod-validator'
 import { and, count, eq, inArray, sql } from 'drizzle-orm'
-import { Hono } from 'hono'
 import * as z from 'zod'
 import { db } from '@/db'
 import {
@@ -15,12 +14,13 @@ import {
 } from '@/db/schema'
 import { removeWorktree, WORKTREE_BASE } from '@/engines/issue/utils/worktree'
 import { logger } from '@/logger'
+import { createOpenAPIRouter } from '@/openapi/hono'
 import { ROOT_DIR } from '@/root'
 import { APP_BASE, UPDATES_DIR } from '@/upgrade/constants'
 
 const ISSUE_LOG_DIR = join(ROOT_DIR, 'data', 'logs', 'issues')
 
-const cleanup = new Hono()
+const cleanup = createOpenAPIRouter()
 
 // GET /api/settings/cleanup/stats — get sizes of cleanable data
 cleanup.get('/cleanup/stats', async (c) => {

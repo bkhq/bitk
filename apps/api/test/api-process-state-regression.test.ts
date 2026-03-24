@@ -31,7 +31,7 @@ async function createCompletedIssue(title: string): Promise<Issue> {
     await post<Issue>(`/api/projects/${projectId}/issues`, {
       title,
       statusId: 'working',
-      engineType: 'echo',
+      engineType: 'codex',
       model: 'auto',
     }),
   )
@@ -47,7 +47,7 @@ async function createCompletedIssue(title: string): Promise<Issue> {
 describe('Execute/Restart spawn failure rollback', () => {
   test('execute spawn failure rolls sessionStatus back to failed', async () => {
     const issue = await createCompletedIssue('Execute rollback issue')
-    const executor = engineRegistry.get('echo')
+    const executor = engineRegistry.get('codex')
     expect(executor).toBeTruthy()
     if (!executor) return
 
@@ -58,7 +58,7 @@ describe('Execute/Restart spawn failure rollback', () => {
 
     try {
       const result = await post<unknown>(`/api/projects/${projectId}/issues/${issue.id}/execute`, {
-        engineType: 'echo',
+        engineType: 'codex',
         prompt: 'force execute failure',
       })
       expect(result.status).toBe(400)
@@ -83,7 +83,7 @@ describe('Execute/Restart spawn failure rollback', () => {
       })
       .where(eq(issuesTable.id, issue.id))
 
-    const executor = engineRegistry.get('echo')
+    const executor = engineRegistry.get('codex')
     expect(executor).toBeTruthy()
     if (!executor) return
 
@@ -293,7 +293,7 @@ describe('Auto execute status fallback', () => {
         await post<Issue>(`/api/projects/${project.id}/issues`, {
           title: 'outside workspace auto execute',
           statusId: 'working',
-          engineType: 'echo',
+          engineType: 'codex',
           model: 'auto',
         }),
       )

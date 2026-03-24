@@ -26,7 +26,7 @@ describe('startup probe deep behavior', () => {
     let modelsCalls = 0
 
     const fakeExecutor: EngineExecutor = {
-      engineType: 'echo',
+      engineType: 'codex',
       protocol: 'stream-json',
       capabilities: [],
       spawn: async () => {
@@ -41,7 +41,7 @@ describe('startup probe deep behavior', () => {
         availabilityCalls += 1
         await Bun.sleep(30)
         return {
-          engineType: 'echo',
+          engineType: 'codex',
           installed: true,
           authStatus: 'authenticated',
         }
@@ -65,9 +65,9 @@ describe('startup probe deep behavior', () => {
 
       expect(availabilityCalls).toBe(1)
       expect(modelsCalls).toBe(1)
-      expect(a.engines[0]?.engineType).toBe('echo')
-      expect(b.models.echo?.length).toBe(1)
-      expect(c.models.echo?.[0]?.id).toBe('auto')
+      expect(a.engines[0]?.engineType).toBe('codex')
+      expect(b.models.codex?.length).toBe(1)
+      expect(c.models.codex?.[0]?.id).toBe('auto')
 
       // Subsequent call should hit memory cache and avoid another live probe.
       await getEngineDiscovery()
@@ -84,7 +84,7 @@ describe('startup probe deep behavior', () => {
     let modelsCalls = 0
 
     const fakeExecutor: EngineExecutor = {
-      engineType: 'echo',
+      engineType: 'codex',
       protocol: 'stream-json',
       capabilities: [],
       spawn: async () => {
@@ -98,7 +98,7 @@ describe('startup probe deep behavior', () => {
       getAvailability: async () => {
         availabilityCalls += 1
         return {
-          engineType: 'echo',
+          engineType: 'codex',
           installed: true,
           authStatus: 'authenticated',
         }

@@ -1,13 +1,13 @@
 import { zValidator } from '@hono/zod-validator'
 import { eq, inArray } from 'drizzle-orm'
-import { Hono } from 'hono'
 import * as z from 'zod'
 import { cacheDelByPrefix } from '@/cache'
 import { db } from '@/db'
 import { issues as issuesTable, projects as projectsTable } from '@/db/schema'
 import { logger } from '@/logger'
+import { createOpenAPIRouter } from '@/openapi/hono'
 
-const recycleBin = new Hono()
+const recycleBin = createOpenAPIRouter()
 
 // GET /api/settings/deleted-issues — list all soft-deleted issues
 recycleBin.get('/deleted-issues', async (c) => {

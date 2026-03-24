@@ -1,9 +1,9 @@
 import { arch, platform } from 'node:os'
-import { Hono } from 'hono'
 import { getServerName, getServerUrl } from '@/db/helpers'
+import { createOpenAPIRouter } from '@/openapi/hono'
 import { getVersionInfo } from '@/upgrade/service'
 
-const about = new Hono()
+const about = createOpenAPIRouter()
 
 const startedAt = Date.now()
 
