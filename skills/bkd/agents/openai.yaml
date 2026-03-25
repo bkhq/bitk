@@ -1,4 +1,4 @@
 interface:
   display_name: "BKD Board"
-  short_description: "Operate BKD boards and agent task workflows"
-  default_prompt: "Use $bkd to operate a BKD board through its REST API."
+  short_description: "Operate BKD projects, issues, cron jobs, and capacity checks"
+  default_prompt: "Use $bkd to operate BKD project, issue, cron, and capacity workflows through its REST API."

@@ -222,6 +222,10 @@ export class IssueEngine {
     this.ctx.pm.setMaxConcurrent(n)
   }
 
+  getMaxConcurrent(): number {
+    return this.ctx.pm.getMaxConcurrent()
+  }
+
   async initMaxConcurrent(): Promise<void> {
     const { getAppSetting } = await import('@/db/helpers')
     const value = await getAppSetting('engine:maxConcurrentExecutions')

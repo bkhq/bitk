@@ -116,7 +116,9 @@ describe('MCP /api/mcp', () => {
     expect(toolNames).toContain('cancel-issue')
     expect(toolNames).toContain('restart-issue')
     expect(toolNames).toContain('list-engines')
+    expect(toolNames).toContain('get-processes-capacity')
     expect(toolNames).toContain('get-issue-logs')
+    expect(toolNames).not.toContain('list-processes')
   })
 
   test('list-projects returns empty initially', async () => {
@@ -124,6 +126,20 @@ describe('MCP /api/mcp', () => {
     const result = await callTool(sessionId, 'list-projects', {})
     const projects = parseToolResult(result)
     expect(Array.isArray(projects)).toBe(true)
+  })
+
+  test('get-processes-capacity returns capacity fields', async () => {
+    const { sessionId } = await initSession()
+    const result = await callTool(sessionId, 'get-processes-capacity', {})
+    const payload = parseToolResult(result)
+
+    expect(typeof payload.summary.totalActive).toBe('number')
+    expect(typeof payload.maxConcurrent).toBe('number')
+    expect(
+      payload.availableSlots === null || typeof payload.availableSlots === 'number',
+    ).toBe(true)
+    expect(typeof payload.canStartNewExecution).toBe('boolean')
+    expect(Array.isArray(payload.processes)).toBe(true)
   })
 
   test('create-project creates and returns a project', async () => {

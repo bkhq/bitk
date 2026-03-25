@@ -26,7 +26,7 @@ import {
   serializeTags,
   triggerIssueExecution,
 } from '@/routes/issues/_shared'
-import { buildProcessInfoList } from '@/routes/processes'
+import { buildProcessInfoList, buildProcessSummary } from '@/routes/processes'
 import { toISO } from '@/utils/date'
 import { buildIssueUrl, dispatch as webhookDispatch } from '@/webhooks/dispatcher'
 
@@ -371,7 +371,7 @@ export function createMcpServer(): McpServer {
       'Best practices:',
       '- Use a SHORT, concise title (e.g. "fix login bug", "add dark mode").',
       '- For complex tasks involving multiple files or large changes, set useWorktree=true.',
-      '- Check list-processes before starting new tasks to monitor system workload.',
+      '- Check get-processes-capacity before starting new tasks to monitor system workload.',
     ].join('\n'),
     inputSchema: z.object({
       projectId: z.string().describe('Project ID or alias'),
@@ -588,7 +588,7 @@ export function createMcpServer(): McpServer {
       '',
       'Important reminders:',
       '- Ensure the project has correct global configuration (system prompt, env vars, working directory) before executing to prevent task failures.',
-      '- Check list-processes to monitor current workload before starting new executions.',
+      '- Check get-processes-capacity to monitor current workload before starting new executions.',
       '- After task completion, the issue should be moved to "review" (not "done") to await human confirmation.',
       '- For git repositories, commit changes organized by feature/function before moving to review.',
     ].join('\n'),
@@ -818,29 +818,25 @@ export function createMcpServer(): McpServer {
 
   // ==================== Process Monitoring ====================
 
-  server.registerTool('list-processes', {
-    title: 'List Active Processes',
-    description: 'List all active AI engine processes across all projects. Returns process count, state, engine type, model, and associated issue/project info. Use this to monitor system workload before starting new tasks.',
+  server.registerTool('get-processes-capacity', {
+    title: 'Get Process Capacity',
+    description: 'Return the current execution-capacity summary across all active AI engine processes, including active workload, concurrency limit, available execution slots, startability, and associated issue/project info. Use this before starting new tasks.',
     inputSchema: z.object({}),
   }, async () => {
     const processes = await buildProcessInfoList()
-    const summary = {
-      totalActive: processes.length,
-      byState: {} as Record<string, number>,
-      byEngine: {} as Record<string, number>,
-      byProject: {} as Record<string, { projectName: string, count: number }>,
-    }
+    const summary = buildProcessSummary(processes)
+    const maxConcurrent = issueEngine.getMaxConcurrent()
+    const availableSlots = maxConcurrent > 0
+      ? Math.max(0, maxConcurrent - summary.totalActive)
+      : null
 
-    for (const p of processes) {
-      summary.byState[p.processState] = (summary.byState[p.processState] ?? 0) + 1
-      summary.byEngine[p.engineType] = (summary.byEngine[p.engineType] ?? 0) + 1
-      if (!summary.byProject[p.projectId]) {
-        summary.byProject[p.projectId] = { projectName: p.projectName, count: 0 }
-      }
-      summary.byProject[p.projectId].count++
-    }
-
-    return textResult({ summary, processes })
+    return textResult({
+      summary,
+      maxConcurrent,
+      availableSlots,
+      canStartNewExecution: availableSlots === null || availableSlots > 0,
+      processes,
+    })
   })
 
   // ==================== Issue Logs ====================

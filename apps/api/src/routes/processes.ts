@@ -8,6 +8,13 @@ import { createOpenAPIRouter } from '@/openapi/hono'
 import * as R from '@/openapi/routes'
 import type { ProcessInfo } from '@bkd/shared'
 
+export interface ProcessSummary {
+  totalActive: number
+  byState: Record<string, number>
+  byEngine: Record<string, number>
+  byProject: Record<string, { projectName: string, count: number }>
+}
+
 export async function buildProcessInfoList(): Promise<ProcessInfo[]> {
   const activeProcesses = issueEngine.getActiveProcesses()
   const issueIds = activeProcesses.map(p => p.issueId)
@@ -65,11 +72,50 @@ export async function buildProcessInfoList(): Promise<ProcessInfo[]> {
   return result
 }
 
+export function buildProcessSummary(processes: ProcessInfo[]): ProcessSummary {
+  const summary: ProcessSummary = {
+    totalActive: processes.length,
+    byState: {},
+    byEngine: {},
+    byProject: {},
+  }
+
+  for (const p of processes) {
+    summary.byState[p.processState] = (summary.byState[p.processState] ?? 0) + 1
+    summary.byEngine[p.engineType] = (summary.byEngine[p.engineType] ?? 0) + 1
+    if (!summary.byProject[p.projectId]) {
+      summary.byProject[p.projectId] = { projectName: p.projectName, count: 0 }
+    }
+    summary.byProject[p.projectId].count++
+  }
+
+  return summary
+}
+
 const processes = createOpenAPIRouter()
 
 processes.openapi(R.listProcesses, async (c) => {
   const result = await buildProcessInfoList()
   return c.json({ success: true, data: { processes: result } })
+})
+
+processes.openapi(R.getProcessCapacity, async (c) => {
+  const result = await buildProcessInfoList()
+  const summary = buildProcessSummary(result)
+  const maxConcurrent = issueEngine.getMaxConcurrent()
+  const availableSlots = maxConcurrent > 0
+    ? Math.max(0, maxConcurrent - summary.totalActive)
+    : null
+
+  return c.json({
+    success: true,
+    data: {
+      summary,
+      maxConcurrent,
+      availableSlots,
+      canStartNewExecution: availableSlots === null || availableSlots > 0,
+    },
+  })
 })
 
 processes.openapi(R.terminateProcess, async (c) => {

@@ -1,6 +1,6 @@
 ---
 name: bkd
-description: Operate a BKD kanban board over its REST API. Use when the user wants to create, inspect, update, execute, or monitor BKD projects, issues, logs, processes, engines, or cron jobs from an agent. This skill assumes a reachable BKD server and provides safe BKD-specific execution workflows.
+description: Operate a BKD kanban board over its REST API. Use when the user wants to manage BKD projects, issue execution workflows, cron jobs, or execution capacity through a reachable BKD server.
 ---
 
 # BKD
@@ -16,7 +16,7 @@ API root such as `http://host:port/api`.
    - Create the issue in `todo`
    - Send details with `follow-up`
    - Move the issue to `working`
-4. Check active workload with `/processes` before starting more executions.
+4. Check execution capacity with `/processes/capacity` before starting more executions.
 5. Move finished work to `review`, not `done`. Use `done` only after human confirmation.
 
 ## BKD-Specific Rules
@@ -27,7 +27,10 @@ API root such as `http://host:port/api`.
   `{ success, error }`.
 - Follow-up messages sent to `todo` or `done` issues are queued for later
   execution.
-- Do not try to change the model during an active session.
+- Do not use `/execute` as the normal execution trigger. Move the issue to
+  `working` instead.
+- Use cron as a separate operational feature, not as part of the issue
+  execution flow.
 - When exact payloads, route shapes, or field lists matter, read
   [references/rest-api.md](./references/rest-api.md).
 
@@ -37,6 +40,12 @@ API root such as `http://host:port/api`.
 
 ```bash
 curl -s "$BKD_URL/health" | jq
+```
+
+### Check available execution slots
+
+```bash
+curl -s "$BKD_URL/processes/capacity" | jq
 ```
 
 ### Safe issue execution
@@ -60,13 +69,18 @@ curl -s -X PATCH "$BKD_URL/projects/{projectId}/issues/$ISSUE_ID" \
 ### Monitor an issue
 
 ```bash
-curl -s "$BKD_URL/processes" | jq '.data.processes'
+curl -s "$BKD_URL/projects/{projectId}/issues/{issueId}/logs?limit=50" | jq
+```
 
-curl -s "$BKD_URL/projects/{projectId}/issues/{issueId}/logs/filter/types/user-message,assistant-message/turn/last" | jq
+### Manage cron jobs
+
+```bash
+curl -s "$BKD_URL/cron/actions" | jq
+curl -s "$BKD_URL/cron" | jq
 ```
 
 ## Reference Files
 
 - [references/rest-api.md](./references/rest-api.md): exact BKD endpoint and
-  payload reference, including projects, issues, execution, logs, engines,
-  processes, cron jobs, and status conventions.
+  payload reference for health checks, capacity checks, projects, issues, logs,
+  cron jobs, and status conventions.

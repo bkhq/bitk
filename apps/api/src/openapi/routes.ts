@@ -28,6 +28,7 @@ import {
   IssueSchema,
   NoteSchema,
   ProbeResultSchema,
+  ProcessCapacitySchema,
   ProcessInfoSchema,
   ProjectSchema,
   SortProjectSchema,
@@ -723,6 +724,17 @@ export const listProcesses = createRoute({
   operationId: 'listProcesses',
   responses: {
     200: successResponse(z.object({ processes: z.array(ProcessInfoSchema) }), 'Active processes'),
+  },
+})
+
+export const getProcessCapacity = createRoute({
+  method: 'get',
+  path: '/capacity',
+  tags: ['Processes'],
+  summary: 'Get execution capacity summary',
+  operationId: 'getProcessCapacity',
+  responses: {
+    200: successResponse(ProcessCapacitySchema, 'Execution capacity summary'),
   },
 })
 

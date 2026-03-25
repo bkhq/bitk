@@ -96,6 +96,10 @@ export class ProcessManager<TMeta> {
     this.maxConcurrent = n
   }
 
+  getMaxConcurrent(): number {
+    return this.maxConcurrent
+  }
+
   // ---- Registration & State Transitions ----
 
   register(

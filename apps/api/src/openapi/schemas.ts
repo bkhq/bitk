@@ -334,6 +334,23 @@ export const ProcessInfoSchema = z.object({
   pid: z.number().int().nullable(),
 }).openapi('ProcessInfo')
 
+export const ProcessSummarySchema = z.object({
+  totalActive: z.number().int(),
+  byState: z.record(z.string(), z.number().int()),
+  byEngine: z.record(z.string(), z.number().int()),
+  byProject: z.record(z.string(), z.object({
+    projectName: z.string(),
+    count: z.number().int(),
+  })),
+}).openapi('ProcessSummary')
+
+export const ProcessCapacitySchema = z.object({
+  summary: ProcessSummarySchema,
+  maxConcurrent: z.number().int(),
+  availableSlots: z.number().int().nullable(),
+  canStartNewExecution: z.boolean(),
+}).openapi('ProcessCapacity')
+
 // ── Note schemas ───────────────────────────────────────
 
 export const NoteSchema = z.object({
