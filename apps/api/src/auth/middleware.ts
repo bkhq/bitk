@@ -35,6 +35,11 @@ export function authMiddleware(): MiddlewareHandler {
       return next()
     }
 
+    // Skip MCP — it handles its own auth (localhost bypass for engines)
+    if (c.req.path.startsWith('/api/mcp')) {
+      return next()
+    }
+
     // Extract Bearer token from Authorization header
     const authHeader = c.req.header('Authorization')
     let token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null

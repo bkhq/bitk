@@ -17,6 +17,7 @@ import type {
 } from '@/engines/types'
 
 import { logger } from '@/logger'
+import { getClaudeMcpConfig } from '@/mcp/config'
 import { ROOT_DIR } from '@/root'
 import { ClaudeLogNormalizer } from './normalizer'
 import { ClaudeProtocolHandler } from './protocol'
@@ -412,6 +413,12 @@ export class ClaudeCodeExecutor implements EngineExecutor {
     env: ExecutionEnv,
     mode: 'spawn' | 'followup',
   ): Promise<SpawnedProcess> {
+    // Inject bkd MCP server when MCP is enabled (localhost, no auth needed)
+    const mcpConfig = await getClaudeMcpConfig()
+    if (mcpConfig) {
+      builder.param('--mcp-config', mcpConfig)
+    }
+
     const resolved = await builder.resolve()
     logger.debug(
       {

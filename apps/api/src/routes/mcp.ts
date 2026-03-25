@@ -4,6 +4,7 @@ import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/
 import { createMcpServer } from '@/mcp/server'
 import { createOpenAPIRouter } from '@/openapi/hono'
 import { getAppSetting } from '@/db/helpers'
+import { authConfig, verifyToken } from '@/auth'
 import { logger } from '@/logger'
 
 const mcpRoute = createOpenAPIRouter()
@@ -94,10 +95,11 @@ function isLocalhostRequest(c: Parameters<Parameters<typeof mcpRoute.use>[1]>[0]
   return LOCALHOST_ADDRS.has(hostname)
 }
 
-// --- Enabled gate + API key authentication middleware ---
+// --- Enabled gate + authentication middleware ---
+// Auth: localhost is always allowed (engines connect locally).
+// Remote: requires system JWT when AUTH_ENABLED=true.
 
 const MCP_ENABLED_SETTING = 'mcp:enabled'
-const MCP_API_KEY_SETTING = 'mcp:apiKey'
 
 mcpRoute.use('*', async (c, next) => {
   // Check if MCP is enabled (env override or DB setting)
@@ -113,27 +115,20 @@ mcpRoute.use('*', async (c, next) => {
     }
   }
 
-  // API key authentication
-  const apiKey = process.env.MCP_API_KEY ?? (await getAppSetting(MCP_API_KEY_SETTING))
-
-  // If no API key is configured, only allow localhost (using client IP, not Host header)
-  if (!apiKey) {
-    if (!isLocalhostRequest(c)) {
-      return c.json({ error: 'MCP endpoint requires API key or localhost access' }, 403)
-    }
+  // Localhost requests (engines, local MCP clients) — always allowed
+  if (isLocalhostRequest(c)) {
     return next()
   }
 
-  const token = c.req.header('authorization')?.replace('Bearer ', '')
-  if (!token) {
-    return c.json({ error: 'Unauthorized' }, 401)
+  // Remote requests — require system auth (JWT) when AUTH_ENABLED
+  if (authConfig.enabled) {
+    const authHeader = c.req.header('authorization')
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null
+    if (!token || !verifyToken(token)) {
+      return c.json({ error: 'Unauthorized' }, 401)
+    }
   }
-  // Use timing-safe comparison to prevent timing attacks
-  const tokenBuf = Buffer.from(token)
-  const keyBuf = Buffer.from(apiKey)
-  if (tokenBuf.length !== keyBuf.length || !crypto.timingSafeEqual(tokenBuf, keyBuf)) {
-    return c.json({ error: 'Unauthorized' }, 401)
-  }
+
   return next()
 })
 

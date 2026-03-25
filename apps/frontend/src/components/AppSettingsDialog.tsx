@@ -677,16 +677,7 @@ function McpSection({ open }: { open: boolean }) {
   const { t } = useTranslation()
   const { data: mcpData } = useMcpSettings(open)
   const updateMcp = useUpdateMcpSettings()
-  const [apiKey, setApiKey] = useState('')
-  const [apiKeyLoaded, setApiKeyLoaded] = useState(false)
   const [copied, setCopied] = useState(false)
-
-  useEffect(() => {
-    if (mcpData && !apiKeyLoaded) {
-      setApiKey(mcpData.apiKey ?? '')
-      setApiKeyLoaded(true)
-    }
-  }, [mcpData, apiKeyLoaded])
 
   const enabled = mcpData?.enabled ?? false
   const { data: serverInfo } = useServerInfo(open)
@@ -698,7 +689,6 @@ function McpSection({ open }: { open: boolean }) {
         bkd: {
           type: 'http',
           url: `${serverUrl}/api/mcp`,
-          ...(apiKey ? { headers: { Authorization: `Bearer ${apiKey}` } } : {}),
         },
       },
     },
@@ -736,51 +726,26 @@ function McpSection({ open }: { open: boolean }) {
       )}
 
       {enabled && (
-        <>
-          {/* API Key */}
-          <div className="space-y-1.5">
-            <Label className="text-sm font-medium">{t('settings.mcpApiKey')}</Label>
-            <p className="text-[11px] text-muted-foreground">
-              {t('settings.mcpApiKeyHint')}
-            </p>
-            <div className="flex gap-2">
-              <Input
-                className="h-8 text-xs font-mono"
-                type="password"
-                placeholder={t('settings.mcpApiKeyPlaceholder')}
-                value={apiKey}
-                onChange={e => setApiKey(e.target.value)}
-                onBlur={() => {
-                  if (apiKey !== (mcpData?.apiKey ?? '')) {
-                    updateMcp.mutate({ apiKey })
-                  }
-                }}
-              />
-            </div>
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <Label className="text-sm font-medium">{t('settings.mcpConfigTitle')}</Label>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 text-xs"
+              onClick={handleCopy}
+            >
+              <Copy className="mr-1 size-3" />
+              {copied ? t('settings.mcpCopied') : t('settings.mcpCopy')}
+            </Button>
           </div>
-
-          {/* Config snippet */}
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <Label className="text-sm font-medium">{t('settings.mcpConfigTitle')}</Label>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 text-xs"
-                onClick={handleCopy}
-              >
-                <Copy className="mr-1 size-3" />
-                {copied ? t('settings.mcpCopied') : t('settings.mcpCopy')}
-              </Button>
-            </div>
-            <p className="text-[11px] text-muted-foreground">
-              {t('settings.mcpConfigHint')}
-            </p>
-            <pre className="rounded-md bg-muted/50 p-3 text-xs font-mono overflow-x-auto whitespace-pre">
-              {configJson}
-            </pre>
-          </div>
-        </>
+          <p className="text-[11px] text-muted-foreground">
+            {t('settings.mcpConfigHint')}
+          </p>
+          <pre className="rounded-md bg-muted/50 p-3 text-xs font-mono overflow-x-auto whitespace-pre">
+            {configJson}
+          </pre>
+        </div>
       )}
     </div>
   )

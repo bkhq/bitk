@@ -632,7 +632,7 @@ export function useMcpSettings(enabled = false) {
 export function useUpdateMcpSettings() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (data: { enabled?: boolean, apiKey?: string }) =>
+    mutationFn: (data: { enabled?: boolean }) =>
       kanbanApi.updateMcpSettings(data),
     onSuccess: () => {
       queryClient.invalidateQueries({

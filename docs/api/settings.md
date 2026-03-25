@@ -112,9 +112,11 @@ Get system information including app version, runtime details, server config, an
 
 ## MCP Settings
 
+Authentication reuses the system auth: localhost is always allowed (for engine auto-injection), remote access requires system JWT when `AUTH_ENABLED=true`. When MCP is enabled, AI engines automatically connect to the MCP endpoint during task execution.
+
 ### GET /api/settings/mcp
 
-Get MCP endpoint configuration. Environment variables (`MCP_ENABLED`, `MCP_API_KEY`) take precedence over DB settings.
+Get MCP endpoint configuration. `MCP_ENABLED` env var takes precedence over DB setting.
 
 **Response:**
 
@@ -123,17 +125,16 @@ Get MCP endpoint configuration. Environment variables (`MCP_ENABLED`, `MCP_API_K
   "success": true,
   "data": {
     "enabled": true,
-    "apiKey": "...",
-    "envOverride": { "enabled": false, "apiKey": false }
+    "envOverride": { "enabled": false }
   }
 }
 ```
 
 ### PATCH /api/settings/mcp
 
-Update MCP settings. Empty `apiKey` string clears the key.
+Update MCP enabled state.
 
-**Request Body:** `{ enabled?: boolean, apiKey?: string (0-256) }`
+**Request Body:** `{ enabled?: boolean }`
 
 ## Webhooks
 

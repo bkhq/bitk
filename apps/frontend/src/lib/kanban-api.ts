@@ -441,9 +441,9 @@ export const kanbanApi = {
 
   // MCP Settings
   getMcpSettings: () =>
-    get<{ enabled: boolean, apiKey: string | null }>('/api/settings/mcp'),
-  updateMcpSettings: (data: { enabled?: boolean, apiKey?: string }) =>
-    patch<{ enabled: boolean, apiKey: string | null }>('/api/settings/mcp', data),
+    get<{ enabled: boolean }>('/api/settings/mcp'),
+  updateMcpSettings: (data: { enabled?: boolean }) =>
+    patch<{ enabled: boolean }>('/api/settings/mcp', data),
 
   // System Logs
   getSystemLogs: (lines = 200) =>

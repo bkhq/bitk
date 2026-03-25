@@ -11,6 +11,7 @@ import type {
 import type { ChildProcessWithoutNullStreams } from 'node:child_process'
 import { Readable, Writable } from 'node:stream'
 import type { EngineModel, PermissionPolicy } from '@/engines/types'
+import { getAcpMcpServers } from '@/mcp/config'
 import { createEventSink } from './transport'
 import type { AcpEvent, SessionBootstrap } from './types'
 
@@ -156,13 +157,14 @@ export class AcpProtocolHandler {
     existingSessionId?: string,
   ): Promise<SessionBootstrap> {
     let response: SessionBootstrap
+    const mcpServers = await getAcpMcpServers()
 
     if (existingSessionId) {
       this.ignoreSessionUpdates = true
       response = await this.connection.loadSession({
         sessionId: existingSessionId,
         cwd,
-        mcpServers: [],
+        mcpServers,
       })
       this.sessionId = existingSessionId
       this.sink.emit({
@@ -175,7 +177,7 @@ export class AcpProtocolHandler {
     } else {
       const newResponse = await this.connection.newSession({
         cwd,
-        mcpServers: [],
+        mcpServers,
       })
       response = newResponse
       this.sessionId = newResponse.sessionId
