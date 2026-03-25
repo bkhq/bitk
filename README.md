@@ -92,6 +92,32 @@ Requires `GOOGLE_API_KEY` or `GEMINI_API_KEY`, or authenticate via `gemini` CLI.
 
 > BKD auto-detects which agents are installed at startup. You can use any combination.
 
+## BKD Skill
+
+This repository includes a single BKD skill package at `skills/bkd/`. Install it with `npx skills` and use it to operate a running BKD server through the REST API.
+
+### Prerequisite
+
+Before using the skill, point `BKD_URL` at the BKD API root:
+
+```bash
+export BKD_URL=http://localhost:3000/api
+```
+
+### Global (all projects)
+
+```bash
+npx skills add bkhq/bkd --skill bkd --global
+```
+
+### Project (current project only)
+
+```bash
+npx skills add bkhq/bkd --skill bkd
+```
+
+Restart Codex after installing the skill. You can then invoke it with prompts such as `Use $bkd to list projects` or `Use $bkd to check execution capacity`.
+
 ## Usage
 
 1. **Create a project** — Give it a name and set the workspace directory (the repo the agents will work in)

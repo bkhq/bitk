@@ -92,6 +92,32 @@ npm install -g @google/gemini-cli
 
 > BKD 启动时会自动检测已安装的代理，可以任意组合使用。
 
+## BKD Skill
+
+仓库当前只内置了一个 BKD skill，位于 `skills/bkd/`。你可以使用 `npx skills` 安装它，然后通过 REST API 操作正在运行的 BKD 服务。
+
+### 必备条件
+
+使用这个 skill 之前，需要先把 `BKD_URL` 指向 BKD API 根路径：
+
+```bash
+export BKD_URL=http://localhost:3000/api
+```
+
+### Global（所有项目）
+
+```bash
+npx skills add bkhq/bkd --skill bkd --global
+```
+
+### Project（仅当前项目）
+
+```bash
+npx skills add bkhq/bkd --skill bkd
+```
+
+安装完成后重启 Codex。之后可以用 `Use $bkd to list projects` 或 `Use $bkd to check execution capacity` 这样的提示词来调用它。
+
 ## 使用方法
 
 1. **创建项目** — 设置项目名称和工作目录（代理将在该仓库中工作）
