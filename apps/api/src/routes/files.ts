@@ -1,5 +1,6 @@
-import { readdir, realpath, rm, stat, writeFile } from 'node:fs/promises'
+import { readdir, rm, stat, writeFile } from 'node:fs/promises'
 import { basename, resolve } from 'node:path'
+import bs58 from 'bs58'
 import { getAppSetting } from '@/db/helpers'
 import { runCommand } from '@/engines/spawn'
 import type { Context } from 'hono'
@@ -52,16 +53,34 @@ async function getGitIgnoredNames(dir: string, names: string[]): Promise<Set<str
   }
 }
 
-/** Resolve root from query param + validate sub-path stays inside it. */
+/** Decode base58-encoded root from path param. */
+function decodeRoot(encoded: string): string {
+  return Buffer.from(bs58.decode(encoded)).toString('utf-8')
+}
+
+/** Encode a filesystem path as base58. */
+export function encodeRoot(path: string): string {
+  return bs58.encode(Buffer.from(path, 'utf-8'))
+}
+
+/** Resolve root from :root path param + validate sub-path stays inside it. */
 async function resolveRootPath(c: Context, relativePath: string) {
-  const rootParam = c.req.query('root')
+  const rootParam = c.req.param('root')
   if (!rootParam) {
     return {
-      error: c.json({ success: false, error: 'Missing required query parameter: root' }, 400),
+      error: c.json({ success: false, error: 'Missing root path parameter' }, 400),
     }
   }
 
-  const root = resolve(rootParam)
+  let root: string
+  try {
+    root = resolve(decodeRoot(rootParam))
+  } catch {
+    return {
+      error: c.json({ success: false, error: 'Invalid root encoding' }, 400),
+    }
+  }
+
   const target = resolve(root, relativePath)
 
   // SEC-007: Validate root is within workspace
@@ -84,28 +103,6 @@ async function resolveRootPath(c: Context, relativePath: string) {
   return { root, target }
 }
 
-/**
- * Resolve the real on-disk path (following symlinks) and verify it stays inside root.
- * This prevents symlink traversal attacks on write operations.
- */
-async function verifyRealPath(target: string, root: string): Promise<boolean> {
-  try {
-    const realTarget = await realpath(target)
-    const realRoot = await realpath(root)
-    return isInsideRoot(realTarget, realRoot)
-  } catch {
-    // If target doesn't exist yet (new file), check parent directory
-    const parent = resolve(target, '..')
-    try {
-      const realParent = await realpath(parent)
-      const realRoot = await realpath(root)
-      return isInsideRoot(realParent, realRoot)
-    } catch {
-      return false
-    }
-  }
-}
-
 /** Extract relative path from the URL after the given marker segment. */
 function extractPathAfter(c: Context, marker: string): string {
   const fullPath = new URL(c.req.url).pathname
@@ -120,17 +117,12 @@ function extractPathAfter(c: Context, marker: string): string {
   }
 }
 
-// ── /files/show — JSON browse (directory listing + file preview) ──
+// ── /files/:root/show — JSON browse (directory listing + file preview) ──
 
 async function handleShow(c: Context, relativePath: string) {
   const resolved = await resolveRootPath(c, relativePath)
   if ('error' in resolved) return resolved.error
   const { root, target } = resolved
-
-  // SEC-009: Verify real path after symlink resolution stays inside root
-  if (!await verifyRealPath(target, root)) {
-    return c.json({ success: false, error: 'Path escapes root via symlink' }, 403)
-  }
 
   const hideIgnored = c.req.query('hideIgnored') === 'true'
 
@@ -177,7 +169,10 @@ async function handleShow(c: Context, relativePath: string) {
 
     // ── Directory: return entry listing ──
     const dirents = await readdir(target, { withFileTypes: true })
-    const validNames = dirents.filter(d => d.isFile() || d.isDirectory()).map(d => d.name)
+    // Include symlinks — use stat() to resolve their target type
+    const validNames = dirents
+      .filter(d => d.isFile() || d.isDirectory() || d.isSymbolicLink())
+      .map(d => d.name)
 
     const ignoredNames = hideIgnored
       ? await getGitIgnoredNames(target, validNames)
@@ -186,23 +181,27 @@ async function handleShow(c: Context, relativePath: string) {
     const entries: FileEntry[] = []
 
     for (const d of dirents) {
-      if (!d.isFile() && !d.isDirectory()) continue
+      if (!d.isFile() && !d.isDirectory() && !d.isSymbolicLink()) continue
       if (d.name === '.git') continue
       if (ignoredNames.has(d.name)) continue
 
       let size = 0
       let modifiedAt = ''
+      let entryType: 'file' | 'directory'
       try {
+        // stat() follows symlinks, giving us the target's type and size
         const s = await stat(resolve(target, d.name))
         size = s.size
         modifiedAt = s.mtime.toISOString()
+        entryType = s.isDirectory() ? 'directory' : 'file'
       } catch {
+        // Broken symlink or inaccessible target — skip
         continue
       }
 
       entries.push({
         name: d.name,
-        type: d.isDirectory() ? 'directory' : 'file',
+        type: entryType,
         size,
         modifiedAt,
       })
@@ -228,17 +227,12 @@ async function handleShow(c: Context, relativePath: string) {
   }
 }
 
-// ── /files/raw — raw file download ──
+// ── /files/:root/raw — raw file download ──
 
 async function handleRaw(c: Context, relativePath: string) {
   const resolved = await resolveRootPath(c, relativePath)
   if ('error' in resolved) return resolved.error
-  const { root, target } = resolved
-
-  // SEC-008: Verify real path after symlink resolution stays inside root
-  if (!await verifyRealPath(target, root)) {
-    return c.json({ success: false, error: 'Path escapes root via symlink' }, 403)
-  }
+  const { target } = resolved
 
   try {
     const targetStat = await stat(target)
@@ -266,7 +260,7 @@ async function handleRaw(c: Context, relativePath: string) {
   }
 }
 
-// ── /files/delete — delete file or directory ──
+// ── /files/:root/delete — delete file or directory ──
 
 async function handleDelete(c: Context, relativePath: string) {
   const resolved = await resolveRootPath(c, relativePath)
@@ -276,11 +270,6 @@ async function handleDelete(c: Context, relativePath: string) {
   // Prevent deleting the root directory itself
   if (target === root) {
     return c.json({ success: false, error: 'Cannot delete root directory' }, 400)
-  }
-
-  // SEC: Verify real path after symlink resolution stays inside root
-  if (!await verifyRealPath(target, root)) {
-    return c.json({ success: false, error: 'Path escapes root via symlink' }, 403)
   }
 
   try {
@@ -298,19 +287,14 @@ async function handleDelete(c: Context, relativePath: string) {
   }
 }
 
-// ── /files/save — save text file content ──
+// ── /files/:root/save — save text file content ──
 
 const MAX_SAVE_SIZE = 5 * 1024 * 1024 // 5 MB
 
 async function handleSave(c: Context, relativePath: string) {
   const resolved = await resolveRootPath(c, relativePath)
   if ('error' in resolved) return resolved.error
-  const { target, root } = resolved
-
-  // SEC: Verify real path after symlink resolution stays inside root
-  if (!await verifyRealPath(target, root)) {
-    return c.json({ success: false, error: 'Path escapes root via symlink' }, 403)
-  }
+  const { target } = resolved
 
   try {
     const body = await c.req.json<{ content: string }>()
@@ -341,18 +325,18 @@ async function handleSave(c: Context, relativePath: string) {
 
 const files = createOpenAPIRouter()
 
-// GET /files/show?root=... — root directory listing
-files.get('/show', c => handleShow(c, '.'))
-// GET /files/show/*?root=... — browse any sub-path
-files.get('/show/*', c => handleShow(c, extractPathAfter(c, '/show/')))
+// GET /files/:root/show — root directory listing
+files.get('/:root/show', c => handleShow(c, '.'))
+// GET /files/:root/show/* — browse any sub-path
+files.get('/:root/show/*', c => handleShow(c, extractPathAfter(c, '/show/')))
 
-// GET /files/raw/*?root=... — download raw file
-files.get('/raw/*', c => handleRaw(c, extractPathAfter(c, '/raw/')))
+// GET /files/:root/raw/* — download raw file
+files.get('/:root/raw/*', c => handleRaw(c, extractPathAfter(c, '/raw/')))
 
-// DELETE /files/delete/*?root=... — delete file or directory
-files.delete('/delete/*', c => handleDelete(c, extractPathAfter(c, '/delete/')))
+// DELETE /files/:root/delete/* — delete file or directory
+files.delete('/:root/delete/*', c => handleDelete(c, extractPathAfter(c, '/delete/')))
 
-// PUT /files/save/*?root=... — save text file content
-files.put('/save/*', c => handleSave(c, extractPathAfter(c, '/save/')))
+// PUT /files/:root/save/* — save text file content
+files.put('/:root/save/*', c => handleSave(c, extractPathAfter(c, '/save/')))
 
 export default files

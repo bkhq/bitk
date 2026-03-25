@@ -23,6 +23,25 @@ import type {
 } from '@/types/kanban'
 import { clearToken, getToken } from './auth'
 
+/** Encode a filesystem path as base58 for use in URL path segments. */
+function encodeRootPath(path: string): string {
+  const ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
+  const bytes = new TextEncoder().encode(path)
+  let zeros = 0
+  for (const b of bytes) {
+    if (b === 0) zeros++
+    else break
+  }
+  let num = 0n
+  for (const b of bytes) num = num * 256n + BigInt(b)
+  let encoded = ''
+  while (num > 0n) {
+    encoded = ALPHABET[Number(num % 58n)] + encoded
+    num /= 58n
+  }
+  return '1'.repeat(zeros) + encoded
+}
+
 export class ApiError extends Error {
   readonly statusCode: number
   readonly isUserError: boolean
@@ -539,13 +558,11 @@ export const kanbanApi = {
 
   // File Browser
   listFiles: (root: string, path?: string, hideIgnored?: boolean) => {
+    const encodedRoot = encodeRootPath(root)
     const encodedPath =
       path && path !== '.' ? `/${path.split('/').map(encodeURIComponent).join('/')}` : ''
-    const params = new URLSearchParams()
-    params.set('root', root)
-    if (hideIgnored) params.set('hideIgnored', 'true')
-    const qs = `?${params.toString()}`
-    return get<FileListingResult>(`/api/files/show${encodedPath}${qs}`)
+    const qs = hideIgnored ? '?hideIgnored=true' : ''
+    return get<FileListingResult>(`/api/files/${encodedRoot}/show${encodedPath}${qs}`)
   },
 
   // Process Manager
@@ -559,19 +576,22 @@ export const kanbanApi = {
     ),
 
   rawFileUrl: (root: string, path: string) => {
+    const encodedRoot = encodeRootPath(root)
     const encodedPath = path.split('/').map(encodeURIComponent).join('/')
-    return `/api/files/raw/${encodedPath}?root=${encodeURIComponent(root)}`
+    return `/api/files/${encodedRoot}/raw/${encodedPath}`
   },
 
   deleteFile: (root: string, path: string) => {
+    const encodedRoot = encodeRootPath(root)
     const encodedPath = path.split('/').map(encodeURIComponent).join('/')
-    return del<{ deleted: boolean }>(`/api/files/delete/${encodedPath}?root=${encodeURIComponent(root)}`)
+    return del<{ deleted: boolean }>(`/api/files/${encodedRoot}/delete/${encodedPath}`)
   },
 
   saveFile: (root: string, path: string, content: string) => {
+    const encodedRoot = encodeRootPath(root)
     const encodedPath = path.split('/').map(encodeURIComponent).join('/')
     return request<{ size: number, modifiedAt: string }>(
-      `/api/files/save/${encodedPath}?root=${encodeURIComponent(root)}`,
+      `/api/files/${encodedRoot}/save/${encodedPath}`,
       { method: 'PUT', body: JSON.stringify({ content }) },
     )
   },
