@@ -42,6 +42,7 @@
     "typescript": "catalog:"
   },
   "dependencies": {
+    "bs58": "^6.0.0",
     "cleye": "^2.3.0"
   }
 }
